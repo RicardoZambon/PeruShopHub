@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, computed, HostListener, ElementRef, inject } from '@angular/core';
+import { Component, input, output, signal, computed, HostListener, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, ChevronDown, ChevronRight, Search } from 'lucide-angular';
@@ -27,9 +27,9 @@ export class TreeSelectComponent {
   readonly chevronRightIcon = ChevronRight;
   readonly searchIcon = Search;
 
-  @Input() categories: Category[] = [];
-  @Input() value: string | null = null;
-  @Output() valueChange = new EventEmitter<string>();
+  readonly categories = input<Category[]>([]);
+  readonly value = input<string | null>(null);
+  readonly valueChange = output<string>();
 
   isOpen = signal(false);
   searchQuery = signal('');
@@ -38,8 +38,8 @@ export class TreeSelectComponent {
 
   /** Get breadcrumb for selected category */
   selectedBreadcrumb = computed(() => {
-    if (!this.value) return '';
-    return this.categoryService.getBreadcrumb(this.value).join(' > ');
+    if (!this.value()) return '';
+    return this.categoryService.getBreadcrumb(this.value()!).join(' > ');
   });
 
   /** Flatten the tree for rendering, respecting expanded state and search */
@@ -76,7 +76,7 @@ export class TreeSelectComponent {
       }
     };
 
-    flatten(this.categories, 0);
+    flatten(this.categories(), 0);
     return nodes;
   });
 

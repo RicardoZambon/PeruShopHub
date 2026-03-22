@@ -33,7 +33,7 @@
       </div>
     }
     <p class="section-hint">
-      YouTube URL. Para Clips: MP4/MOV, 10-60s, vertical 9:16, ate 280 MB
+      YouTube URL. Para Clips: MP4/MOV, 10-60s, vertical 9:16, até 280 MB
     </p>
   </div>
 
@@ -50,11 +50,11 @@
     <div
       class="image-grid"
       cdkDropList
-      [cdkDropListData]="images"
+      [cdkDropListData]="images()"
       (cdkDropListDropped)="onDrop($event)"
     >
       <!-- Filled image slots -->
-      @for (image of images; track image.id; let i = $index) {
+      @for (image of images(); track image.id; let i = $index) {
         <div
           class="image-slot filled"
           cdkDrag
@@ -103,7 +103,7 @@
     </div>
 
     <p class="section-hint">
-      JPG/PNG, 500-1920px, ate 10 MB, fundo branco recomendado
+      JPG/PNG, 500-1920px, até 10 MB, fundo branco recomendado
     </p>
   </div>
 </div>

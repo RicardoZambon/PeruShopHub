@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, computed, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, inject, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragPlaceholder } from '@angular/cdk/drag-drop';
@@ -25,9 +25,10 @@ import type { Category } from '../../models/category.model';
   templateUrl: './category-tree.component.html',
   styleUrl: './category-tree.component.scss',
 })
-export class CategoryTreeComponent {
+export class CategoryTreeComponent implements OnChanges {
   @Input({ required: true }) categories!: Category[];
   @Input() selectedId: string | null = null;
+  @Input() externalSearchQuery = '';
 
   @Output() selectCategory = new EventEmitter<string>();
   @Output() addCategory = new EventEmitter<void>();
@@ -39,6 +40,12 @@ export class CategoryTreeComponent {
   readonly folderPlusIcon = FolderPlus;
 
   readonly searchQuery = signal('');
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['externalSearchQuery']) {
+      this.searchQuery.set(changes['externalSearchQuery'].currentValue ?? '');
+    }
+  }
 
   readonly filteredTree = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();

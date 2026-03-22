@@ -1,15 +1,24 @@
 <div class="tree-select">
   <!-- Trigger -->
-  <div class="tree-select__trigger" (click)="toggleOpen()">
-    <span class="tree-select__value" [class.tree-select__value--placeholder]="!value">
-      @if (value) {
+  <button
+    type="button"
+    class="tree-select__trigger"
+    role="combobox"
+    [attr.aria-expanded]="isOpen()"
+    aria-haspopup="listbox"
+    (click)="toggleOpen()"
+    (keydown.enter)="toggleOpen()"
+    (keydown.space)="$event.preventDefault(); toggleOpen()"
+  >
+    <span class="tree-select__value" [class.tree-select__value--placeholder]="!value()">
+      @if (value()) {
         {{ selectedBreadcrumb() }}
       } @else {
         Selecione uma categoria...
       }
     </span>
     <lucide-icon [img]="chevronDownIcon" [size]="16" class="tree-select__icon"></lucide-icon>
-  </div>
+  </button>
 
   <!-- Dropdown -->
   @if (isOpen()) {
@@ -32,7 +41,7 @@
         @for (node of flatNodes(); track node.category.id; let i = $index) {
           <div
             class="tree-select__item"
-            [class.tree-select__item--selected]="value === node.category.id"
+            [class.tree-select__item--selected]="value() === node.category.id"
             [class.tree-select__item--focused]="focusedIndex() === i"
             [class.tree-select__item--inactive]="!node.category.isActive"
             [style.padding-left.px]="12 + node.depth * 20"

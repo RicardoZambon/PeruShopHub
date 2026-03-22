@@ -1,10 +1,10 @@
 import {
   Component,
-  Input,
-  Output,
-  EventEmitter,
+  input,
+  output,
   signal,
   computed,
+  model,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -60,27 +60,25 @@ export class MediaGalleryComponent {
   readonly gripIcon = GripVertical;
   readonly videoIcon = Video;
 
-  @Input() images: GalleryImage[] = [];
-  @Input() videoUrl: string | null = null;
+  readonly images = model<GalleryImage[]>([]);
+  readonly videoUrl = model<string | null>(null);
 
-  @Output() imagesChange = new EventEmitter<GalleryImage[]>();
-  @Output() videoUrlChange = new EventEmitter<string | null>();
-  @Output() imageAdd = new EventEmitter<void>();
-  @Output() imageRemove = new EventEmitter<number>();
+  readonly imageAdd = output<void>();
+  readonly imageRemove = output<number>();
 
   readonly maxImages = 9;
   private nextColorIndex = 0;
 
   videoInputValue = signal('');
 
-  imageCount = computed(() => this.images.length);
+  imageCount = computed(() => this.images().length);
   emptySlots = computed(() => {
-    const count = this.maxImages - this.images.length;
+    const count = this.maxImages - this.images().length;
     return count > 0 ? Array(count).fill(0) : [];
   });
 
   videoThumbnail = computed(() => {
-    const url = this.videoUrl;
+    const url = this.videoUrl();
     if (!url) return null;
     const videoId = this.extractYouTubeId(url);
     if (!videoId) return null;
@@ -92,20 +90,18 @@ export class MediaGalleryComponent {
     if (value.trim()) {
       const videoId = this.extractYouTubeId(value);
       if (videoId) {
-        this.videoUrl = value;
-        this.videoUrlChange.emit(value);
+        this.videoUrl.set(value);
       }
     }
   }
 
   clearVideo(): void {
-    this.videoUrl = null;
+    this.videoUrl.set(null);
     this.videoInputValue.set('');
-    this.videoUrlChange.emit(null);
   }
 
   addMockImage(): void {
-    if (this.images.length >= this.maxImages) return;
+    if (this.images().length >= this.maxImages) return;
 
     const color = PLACEHOLDER_COLORS[this.nextColorIndex % PLACEHOLDER_COLORS.length];
     this.nextColorIndex++;
@@ -113,26 +109,24 @@ export class MediaGalleryComponent {
     const newImage: GalleryImage = {
       id: 'img-' + Math.random().toString(36).substring(2, 8),
       color,
-      order: this.images.length,
+      order: this.images().length,
     };
 
-    this.images = [...this.images, newImage];
-    this.imagesChange.emit(this.images);
+    this.images.set([...this.images(), newImage]);
     this.imageAdd.emit();
   }
 
   removeImage(index: number): void {
-    this.images = this.images.filter((_, i) => i !== index)
+    const updated = this.images().filter((_, i) => i !== index)
       .map((img, i) => ({ ...img, order: i }));
-    this.imagesChange.emit(this.images);
+    this.images.set(updated);
     this.imageRemove.emit(index);
   }
 
   onDrop(event: CdkDragDrop<GalleryImage[]>): void {
-    const reordered = [...this.images];
+    const reordered = [...this.images()];
     moveItemInArray(reordered, event.previousIndex, event.currentIndex);
-    this.images = reordered.map((img, i) => ({ ...img, order: i }));
-    this.imagesChange.emit(this.images);
+    this.images.set(reordered.map((img, i) => ({ ...img, order: i })));
   }
 
   private extractYouTubeId(url: string): string | null {
