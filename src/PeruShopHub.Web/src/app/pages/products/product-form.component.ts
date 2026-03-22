@@ -2,9 +2,11 @@ import { Component, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { LucideAngularModule, ArrowLeft, Save, Send, X, ChevronDown, ChevronUp } from 'lucide-angular';
+import { LucideAngularModule, ArrowLeft, Save, X, ChevronDown, ChevronUp } from 'lucide-angular';
+import { MediaGalleryComponent, GalleryImage } from './media-gallery.component';
+import { VariantManagerComponent } from './variant-manager.component';
 
-type TabId = 'basicas' | 'preco' | 'envio';
+type TabId = 'basicas' | 'preco' | 'dimensoes' | 'variacoes';
 
 interface Tab {
   id: TabId;
@@ -14,7 +16,8 @@ interface Tab {
 const TABS: Tab[] = [
   { id: 'basicas', label: 'Informações Básicas' },
   { id: 'preco', label: 'Preço e Custos' },
-  { id: 'envio', label: 'Envio' },
+  { id: 'dimensoes', label: 'Dimensões' },
+  { id: 'variacoes', label: 'Variações' },
 ];
 
 const CATEGORIAS = [
@@ -23,61 +26,48 @@ const CATEGORIAS = [
   'Casa e Decoração', 'Esportes', 'Moda', 'Beleza e Saúde',
 ];
 
-const TIPOS_ANUNCIO = [
-  { value: 'gratis', label: 'Grátis (sem comissão, menor visibilidade)' },
-  { value: 'classico', label: 'Clássico (comissão padrão)' },
-  { value: 'premium', label: 'Premium (maior comissão, máxima visibilidade)' },
-];
-
-const COMISSAO_MAP: Record<string, number> = {
-  gratis: 0,
-  classico: 0.11,
-  premium: 0.16,
-};
-
 // Mock product data for edit mode
 const MOCK_PRODUCT = {
+  sku: 'TWS-PRO-001',
   titulo: 'Fone Bluetooth TWS Pro Max',
   descricao: 'Fone de ouvido bluetooth sem fio com cancelamento de ruído ativo, driver de 13mm, autonomia de 30h com estojo de carga.',
   categoria: 'Áudio',
-  condicao: 'novo',
+  fornecedor: 'ShenzhenTech Imports',
   precoVenda: 189.90,
   custoAquisicao: 62.00,
-  custoEmbalagem: 3.50,
-  fornecedor: 'ShenzhenTech Imports',
-  tipoAnuncio: 'classico',
   peso: 0.25,
   altura: 8,
   largura: 12,
   comprimento: 15,
-  freteGratis: true,
 };
 
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, MediaGalleryComponent, VariantManagerComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })
 export class ProductFormComponent {
   readonly arrowLeftIcon = ArrowLeft;
   readonly saveIcon = Save;
-  readonly sendIcon = Send;
   readonly closeIcon = X;
   readonly chevronDownIcon = ChevronDown;
   readonly chevronUpIcon = ChevronUp;
 
   readonly tabs = TABS;
   readonly categorias = CATEGORIAS;
-  readonly tiposAnuncio = TIPOS_ANUNCIO;
 
   activeTab = signal<TabId>('basicas');
   isEditMode = signal(false);
   productName = signal('');
+  productId = signal('');
   loading = signal(false);
   categoriaDropdownOpen = signal(false);
   categoriaFilter = signal('');
+
+  galleryImages = signal<GalleryImage[]>([]);
+  galleryVideoUrl = signal<string | null>(null);
 
   // Mobile accordion: track which tabs are open
   openAccordions = signal<Set<TabId>>(new Set(['basicas']));
@@ -93,15 +83,10 @@ export class ProductFormComponent {
   margemEstimada = computed(() => {
     const preco = this.form?.get('precoVenda')?.value || 0;
     const custoAquisicao = this.form?.get('custoAquisicao')?.value || 0;
-    const custoEmbalagem = this.form?.get('custoEmbalagem')?.value || 0;
-    const tipoAnuncio = this.form?.get('tipoAnuncio')?.value || 'classico';
 
     if (preco <= 0) return null;
 
-    const comissao = preco * (COMISSAO_MAP[tipoAnuncio] || 0);
-    const custoTotal = custoAquisicao + custoEmbalagem + comissao;
-    const lucro = preco - custoTotal;
-    return (lucro / preco) * 100;
+    return ((preco - custoAquisicao) / preco) * 100;
   });
 
   constructor(
@@ -110,25 +95,23 @@ export class ProductFormComponent {
     private router: Router,
   ) {
     this.form = this.fb.group({
+      sku: [''],
       titulo: ['', [Validators.required, Validators.maxLength(60)]],
       descricao: [''],
       categoria: ['', [Validators.required]],
-      condicao: ['novo', [Validators.required]],
+      fornecedor: [''],
       precoVenda: [null as number | null, [Validators.required, Validators.min(0.01)]],
       custoAquisicao: [null as number | null, [Validators.min(0)]],
-      custoEmbalagem: [null as number | null, [Validators.min(0)]],
-      fornecedor: [''],
-      tipoAnuncio: ['classico', [Validators.required]],
       peso: [null as number | null, [Validators.min(0.01)]],
       altura: [null as number | null, [Validators.min(1)]],
       largura: [null as number | null, [Validators.min(1)]],
       comprimento: [null as number | null, [Validators.min(1)]],
-      freteGratis: [false],
     });
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode.set(true);
+      this.productId.set(id);
       this.loadProduct();
     }
   }
@@ -144,21 +127,24 @@ export class ProductFormComponent {
   private loadProduct(): void {
     this.productName.set(MOCK_PRODUCT.titulo);
     this.form.patchValue({
+      sku: MOCK_PRODUCT.sku,
       titulo: MOCK_PRODUCT.titulo,
       descricao: MOCK_PRODUCT.descricao,
       categoria: MOCK_PRODUCT.categoria,
-      condicao: MOCK_PRODUCT.condicao,
+      fornecedor: MOCK_PRODUCT.fornecedor,
       precoVenda: MOCK_PRODUCT.precoVenda,
       custoAquisicao: MOCK_PRODUCT.custoAquisicao,
-      custoEmbalagem: MOCK_PRODUCT.custoEmbalagem,
-      fornecedor: MOCK_PRODUCT.fornecedor,
-      tipoAnuncio: MOCK_PRODUCT.tipoAnuncio,
       peso: MOCK_PRODUCT.peso,
       altura: MOCK_PRODUCT.altura,
       largura: MOCK_PRODUCT.largura,
       comprimento: MOCK_PRODUCT.comprimento,
-      freteGratis: MOCK_PRODUCT.freteGratis,
     });
+
+    this.galleryImages.set([
+      { id: '1', color: '#5C6BC0', order: 0 },
+      { id: '2', color: '#42A5F5', order: 1 },
+      { id: '3', color: '#66BB6A', order: 2 },
+    ]);
   }
 
   setActiveTab(tabId: TabId): void {
@@ -213,6 +199,14 @@ export class ProductFormComponent {
     return 'var(--danger)';
   }
 
+  onGalleryImagesChange(images: GalleryImage[]): void {
+    this.galleryImages.set(images);
+  }
+
+  onGalleryVideoChange(url: string | null): void {
+    this.galleryVideoUrl.set(url);
+  }
+
   onCancel(): void {
     if (this.form.dirty && !confirm('Você tem alterações não salvas. Deseja sair?')) {
       return;
@@ -220,16 +214,7 @@ export class ProductFormComponent {
     this.router.navigate(['/produtos']);
   }
 
-  onSaveDraft(): void {
-    this.loading.set(true);
-    setTimeout(() => {
-      this.loading.set(false);
-      this.form.markAsPristine();
-      // Toast would be shown here
-    }, 800);
-  }
-
-  onPublish(): void {
+  onSave(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       // Switch to tab with first error
@@ -245,8 +230,8 @@ export class ProductFormComponent {
     setTimeout(() => {
       this.loading.set(false);
       this.form.markAsPristine();
-      this.router.navigate(['/produtos']);
-    }, 1000);
+      // Toast would be shown here
+    }, 800);
   }
 
   canDeactivate(): boolean {
