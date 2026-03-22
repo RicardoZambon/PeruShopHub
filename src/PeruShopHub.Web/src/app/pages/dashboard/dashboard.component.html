@@ -1,0 +1,47 @@
+<div class="dashboard">
+  <div class="dashboard__header">
+    <h1 class="dashboard__title">Dashboard</h1>
+
+    <div class="period-selector">
+      <div class="period-selector__buttons">
+        @for (period of periods; track period.key) {
+          <button
+            class="period-selector__btn"
+            [class.period-selector__btn--active]="activePeriod() === period.key"
+            (click)="selectPeriod(period.key)">
+            {{ period.label }}
+          </button>
+        }
+      </div>
+
+      @if (showDateRange()) {
+        <div class="period-selector__date-range">
+          <input type="date" class="period-selector__date-input" />
+          <span class="period-selector__date-separator">até</span>
+          <input type="date" class="period-selector__date-input" />
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="dashboard__kpis">
+    @if (loading()) {
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="dashboard__kpi-skeleton">
+          <app-skeleton type="text" width="60%" height="14px" />
+          <app-skeleton type="text" width="80%" height="32px" />
+          <app-skeleton type="text" width="40%" height="14px" />
+        </div>
+      }
+    } @else {
+      @for (kpi of kpis(); track kpi.label) {
+        <app-kpi-card
+          [label]="kpi.label"
+          [value]="kpi.value"
+          [change]="kpi.change"
+          [changeLabel]="kpi.changeLabel"
+          [invertColors]="kpi.invertColors ?? false" />
+      }
+    }
+  </div>
+</div>
