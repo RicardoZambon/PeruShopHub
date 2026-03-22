@@ -422,7 +422,7 @@
   right: 0;
   bottom: 0;
   background: var(--neutral-300);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   transition: background 200ms ease;
   cursor: pointer;
 
@@ -433,7 +433,7 @@
     height: 18px;
     left: 3px;
     bottom: 3px;
-    background: #fff;
+    background: var(--surface);
     border-radius: 50%;
     transition: transform 200ms ease;
   }
@@ -547,7 +547,7 @@
 
 .btn-accent {
   background: var(--accent);
-  color: #fff;
+  color: var(--text-on-primary);
   border-color: var(--accent);
 
   &:hover:not(:disabled) {
@@ -561,7 +561,7 @@
   width: 16px;
   height: 16px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border-top-color: var(--text-on-primary);
   border-radius: 50%;
   animation: spin 600ms linear infinite;
 }

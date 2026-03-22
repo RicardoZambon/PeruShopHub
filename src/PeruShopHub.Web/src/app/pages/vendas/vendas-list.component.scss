@@ -12,7 +12,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--spacing-6);
+    margin-bottom: var(--space-6);
   }
 
   &__title {
@@ -25,8 +25,8 @@
   &__action-bar {
     display: flex;
     align-items: center;
-    gap: var(--spacing-3);
-    margin-bottom: var(--spacing-4);
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
 
     @include m.mobile {
       flex-direction: column;
@@ -55,7 +55,7 @@
 
   &__search-input {
     width: 100%;
-    padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) 36px;
+    padding: var(--space-2) var(--space-3) var(--space-2) 36px;
     border: 1px solid var(--neutral-300);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
@@ -76,7 +76,7 @@
   &__date-range {
     display: flex;
     align-items: center;
-    gap: var(--spacing-2);
+    gap: var(--space-2);
 
     @include m.mobile {
       width: 100%;
@@ -84,7 +84,7 @@
   }
 
   &__date-input {
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--space-2) var(--space-3);
     border: 1px solid var(--neutral-300);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
@@ -108,7 +108,7 @@
   }
 
   &__status-filter {
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--space-2) var(--space-3);
     border: 1px solid var(--neutral-300);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
@@ -149,7 +149,7 @@
   }
 
   &__th {
-    padding: var(--spacing-3) var(--spacing-4);
+    padding: var(--space-3) var(--space-4);
     font-size: var(--text-xs);
     font-weight: 600;
     color: var(--neutral-600);
@@ -160,7 +160,7 @@
     white-space: nowrap;
 
     &--mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
     }
   }
 
@@ -178,7 +178,7 @@
   }
 
   &__td {
-    padding: var(--spacing-3) var(--spacing-4);
+    padding: var(--space-3) var(--space-4);
     font-size: var(--text-sm);
     color: var(--neutral-900);
     white-space: nowrap;
@@ -191,7 +191,7 @@
     }
 
     &--mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
       font-size: var(--text-xs);
     }
 
@@ -213,15 +213,15 @@
     @include m.mobile {
       display: flex;
       flex-direction: column;
-      gap: var(--spacing-2);
-      padding: var(--spacing-3);
+      gap: var(--space-2);
+      padding: var(--space-3);
     }
   }
 
   &__card {
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-md);
-    padding: var(--spacing-3);
+    padding: var(--space-3);
     cursor: pointer;
     transition: background 100ms;
 
@@ -234,7 +234,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--spacing-2);
+    margin-bottom: var(--space-2);
   }
 
   &__card-title {
@@ -246,7 +246,7 @@
   &__card-id {
     font-size: var(--text-sm);
     font-weight: 600;
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
     color: var(--neutral-900);
   }
 
@@ -258,13 +258,13 @@
   &__card-buyer {
     font-size: var(--text-sm);
     color: var(--neutral-700);
-    margin-bottom: var(--spacing-3);
+    margin-bottom: var(--space-3);
   }
 
   &__card-body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-2);
+    gap: var(--space-2);
   }
 
   &__card-field {
@@ -286,7 +286,7 @@
 
   // Pagination
   &__pagination {
-    padding: var(--spacing-3) var(--spacing-4);
+    padding: var(--space-3) var(--space-4);
     border-top: 1px solid var(--neutral-200);
     display: flex;
     align-items: center;

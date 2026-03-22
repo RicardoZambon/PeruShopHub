@@ -220,7 +220,7 @@
 
     &:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.15);
+      box-shadow: var(--focus-ring);
     }
 
     &::placeholder {
@@ -228,7 +228,7 @@
     }
 
     &--mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
     }
   }
 
@@ -337,7 +337,7 @@
     white-space: nowrap;
 
     &--mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
       font-size: var(--mono-size);
     }
 
@@ -387,7 +387,7 @@
   }
 
   &__email {
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
     font-size: var(--mono-size);
     color: var(--neutral-500);
   }
@@ -481,7 +481,7 @@
   }
 
   &__nickname {
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
     font-size: var(--mono-size);
     color: var(--neutral-500);
   }
@@ -542,7 +542,7 @@
 
   &--primary {
     background: var(--primary);
-    color: #fff;
+    color: var(--text-on-primary);
 
     &:hover:not(:disabled) {
       background: var(--primary-hover);
@@ -583,7 +583,7 @@
     align-items: center;
     padding: var(--space-2) var(--space-3);
     font-size: var(--body-size);
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
     color: var(--neutral-500);
     background: var(--neutral-50);
     border: 1px solid var(--neutral-300);
@@ -597,7 +597,7 @@
     align-items: center;
     padding: var(--space-2) var(--space-3);
     font-size: var(--body-size);
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
     color: var(--neutral-500);
     background: var(--neutral-50);
     border: 1px solid var(--neutral-300);

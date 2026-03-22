@@ -7,7 +7,7 @@
   justify-content: center;
   min-height: 60vh;
   text-align: center;
-  padding: var(--spacing-6);
+  padding: var(--space-6);
 
   &__code {
     font-size: 7rem;
@@ -15,7 +15,7 @@
     line-height: 1;
     color: var(--primary);
     opacity: 0.15;
-    margin-bottom: var(--spacing-2);
+    margin-bottom: var(--space-2);
 
     @include m.mobile {
       font-size: 5rem;
@@ -26,13 +26,13 @@
     font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--neutral-900);
-    margin: 0 0 var(--spacing-2);
+    margin: 0 0 var(--space-2);
   }
 
   &__description {
     font-size: var(--font-size-base);
     color: var(--neutral-600);
-    margin: 0 0 var(--spacing-6);
+    margin: 0 0 var(--space-6);
     max-width: 400px;
   }
 
@@ -40,9 +40,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-3) var(--spacing-6);
+    padding: var(--space-3) var(--space-6);
     background: var(--primary);
-    color: #fff;
+    color: var(--text-on-primary);
     border: none;
     border-radius: var(--radius-md);
     font-size: var(--font-size-base);

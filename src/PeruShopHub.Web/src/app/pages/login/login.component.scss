@@ -112,7 +112,7 @@
   width: 100%;
   padding: var(--space-3) var(--space-4);
   background: var(--primary);
-  color: #fff;
+  color: var(--text-on-primary);
   border: none;
   border-radius: var(--radius-md);
   font-family: var(--font-ui);
@@ -140,7 +140,7 @@
   width: 16px;
   height: 16px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border-top-color: var(--text-on-primary);
   border-radius: 50%;
   animation: spin 600ms linear infinite;
 }

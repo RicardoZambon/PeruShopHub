@@ -82,7 +82,7 @@
       font-weight: 700;
       color: var(--neutral-900);
       margin: 0;
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
     }
 
     .header-date {
@@ -180,7 +180,7 @@
       margin-top: 2px;
 
       .item-sku {
-        font-family: 'Roboto Mono', monospace;
+        font-family: var(--font-mono);
         font-size: var(--text-xs);
         color: var(--neutral-500);
       }
@@ -215,7 +215,7 @@
     }
 
     .item-subtotal {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
       font-size: var(--text-sm);
       font-weight: 600;
       color: var(--neutral-900);
@@ -234,7 +234,7 @@
   color: var(--neutral-900);
 
   .total-value {
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
     font-size: var(--text-base);
   }
 }
@@ -328,7 +328,7 @@
   }
 
   .mono {
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
   }
 
   .category-dot {
@@ -413,7 +413,7 @@
   }
 
   .buyer-mono {
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
   }
 }
 
@@ -436,7 +436,7 @@
       font-size: var(--text-base);
       font-weight: 600;
       color: var(--neutral-900);
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
     }
 
     .stat-label {
@@ -481,7 +481,7 @@
   gap: 8px;
 
   .tracking-number {
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
     font-size: var(--text-sm);
     font-weight: 500;
     color: var(--neutral-900);
@@ -601,7 +601,7 @@
     font-size: var(--text-sm);
     color: var(--neutral-900);
     font-weight: 500;
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
   }
 
   .payment-total {

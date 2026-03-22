@@ -210,7 +210,7 @@
 
     &--active {
       background: var(--primary);
-      color: #fff;
+      color: var(--text-on-primary);
 
       &:hover {
         background: var(--primary-hover);
@@ -236,7 +236,7 @@
 
     &:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.15);
+      box-shadow: var(--focus-ring);
     }
   }
 
@@ -347,7 +347,7 @@
     white-space: nowrap;
 
     &--mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
     }
 
     &--right {
@@ -402,12 +402,12 @@
   width: 60px;
   height: 8px;
   background: var(--neutral-100);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
 
   &__fill {
     height: 100%;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     transition: width 200ms ease;
 
     &--green {
@@ -425,7 +425,7 @@
 }
 
 .margin-cell__value {
-  font-family: 'Roboto Mono', monospace;
+  font-family: var(--font-mono);
   font-size: var(--label-size);
   font-weight: 500;
   white-space: nowrap;
@@ -494,7 +494,7 @@
     white-space: nowrap;
 
     &--mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
     }
 
     &--right {
@@ -557,7 +557,7 @@
     }
 
     &--mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
     }
   }
 
@@ -576,7 +576,7 @@
     white-space: nowrap;
 
     &--mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: var(--font-mono);
     }
 
     &--right {

@@ -1,4 +1,6 @@
-<header class="header">
+<header class="header"
+  [class.sidebar-collapsed]="sidebar.collapsed()"
+  [class.sidebar-expanded]="!sidebar.collapsed()">
   <!-- Left: Hamburger -->
   <button class="header__btn" (click)="toggleSidebar()" aria-label="Alternar menu">
     <lucide-icon [img]="menuIcon" [size]="20" />

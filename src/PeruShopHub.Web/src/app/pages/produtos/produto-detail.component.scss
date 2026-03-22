@@ -10,7 +10,7 @@
     color: var(--neutral-600);
     text-decoration: none;
     font-size: var(--text-sm);
-    margin-bottom: var(--spacing-4);
+    margin-bottom: var(--space-4);
     cursor: pointer;
 
     &:hover {
@@ -21,9 +21,9 @@
   &__header {
     display: flex;
     align-items: center;
-    gap: var(--spacing-4);
-    margin-bottom: var(--spacing-6);
-    padding: var(--spacing-4);
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    padding: var(--space-4);
     background: var(--surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
@@ -69,7 +69,7 @@
     font-size: var(--text-xl);
     font-weight: 600;
     color: var(--neutral-900);
-    margin: 0 0 var(--spacing-1) 0;
+    margin: 0 0 var(--space-1) 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -83,11 +83,11 @@
   &__meta {
     display: flex;
     align-items: center;
-    gap: var(--spacing-3);
+    gap: var(--space-3);
   }
 
   &__sku {
-    font-family: 'Roboto Mono', monospace;
+    font-family: var(--font-mono);
     font-size: var(--text-sm);
     color: var(--neutral-500);
   }
@@ -96,7 +96,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: var(--spacing-2) var(--spacing-4);
+    padding: var(--space-2) var(--space-4);
     border: 1px solid var(--neutral-300);
     border-radius: var(--radius-md);
     color: var(--neutral-700);
@@ -122,8 +122,8 @@
   &__sections {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-6);
-    margin-top: var(--spacing-6);
+    gap: var(--space-6);
+    margin-top: var(--space-6);
 
     @include m.tablet {
       grid-template-columns: 1fr;
@@ -138,14 +138,14 @@
     background: var(--surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-4);
+    padding: var(--space-4);
   }
 
   &__section-title {
     font-size: var(--text-lg);
     font-weight: 600;
     color: var(--neutral-900);
-    margin: 0 0 var(--spacing-4) 0;
+    margin: 0 0 var(--space-4) 0;
   }
 
   &__table-wrap {
@@ -156,7 +156,7 @@
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: var(--spacing-4);
+  gap: var(--space-4);
 
   @include m.tablet {
     grid-template-columns: repeat(3, 1fr);
@@ -174,7 +174,7 @@
 
   th {
     text-align: left;
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--space-2) var(--space-3);
     font-weight: 600;
     color: var(--neutral-600);
     border-bottom: 2px solid var(--neutral-200);
@@ -182,7 +182,7 @@
   }
 
   td {
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--space-2) var(--space-3);
     color: var(--neutral-800);
     border-bottom: 1px solid var(--neutral-100);
   }
@@ -197,7 +197,7 @@
 }
 
 .mono {
-  font-family: 'Roboto Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .value--positive {
