@@ -255,7 +255,11 @@
           <lucide-icon [img]="isAccordionOpen('variacoes') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
         </div>
         <div class="tab-panel" [class.active]="activeTab() === 'variacoes'" [class.accordion-open]="isAccordionOpen('variacoes')">
-          <app-variant-manager [productId]="productId()"></app-variant-manager>
+          <app-variant-manager
+            [productId]="productId()"
+            [categoryId]="form.get('categoria')?.value"
+            [productSku]="form.get('sku')?.value || 'PROD'"
+          ></app-variant-manager>
         </div>
       </form>
     </div>

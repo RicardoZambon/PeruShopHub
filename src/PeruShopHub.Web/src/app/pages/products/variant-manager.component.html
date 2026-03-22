@@ -5,34 +5,145 @@
     <span class="vm-count">{{ variants().length }} variantes</span>
   </div>
 
-  <!-- Bulk Actions -->
-  <div class="bulk-actions">
-    <div class="bulk-row">
-      <label class="bulk-label">Definir preco para todos:</label>
-      <div class="bulk-input-group">
-        <div class="input-prefix">
-          <span class="prefix">R$</span>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0,00"
-            [value]="bulkPrice()"
-            (input)="updateBulkPrice($any($event.target).value)"
-          />
+  <!-- Variation Fields Selection (creation flow) -->
+  @if (variationFields().length > 0) {
+    <div class="variation-fields-section">
+      <h4 class="vf-section-title">Campos de variacao</h4>
+
+      <div class="vf-fields-list">
+        @for (field of variationFields(); track field.id) {
+          <div class="vf-field">
+            <div class="vf-field-header">
+              <span class="vf-field-name">{{ field.name }}</span>
+              <span class="vf-type-badge" [class.vf-type-select]="field.type === 'select'" [class.vf-type-text]="field.type === 'text'">
+                {{ field.type === 'select' ? 'Opcoes' : 'Texto' }}
+              </span>
+              @if (field.inheritedFrom) {
+                <span class="vf-inherited-label">Herdado de {{ field.inheritedFrom }}</span>
+              }
+            </div>
+
+            <div class="vf-field-body">
+              @if (field.type === 'select') {
+                <div class="vf-checkboxes">
+                  @for (option of field.options; track option) {
+                    <label class="vf-checkbox-label">
+                      <input
+                        type="checkbox"
+                        [checked]="isOptionSelected(field.name, option)"
+                        (change)="toggleOption(field.name, option)"
+                      />
+                      <span class="vf-checkbox-text">{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              } @else {
+                <!-- Text: chip input -->
+                <div class="vf-chip-input-wrapper">
+                  <div class="vf-chips">
+                    @for (chip of getSelectedValuesForField(field.name); track chip) {
+                      <span class="vf-chip">
+                        {{ chip }}
+                        <button type="button" class="vf-chip-remove" (click)="removeTextChip(field.name, chip)">
+                          <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
+                        </button>
+                      </span>
+                    }
+                  </div>
+                  <div class="vf-chip-input-row">
+                    <input
+                      type="text"
+                      class="vf-chip-input"
+                      placeholder="Digite e pressione Enter"
+                      [value]="getTextInputValue(field.name)"
+                      (input)="updateTextInput(field.name, $any($event.target).value)"
+                      (keydown)="onTextKeydown($event, field.name)"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-primary"
+                      (click)="addTextChip(field.name)"
+                      [disabled]="!getTextInputValue(field.name).trim()"
+                    >
+                      <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
+                      Adicionar
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Generate Combinations -->
+      <div class="vf-generate-section">
+        @if (combinationWarning()) {
+          <div class="vf-warning">
+            <lucide-icon [img]="alertIcon" [size]="16"></lucide-icon>
+            <span>Atencao: isso ira gerar {{ combinationCount() }} combinacoes. Deseja continuar?</span>
+            <button type="button" class="btn btn-sm btn-primary" (click)="forceGenerateCombinations()">
+              Sim, gerar
+            </button>
+            <button type="button" class="btn btn-sm btn-ghost" (click)="combinationWarning.set(false)">
+              Cancelar
+            </button>
+          </div>
+        }
+
+        <div class="vf-generate-row">
+          @if (combinationCount() > 0) {
+            <span class="vf-combo-count">{{ combinationCount() }} combinacoes</span>
+          }
+          <button
+            type="button"
+            class="btn btn-sm btn-accent"
+            [disabled]="combinationCount() === 0 || generating()"
+            (click)="generateCombinations()"
+          >
+            @if (generating()) {
+              <span class="spinner-sm"></span>
+              Gerando...
+            } @else {
+              <lucide-icon [img]="shuffleIcon" [size]="14"></lucide-icon>
+              Gerar Combinacoes
+            }
+          </button>
         </div>
-        <button
-          type="button"
-          class="btn btn-sm btn-primary"
-          [disabled]="bulkPrice() === null"
-          (click)="applyBulkPrice()"
-        >
-          <lucide-icon [img]="dollarIcon" [size]="14"></lucide-icon>
-          Aplicar
-        </button>
       </div>
     </div>
-  </div>
+  }
+
+  <!-- Bulk Actions -->
+  @if (variants().length > 0) {
+    <div class="bulk-actions">
+      <div class="bulk-row">
+        <label class="bulk-label">Definir preco para todos:</label>
+        <div class="bulk-input-group">
+          <div class="input-prefix">
+            <span class="prefix">R$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0,00"
+              [value]="bulkPrice()"
+              (input)="updateBulkPrice($any($event.target).value)"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            [disabled]="bulkPrice() === null"
+            (click)="applyBulkPrice()"
+          >
+            <lucide-icon [img]="dollarIcon" [size]="14"></lucide-icon>
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- Desktop Table -->
   <div class="vm-table-wrapper">
