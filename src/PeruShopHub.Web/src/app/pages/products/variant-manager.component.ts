@@ -1,13 +1,14 @@
 import { Component, Input, inject, signal, computed, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Plus, Trash2, AlertTriangle } from 'lucide-angular';
+import { LucideAngularModule, Plus, Trash2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-angular';
 import { CategoryService } from '../../services/category.service';
 import { ProductVariantService } from '../../services/product-variant.service';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import type { InheritedVariationField } from '../../models/category.model';
 import type { ProductVariant } from '../../models/product-variant.model';
+import { DEFAULT_VARIANT_COSTS, DEFAULT_VARIANT_SHIPPING } from '../../models/product-variant.model';
 
 interface FieldValues {
   field: InheritedVariationField;
@@ -17,6 +18,7 @@ interface FieldValues {
 
 interface EditableVariant extends ProductVariant {
   skuError: string | null;
+  expanded: boolean;       // show costs + shipping detail row
 }
 
 @Component({
@@ -33,6 +35,8 @@ export class VariantManagerComponent implements OnChanges {
   readonly plusIcon = Plus;
   readonly trashIcon = Trash2;
   readonly alertIcon = AlertTriangle;
+  readonly chevronDownIcon = ChevronDown;
+  readonly chevronUpIcon = ChevronUp;
 
   @Input() categoryId: string | null = null;
   @Input() productSku: string = 'PROD';
@@ -89,7 +93,7 @@ export class VariantManagerComponent implements OnChanges {
     } else {
       this.isDefaultVariant.set(false);
     }
-    this.variants.set(existing.map(v => ({ ...v, skuError: null })));
+    this.variants.set(existing.map(v => ({ ...v, skuError: null, expanded: false })));
   }
 
   // --- Chip input for text fields ---
@@ -175,10 +179,13 @@ export class VariantManagerComponent implements OnChanges {
         sku,
         attributes: { ...attrs },
         price: null,
+        costs: { ...DEFAULT_VARIANT_COSTS },
+        shipping: { ...DEFAULT_VARIANT_SHIPPING },
         stock: 0,
         isActive: true,
         needsReview: false,
         skuError: null,
+        expanded: false,
       };
     });
 
@@ -226,6 +233,45 @@ export class VariantManagerComponent implements OnChanges {
 
   deleteVariant(index: number): void {
     this.variants.update(arr => arr.filter((_, i) => i !== index));
+  }
+
+  toggleExpanded(index: number): void {
+    this.variants.update(arr => {
+      const next = [...arr];
+      next[index] = { ...next[index], expanded: !next[index].expanded };
+      return next;
+    });
+  }
+
+  // --- Cost editing ---
+  updateVariantCost(index: number, field: 'custoAquisicao' | 'custoEmbalagem', value: string): void {
+    this.variants.update(arr => {
+      const next = [...arr];
+      next[index] = {
+        ...next[index],
+        costs: { ...next[index].costs, [field]: value ? parseFloat(value) : null },
+      };
+      return next;
+    });
+  }
+
+  // --- Shipping editing ---
+  updateVariantShipping(index: number, field: keyof ProductVariant['shipping'], value: string | boolean): void {
+    this.variants.update(arr => {
+      const next = [...arr];
+      if (field === 'freteGratis') {
+        next[index] = {
+          ...next[index],
+          shipping: { ...next[index].shipping, freteGratis: value as boolean },
+        };
+      } else {
+        next[index] = {
+          ...next[index],
+          shipping: { ...next[index].shipping, [field]: value ? parseFloat(value as string) : null },
+        };
+      }
+      return next;
+    });
   }
 
   // --- Bulk actions ---

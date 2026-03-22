@@ -4,6 +4,7 @@ import type {
   CreateVariantDto,
   UpdateVariantDto,
 } from '../models/product-variant.model';
+import { DEFAULT_VARIANT_COSTS, DEFAULT_VARIANT_SHIPPING } from '../models/product-variant.model';
 import { CategoryService } from './category.service';
 
 function generateId(): string {
@@ -21,19 +22,22 @@ const PRODUCT_CATEGORIES: Record<string, string> = {
   'prod-3': 'cat-cabos',
 };
 
-// Pre-seeded variants for a Camiseta product
-const SEED_VARIANTS: ProductVariant[] = [
-  { id: 'var-1', productId: 'prod-1', sku: 'CAM-001-P-PRETO', attributes: { Cor: 'Preto', Tamanho: 'P' }, price: 49.90, stock: 15, isActive: true, needsReview: false },
-  { id: 'var-2', productId: 'prod-1', sku: 'CAM-001-M-PRETO', attributes: { Cor: 'Preto', Tamanho: 'M' }, price: 49.90, stock: 23, isActive: true, needsReview: false },
-  { id: 'var-3', productId: 'prod-1', sku: 'CAM-001-G-PRETO', attributes: { Cor: 'Preto', Tamanho: 'G' }, price: 54.90, stock: 8, isActive: true, needsReview: false },
-  { id: 'var-4', productId: 'prod-1', sku: 'CAM-001-P-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'P' }, price: null, stock: 12, isActive: true, needsReview: false },
-  { id: 'var-5', productId: 'prod-1', sku: 'CAM-001-M-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'M' }, price: null, stock: 18, isActive: true, needsReview: false },
-  { id: 'var-6', productId: 'prod-1', sku: 'CAM-001-G-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'G' }, price: 54.90, stock: 5, isActive: true, needsReview: false },
+const DC = { ...DEFAULT_VARIANT_COSTS };
+const DS = { ...DEFAULT_VARIANT_SHIPPING };
 
-  // Cable product variants
-  { id: 'var-7', productId: 'prod-3', sku: 'CB-HDMI-1M-110V', attributes: { Comprimento: '1m', Voltagem: '110V' }, price: 29.90, stock: 30, isActive: true, needsReview: false },
-  { id: 'var-8', productId: 'prod-3', sku: 'CB-HDMI-2M-110V', attributes: { Comprimento: '2m', Voltagem: '110V' }, price: 39.90, stock: 20, isActive: true, needsReview: false },
-  { id: 'var-9', productId: 'prod-3', sku: 'CB-HDMI-1M-220V', attributes: { Comprimento: '1m', Voltagem: '220V' }, price: 29.90, stock: 25, isActive: true, needsReview: false },
+// Pre-seeded variants for a Camiseta product (sizes affect shipping weight)
+const SEED_VARIANTS: ProductVariant[] = [
+  { id: 'var-1', productId: 'prod-1', sku: 'CAM-001-P-PRETO', attributes: { Cor: 'Preto', Tamanho: 'P' }, price: 49.90, costs: { ...DC }, shipping: { ...DS, peso: 0.18 }, stock: 15, isActive: true, needsReview: false },
+  { id: 'var-2', productId: 'prod-1', sku: 'CAM-001-M-PRETO', attributes: { Cor: 'Preto', Tamanho: 'M' }, price: 49.90, costs: { ...DC }, shipping: { ...DS, peso: 0.20 }, stock: 23, isActive: true, needsReview: false },
+  { id: 'var-3', productId: 'prod-1', sku: 'CAM-001-G-PRETO', attributes: { Cor: 'Preto', Tamanho: 'G' }, price: 54.90, costs: { custoAquisicao: 22.00, custoEmbalagem: null }, shipping: { ...DS, peso: 0.22 }, stock: 8, isActive: true, needsReview: false },
+  { id: 'var-4', productId: 'prod-1', sku: 'CAM-001-P-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'P' }, price: null, costs: { ...DC }, shipping: { ...DS, peso: 0.18 }, stock: 12, isActive: true, needsReview: false },
+  { id: 'var-5', productId: 'prod-1', sku: 'CAM-001-M-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'M' }, price: null, costs: { ...DC }, shipping: { ...DS, peso: 0.20 }, stock: 18, isActive: true, needsReview: false },
+  { id: 'var-6', productId: 'prod-1', sku: 'CAM-001-G-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'G' }, price: 54.90, costs: { custoAquisicao: 22.00, custoEmbalagem: null }, shipping: { ...DS, peso: 0.22 }, stock: 5, isActive: true, needsReview: false },
+
+  // Cable variants — different lengths affect weight, dimensions, and cost
+  { id: 'var-7', productId: 'prod-3', sku: 'CB-HDMI-1M-110V', attributes: { Comprimento: '1m', Voltagem: '110V' }, price: 29.90, costs: { custoAquisicao: 8.50, custoEmbalagem: 1.20 }, shipping: { peso: 0.08, altura: 3, largura: 12, comprimento: 14, freteGratis: null }, stock: 30, isActive: true, needsReview: false },
+  { id: 'var-8', productId: 'prod-3', sku: 'CB-HDMI-2M-110V', attributes: { Comprimento: '2m', Voltagem: '110V' }, price: 39.90, costs: { custoAquisicao: 12.00, custoEmbalagem: 1.50 }, shipping: { peso: 0.14, altura: 3, largura: 12, comprimento: 22, freteGratis: null }, stock: 20, isActive: true, needsReview: false },
+  { id: 'var-9', productId: 'prod-3', sku: 'CB-HDMI-1M-220V', attributes: { Comprimento: '1m', Voltagem: '220V' }, price: 29.90, costs: { custoAquisicao: 9.00, custoEmbalagem: 1.20 }, shipping: { peso: 0.09, altura: 3, largura: 12, comprimento: 14, freteGratis: null }, stock: 25, isActive: true, needsReview: false },
 ];
 
 @Injectable({ providedIn: 'root' })
@@ -60,6 +64,8 @@ export class ProductVariantService {
       sku: dto.sku,
       attributes: { ...dto.attributes },
       price: dto.price,
+      costs: dto.costs ? { ...dto.costs } : { ...DEFAULT_VARIANT_COSTS },
+      shipping: dto.shipping ? { ...dto.shipping } : { ...DEFAULT_VARIANT_SHIPPING },
       stock: dto.stock,
       isActive: dto.isActive,
       needsReview: false,
@@ -214,6 +220,8 @@ export class ProductVariantService {
       sku,
       attributes: {},
       price: null,
+      costs: { ...DEFAULT_VARIANT_COSTS },
+      shipping: { ...DEFAULT_VARIANT_SHIPPING },
       stock: 0,
       isActive: true,
       needsReview: false,

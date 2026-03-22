@@ -141,6 +141,7 @@
         <table class="variant-table">
           <thead>
             <tr>
+              <th style="width: 32px"></th>
               @for (field of getVariantFieldNames(); track field) {
                 <th>{{ field }}</th>
               }
@@ -154,6 +155,11 @@
           <tbody>
             @for (variant of variants(); track variant.id; let i = $index) {
               <tr [class]="getVariantRowClass(variant)">
+                <td style="text-align: center">
+                  <button type="button" class="btn-icon" (click)="toggleExpanded(i)" [title]="variant.expanded ? 'Recolher' : 'Custos e envio'">
+                    <lucide-icon [img]="variant.expanded ? chevronUpIcon : chevronDownIcon" [size]="14"></lucide-icon>
+                  </button>
+                </td>
                 @for (field of getVariantFieldNames(); track field) {
                   <td>
                     @if (variant.needsReview && !variant.attributes[field]) {
@@ -209,6 +215,97 @@
                   </button>
                 </td>
               </tr>
+              <!-- Expandable detail row: Costs + Shipping -->
+              @if (variant.expanded) {
+                <tr class="variant-detail-row">
+                  <td [attr.colspan]="getVariantFieldNames().length + 6">
+                    <div class="variant-detail">
+                      <div class="variant-detail__section">
+                        <h4 class="variant-detail__title">Custos</h4>
+                        <div class="variant-detail__fields">
+                          <div class="variant-detail__field">
+                            <label>Custo aquisição</label>
+                            <div class="input-prefix input-prefix--inline">
+                              <span class="prefix">R$</span>
+                              <input type="number" step="0.01" min="0"
+                                class="variant-input variant-input--price"
+                                [value]="variant.costs.custoAquisicao"
+                                (input)="updateVariantCost(i, 'custoAquisicao', $any($event.target).value)"
+                                placeholder="Produto base"
+                              />
+                            </div>
+                          </div>
+                          <div class="variant-detail__field">
+                            <label>Custo embalagem</label>
+                            <div class="input-prefix input-prefix--inline">
+                              <span class="prefix">R$</span>
+                              <input type="number" step="0.01" min="0"
+                                class="variant-input variant-input--price"
+                                [value]="variant.costs.custoEmbalagem"
+                                (input)="updateVariantCost(i, 'custoEmbalagem', $any($event.target).value)"
+                                placeholder="Produto base"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="variant-detail__section">
+                        <h4 class="variant-detail__title">Envio</h4>
+                        <div class="variant-detail__fields">
+                          <div class="variant-detail__field">
+                            <label>Peso (kg)</label>
+                            <input type="number" step="0.01" min="0"
+                              class="variant-input variant-input--dimension"
+                              [value]="variant.shipping.peso"
+                              (input)="updateVariantShipping(i, 'peso', $any($event.target).value)"
+                              placeholder="Produto base"
+                            />
+                          </div>
+                          <div class="variant-detail__field">
+                            <label>Altura (cm)</label>
+                            <input type="number" min="1"
+                              class="variant-input variant-input--dimension"
+                              [value]="variant.shipping.altura"
+                              (input)="updateVariantShipping(i, 'altura', $any($event.target).value)"
+                              placeholder="Produto base"
+                            />
+                          </div>
+                          <div class="variant-detail__field">
+                            <label>Largura (cm)</label>
+                            <input type="number" min="1"
+                              class="variant-input variant-input--dimension"
+                              [value]="variant.shipping.largura"
+                              (input)="updateVariantShipping(i, 'largura', $any($event.target).value)"
+                              placeholder="Produto base"
+                            />
+                          </div>
+                          <div class="variant-detail__field">
+                            <label>Comprimento (cm)</label>
+                            <input type="number" min="1"
+                              class="variant-input variant-input--dimension"
+                              [value]="variant.shipping.comprimento"
+                              (input)="updateVariantShipping(i, 'comprimento', $any($event.target).value)"
+                              placeholder="Produto base"
+                            />
+                          </div>
+                          <div class="variant-detail__field">
+                            <label class="toggle-label-inline">
+                              <span class="toggle-switch toggle-switch--sm">
+                                <input type="checkbox"
+                                  [checked]="variant.shipping.freteGratis"
+                                  (change)="updateVariantShipping(i, 'freteGratis', $any($event.target).checked)"
+                                />
+                                <span class="toggle-slider"></span>
+                              </span>
+                              <span>Frete grátis</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
             }
           </tbody>
         </table>
@@ -241,10 +338,7 @@
                 <label>Preço</label>
                 <div class="input-prefix input-prefix--inline">
                   <span class="prefix">R$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                  <input type="number" step="0.01" min="0"
                     class="variant-input variant-input--price"
                     [value]="variant.price"
                     (input)="updateVariantPrice(i, $any($event.target).value)"
@@ -254,9 +348,7 @@
               </div>
               <div class="variant-card__field">
                 <label>Estoque</label>
-                <input
-                  type="number"
-                  min="0"
+                <input type="number" min="0"
                   class="variant-input variant-input--stock"
                   [value]="variant.stock"
                   (input)="updateVariantStock(i, $any($event.target).value)"
@@ -264,8 +356,7 @@
               </div>
               <div class="variant-card__field variant-card__field--full">
                 <label>SKU</label>
-                <input
-                  type="text"
+                <input type="text"
                   class="variant-input variant-input--sku"
                   [value]="variant.sku"
                   (input)="updateVariantSku(i, $any($event.target).value)"
@@ -275,6 +366,75 @@
                 }
               </div>
             </div>
+            <!-- Expandable costs + shipping -->
+            <button type="button" class="variant-card__expand" (click)="toggleExpanded(i)">
+              <lucide-icon [img]="variant.expanded ? chevronUpIcon : chevronDownIcon" [size]="14"></lucide-icon>
+              {{ variant.expanded ? 'Ocultar custos e envio' : 'Custos e envio' }}
+            </button>
+            @if (variant.expanded) {
+              <div class="variant-card__detail">
+                <div class="variant-card__detail-section">
+                  <strong>Custos</strong>
+                  <div class="variant-card__body">
+                    <div class="variant-card__field">
+                      <label>Custo aquisição</label>
+                      <div class="input-prefix input-prefix--inline">
+                        <span class="prefix">R$</span>
+                        <input type="number" step="0.01" min="0"
+                          class="variant-input variant-input--price"
+                          [value]="variant.costs.custoAquisicao"
+                          (input)="updateVariantCost(i, 'custoAquisicao', $any($event.target).value)"
+                          placeholder="Produto base" />
+                      </div>
+                    </div>
+                    <div class="variant-card__field">
+                      <label>Custo embalagem</label>
+                      <div class="input-prefix input-prefix--inline">
+                        <span class="prefix">R$</span>
+                        <input type="number" step="0.01" min="0"
+                          class="variant-input variant-input--price"
+                          [value]="variant.costs.custoEmbalagem"
+                          (input)="updateVariantCost(i, 'custoEmbalagem', $any($event.target).value)"
+                          placeholder="Produto base" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="variant-card__detail-section">
+                  <strong>Envio</strong>
+                  <div class="variant-card__body">
+                    <div class="variant-card__field">
+                      <label>Peso (kg)</label>
+                      <input type="number" step="0.01" min="0" class="variant-input variant-input--dimension"
+                        [value]="variant.shipping.peso"
+                        (input)="updateVariantShipping(i, 'peso', $any($event.target).value)"
+                        placeholder="Produto base" />
+                    </div>
+                    <div class="variant-card__field">
+                      <label>Altura (cm)</label>
+                      <input type="number" min="1" class="variant-input variant-input--dimension"
+                        [value]="variant.shipping.altura"
+                        (input)="updateVariantShipping(i, 'altura', $any($event.target).value)"
+                        placeholder="Produto base" />
+                    </div>
+                    <div class="variant-card__field">
+                      <label>Largura (cm)</label>
+                      <input type="number" min="1" class="variant-input variant-input--dimension"
+                        [value]="variant.shipping.largura"
+                        (input)="updateVariantShipping(i, 'largura', $any($event.target).value)"
+                        placeholder="Produto base" />
+                    </div>
+                    <div class="variant-card__field">
+                      <label>Comprimento (cm)</label>
+                      <input type="number" min="1" class="variant-input variant-input--dimension"
+                        [value]="variant.shipping.comprimento"
+                        (input)="updateVariantShipping(i, 'comprimento', $any($event.target).value)"
+                        placeholder="Produto base" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
         }
       </div>
