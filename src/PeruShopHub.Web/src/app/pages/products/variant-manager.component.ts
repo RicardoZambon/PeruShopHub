@@ -1,314 +1,118 @@
-import { Component, Input, inject, signal, computed, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Plus, Trash2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-angular';
-import { CategoryService } from '../../services/category.service';
+import {
+  LucideAngularModule,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  Plus,
+  DollarSign,
+} from 'lucide-angular';
+import {
+  ProductVariant,
+  DEFAULT_VARIANT_COSTS,
+  DEFAULT_VARIANT_SHIPPING,
+} from '../../models/product-variant.model';
 import { ProductVariantService } from '../../services/product-variant.service';
-import { BadgeComponent } from '../../shared/components/badge/badge.component';
-import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import type { InheritedVariationField } from '../../models/category.model';
-import type { ProductVariant } from '../../models/product-variant.model';
-import { DEFAULT_VARIANT_COSTS, DEFAULT_VARIANT_SHIPPING } from '../../models/product-variant.model';
-
-interface FieldValues {
-  field: InheritedVariationField;
-  selectedValues: string[];
-  chipInput: string;
-}
-
-interface EditableVariant extends ProductVariant {
-  skuError: string | null;
-  expanded: boolean;       // show costs + shipping detail row
-}
 
 @Component({
   selector: 'app-variant-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './variant-manager.component.html',
   styleUrl: './variant-manager.component.scss',
 })
-export class VariantManagerComponent implements OnChanges {
-  readonly categoryService = inject(CategoryService);
-  private readonly variantService = inject(ProductVariantService);
+export class VariantManagerComponent {
+  private variantService = inject(ProductVariantService);
 
-  readonly plusIcon = Plus;
-  readonly trashIcon = Trash2;
-  readonly alertIcon = AlertTriangle;
   readonly chevronDownIcon = ChevronDown;
   readonly chevronUpIcon = ChevronUp;
+  readonly trashIcon = Trash2;
+  readonly plusIcon = Plus;
+  readonly dollarIcon = DollarSign;
 
-  @Input() categoryId: string | null = null;
-  @Input() productSku: string = 'PROD';
-  @Input() productId: string = '';
+  @Input() productId = 'prod-cam-001';
 
-  variationFields = signal<InheritedVariationField[]>([]);
-  fieldValues = signal<FieldValues[]>([]);
-  variants = signal<EditableVariant[]>([]);
+  variants = computed(() => this.variantService.getByProductId(this.productId));
+
+  expandedRows = signal<Set<string>>(new Set());
   bulkPrice = signal<number | null>(null);
-  bulkStock = signal<number | null>(null);
-  combinationWarning = signal(false);
-  isDefaultVariant = signal(false);
 
-  activeVariantCount = computed(() =>
-    this.variants().filter(v => v.isActive).length
-  );
+  attributeKeys = computed(() => {
+    const vs = this.variants();
+    if (vs.length === 0) return [];
+    const keys = new Set<string>();
+    vs.forEach(v => Object.keys(v.attributes).forEach(k => keys.add(k)));
+    return Array.from(keys);
+  });
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['categoryId'] || changes['productId']) {
-      this.loadFields();
-      this.loadExistingVariants();
-    }
-  }
-
-  private loadFields(): void {
-    if (!this.categoryId) {
-      this.variationFields.set([]);
-      this.fieldValues.set([]);
-      return;
-    }
-
-    const fields = this.categoryService.getAllVariationFieldsForCategory(this.categoryId);
-    this.variationFields.set(fields);
-
-    this.fieldValues.set(
-      fields.map(f => ({
-        field: f,
-        selectedValues: [],
-        chipInput: '',
-      }))
-    );
-  }
-
-  private loadExistingVariants(): void {
-    if (!this.productId) {
-      this.variants.set([]);
-      this.isDefaultVariant.set(false);
-      return;
-    }
-
-    const existing = this.variantService.getByProductId(this.productId);
-    if (existing.length === 1 && Object.keys(existing[0].attributes).length === 0) {
-      this.isDefaultVariant.set(true);
+  toggleExpand(variantId: string): void {
+    const current = new Set(this.expandedRows());
+    if (current.has(variantId)) {
+      current.delete(variantId);
     } else {
-      this.isDefaultVariant.set(false);
+      current.add(variantId);
     }
-    this.variants.set(existing.map(v => ({ ...v, skuError: null, expanded: false })));
+    this.expandedRows.set(current);
   }
 
-  // --- Chip input for text fields ---
-  onChipInputKeydown(event: KeyboardEvent, fieldIndex: number): void {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      const fv = this.fieldValues()[fieldIndex];
-      const value = fv.chipInput.trim();
-      if (value && !fv.selectedValues.includes(value)) {
-        this.fieldValues.update(arr => {
-          const next = [...arr];
-          next[fieldIndex] = {
-            ...fv,
-            selectedValues: [...fv.selectedValues, value],
-            chipInput: '',
-          };
-          return next;
-        });
-      }
-    }
+  isExpanded(variantId: string): boolean {
+    return this.expandedRows().has(variantId);
   }
 
-  updateChipInput(fieldIndex: number, value: string): void {
-    this.fieldValues.update(arr => {
-      const next = [...arr];
-      next[fieldIndex] = { ...next[fieldIndex], chipInput: value };
-      return next;
-    });
+  async updateVariantPrice(variantId: string, price: number | null): Promise<void> {
+    await this.variantService.update(variantId, { price });
   }
 
-  removeChip(fieldIndex: number, chipValue: string): void {
-    this.fieldValues.update(arr => {
-      const next = [...arr];
-      const fv = next[fieldIndex];
-      next[fieldIndex] = {
-        ...fv,
-        selectedValues: fv.selectedValues.filter(v => v !== chipValue),
-      };
-      return next;
-    });
+  async updateVariantStock(variantId: string, stock: number): Promise<void> {
+    await this.variantService.update(variantId, { stock });
   }
 
-  // --- Select field toggles ---
-  toggleSelectOption(fieldIndex: number, option: string): void {
-    this.fieldValues.update(arr => {
-      const next = [...arr];
-      const fv = next[fieldIndex];
-      const has = fv.selectedValues.includes(option);
-      next[fieldIndex] = {
-        ...fv,
-        selectedValues: has
-          ? fv.selectedValues.filter(v => v !== option)
-          : [...fv.selectedValues, option],
-      };
-      return next;
-    });
+  async updateVariantSku(variantId: string, sku: string): Promise<void> {
+    await this.variantService.update(variantId, { sku });
   }
 
-  isOptionSelected(fieldIndex: number, option: string): boolean {
-    return this.fieldValues()[fieldIndex]?.selectedValues.includes(option) ?? false;
+  async updateVariantActive(variantId: string, isActive: boolean): Promise<void> {
+    await this.variantService.update(variantId, { isActive });
   }
 
-  // --- Generate combinations ---
-  generateCombinations(): void {
-    const fields = this.fieldValues()
-      .filter(fv => fv.selectedValues.length > 0)
-      .map(fv => ({ name: fv.field.name, values: fv.selectedValues }));
-
-    if (fields.length === 0) return;
-
-    const result = this.variantService.generateCombinations(fields);
-    this.combinationWarning.set(result.warning);
-
-    const newVariants: EditableVariant[] = result.combinations.map((attrs, idx) => {
-      const skuParts = Object.values(attrs).map(v =>
-        v.toUpperCase().replace(/\s+/g, '-').substring(0, 6)
-      );
-      const sku = `${this.productSku}-${skuParts.join('-')}`.toUpperCase();
-
-      return {
-        id: 'new-' + Math.random().toString(36).substring(2, 8),
-        productId: this.productId,
-        sku,
-        attributes: { ...attrs },
-        price: null,
-        costs: { ...DEFAULT_VARIANT_COSTS },
-        shipping: { ...DEFAULT_VARIANT_SHIPPING },
-        stock: 0,
-        isActive: true,
-        needsReview: false,
-        skuError: null,
-        expanded: false,
-      };
-    });
-
-    this.variants.set(newVariants);
-    this.isDefaultVariant.set(false);
+  async updateVariantCostAquisicao(variant: ProductVariant, value: number | null): Promise<void> {
+    const costs = { ...(variant.costs ?? DEFAULT_VARIANT_COSTS), custoAquisicao: value };
+    await this.variantService.update(variant.id, { costs });
   }
 
-  // --- Variant editing ---
-  updateVariantPrice(index: number, value: string): void {
-    this.variants.update(arr => {
-      const next = [...arr];
-      next[index] = { ...next[index], price: value ? parseFloat(value) : null };
-      return next;
-    });
+  async updateVariantShippingField(
+    variant: ProductVariant,
+    field: 'peso' | 'altura' | 'largura' | 'comprimento',
+    value: number | null,
+  ): Promise<void> {
+    const shipping = { ...(variant.shipping ?? DEFAULT_VARIANT_SHIPPING), [field]: value };
+    await this.variantService.update(variant.id, { shipping });
   }
 
-  updateVariantStock(index: number, value: string): void {
-    this.variants.update(arr => {
-      const next = [...arr];
-      next[index] = { ...next[index], stock: parseInt(value, 10) || 0 };
-      return next;
-    });
-  }
-
-  updateVariantSku(index: number, value: string): void {
-    this.variants.update(arr => {
-      const next = [...arr];
-      const isUnique = this.variantService.isSkuUnique(value, next[index].id);
-      next[index] = {
-        ...next[index],
-        sku: value,
-        skuError: isUnique ? null : 'SKU já está em uso',
-      };
-      return next;
-    });
-  }
-
-  toggleVariantActive(index: number): void {
-    this.variants.update(arr => {
-      const next = [...arr];
-      next[index] = { ...next[index], isActive: !next[index].isActive };
-      return next;
-    });
-  }
-
-  deleteVariant(index: number): void {
-    this.variants.update(arr => arr.filter((_, i) => i !== index));
-  }
-
-  toggleExpanded(index: number): void {
-    this.variants.update(arr => {
-      const next = [...arr];
-      next[index] = { ...next[index], expanded: !next[index].expanded };
-      return next;
-    });
-  }
-
-  // --- Cost editing ---
-  updateVariantCost(index: number, field: 'custoAquisicao' | 'custoEmbalagem', value: string): void {
-    this.variants.update(arr => {
-      const next = [...arr];
-      next[index] = {
-        ...next[index],
-        costs: { ...next[index].costs, [field]: value ? parseFloat(value) : null },
-      };
-      return next;
-    });
-  }
-
-  // --- Shipping editing ---
-  updateVariantShipping(index: number, field: keyof ProductVariant['shipping'], value: string | boolean): void {
-    this.variants.update(arr => {
-      const next = [...arr];
-      if (field === 'freteGratis') {
-        next[index] = {
-          ...next[index],
-          shipping: { ...next[index].shipping, freteGratis: value as boolean },
-        };
-      } else {
-        next[index] = {
-          ...next[index],
-          shipping: { ...next[index].shipping, [field]: value ? parseFloat(value as string) : null },
-        };
-      }
-      return next;
-    });
-  }
-
-  // --- Bulk actions ---
-  applyBulkPrice(): void {
-    const price = this.bulkPrice();
-    if (price === null || price === undefined) return;
-    this.variants.update(arr =>
-      arr.map(v => ({ ...v, price }))
-    );
-  }
-
-  applyBulkStock(): void {
-    const stock = this.bulkStock();
-    if (stock === null || stock === undefined) return;
-    this.variants.update(arr =>
-      arr.map(v => ({ ...v, stock }))
-    );
+  async deleteVariant(variantId: string): Promise<void> {
+    if (!confirm('Tem certeza que deseja excluir esta variante?')) return;
+    await this.variantService.delete(variantId);
   }
 
   updateBulkPrice(value: string): void {
-    this.bulkPrice.set(value ? parseFloat(value) : null);
+    const num = parseFloat(value);
+    this.bulkPrice.set(isNaN(num) ? null : num);
   }
 
-  updateBulkStock(value: string): void {
-    this.bulkStock.set(value ? parseInt(value, 10) : null);
+  async applyBulkPrice(): Promise<void> {
+    const price = this.bulkPrice();
+    if (price === null) return;
+    const vs = this.variants();
+    for (const v of vs) {
+      await this.variantService.update(v.id, { price });
+    }
+    this.bulkPrice.set(null);
   }
 
-  // --- Helpers ---
-  getVariantFieldNames(): string[] {
-    if (this.variants().length === 0) return [];
-    return Object.keys(this.variants()[0].attributes);
-  }
-
-  getVariantRowClass(variant: EditableVariant): string {
-    if (variant.needsReview) return 'variant-row--review';
-    if (variant.stock === 0) return 'variant-row--danger';
-    if (variant.stock > 0 && variant.stock <= 5) return 'variant-row--warning';
-    return '';
+  formatCurrency(value: number | null | undefined): string {
+    if (value == null) return '-';
+    return `R$ ${value.toFixed(2).replace('.', ',')}`;
   }
 }
