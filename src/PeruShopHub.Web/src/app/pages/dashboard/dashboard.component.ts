@@ -4,6 +4,7 @@ import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, Plugin } from 'chart.js';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 
 type Period = 'hoje' | '7dias' | '30dias' | 'personalizado';
 
@@ -14,6 +15,43 @@ interface KpiData {
   changeLabel: string;
   invertColors?: boolean;
 }
+
+interface ProductRow {
+  id: number;
+  name: string;
+  sales: number;
+  revenue: number;
+  profit: number;
+  margin: number;
+}
+
+interface PendingAction {
+  label: string;
+  count: number;
+  variant: 'accent' | 'warning' | 'danger';
+}
+
+const MOCK_TOP_PROFITABLE: ProductRow[] = [
+  { id: 1, name: 'Fone Bluetooth TWS Pro', sales: 42, revenue: 5880, profit: 1764, margin: 30.0 },
+  { id: 2, name: 'Capinha iPhone 15 Silicone', sales: 89, revenue: 2670, profit: 748, margin: 28.0 },
+  { id: 3, name: 'Carregador USB-C 65W GaN', sales: 35, revenue: 3150, profit: 819, margin: 26.0 },
+  { id: 4, name: 'Película Vidro Samsung S24', sales: 67, revenue: 1340, profit: 335, margin: 25.0 },
+  { id: 5, name: 'Suporte Celular Veicular', sales: 28, revenue: 1680, profit: 370, margin: 22.0 },
+];
+
+const MOCK_LEAST_PROFITABLE: ProductRow[] = [
+  { id: 6, name: 'Hub USB-C 7 em 1', sales: 12, revenue: 1440, profit: -86, margin: -6.0 },
+  { id: 7, name: 'Cabo HDMI 2.1 3m', sales: 31, revenue: 930, profit: -28, margin: -3.0 },
+  { id: 8, name: 'Mouse Pad Gamer RGB XXL', sales: 18, revenue: 720, profit: 22, margin: 3.0 },
+  { id: 9, name: 'Adaptador USB-C para P2', sales: 45, revenue: 675, profit: 47, margin: 7.0 },
+  { id: 10, name: 'Fita LED RGB 5m WiFi', sales: 15, revenue: 1050, profit: 95, margin: 9.0 },
+];
+
+const MOCK_PENDING_ACTIONS: PendingAction[] = [
+  { label: 'Perguntas sem resposta', count: 8, variant: 'accent' },
+  { label: 'Pedidos pendentes', count: 3, variant: 'warning' },
+  { label: 'Alertas', count: 2, variant: 'danger' },
+];
 
 const MOCK_DATA: Record<Exclude<Period, 'personalizado'>, KpiData[]> = {
   hoje: [
@@ -58,7 +96,7 @@ function generateMockChartData(): { labels: string[]; revenue: number[]; profit:
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BaseChartDirective],
+  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BaseChartDirective, EmptyStateComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -284,6 +322,12 @@ export class DashboardComponent {
     },
   };
 
+  // Top products and pending actions
+  hasData = signal(true);
+  topProfitable = MOCK_TOP_PROFITABLE;
+  leastProfitable = MOCK_LEAST_PROFITABLE;
+  pendingActions = MOCK_PENDING_ACTIONS;
+
   selectPeriod(period: Period): void {
     if (period === 'personalizado') {
       this.showDateRange.update(v => !v);
@@ -297,5 +341,27 @@ export class DashboardComponent {
 
     // Simulate loading
     setTimeout(() => this.loading.set(false), 600);
+  }
+
+  formatBrl(value: number): string {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  getMarginClass(margin: number): string {
+    if (margin >= 20) return 'margin--green';
+    if (margin >= 10) return 'margin--yellow';
+    return 'margin--red';
+  }
+
+  onProductClick(id: number): void {
+    console.log('Navigate to product:', id);
+  }
+
+  onConnectMarketplace(): void {
+    console.log('Navigate to marketplace connection');
+  }
+
+  toggleEmptyState(): void {
+    this.hasData.update(v => !v);
   }
 }

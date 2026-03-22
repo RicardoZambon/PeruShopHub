@@ -1,78 +1,167 @@
-<div class="dashboard">
-  <div class="dashboard__header">
-    <h1 class="dashboard__title">Dashboard</h1>
+@if (!hasData()) {
+  <div class="dashboard-empty">
+    <app-empty-state
+      title="Conecte seu Mercado Livre para começar"
+      description="Importe seus produtos, pedidos e métricas automaticamente conectando sua conta do Mercado Livre."
+      icon="🛒"
+      actionLabel="Conectar Marketplace"
+      (actionClick)="onConnectMarketplace()" />
+  </div>
+} @else {
+  <div class="dashboard">
+    <div class="dashboard__header">
+      <h1 class="dashboard__title">Dashboard</h1>
 
-    <div class="period-selector">
-      <div class="period-selector__buttons">
-        @for (period of periods; track period.key) {
-          <button
-            class="period-selector__btn"
-            [class.period-selector__btn--active]="activePeriod() === period.key"
-            (click)="selectPeriod(period.key)">
-            {{ period.label }}
-          </button>
+      <div class="period-selector">
+        <div class="period-selector__buttons">
+          @for (period of periods; track period.key) {
+            <button
+              class="period-selector__btn"
+              [class.period-selector__btn--active]="activePeriod() === period.key"
+              (click)="selectPeriod(period.key)">
+              {{ period.label }}
+            </button>
+          }
+        </div>
+
+        @if (showDateRange()) {
+          <div class="period-selector__date-range">
+            <input type="date" class="period-selector__date-input" />
+            <span class="period-selector__date-separator">até</span>
+            <input type="date" class="period-selector__date-input" />
+          </div>
         }
       </div>
+    </div>
 
-      @if (showDateRange()) {
-        <div class="period-selector__date-range">
-          <input type="date" class="period-selector__date-input" />
-          <span class="period-selector__date-separator">até</span>
-          <input type="date" class="period-selector__date-input" />
-        </div>
+    <div class="dashboard__kpis">
+      @if (loading()) {
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="dashboard__kpi-skeleton">
+            <app-skeleton type="text" width="60%" height="14px" />
+            <app-skeleton type="text" width="80%" height="32px" />
+            <app-skeleton type="text" width="40%" height="14px" />
+          </div>
+        }
+      } @else {
+        @for (kpi of kpis(); track kpi.label) {
+          <app-kpi-card
+            [label]="kpi.label"
+            [value]="kpi.value"
+            [change]="kpi.change"
+            [changeLabel]="kpi.changeLabel"
+            [invertColors]="kpi.invertColors ?? false" />
+        }
       }
     </div>
-  </div>
 
-  <div class="dashboard__kpis">
-    @if (loading()) {
-      @for (i of [1, 2, 3, 4]; track i) {
-        <div class="dashboard__kpi-skeleton">
-          <app-skeleton type="text" width="60%" height="14px" />
-          <app-skeleton type="text" width="80%" height="32px" />
-          <app-skeleton type="text" width="40%" height="14px" />
+    <div class="dashboard__charts">
+      <div class="dashboard__chart-line">
+        <div class="chart-card">
+          <h2 class="chart-card__title">Vendas e Lucro</h2>
+          <div class="chart-card__body">
+            <canvas
+              baseChart
+              type="line"
+              [data]="lineChartData"
+              [options]="lineChartOptions">
+            </canvas>
+          </div>
         </div>
-      }
-    } @else {
-      @for (kpi of kpis(); track kpi.label) {
-        <app-kpi-card
-          [label]="kpi.label"
-          [value]="kpi.value"
-          [change]="kpi.change"
-          [changeLabel]="kpi.changeLabel"
-          [invertColors]="kpi.invertColors ?? false" />
-      }
-    }
-  </div>
+      </div>
 
-  <div class="dashboard__charts">
-    <div class="dashboard__chart-line">
-      <div class="chart-card">
-        <h2 class="chart-card__title">Vendas e Lucro</h2>
-        <div class="chart-card__body">
-          <canvas
-            baseChart
-            type="line"
-            [data]="lineChartData"
-            [options]="lineChartOptions">
-          </canvas>
+      <div class="dashboard__chart-donut">
+        <div class="chart-card">
+          <h2 class="chart-card__title">Distribuição de Custos</h2>
+          <div class="chart-card__body chart-card__body--donut">
+            <canvas
+              baseChart
+              type="doughnut"
+              [data]="donutChartData"
+              [options]="donutChartOptions"
+              [plugins]="[donutCenterTextPlugin]">
+            </canvas>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="dashboard__chart-donut">
+    <!-- Top Products Tables -->
+    <div class="dashboard__tables">
+      <div class="dashboard__table-card">
+        <h2 class="table-card__title">Top 5 Mais Lucrativos</h2>
+        <div class="table-card__body">
+          <table class="product-table">
+            <thead>
+              <tr>
+                <th class="product-table__th">Produto</th>
+                <th class="product-table__th product-table__th--right">Vendas</th>
+                <th class="product-table__th product-table__th--right">Receita</th>
+                <th class="product-table__th product-table__th--right">Lucro</th>
+                <th class="product-table__th product-table__th--right">Margem</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (product of topProfitable; track product.id) {
+                <tr class="product-table__row" (click)="onProductClick(product.id)">
+                  <td class="product-table__td product-table__td--name">{{ product.name }}</td>
+                  <td class="product-table__td product-table__td--mono product-table__td--right">{{ product.sales }}</td>
+                  <td class="product-table__td product-table__td--mono product-table__td--right">{{ formatBrl(product.revenue) }}</td>
+                  <td class="product-table__td product-table__td--mono product-table__td--right" [class.product-table__td--profit]="product.profit >= 0" [class.product-table__td--loss]="product.profit < 0">{{ formatBrl(product.profit) }}</td>
+                  <td class="product-table__td product-table__td--mono product-table__td--right">
+                    <span class="margin-badge" [ngClass]="getMarginClass(product.margin)">{{ product.margin.toFixed(1) }}%</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="dashboard__table-card">
+        <h2 class="table-card__title">Top 5 Menos Lucrativos</h2>
+        <div class="table-card__body">
+          <table class="product-table">
+            <thead>
+              <tr>
+                <th class="product-table__th">Produto</th>
+                <th class="product-table__th product-table__th--right">Vendas</th>
+                <th class="product-table__th product-table__th--right">Receita</th>
+                <th class="product-table__th product-table__th--right">Lucro</th>
+                <th class="product-table__th product-table__th--right">Margem</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (product of leastProfitable; track product.id) {
+                <tr class="product-table__row" [class.product-table__row--negative]="product.margin < 0" (click)="onProductClick(product.id)">
+                  <td class="product-table__td product-table__td--name">{{ product.name }}</td>
+                  <td class="product-table__td product-table__td--mono product-table__td--right">{{ product.sales }}</td>
+                  <td class="product-table__td product-table__td--mono product-table__td--right">{{ formatBrl(product.revenue) }}</td>
+                  <td class="product-table__td product-table__td--mono product-table__td--right" [class.product-table__td--profit]="product.profit >= 0" [class.product-table__td--loss]="product.profit < 0">{{ formatBrl(product.profit) }}</td>
+                  <td class="product-table__td product-table__td--mono product-table__td--right">
+                    <span class="margin-badge" [ngClass]="getMarginClass(product.margin)">{{ product.margin.toFixed(1) }}%</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Actions -->
+    <div class="dashboard__pending">
       <div class="chart-card">
-        <h2 class="chart-card__title">Distribuição de Custos</h2>
-        <div class="chart-card__body chart-card__body--donut">
-          <canvas
-            baseChart
-            type="doughnut"
-            [data]="donutChartData"
-            [options]="donutChartOptions"
-            [plugins]="[donutCenterTextPlugin]">
-          </canvas>
+        <h2 class="chart-card__title">Ações Pendentes</h2>
+        <div class="pending-actions">
+          @for (action of pendingActions; track action.label) {
+            <button class="pending-action" [ngClass]="'pending-action--' + action.variant">
+              <span class="pending-action__count">{{ action.count }}</span>
+              <span class="pending-action__label">{{ action.label }}</span>
+            </button>
+          }
         </div>
       </div>
     </div>
   </div>
-</div>
+}

@@ -243,3 +243,20 @@
   - Custom `generateLabels` in legend config can append percentage to each legend item
   - Donut chart needs slightly more height (360px) than line chart (320px) to fit legend below
 ---
+
+## 2026-03-22 - US-016
+- Added two side-by-side product tables: "Top 5 Mais Lucrativos" and "Top 5 Menos Lucrativos" with columns: Produto, Vendas, Receita, Lucro, Margem
+- Margin column colored: green >=20%, yellow 10-19%, red <10% using margin-badge with design tokens
+- Rows with negative margin highlighted with --danger-light background
+- Rows clickable (console.log product ID for now)
+- Added "Ações Pendentes" card with 3 clickable pill badges: Perguntas sem resposta (accent), Pedidos pendentes (warning), Alertas (danger)
+- Added empty state: "Conecte seu Mercado Livre para começar" with EmptyStateComponent and "Conectar Marketplace" CTA button
+- hasData signal controls toggling between empty state and full dashboard
+- Increased anyComponentStyle budget from 4kB to 8kB in angular.json (dashboard SCSS grew with tables)
+- Files changed: `dashboard.component.ts` (updated), `dashboard.component.html` (rewritten), `dashboard.component.scss` (rewritten), `angular.json` (updated)
+- **Learnings for future iterations:**
+  - Don't import BadgeComponent if using custom styled buttons instead — Angular build warns on unused imports
+  - Component style budget in angular.json may need increasing as pages grow (especially dashboard with many sections)
+  - `ngClass` with string concatenation (`'prefix--' + variant`) works well for variant-based styling without needing a separate component
+  - Product tables with BRL formatting: use a component method `formatBrl()` rather than importing BrlCurrencyPipe for simple cases
+---

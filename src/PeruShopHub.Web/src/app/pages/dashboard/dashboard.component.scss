@@ -1,5 +1,12 @@
 @use '../../../styles/mixins' as m;
 
+.dashboard-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
 .dashboard {
   display: flex;
   flex-direction: column;
@@ -90,6 +97,32 @@
     flex: 1;
     min-width: 0;
   }
+
+  &__tables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--card-gap-desktop);
+
+    @include m.tablet {
+      gap: var(--card-gap-tablet);
+    }
+
+    @include m.mobile {
+      grid-template-columns: 1fr;
+      gap: var(--card-gap-mobile);
+    }
+  }
+
+  &__table-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  &__pending {
+    // Uses chart-card styling
+  }
 }
 
 .chart-card {
@@ -128,6 +161,167 @@
         height: 300px;
       }
     }
+  }
+}
+
+.table-card {
+  &__title {
+    font-size: var(--h4-size);
+    font-weight: var(--h4-weight);
+    color: var(--neutral-900);
+    margin: 0;
+    padding: var(--card-padding-desktop);
+    padding-bottom: 0;
+
+    @include m.tablet {
+      padding: var(--card-padding-tablet);
+      padding-bottom: 0;
+    }
+
+    @include m.mobile {
+      padding: var(--card-padding-mobile);
+      padding-bottom: 0;
+    }
+  }
+
+  &__body {
+    overflow-x: auto;
+  }
+}
+
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  &__th {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--body-small-size);
+    font-weight: 600;
+    color: var(--neutral-500);
+    text-align: left;
+    border-bottom: 1px solid var(--neutral-200);
+    white-space: nowrap;
+
+    &--right {
+      text-align: right;
+    }
+  }
+
+  &__row {
+    cursor: pointer;
+    transition: background-color 150ms ease;
+
+    &:hover {
+      background: var(--neutral-50);
+    }
+
+    &--negative {
+      background: var(--danger-light);
+
+      &:hover {
+        background: var(--danger-light);
+        filter: brightness(0.97);
+      }
+    }
+  }
+
+  &__td {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--body-small-size);
+    color: var(--neutral-900);
+    border-bottom: 1px solid var(--neutral-100);
+    white-space: nowrap;
+
+    &--name {
+      font-weight: 500;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &--mono {
+      font-family: 'Roboto Mono', monospace;
+    }
+
+    &--right {
+      text-align: right;
+    }
+
+    &--profit {
+      color: var(--success);
+    }
+
+    &--loss {
+      color: var(--danger);
+    }
+  }
+}
+
+.margin-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--label-size);
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+
+  &.margin--green {
+    background: var(--success-light);
+    color: var(--success);
+  }
+
+  &.margin--yellow {
+    background: var(--warning-light);
+    color: var(--warning);
+  }
+
+  &.margin--red {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+}
+
+.pending-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pending-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full, 9999px);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--body-small-size);
+  font-weight: 500;
+  transition: filter 150ms ease;
+
+  &:hover {
+    filter: brightness(0.95);
+  }
+
+  &__count {
+    font-weight: 700;
+    font-family: 'Roboto Mono', monospace;
+  }
+
+  &--accent {
+    background: var(--accent-light, rgba(255, 111, 0, 0.12));
+    color: var(--accent);
+  }
+
+  &--warning {
+    background: var(--warning-light);
+    color: var(--warning);
+  }
+
+  &--danger {
+    background: var(--danger-light);
+    color: var(--danger);
   }
 }
 
