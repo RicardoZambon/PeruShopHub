@@ -61,6 +61,21 @@
       </div>
 
       <div class="field">
+        <label for="sku">SKU</label>
+        <input
+          id="sku"
+          type="text"
+          formControlName="sku"
+          placeholder="Ex: FN-BT-001"
+          class="sku-input"
+          [class.invalid]="sku.touched && sku.invalid"
+        />
+        @if (sku.touched && sku.hasError('required')) {
+          <span class="field-error">SKU é obrigatório</span>
+        }
+      </div>
+
+      <div class="field">
         <label for="descricao">Descrição</label>
         <textarea
           id="descricao"
@@ -72,36 +87,11 @@
 
       <div class="field">
         <label>Categoria</label>
-        <div class="categoria-dropdown">
-          <div class="dropdown-trigger" (click)="toggleCategoriaDropdown()">
-            <input
-              type="text"
-              [value]="categoriaFilter() || form.get('categoria')?.value || ''"
-              (input)="onCategoriaInput($event)"
-              (focus)="categoriaDropdownOpen.set(true)"
-              placeholder="Buscar categoria..."
-              [class.invalid]="categoria.touched && categoria.invalid"
-            />
-            <lucide-icon [img]="chevronDownIcon" [size]="16" class="dropdown-icon"></lucide-icon>
-          </div>
-          @if (categoriaDropdownOpen()) {
-            <div class="dropdown-list">
-              @for (cat of filteredCategorias(); track cat) {
-                <button
-                  type="button"
-                  class="dropdown-item"
-                  [class.selected]="form.get('categoria')?.value === cat"
-                  (click)="selectCategoria(cat)"
-                >
-                  {{ cat }}
-                </button>
-              }
-              @if (filteredCategorias().length === 0) {
-                <div class="dropdown-empty">Nenhuma categoria encontrada</div>
-              }
-            </div>
-          }
-        </div>
+        <app-tree-select
+          [categories]="categoryService.categoryTree()"
+          [value]="form.get('categoria')?.value"
+          (valueChange)="onCategoryChange($event)"
+        ></app-tree-select>
         @if (categoria.touched && categoria.hasError('required')) {
           <span class="field-error">Categoria é obrigatória</span>
         }
@@ -287,7 +277,45 @@
         <p class="field-hint">O custo do frete será absorvido por você quando ativado.</p>
       </div>
     </div>
+
+    <!-- TAB: Variações -->
+    <div class="accordion-header" (click)="toggleAccordion('variacoes')">
+      <span>Variações</span>
+      <lucide-icon [img]="isAccordionOpen('variacoes') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
+    </div>
+
+    <div
+      class="tab-panel"
+      [class.active]="activeTab() === 'variacoes'"
+      [class.accordion-open]="isAccordionOpen('variacoes')"
+    >
+      <app-variant-manager
+        [categoryId]="form.get('categoria')?.value"
+        [productSku]="form.get('sku')?.value || 'PROD'"
+        [productId]="productId()"
+      ></app-variant-manager>
+    </div>
   </form>
+
+  <!-- Category Change Confirmation Dialog -->
+  @if (showCategoryChangeDialog()) {
+    <div class="dialog-overlay" (click)="cancelCategoryChange()">
+      <div class="dialog" (click)="$event.stopPropagation()">
+        <h3 class="dialog__title">Alterar categoria?</h3>
+        <p class="dialog__message">
+          Alterar a categoria irá redefinir os campos de variação. Variantes existentes serão removidas. Deseja continuar?
+        </p>
+        <div class="dialog__actions">
+          <button type="button" class="btn btn-ghost" (click)="cancelCategoryChange()">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-danger" (click)="confirmCategoryChange()">
+            Continuar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- Sticky Bottom Bar -->
   <div class="bottom-bar">
