@@ -4,6 +4,7 @@ import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ToastService } from '../../services/toast.service';
 
@@ -20,6 +21,23 @@ interface KpiData {
 
 type SortField = 'vendas' | 'receita' | 'cmv' | 'comissoes' | 'frete' | 'impostos' | 'lucro' | 'margem';
 type SortDir = 'asc' | 'desc';
+
+interface ReconciliationRow {
+  periodo: string;
+  valorEsperado: number;
+  valorDepositado: number;
+  diferenca: number;
+  status: 'OK' | 'Divergência';
+}
+
+interface AbcProduct {
+  rank: number;
+  produto: string;
+  sku: string;
+  lucro: number;
+  percentLucro: number;
+  classificacao: 'A' | 'B' | 'C';
+}
 
 interface SkuProfitability {
   sku: string;
@@ -95,7 +113,7 @@ function generateMarginChartData(): { labels: string[]; margin: number[] } {
 @Component({
   selector: 'app-financeiro',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BaseChartDirective],
+  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BaseChartDirective],
   templateUrl: './financeiro.component.html',
   styleUrl: './financeiro.component.scss',
 })
@@ -333,7 +351,192 @@ export class FinanceiroComponent {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  constructor(private toastService: ToastService) {}
+  // Conciliação tab data
+  conciliacaoLoading = signal(true);
+  reconciliationData: ReconciliationRow[] = [
+    { periodo: 'Jan/2026', valorEsperado: 48650.00, valorDepositado: 48650.00, diferenca: 0, status: 'OK' },
+    { periodo: 'Fev/2026', valorEsperado: 52340.00, valorDepositado: 51890.00, diferenca: -450.00, status: 'Divergência' },
+    { periodo: 'Mar/2026', valorEsperado: 41200.00, valorDepositado: 41200.00, diferenca: 0, status: 'OK' },
+    { periodo: 'Abr/2026', valorEsperado: 55780.00, valorDepositado: 55780.00, diferenca: 0, status: 'OK' },
+    { periodo: 'Mai/2026', valorEsperado: 47900.00, valorDepositado: 47120.00, diferenca: -780.00, status: 'Divergência' },
+    { periodo: 'Jun/2026', valorEsperado: 50100.00, valorDepositado: 50100.00, diferenca: 0, status: 'OK' },
+  ];
+
+  getConciliacaoStatusVariant(status: string): BadgeVariant {
+    return status === 'OK' ? 'success' : 'warning';
+  }
+
+  // Curva ABC tab data
+  abcLoading = signal(true);
+  private abcProducts: AbcProduct[] = (() => {
+    const products = [
+      { produto: 'Capa iPhone 15 Silicone', sku: 'PSH-002', lucro: 3418.50 },
+      { produto: 'Fone Bluetooth TWS Pro', sku: 'PSH-001', lucro: 2555.40 },
+      { produto: 'Película Galaxy S24 Ultra', sku: 'PSH-005', lucro: 1708.80 },
+      { produto: 'Carregador USB-C 65W', sku: 'PSH-003', lucro: 1440.00 },
+      { produto: 'Hub USB-C 7 em 1', sku: 'PSH-006', lucro: 514.80 },
+      { produto: 'Mouse Gamer RGB 12000DPI', sku: 'PSH-007', lucro: 468.00 },
+      { produto: 'Suporte Notebook Alumínio', sku: 'PSH-004', lucro: 362.70 },
+      { produto: 'Cabo HDMI 2.1 3m', sku: 'PSH-008', lucro: 36.80 },
+      { produto: 'Teclado Mecânico Compact', sku: 'PSH-009', lucro: 289.50 },
+      { produto: 'Webcam Full HD 1080p', sku: 'PSH-010', lucro: 198.30 },
+    ].sort((a, b) => b.lucro - a.lucro);
+
+    const totalLucro = products.reduce((sum, p) => sum + p.lucro, 0);
+    let cumulative = 0;
+
+    return products.map((p, i) => {
+      const percentLucro = (p.lucro / totalLucro) * 100;
+      cumulative += percentLucro;
+      let classificacao: 'A' | 'B' | 'C';
+      if (cumulative <= 80) classificacao = 'A';
+      else if (cumulative <= 95) classificacao = 'B';
+      else classificacao = 'C';
+
+      return {
+        rank: i + 1,
+        produto: p.produto,
+        sku: p.sku,
+        lucro: p.lucro,
+        percentLucro: Math.round(percentLucro * 10) / 10,
+        classificacao,
+      };
+    });
+  })();
+
+  abcData = this.abcProducts;
+
+  // ABC horizontal bar chart
+  abcChartData: ChartData<'bar'> = {
+    labels: this.abcProducts.map(p => p.produto),
+    datasets: [
+      {
+        label: 'Lucro (R$)',
+        data: this.abcProducts.map(p => p.lucro),
+        backgroundColor: this.abcProducts.map(p =>
+          p.classificacao === 'A' ? '#2E7D32' : p.classificacao === 'B' ? '#F9A825' : '#EF5350'
+        ),
+        borderRadius: 3,
+        barPercentage: 0.7,
+        yAxisID: 'y',
+      },
+    ],
+  };
+
+  // Cumulative percentage line overlay on top of bar chart
+  private abcCumulativeData: number[] = (() => {
+    const total = this.abcProducts.reduce((s, p) => s + p.lucro, 0);
+    let cum = 0;
+    return this.abcProducts.map(p => {
+      cum += p.lucro;
+      return Math.round((cum / total) * 1000) / 10;
+    });
+  })();
+
+  abcMixedChartData: ChartData = {
+    labels: this.abcProducts.map(p => p.sku),
+    datasets: [
+      {
+        type: 'bar',
+        label: 'Lucro (R$)',
+        data: this.abcProducts.map(p => p.lucro),
+        backgroundColor: this.abcProducts.map(p =>
+          p.classificacao === 'A' ? '#2E7D32' : p.classificacao === 'B' ? '#F9A825' : '#EF5350'
+        ),
+        borderRadius: 3,
+        barPercentage: 0.7,
+        yAxisID: 'y',
+        order: 2,
+      },
+      {
+        type: 'line',
+        label: '% Acumulado',
+        data: this.abcCumulativeData,
+        borderColor: '#1A237E',
+        backgroundColor: 'rgba(26, 35, 126, 0.08)',
+        borderWidth: 2,
+        pointRadius: 4,
+        pointBackgroundColor: '#1A237E',
+        fill: false,
+        tension: 0.3,
+        yAxisID: 'y1',
+        order: 1,
+      },
+    ],
+  };
+
+  abcChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'x',
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+        align: 'start',
+        labels: {
+          usePointStyle: true,
+          padding: 16,
+          font: { family: 'Inter', size: 13 },
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { family: 'Inter', size: 13 },
+        bodyFont: { family: 'Roboto Mono', size: 12 },
+        padding: 12,
+        callbacks: {
+          label: (ctx) => {
+            if (ctx.datasetIndex === 0) {
+              const value = (ctx.parsed.y ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+              return `Lucro: ${value}`;
+            }
+            return `% Acumulado: ${ctx.parsed.y}%`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { family: 'Roboto Mono', size: 11 } },
+      },
+      y: {
+        position: 'left',
+        grid: { color: 'rgba(0, 0, 0, 0.06)' },
+        ticks: {
+          font: { family: 'Roboto Mono', size: 11 },
+          callback: (value) => `R$ ${Number(value).toLocaleString('pt-BR')}`,
+        },
+      },
+      y1: {
+        position: 'right',
+        min: 0,
+        max: 100,
+        grid: { display: false },
+        ticks: {
+          font: { family: 'Roboto Mono', size: 11 },
+          callback: (value) => `${value}%`,
+          stepSize: 20,
+        },
+      },
+    },
+  };
+
+  getAbcVariant(classificacao: string): BadgeVariant {
+    if (classificacao === 'A') return 'success';
+    if (classificacao === 'B') return 'warning';
+    return 'danger';
+  }
+
+  constructor(private toastService: ToastService) {
+    // Simulate loading for conciliação and ABC tabs
+    setTimeout(() => this.conciliacaoLoading.set(false), 600);
+    setTimeout(() => this.abcLoading.set(false), 600);
+  }
 
   selectPeriod(period: Period): void {
     if (period === 'personalizado') {

@@ -195,12 +195,126 @@
     </div>
   }
 
-  <!-- Other tabs: placeholder -->
-  @if (activeTab() === 'conciliacao' || activeTab() === 'curva-abc') {
-    <div class="financeiro__placeholder">
-      <div class="placeholder-card">
-        <p class="placeholder-card__text">Em desenvolvimento</p>
-      </div>
+  <!-- Conciliação Tab -->
+  @if (activeTab() === 'conciliacao') {
+    <div class="financeiro__content">
+      @if (conciliacaoLoading()) {
+        <div class="conciliacao-skeleton">
+          @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+            <div class="conciliacao-skeleton__row">
+              <app-skeleton type="text" width="80px" height="16px" />
+              <app-skeleton type="text" width="120px" height="16px" />
+              <app-skeleton type="text" width="120px" height="16px" />
+              <app-skeleton type="text" width="100px" height="16px" />
+              <app-skeleton type="text" width="70px" height="24px" />
+            </div>
+          }
+        </div>
+      } @else if (reconciliationData.length === 0) {
+        <div class="empty-state">
+          <p class="empty-state__text">Nenhum dado de conciliação disponível</p>
+        </div>
+      } @else {
+        <div class="conciliacao-wrapper">
+          <table class="conciliacao-table">
+            <thead>
+              <tr>
+                <th class="conciliacao-table__th">Período</th>
+                <th class="conciliacao-table__th conciliacao-table__th--right">Valor Esperado</th>
+                <th class="conciliacao-table__th conciliacao-table__th--right">Valor Depositado</th>
+                <th class="conciliacao-table__th conciliacao-table__th--right">Diferença</th>
+                <th class="conciliacao-table__th">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of reconciliationData; track row.periodo) {
+                <tr class="conciliacao-table__row" [class.conciliacao-table__row--divergence]="row.status === 'Divergência'">
+                  <td class="conciliacao-table__td">{{ row.periodo }}</td>
+                  <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right">{{ formatBrl(row.valorEsperado) }}</td>
+                  <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right">{{ formatBrl(row.valorDepositado) }}</td>
+                  <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right"
+                    [class.conciliacao-table__td--loss]="row.diferenca < 0">
+                    {{ formatBrl(row.diferenca) }}
+                  </td>
+                  <td class="conciliacao-table__td">
+                    <app-badge [label]="row.status" [variant]="getConciliacaoStatusVariant(row.status)" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Curva ABC Tab -->
+  @if (activeTab() === 'curva-abc') {
+    <div class="financeiro__content">
+      @if (abcLoading()) {
+        <div class="abc-skeleton">
+          <div class="abc-skeleton__chart">
+            <app-skeleton type="rect" width="100%" height="320px" />
+          </div>
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="abc-skeleton__row">
+              <app-skeleton type="text" width="30px" height="16px" />
+              <app-skeleton type="text" width="180px" height="16px" />
+              <app-skeleton type="text" width="80px" height="16px" />
+              <app-skeleton type="text" width="100px" height="16px" />
+              <app-skeleton type="text" width="60px" height="16px" />
+              <app-skeleton type="text" width="40px" height="24px" />
+            </div>
+          }
+        </div>
+      } @else if (abcData.length === 0) {
+        <div class="empty-state">
+          <p class="empty-state__text">Nenhum dado de curva ABC disponível</p>
+        </div>
+      } @else {
+        <!-- ABC Chart -->
+        <div class="chart-card">
+          <h2 class="chart-card__title">Curva ABC — Contribuição ao Lucro</h2>
+          <div class="chart-card__body">
+            <canvas
+              baseChart
+              type="bar"
+              [data]="abcMixedChartData"
+              [options]="abcChartOptions">
+            </canvas>
+          </div>
+        </div>
+
+        <!-- ABC Table -->
+        <div class="abc-table-wrapper">
+          <table class="abc-table">
+            <thead>
+              <tr>
+                <th class="abc-table__th abc-table__th--center">Rank</th>
+                <th class="abc-table__th">Produto</th>
+                <th class="abc-table__th abc-table__th--mono">SKU</th>
+                <th class="abc-table__th abc-table__th--right">Lucro</th>
+                <th class="abc-table__th abc-table__th--right">% do Lucro Total</th>
+                <th class="abc-table__th abc-table__th--center">Classificação</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of abcData; track row.sku) {
+                <tr class="abc-table__row">
+                  <td class="abc-table__td abc-table__td--center abc-table__td--mono">{{ row.rank }}</td>
+                  <td class="abc-table__td">{{ row.produto }}</td>
+                  <td class="abc-table__td abc-table__td--mono">{{ row.sku }}</td>
+                  <td class="abc-table__td abc-table__td--mono abc-table__td--right abc-table__td--profit">{{ formatBrl(row.lucro) }}</td>
+                  <td class="abc-table__td abc-table__td--mono abc-table__td--right">{{ row.percentLucro.toFixed(1) }}%</td>
+                  <td class="abc-table__td abc-table__td--center">
+                    <app-badge [label]="row.classificacao" [variant]="getAbcVariant(row.classificacao)" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
   }
 </div>
