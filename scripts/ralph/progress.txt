@@ -388,3 +388,23 @@
   - Card-based question list is simpler than DataTableComponent for this use case (variable height content, expandable sections)
   - Unanswered indicator: compare hours since creation with `(Date.now() - date.getTime()) / (1000 * 60 * 60)` for >24h check
 ---
+
+## 2026-03-22 - US-024
+- Created ClientesComponent at /clientes with search by name/nickname/email
+- Custom table with 6 columns: Nome, Nickname (mono), Email, Total Pedidos (sortable), Total Gasto (BRL, sortable), Última Compra (relative date, sortable)
+- 10 mock customers with realistic Brazilian names and varied purchase histories
+- Mobile card list with customer name, nickname, email, and 3-column metrics grid
+- Row click opens slide-over panel (400px from right) with:
+  - Customer profile: avatar circle, name, nickname, email
+  - Stats grid: total orders, total spent (BRL), last purchase (relative)
+  - Order history table: 5 mock orders per customer with ID (mono), date, value (BRL), status badge
+- Slide-over closes on backdrop click, Esc key, or X button
+- Slide-in animation (200ms) with backdrop overlay
+- Loading skeleton state and empty states
+- Files changed: `clientes.component.ts` (rewritten), `clientes.component.html` (new), `clientes.component.scss` (new)
+- **Learnings for future iterations:**
+  - Slide-over pattern: fixed position right:0, z-index above backdrop, `animation: slideIn` from translateX(100%) → translateX(0)
+  - `@HostListener('document:keydown.escape')` works for Esc key close without needing window event listeners
+  - Don't import SkeletonComponent if only using DataTableComponent loading state — Angular warns on unused imports
+  - Delayed `selectedCustomer.set(null)` with `setTimeout(200ms)` prevents flash during slide-out animation
+---
