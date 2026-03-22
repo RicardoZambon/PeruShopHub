@@ -1,0 +1,223 @@
+@use '../../../../styles/mixins' as m;
+
+.data-table {
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--neutral-200);
+  overflow: hidden;
+
+  &__scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-body-small);
+
+    &--desktop {
+      @include m.mobile {
+        display: none;
+      }
+    }
+
+    thead {
+      background: var(--neutral-50);
+      border-bottom: 2px solid var(--neutral-200);
+    }
+
+    th {
+      padding: var(--spacing-3) var(--spacing-4);
+      font-weight: 600;
+      color: var(--neutral-700);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    td {
+      padding: var(--spacing-3) var(--spacing-4);
+      color: var(--neutral-900);
+      border-bottom: 1px solid var(--neutral-100);
+    }
+  }
+
+  &__th--sortable {
+    cursor: pointer;
+
+    &:hover {
+      color: var(--primary);
+      background: var(--neutral-100);
+    }
+  }
+
+  &__th--active {
+    color: var(--primary);
+  }
+
+  &__sort-icon {
+    margin-left: var(--spacing-1);
+    font-size: 10px;
+
+    &--inactive {
+      opacity: 0.4;
+    }
+  }
+
+  &__row {
+    cursor: pointer;
+    transition: background-color 150ms ease;
+
+    &:hover {
+      background: var(--neutral-50);
+    }
+  }
+
+  &__td--mono {
+    font-family: 'Roboto Mono', monospace;
+  }
+
+  // Mobile card list
+  &__cards {
+    display: none;
+
+    @include m.mobile {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-3);
+      padding: var(--spacing-3);
+    }
+  }
+
+  &__card {
+    background: var(--surface);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-3);
+    cursor: pointer;
+    transition: box-shadow 150ms ease;
+
+    &:hover {
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &__card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-1) 0;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--neutral-100);
+    }
+  }
+
+  &__card-label {
+    font-size: var(--text-caption);
+    color: var(--neutral-500);
+    font-weight: 500;
+  }
+
+  &__card-value {
+    font-size: var(--text-body-small);
+    color: var(--neutral-900);
+    text-align: right;
+  }
+
+  // Tablet: first column sticky
+  @include m.tablet {
+    &__scroll-wrapper {
+      position: relative;
+    }
+
+    &__table {
+      th:first-child,
+      td:first-child {
+        position: sticky;
+        left: 0;
+        background: var(--surface);
+        z-index: 1;
+
+        &::after {
+          content: '';
+          position: absolute;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          width: 1px;
+          background: var(--neutral-200);
+        }
+      }
+
+      th:first-child {
+        background: var(--neutral-50);
+      }
+    }
+  }
+
+  // Pagination
+  &__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-top: 1px solid var(--neutral-200);
+    font-size: var(--text-caption);
+    color: var(--neutral-700);
+
+    @include m.mobile {
+      flex-direction: column;
+      gap: var(--spacing-2);
+    }
+  }
+
+  &__pagination-info {
+    white-space: nowrap;
+  }
+
+  &__pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  &__page-size {
+    padding: var(--spacing-1) var(--spacing-2);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--neutral-700);
+    font-size: var(--text-caption);
+    cursor: pointer;
+  }
+
+  &__page-btn {
+    padding: var(--spacing-1) var(--spacing-2);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--neutral-700);
+    font-size: var(--text-caption);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 150ms ease, color 150ms ease;
+
+    &:hover:not(:disabled) {
+      background: var(--neutral-100);
+      color: var(--primary);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  &__page-current {
+    padding: 0 var(--spacing-2);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
