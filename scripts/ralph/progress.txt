@@ -408,3 +408,24 @@
   - Don't import SkeletonComponent if only using DataTableComponent loading state — Angular warns on unused imports
   - Delayed `selectedCustomer.set(null)` with `setTimeout(200ms)` prevents flash during slide-out animation
 ---
+
+## 2026-03-22 - US-025
+- Created FinanceiroComponent at /financeiro with full Resumo tab content
+- Page header with 'Financeiro' title and 'Exportar PDF' / 'Exportar Excel' outline buttons (show toast on click)
+- Sub-navigation tabs: Resumo (active), Lucratividade por SKU, Conciliação, Curva ABC
+- Resumo tab: period selector (Hoje/7 dias/30 dias/Personalizado) with date range toggle
+- 5 KPI cards in responsive 5-col grid: Receita Bruta, Total Custos (invertColors), Lucro Líquido, Margem Média, Ticket Médio
+- Loading skeleton state (600ms simulated) for KPI cards
+- Chart.js grouped bar chart: 'Receita vs Lucro' with 30 daily data points, primary/green colors
+- Chart.js line chart: 'Evolução da Margem' with margin % over 30 days and dashed red threshold line at 15%
+- Other tabs show 'Em desenvolvimento' placeholder card
+- All mock data with realistic Brazilian financial values per period
+- Responsive: charts 2-col desktop → 1-col tablet/mobile, KPIs 5-col → 3-col → 2-col
+- Files changed: `financeiro.component.ts` (rewritten), `financeiro.component.html` (new), `financeiro.component.scss` (new)
+- **Learnings for future iterations:**
+  - Chart.js bar chart uses `barPercentage` and `categoryPercentage` for grouped bar spacing, `borderRadius` for rounded corners
+  - Margin threshold line: use a second dataset with `Array(30).fill(15)`, `borderDash`, and `pointRadius: 0` for a clean horizontal line
+  - Tab navigation pattern: `border-bottom: 2px` with negative margin-bottom to overlap parent border creates the active tab indicator
+  - 5-column KPI grid needs breakpoint handling: 5 → 3 (tablet) → 2 (mobile) for best readability
+  - ToastService injected via constructor for export button feedback — simple pattern for non-functional placeholder actions
+---
