@@ -1,0 +1,106 @@
+<div class="financeiro">
+  <div class="financeiro__header">
+    <h1 class="financeiro__title">Financeiro</h1>
+    <div class="financeiro__actions">
+      <button class="btn btn--outline" (click)="onExport('pdf')">Exportar PDF</button>
+      <button class="btn btn--outline" (click)="onExport('excel')">Exportar Excel</button>
+    </div>
+  </div>
+
+  <!-- Sub-navigation tabs -->
+  <div class="financeiro__tabs">
+    @for (tab of tabs; track tab.key) {
+      <button
+        class="financeiro__tab"
+        [class.financeiro__tab--active]="activeTab() === tab.key"
+        (click)="selectTab(tab.key)">
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <!-- Resumo Tab -->
+  @if (activeTab() === 'resumo') {
+    <div class="financeiro__content">
+      <!-- Period selector -->
+      <div class="period-selector">
+        <div class="period-selector__buttons">
+          @for (period of periods; track period.key) {
+            <button
+              class="period-selector__btn"
+              [class.period-selector__btn--active]="activePeriod() === period.key"
+              (click)="selectPeriod(period.key)">
+              {{ period.label }}
+            </button>
+          }
+        </div>
+
+        @if (showDateRange()) {
+          <div class="period-selector__date-range">
+            <input type="date" class="period-selector__date-input" />
+            <span class="period-selector__date-separator">até</span>
+            <input type="date" class="period-selector__date-input" />
+          </div>
+        }
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="financeiro__kpis">
+        @if (loading()) {
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="financeiro__kpi-skeleton">
+              <app-skeleton type="text" width="60%" height="14px" />
+              <app-skeleton type="text" width="80%" height="32px" />
+              <app-skeleton type="text" width="40%" height="14px" />
+            </div>
+          }
+        } @else {
+          @for (kpi of kpis(); track kpi.label) {
+            <app-kpi-card
+              [label]="kpi.label"
+              [value]="kpi.value"
+              [change]="kpi.change"
+              [changeLabel]="kpi.changeLabel"
+              [invertColors]="kpi.invertColors ?? false" />
+          }
+        }
+      </div>
+
+      <!-- Charts -->
+      <div class="financeiro__charts">
+        <div class="chart-card">
+          <h2 class="chart-card__title">Receita vs Lucro</h2>
+          <div class="chart-card__body">
+            <canvas
+              baseChart
+              type="bar"
+              [data]="barChartData"
+              [options]="barChartOptions">
+            </canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h2 class="chart-card__title">Evolução da Margem</h2>
+          <div class="chart-card__body">
+            <canvas
+              baseChart
+              type="line"
+              [data]="marginChartData"
+              [options]="marginChartOptions">
+            </canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Other tabs: placeholder -->
+  @if (activeTab() !== 'resumo') {
+    <div class="financeiro__placeholder">
+      <div class="placeholder-card">
+        <p class="placeholder-card__text">Em desenvolvimento</p>
+      </div>
+    </div>
+  }
+</div>
