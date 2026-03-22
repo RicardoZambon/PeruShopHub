@@ -1,0 +1,54 @@
+@use '../../../../styles/mixins' as m;
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+
+  &__icon {
+    font-size: 48px;
+    margin-bottom: var(--space-4);
+    color: var(--danger);
+  }
+
+  &__title {
+    font-size: var(--heading-3-size);
+    font-weight: var(--heading-3-weight);
+    line-height: var(--heading-3-height);
+    color: var(--neutral-900);
+    margin: 0 0 var(--space-2);
+  }
+
+  &__description {
+    font-size: var(--body-size);
+    line-height: var(--body-height);
+    color: var(--neutral-700);
+    margin: 0 0 var(--space-6);
+    max-width: 360px;
+  }
+
+  &__retry {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--button-height-md);
+    padding: 0 var(--button-padding-h-md);
+    font-size: var(--button-font-size);
+    font-weight: var(--button-font-weight);
+    font-family: var(--font-ui);
+    color: var(--danger);
+    background: transparent;
+    border: 1px solid var(--danger);
+    border-radius: var(--button-border-radius);
+    cursor: pointer;
+    transition: background var(--button-transition), color var(--button-transition);
+
+    &:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+  }
+}
