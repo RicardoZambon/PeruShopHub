@@ -1,0 +1,145 @@
+<div class="perguntas-page">
+  <div class="page-header">
+    <h1 class="page-title">Perguntas</h1>
+  </div>
+
+  <!-- Tab filters -->
+  <div class="tab-filters">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'unanswered'"
+      (click)="setTab('unanswered')"
+    >
+      Sem Resposta
+      @if (unansweredCount() > 0) {
+        <span class="tab-count">{{ unansweredCount() }}</span>
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'answered'"
+      (click)="setTab('answered')"
+    >
+      Respondidas
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'all'"
+      (click)="setTab('all')"
+    >
+      Todas
+    </button>
+  </div>
+
+  <!-- Loading state -->
+  @if (loading()) {
+    <div class="questions-list">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="question-card skeleton-card">
+          <div class="skeleton skeleton--rect" style="width: 40px; height: 40px; border-radius: 8px;"></div>
+          <div class="skeleton-content">
+            <div class="skeleton skeleton--text" style="width: 60%; height: 16px;"></div>
+            <div class="skeleton skeleton--text" style="width: 40%; height: 14px; margin-top: 8px;"></div>
+            <div class="skeleton skeleton--text" style="width: 90%; height: 14px; margin-top: 12px;"></div>
+            <div class="skeleton skeleton--text" style="width: 70%; height: 14px; margin-top: 4px;"></div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (filteredQuestions().length === 0) {
+    <div class="empty-state">
+      <lucide-angular [img]="messageCircleIcon" [size]="48" class="empty-icon"></lucide-angular>
+      <h3 class="empty-title">
+        @if (activeTab() === 'unanswered') {
+          Nenhuma pergunta pendente
+        } @else if (activeTab() === 'answered') {
+          Nenhuma pergunta respondida
+        } @else {
+          Nenhuma pergunta encontrada
+        }
+      </h3>
+      <p class="empty-description">
+        @if (activeTab() === 'unanswered') {
+          Todas as perguntas foram respondidas. Bom trabalho!
+        } @else {
+          As perguntas dos compradores aparecerão aqui.
+        }
+      </p>
+    </div>
+  } @else {
+    <div class="questions-list">
+      @for (question of filteredQuestions(); track question.id) {
+        <div class="question-card" [class.unanswered]="question.status === 'unanswered'">
+          <div class="question-header">
+            <div class="product-info">
+              <div class="product-icon">
+                <lucide-angular [img]="packageIcon" [size]="20"></lucide-angular>
+              </div>
+              <div>
+                <span class="product-name">{{ question.productName }}</span>
+                <span class="product-id">{{ question.productId }}</span>
+              </div>
+            </div>
+            <div class="question-meta">
+              <span class="time-indicator" [class.old]="question.status === 'unanswered' && isOld(question.createdAt)">
+                <lucide-angular [img]="clockIcon" [size]="14"></lucide-angular>
+                {{ question.createdAt | relativeDate }}
+              </span>
+              <app-badge
+                [label]="question.status === 'answered' ? 'Respondida' : 'Pendente'"
+                [variant]="getStatusVariant(question.status)"
+              ></app-badge>
+            </div>
+          </div>
+
+          <div class="question-body">
+            <span class="buyer-nickname">{{ question.buyerNickname }}</span>
+            <p class="question-text">{{ question.text }}</p>
+          </div>
+
+          <!-- Answer display for answered questions -->
+          @if (question.status === 'answered' && question.answer) {
+            <div class="answer-section">
+              <div class="answer-label">Sua resposta:</div>
+              <p class="answer-text">{{ question.answer }}</p>
+            </div>
+          }
+
+          <!-- Reply button for unanswered questions -->
+          @if (question.status === 'unanswered' && replyingTo() !== question.id) {
+            <div class="question-actions">
+              <button class="btn-reply" (click)="startReply(question.id)">
+                <lucide-angular [img]="messageCircleIcon" [size]="16"></lucide-angular>
+                Responder
+              </button>
+            </div>
+          }
+
+          <!-- Reply form -->
+          @if (replyingTo() === question.id) {
+            <div class="reply-form">
+              <textarea
+                class="reply-textarea"
+                placeholder="Digite sua resposta..."
+                [ngModel]="replyText()"
+                (ngModelChange)="replyText.set($event)"
+                rows="3"
+              ></textarea>
+              <div class="reply-actions">
+                <button class="btn-cancel" (click)="cancelReply()">Cancelar</button>
+                <button
+                  class="btn-send"
+                  [disabled]="!replyText().trim()"
+                  (click)="submitReply(question)"
+                >
+                  <lucide-angular [img]="sendIcon" [size]="16"></lucide-angular>
+                  Enviar
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
