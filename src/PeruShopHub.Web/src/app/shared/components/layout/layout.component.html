@@ -1,0 +1,8 @@
+<app-header />
+<app-sidebar />
+<main
+  class="layout-content"
+  [class.sidebar-collapsed]="sidebar.collapsed()"
+  [class.sidebar-expanded]="!sidebar.collapsed()">
+  <router-outlet />
+</main>

@@ -1,0 +1,31 @@
+@use '../../../../styles/mixins' as m;
+
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.layout-content {
+  margin-top: var(--header-height, 56px);
+  transition: margin-left 200ms ease;
+  overflow-y: auto;
+  min-height: calc(100vh - var(--header-height, 56px));
+  padding: 24px;
+
+  &.sidebar-expanded {
+    margin-left: var(--sidebar-width, 256px);
+  }
+
+  &.sidebar-collapsed {
+    margin-left: var(--sidebar-collapsed-width, 64px);
+  }
+
+  @include m.tablet {
+    padding: 16px;
+  }
+
+  @include m.mobile {
+    margin-left: 0 !important;
+    padding: 12px;
+  }
+}

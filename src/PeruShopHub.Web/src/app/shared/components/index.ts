@@ -10,3 +10,4 @@ export type { DataTableColumn, SortEvent, PageEvent } from './data-table/data-ta
 export { ToastContainerComponent } from './toast-container/toast-container.component';
 export { SidebarComponent } from './sidebar/sidebar.component';
 export { HeaderComponent } from './header/header.component';
+export { LayoutComponent } from './layout/layout.component';
