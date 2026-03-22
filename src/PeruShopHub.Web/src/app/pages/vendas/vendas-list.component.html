@@ -1,0 +1,153 @@
+@if (!hasData()) {
+  <div class="vendas-empty">
+    <app-empty-state
+      title="Nenhuma venda registrada"
+      description="Conecte seu marketplace para começar a acompanhar suas vendas."
+    ></app-empty-state>
+  </div>
+} @else {
+  <div class="vendas">
+    <!-- Header -->
+    <div class="vendas__header">
+      <h1 class="vendas__title">Vendas</h1>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="vendas__action-bar">
+      <div class="vendas__search">
+        <lucide-icon [img]="searchIcon" [size]="16" class="vendas__search-icon"></lucide-icon>
+        <input
+          type="text"
+          class="vendas__search-input"
+          placeholder="Buscar por ID ou comprador..."
+          [value]="searchQuery()"
+          (input)="onSearchChange($any($event.target).value)"
+        />
+      </div>
+      <div class="vendas__date-range">
+        <input
+          type="date"
+          class="vendas__date-input"
+          [value]="dateFrom()"
+          (change)="onDateFromChange($event)"
+          placeholder="Data início"
+        />
+        <span class="vendas__date-separator">até</span>
+        <input
+          type="date"
+          class="vendas__date-input"
+          [value]="dateTo()"
+          (change)="onDateToChange($event)"
+          placeholder="Data fim"
+        />
+      </div>
+      <select class="vendas__status-filter" (change)="onStatusChange($event)">
+        <option value="Todos">Todos</option>
+        <option value="Pago">Pago</option>
+        <option value="Enviado">Enviado</option>
+        <option value="Entregue">Entregue</option>
+        <option value="Cancelado">Cancelado</option>
+        <option value="Devolvido">Devolvido</option>
+      </select>
+    </div>
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <app-data-table
+        [columns]="[]"
+        [data]="[]"
+        [loading]="true"
+        [totalItems]="0"
+      ></app-data-table>
+    } @else if (filteredOrders().length === 0) {
+      <app-data-table
+        [columns]="[]"
+        [data]="[]"
+        [loading]="false"
+        emptyTitle="Nenhuma venda encontrada"
+        emptyDescription="Tente ajustar os filtros de busca."
+        [totalItems]="0"
+      ></app-data-table>
+    } @else {
+      <!-- Custom Table -->
+      <div class="vendas-table">
+        <!-- Desktop/Tablet Table -->
+        <div class="vendas-table__scroll-wrapper">
+          <table class="vendas-table__table">
+            <thead>
+              <tr>
+                <th class="vendas-table__th vendas-table__th--mono">ID</th>
+                <th class="vendas-table__th">Data</th>
+                <th class="vendas-table__th">Comprador</th>
+                <th class="vendas-table__th" style="text-align: center">Itens</th>
+                <th class="vendas-table__th" style="text-align: right">Valor</th>
+                <th class="vendas-table__th" style="text-align: right">Lucro</th>
+                <th class="vendas-table__th">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of filteredOrders(); track order.id) {
+                <tr class="vendas-table__row" (click)="onRowClick(order)">
+                  <td class="vendas-table__td vendas-table__td--mono">#{{ order.id }}</td>
+                  <td class="vendas-table__td">{{ formatDate(order.data) }}</td>
+                  <td class="vendas-table__td vendas-table__td--name">{{ order.comprador }}</td>
+                  <td class="vendas-table__td" style="text-align: center">{{ order.itens }}</td>
+                  <td class="vendas-table__td vendas-table__td--mono" style="text-align: right">{{ formatBrl(order.valor) }}</td>
+                  <td class="vendas-table__td vendas-table__td--mono" style="text-align: right"
+                    [class.vendas-table__td--profit]="order.lucro >= 0"
+                    [class.vendas-table__td--loss]="order.lucro < 0">
+                    {{ formatBrl(order.lucro) }}
+                  </td>
+                  <td class="vendas-table__td">
+                    <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)"></app-badge>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Card List -->
+        <div class="vendas-table__cards">
+          @for (order of filteredOrders(); track order.id) {
+            <div class="vendas-table__card" (click)="onRowClick(order)">
+              <div class="vendas-table__card-header">
+                <div class="vendas-table__card-title">
+                  <span class="vendas-table__card-id">#{{ order.id }}</span>
+                  <span class="vendas-table__card-date">{{ formatDate(order.data) }}</span>
+                </div>
+                <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)"></app-badge>
+              </div>
+              <div class="vendas-table__card-buyer">{{ order.comprador }}</div>
+              <div class="vendas-table__card-body">
+                <div class="vendas-table__card-field">
+                  <span class="vendas-table__card-label">Itens</span>
+                  <span class="vendas-table__card-value">{{ order.itens }}</span>
+                </div>
+                <div class="vendas-table__card-field">
+                  <span class="vendas-table__card-label">Valor</span>
+                  <span class="vendas-table__card-value vendas-table__td--mono">{{ formatBrl(order.valor) }}</span>
+                </div>
+                <div class="vendas-table__card-field">
+                  <span class="vendas-table__card-label">Lucro</span>
+                  <span class="vendas-table__card-value vendas-table__td--mono"
+                    [class.vendas-table__td--profit]="order.lucro >= 0"
+                    [class.vendas-table__td--loss]="order.lucro < 0">
+                    {{ formatBrl(order.lucro) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Pagination -->
+        <div class="vendas-table__pagination">
+          <span class="vendas-table__pagination-info">
+            Mostrando 1-{{ filteredOrders().length }} de {{ filteredOrders().length }}
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+}
