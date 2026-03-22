@@ -1,0 +1,77 @@
+<div class="tree-select">
+  <!-- Trigger -->
+  <button
+    type="button"
+    class="tree-select__trigger"
+    role="combobox"
+    [attr.aria-expanded]="isOpen()"
+    aria-haspopup="listbox"
+    (click)="toggleOpen()"
+    (keydown.enter)="toggleOpen()"
+    (keydown.space)="$event.preventDefault(); toggleOpen()"
+  >
+    <span class="tree-select__value" [class.tree-select__value--placeholder]="!value()">
+      @if (value()) {
+        {{ selectedBreadcrumb() }}
+      } @else {
+        Selecione uma categoria...
+      }
+    </span>
+    <lucide-icon [img]="chevronDownIcon" [size]="16" class="tree-select__icon"></lucide-icon>
+  </button>
+
+  <!-- Dropdown -->
+  @if (isOpen()) {
+    <div class="tree-select__dropdown">
+      <!-- Search -->
+      <div class="tree-select__search">
+        <lucide-icon [img]="searchIcon" [size]="14" class="tree-select__search-icon"></lucide-icon>
+        <input
+          type="text"
+          class="tree-select__search-input"
+          placeholder="Buscar categoria..."
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+
+      <!-- Tree list -->
+      <div class="tree-select__list">
+        @for (node of flatNodes(); track node.category.id; let i = $index) {
+          <div
+            class="tree-select__item"
+            [class.tree-select__item--selected]="value() === node.category.id"
+            [class.tree-select__item--focused]="focusedIndex() === i"
+            [class.tree-select__item--inactive]="!node.category.isActive"
+            [style.padding-left.px]="12 + node.depth * 20"
+            (click)="selectNode(node)"
+          >
+            @if (node.hasChildren) {
+              <button
+                type="button"
+                class="tree-select__expand-btn"
+                (click)="toggleExpand(node.category.id, $event)"
+              >
+                <lucide-icon
+                  [img]="node.expanded ? chevronDownIcon : chevronRightIcon"
+                  [size]="14"
+                ></lucide-icon>
+              </button>
+            } @else {
+              <span class="tree-select__expand-spacer"></span>
+            }
+            <span class="tree-select__item-name">{{ node.category.name }}</span>
+            @if (node.category.productCount > 0) {
+              <span class="tree-select__item-count">{{ node.category.productCount }}</span>
+            }
+          </div>
+        }
+
+        @if (flatNodes().length === 0) {
+          <div class="tree-select__empty">Nenhuma categoria encontrada</div>
+        }
+      </div>
+    </div>
+  }
+</div>

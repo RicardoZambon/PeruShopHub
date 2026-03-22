@@ -3,6 +3,8 @@ import {
   ProductVariant,
   CreateVariantDto,
   UpdateVariantDto,
+  DEFAULT_VARIANT_COSTS,
+  DEFAULT_VARIANT_SHIPPING,
 } from '../models/product-variant.model';
 
 export interface CombinationResult {
@@ -39,6 +41,8 @@ export class ProductVariantService {
       stock: dto.stock,
       isActive: dto.isActive,
       needsReview: false,
+      costs: { ...DEFAULT_VARIANT_COSTS },
+      shipping: { ...DEFAULT_VARIANT_SHIPPING },
     };
     this.variantsSignal.update(list => [...list, variant]);
     return variant;
@@ -116,12 +120,11 @@ export class ProductVariantService {
   flagForReview(categoryId: string): number {
     // Mock: map known categories to product IDs for demo purposes
     const categoryProductMap: Record<string, string[]> = {
-      'camisetas': ['prod-cam-001'],
-      'moda': ['prod-cam-001'],
-      'feminina': ['prod-cam-001'],
-      'cabos': ['prod-cabo-001'],
-      'audio': ['prod-cabo-001'],
-      'eletronicos': ['prod-cabo-001'],
+      'cat-fones': ['1'],
+      'cat-audio': ['1', '5'],
+      'cat-eletronicos': ['1', '4', '5'],
+      'cat-cabos': ['5'],
+      'cat-moda': ['4'],
     };
 
     const productIds = categoryProductMap[categoryId] ?? [];
@@ -159,12 +162,11 @@ export class ProductVariantService {
   getAffectedProductCount(categoryId: string): number {
     // Mock: return count based on known seed data
     const categoryProductMap: Record<string, string[]> = {
-      'camisetas': ['prod-cam-001'],
-      'moda': ['prod-cam-001'],
-      'feminina': ['prod-cam-001'],
-      'cabos': ['prod-cabo-001'],
-      'audio': ['prod-cabo-001'],
-      'eletronicos': ['prod-cabo-001'],
+      'cat-fones': ['1'],
+      'cat-audio': ['1', '5'],
+      'cat-eletronicos': ['1', '4', '5'],
+      'cat-cabos': ['5'],
+      'cat-moda': ['4'],
     };
 
     const productIds = new Set(categoryProductMap[categoryId] ?? []);
@@ -185,23 +187,25 @@ export class ProductVariantService {
 }
 
 // =============================================================================
-// Seed data — Camiseta product with Cor + Tamanho variants
+// Seed data — Products 1, 4, 5 with variants matching numeric product IDs
 // =============================================================================
 
 const SEED_VARIANTS: ProductVariant[] = [
-  // Product: Camiseta Básica Feminina (prod-cam-001)
-  { id: 'var-001', productId: 'prod-cam-001', sku: 'CAM-001-P-PRETO',    attributes: { Cor: 'Preto',   Tamanho: 'P' },  price: null,  stock: 15, isActive: true,  needsReview: false },
-  { id: 'var-002', productId: 'prod-cam-001', sku: 'CAM-001-M-PRETO',    attributes: { Cor: 'Preto',   Tamanho: 'M' },  price: null,  stock: 23, isActive: true,  needsReview: false },
-  { id: 'var-003', productId: 'prod-cam-001', sku: 'CAM-001-G-PRETO',    attributes: { Cor: 'Preto',   Tamanho: 'G' },  price: 54.90, stock: 8,  isActive: true,  needsReview: false },
-  { id: 'var-004', productId: 'prod-cam-001', sku: 'CAM-001-GG-PRETO',   attributes: { Cor: 'Preto',   Tamanho: 'GG' }, price: 54.90, stock: 5,  isActive: true,  needsReview: false },
-  { id: 'var-005', productId: 'prod-cam-001', sku: 'CAM-001-P-BRANCO',   attributes: { Cor: 'Branco',  Tamanho: 'P' },  price: null,  stock: 12, isActive: true,  needsReview: false },
-  { id: 'var-006', productId: 'prod-cam-001', sku: 'CAM-001-M-BRANCO',   attributes: { Cor: 'Branco',  Tamanho: 'M' },  price: null,  stock: 20, isActive: true,  needsReview: false },
-  { id: 'var-007', productId: 'prod-cam-001', sku: 'CAM-001-G-BRANCO',   attributes: { Cor: 'Branco',  Tamanho: 'G' },  price: null,  stock: 0,  isActive: false, needsReview: false },
-  { id: 'var-008', productId: 'prod-cam-001', sku: 'CAM-001-P-AZUL',     attributes: { Cor: 'Azul',    Tamanho: 'P' },  price: null,  stock: 18, isActive: true,  needsReview: false },
-  { id: 'var-009', productId: 'prod-cam-001', sku: 'CAM-001-M-AZUL',     attributes: { Cor: 'Azul',    Tamanho: 'M' },  price: null,  stock: 14, isActive: true,  needsReview: false },
+  // Product 1: Fone Bluetooth TWS Pro Max (category: cat-fones) — Voltagem variants
+  { id: 'var-001', productId: '1', sku: 'FN-BT-001-110V',  attributes: { Voltagem: '110V' },                    price: null,   stock: 15, isActive: true,  needsReview: false, costs: { custoAquisicao: 62.00 }, shipping: { peso: 0.25, altura: 8, largura: 12, comprimento: 15 } },
+  { id: 'var-002', productId: '1', sku: 'FN-BT-001-220V',  attributes: { Voltagem: '220V' },                    price: null,   stock: 20, isActive: true,  needsReview: false, costs: { custoAquisicao: 62.00 }, shipping: { peso: 0.25, altura: 8, largura: 12, comprimento: 15 } },
+  { id: 'var-003', productId: '1', sku: 'FN-BT-001-BIV',   attributes: { Voltagem: 'Bivolt' },                  price: 199.90, stock: 10, isActive: true,  needsReview: false, costs: { custoAquisicao: 65.00 }, shipping: { peso: 0.25, altura: 8, largura: 12, comprimento: 15 } },
 
-  // Product: Cabo USB-C (prod-cabo-001) — Comprimento variants
-  { id: 'var-010', productId: 'prod-cabo-001', sku: 'CABO-001-1M',       attributes: { Comprimento: '1m' },             price: 29.90, stock: 50, isActive: true,  needsReview: false },
-  { id: 'var-011', productId: 'prod-cabo-001', sku: 'CABO-001-2M',       attributes: { Comprimento: '2m' },             price: 39.90, stock: 35, isActive: true,  needsReview: false },
-  { id: 'var-012', productId: 'prod-cabo-001', sku: 'CABO-001-3M',       attributes: { Comprimento: '3m' },             price: 49.90, stock: 20, isActive: true,  needsReview: false },
+  // Product 4: Smartwatch Fitness Band Pro — Cor x Tamanho variants
+  { id: 'var-004', productId: '4', sku: 'SW-FIT-004-P-PRETO',   attributes: { Cor: 'Preto',  Tamanho: 'P' },    price: null,   stock: 5,  isActive: true,  needsReview: true, costs: { custoAquisicao: 95.00 }, shipping: { peso: 0.15, altura: 5, largura: 8, comprimento: 10 } },
+  { id: 'var-005', productId: '4', sku: 'SW-FIT-004-M-PRETO',   attributes: { Cor: 'Preto',  Tamanho: 'M' },    price: null,   stock: 3,  isActive: true,  needsReview: true, costs: { custoAquisicao: 95.00 }, shipping: { peso: 0.16, altura: 5, largura: 8, comprimento: 10 } },
+  { id: 'var-006', productId: '4', sku: 'SW-FIT-004-G-PRETO',   attributes: { Cor: 'Preto',  Tamanho: 'G' },    price: 269.90, stock: 2,  isActive: true,  needsReview: true, costs: { custoAquisicao: 98.00 }, shipping: { peso: 0.17, altura: 5, largura: 8, comprimento: 10 } },
+  { id: 'var-007', productId: '4', sku: 'SW-FIT-004-P-BRANCO',  attributes: { Cor: 'Branco', Tamanho: 'P' },    price: null,   stock: 4,  isActive: true,  needsReview: true, costs: { custoAquisicao: 95.00 }, shipping: { peso: 0.15, altura: 5, largura: 8, comprimento: 10 } },
+  { id: 'var-008', productId: '4', sku: 'SW-FIT-004-M-BRANCO',  attributes: { Cor: 'Branco', Tamanho: 'M' },    price: null,   stock: 0,  isActive: false, needsReview: true, costs: { custoAquisicao: 95.00 }, shipping: { peso: 0.16, altura: 5, largura: 8, comprimento: 10 } },
+  { id: 'var-009', productId: '4', sku: 'SW-FIT-004-G-BRANCO',  attributes: { Cor: 'Branco', Tamanho: 'G' },    price: 269.90, stock: 1,  isActive: true,  needsReview: true, costs: { custoAquisicao: 98.00 }, shipping: { peso: 0.17, altura: 5, largura: 8, comprimento: 10 } },
+
+  // Product 5: Cabo HDMI 2.1 4K 2m (category: cat-cabos) — Comprimento variants
+  { id: 'var-010', productId: '5', sku: 'CB-HDMI-005-1M',  attributes: { Comprimento: '1m' },                   price: 29.90,  stock: 50, isActive: true,  needsReview: false, costs: { custoAquisicao: 8.50 },  shipping: { peso: 0.05, altura: 2, largura: 5, comprimento: 15 } },
+  { id: 'var-011', productId: '5', sku: 'CB-HDMI-005-2M',  attributes: { Comprimento: '2m' },                   price: 39.90,  stock: 35, isActive: true,  needsReview: false, costs: { custoAquisicao: 10.00 }, shipping: { peso: 0.07, altura: 2, largura: 5, comprimento: 20 } },
+  { id: 'var-012', productId: '5', sku: 'CB-HDMI-005-3M',  attributes: { Comprimento: '3m' },                   price: 49.90,  stock: 20, isActive: true,  needsReview: false, costs: { custoAquisicao: 12.50 }, shipping: { peso: 0.09, altura: 2, largura: 5, comprimento: 25 } },
 ];

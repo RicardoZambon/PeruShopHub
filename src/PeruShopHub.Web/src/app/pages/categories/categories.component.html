@@ -1,0 +1,65 @@
+<div class="categorias-page">
+  <!-- Page header: title left, add button right (matching products list) -->
+  <div class="categorias-page__header">
+    <div class="categorias-page__header-left">
+      <h1 class="categorias-page__title">Categorias</h1>
+      <span class="categorias-page__subtitle">
+        {{ totalCategories() }} categorias &middot; {{ totalProducts() }} produtos
+      </span>
+    </div>
+    <button class="categorias-page__add-btn" type="button" (click)="onAddCategory()">
+      <lucide-icon [img]="folderPlusIcon" [size]="18"></lucide-icon>
+      Adicionar Categoria
+    </button>
+  </div>
+
+  <!-- Search bar below header, full-width -->
+  <div class="categorias-page__search">
+    <lucide-icon [img]="searchIcon" [size]="16" class="categorias-page__search-icon"></lucide-icon>
+    <input
+      type="text"
+      class="categorias-page__search-input"
+      placeholder="Buscar categorias..."
+      [value]="searchQuery()"
+      (input)="onSearchChange($any($event.target).value)"
+    />
+  </div>
+
+  <!-- Split panel layout -->
+  <div class="categorias-page__content">
+    <div
+      class="categorias-page__tree-panel"
+      [class.categorias-page__tree-panel--hidden-mobile]="mobileView() === 'detail'"
+    >
+      <app-category-tree
+        [categories]="categoryTree()"
+        [selectedId]="selectedCategoryId()"
+        [externalSearchQuery]="searchQuery()"
+        (selectCategory)="onSelectCategory($event)"
+      ></app-category-tree>
+    </div>
+
+    <div
+      class="categorias-page__detail-panel"
+      [class.categorias-page__detail-panel--hidden-mobile]="mobileView() === 'tree'"
+    >
+      <app-category-detail
+        [category]="selectedCategory()"
+        [allCategories]="categoryTree()"
+        (updated)="onCategoryUpdated($event)"
+        (deleted)="onCategoryDeleted($event)"
+        (back)="onBackToTree()"
+      ></app-category-detail>
+    </div>
+  </div>
+</div>
+
+@if (showCreateDialog()) {
+  <app-category-form-dialog
+    [category]="dialogCategory()"
+    [allCategories]="categoryTree()"
+    [preselectedParentId]="selectedCategoryId()"
+    (saved)="onDialogSaved($event)"
+    (closed)="onDialogClosed()"
+  ></app-category-form-dialog>
+}

@@ -1,0 +1,95 @@
+<div class="dialog-overlay" (click)="onBackdropClick($event)">
+  <div class="dialog" role="dialog" aria-modal="true" [attr.aria-label]="dialogTitle">
+    <div class="dialog__header">
+      <h2 class="dialog__title">{{ dialogTitle }}</h2>
+      <button class="dialog__close" (click)="close()" aria-label="Fechar">
+        <lucide-icon [img]="closeIcon" [size]="20"></lucide-icon>
+      </button>
+    </div>
+
+    <form class="dialog__body" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="field">
+        <label for="category-name">Nome</label>
+        <input
+          id="category-name"
+          type="text"
+          formControlName="name"
+          placeholder="Nome da categoria"
+          maxlength="100"
+          [class.invalid]="form.get('name')!.touched && form.get('name')!.invalid"
+        />
+        @if (form.get('name')!.touched && form.get('name')!.hasError('required')) {
+          <span class="field-error">Nome é obrigatório</span>
+        }
+        @if (form.get('name')!.hasError('maxlength')) {
+          <span class="field-error">Máximo de 100 caracteres</span>
+        }
+      </div>
+
+      <div class="field">
+        <label>Categoria Pai</label>
+        <div class="parent-dropdown">
+          <button
+            type="button"
+            class="parent-dropdown__trigger"
+            (click)="toggleParentDropdown()"
+          >
+            <span>{{ selectedParentName() }}</span>
+            <span class="parent-dropdown__chevron">&#9662;</span>
+          </button>
+
+          @if (parentDropdownOpen()) {
+            <div class="parent-dropdown__list">
+              <button
+                type="button"
+                class="parent-dropdown__item"
+                [class.parent-dropdown__item--selected]="!form.get('parentId')!.value"
+                (click)="selectParent(null)"
+              >
+                Nenhuma (raiz)
+              </button>
+
+              @for (option of flatParentOptions(); track option.id) {
+                <button
+                  type="button"
+                  class="parent-dropdown__item"
+                  [class.parent-dropdown__item--selected]="form.get('parentId')!.value === option.id"
+                  (click)="selectParent(option.id)"
+                >
+                  {{ getIndent(option.depth) }}{{ option.name }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="toggle-label">
+          <span class="toggle-switch">
+            <input type="checkbox" formControlName="isActive" />
+            <span class="toggle-slider"></span>
+          </span>
+          <span>Ativo</span>
+        </label>
+      </div>
+    </form>
+
+    <div class="dialog__footer">
+      <button type="button" class="btn btn-ghost" (click)="close()">
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="btn btn-accent"
+        (click)="onSubmit()"
+        [disabled]="saving()"
+      >
+        @if (saving()) {
+          <span class="spinner"></span>
+        }
+        Salvar
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,483 @@
+@if (loading()) {
+  <div class="detail-skeleton">
+    <div class="skeleton-header">
+      <div class="skeleton-block" style="width: 200px; height: 32px;"></div>
+      <div class="skeleton-block" style="width: 100px; height: 28px;"></div>
+    </div>
+    <div class="skeleton-columns">
+      <div class="skeleton-col">
+        <div class="skeleton-block" style="width: 100%; height: 200px;"></div>
+      </div>
+      <div class="skeleton-col">
+        <div class="skeleton-block" style="width: 100%; height: 120px;"></div>
+        <div class="skeleton-block" style="width: 100%; height: 180px;"></div>
+        <div class="skeleton-block" style="width: 100%; height: 100px;"></div>
+      </div>
+    </div>
+  </div>
+} @else if (order(); as o) {
+  <!-- US-057: Lock Banner -->
+  @if (isLocked()) {
+    <div class="lock-banner" role="alert">
+      <div class="lock-banner-content">
+        <lucide-icon [img]="lockIcon" [size]="18"></lucide-icon>
+        <span>Esta venda foi enviada e está bloqueada para edição.</span>
+      </div>
+      <button class="unlock-btn" (click)="requestUnlock()">
+        <lucide-icon [img]="unlockIcon" [size]="14"></lucide-icon>
+        Desbloquear
+      </button>
+    </div>
+  }
+
+  <!-- US-057: Unlock Confirmation Dialog -->
+  @if (showUnlockConfirm()) {
+    <div class="confirm-overlay" (click)="cancelUnlock()">
+      <div class="confirm-dialog" (click)="$event.stopPropagation()">
+        <h3>Desbloquear edição?</h3>
+        <p>Você está prestes a desbloquear uma venda já enviada. Alterações manuais podem causar inconsistências com os dados do marketplace.</p>
+        <div class="confirm-actions">
+          <button class="btn-outline" (click)="cancelUnlock()">Cancelar</button>
+          <button class="btn-danger" (click)="confirmUnlock()">
+            <lucide-icon [img]="unlockIcon" [size]="14"></lucide-icon>
+            Confirmar desbloqueio
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Header -->
+  <div class="detail-header">
+    <div class="header-left">
+      <a routerLink="/vendas" class="back-btn">
+        <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
+      </a>
+      <div class="header-info">
+        <h1>Pedido #{{ o.id }}</h1>
+        <span class="header-date">{{ formatDate(o.date) }}</span>
+      </div>
+    </div>
+    <app-badge [label]="o.status" [variant]="o.statusVariant"></app-badge>
+  </div>
+
+  <div class="detail-columns">
+    <!-- Left Column -->
+    <div class="col-left">
+      <!-- Items Section -->
+      <section class="detail-section">
+        <h2 class="section-title">
+          <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
+          Itens do Pedido
+        </h2>
+        <div class="items-list">
+          @for (item of o.items; track item.sku) {
+            <div class="order-item">
+              <div class="item-thumb">
+                <lucide-icon [img]="packageIcon" [size]="24"></lucide-icon>
+              </div>
+              <div class="item-info">
+                <span class="item-name">{{ item.name }}</span>
+                <div class="item-meta">
+                  <span class="item-sku">{{ item.sku }}</span>
+                  @if (item.variation) {
+                    <span class="item-variation">{{ item.variation }}</span>
+                  }
+                </div>
+              </div>
+              <div class="item-numbers">
+                <div class="item-qty">{{ item.quantity }}x {{ formatBrl(item.unitPrice) }}</div>
+                <div class="item-subtotal">{{ formatBrl(item.subtotal) }}</div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="items-total">
+          <span>Subtotal</span>
+          <span class="total-value">{{ formatBrl(itemsSubtotal()) }}</span>
+        </div>
+      </section>
+
+      <!-- Cost Breakdown Section -->
+      <section class="detail-section cost-breakdown-section">
+        <h2 class="section-title">
+          <lucide-icon [img]="creditCardIcon" [size]="18"></lucide-icon>
+          Decomposição de Custos
+        </h2>
+
+        <!-- Stacked Horizontal Bar -->
+        <div class="cost-bar-container">
+          <div class="cost-bar">
+            @for (seg of costBarSegments(); track seg.category) {
+              <div
+                class="cost-bar-segment"
+                [style.width.%]="seg.pct"
+                [style.background]="seg.color"
+                [title]="seg.category + ': ' + formatBrl(seg.value) + ' (' + seg.pct.toFixed(1) + '%)'"
+              ></div>
+            }
+          </div>
+          <div class="cost-bar-legend">
+            @for (seg of costBarSegments(); track seg.category) {
+              <div class="legend-item">
+                <span class="legend-dot" [style.background]="seg.color"></span>
+                <span class="legend-label">{{ seg.category }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Cost Breakdown Table -->
+        <div class="cost-table-wrapper">
+          <table class="cost-table">
+            <thead>
+              <tr>
+                <th class="col-category">Categoria</th>
+                <th class="col-value">Valor</th>
+                <th class="col-pct">% Receita</th>
+                <th class="col-source">Fonte</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cost of allCosts(); track cost.id ?? cost.category) {
+                <tr [class.manual-cost-row]="isManualCost(cost)">
+                  <td class="col-category">
+                    <span class="category-dot" [style.background]="cost.color"></span>
+                    {{ cost.category }}
+                    @if (cost.description) {
+                      <span class="cost-description">{{ cost.description }}</span>
+                    }
+                  </td>
+                  <td class="col-value mono">{{ formatBrl(cost.value) }}</td>
+                  <td class="col-pct mono">{{ costPct(cost.value).toFixed(1) }}%</td>
+                  <td class="col-source">
+                    @if (isManualCost(cost)) {
+                      <span class="manual-badge">Manual</span>
+                    } @else {
+                      <app-badge [label]="cost.source" [variant]="getSourceVariant(cost.source)"></app-badge>
+                    }
+                  </td>
+                  <td class="col-actions">
+                    @if (isManualCost(cost) && !isLocked()) {
+                      @if (deleteConfirmCostId() === cost.id) {
+                        <div class="delete-confirm-inline">
+                          <span>Excluir?</span>
+                          <button class="btn-icon btn-icon-danger" (click)="deleteCost(cost.id!)" title="Confirmar exclusão">
+                            <lucide-icon [img]="checkIcon" [size]="14"></lucide-icon>
+                          </button>
+                          <button class="btn-icon" (click)="cancelDeleteCost()" title="Cancelar">
+                            <lucide-icon [img]="xIcon" [size]="14"></lucide-icon>
+                          </button>
+                        </div>
+                      } @else {
+                        <div class="row-actions">
+                          <button class="btn-icon" (click)="editManualCost(cost)" title="Editar custo">
+                            <lucide-icon [img]="pencilIcon" [size]="14"></lucide-icon>
+                          </button>
+                          <button class="btn-icon btn-icon-danger" (click)="confirmDeleteCost(cost.id!)" title="Excluir custo">
+                            <lucide-icon [img]="trashIcon" [size]="14"></lucide-icon>
+                          </button>
+                        </div>
+                      }
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="total-costs-row">
+                <td class="col-category"><strong>TOTAL CUSTOS</strong></td>
+                <td class="col-value mono"><strong>{{ formatBrl(totalCosts()) }}</strong></td>
+                <td class="col-pct mono"><strong>{{ costPct(totalCosts()).toFixed(1) }}%</strong></td>
+                <td class="col-source"></td>
+                <td class="col-actions"></td>
+              </tr>
+              <tr class="net-profit-row" [class.profit-positive]="netProfit() >= 0" [class.profit-negative]="netProfit() < 0">
+                <td class="col-category"><strong>LUCRO LÍQUIDO</strong></td>
+                <td class="col-value mono profit-value">{{ formatBrl(netProfit()) }}</td>
+                <td class="col-pct mono profit-value">{{ profitMargin().toFixed(1) }}%</td>
+                <td class="col-source"></td>
+                <td class="col-actions"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- US-056: Inline Cost Form -->
+        @if (showCostForm()) {
+          <div class="inline-form cost-form">
+            <h3 class="inline-form-title">
+              {{ editingCostId() ? 'Editar custo manual' : 'Adicionar custo manual' }}
+            </h3>
+            <form [formGroup]="costForm" (ngSubmit)="saveCost()">
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="costCategory">Categoria</label>
+                  <select id="costCategory" formControlName="categoryKey">
+                    <option value="" disabled>Selecione uma categoria</option>
+                    @for (cat of costCategories; track cat.value) {
+                      <option [value]="cat.value">{{ cat.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="costDescription">Descrição</label>
+                  <input id="costDescription" type="text" formControlName="description" placeholder="Descreva o custo...">
+                </div>
+                <div class="form-field form-field-value">
+                  <label for="costValue">Valor</label>
+                  <div class="input-prefix-wrapper">
+                    <span class="input-prefix">R$</span>
+                    <input id="costValue" type="number" formControlName="value" placeholder="0,00" step="0.01" min="0.01">
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn-outline btn-sm" (click)="cancelCostForm()">Cancelar</button>
+                <button type="submit" class="btn-primary btn-sm" [disabled]="costForm.invalid">Salvar</button>
+              </div>
+            </form>
+          </div>
+        }
+
+        @if (!isLocked() && !showCostForm()) {
+          <button class="add-cost-btn" (click)="openCostForm()">
+            <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
+            Adicionar custo manual
+          </button>
+        }
+      </section>
+
+      <!-- US-061: Supplies Section -->
+      <section class="detail-section supplies-section">
+        <h2 class="section-title">
+          <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
+          Suprimentos utilizados
+        </h2>
+
+        @if (saleSupplies().length === 0 && !showSupplyForm()) {
+          <p class="empty-state-text">Nenhum suprimento utilizado</p>
+        }
+
+        @if (saleSupplies().length > 0) {
+          <div class="supplies-list">
+            <div class="supplies-header">
+              <span class="supply-col-name">Suprimento</span>
+              <span class="supply-col-qty">Qtd</span>
+              <span class="supply-col-unit">Custo un.</span>
+              <span class="supply-col-total">Total</span>
+              <span class="supply-col-actions"></span>
+            </div>
+            @for (supply of saleSupplies(); track supply.supplyId) {
+              <div class="supply-row">
+                <span class="supply-col-name">{{ supply.name }}</span>
+                <span class="supply-col-qty mono">{{ supply.quantity }}</span>
+                <span class="supply-col-unit mono">{{ formatBrl(supply.unitCost) }}</span>
+                <span class="supply-col-total mono">{{ formatBrl(supply.total) }}</span>
+                <span class="supply-col-actions">
+                  @if (!isLocked()) {
+                    <button class="btn-icon btn-icon-danger" (click)="removeSupply(supply.supplyId)" title="Remover suprimento">
+                      <lucide-icon [img]="xIcon" [size]="14"></lucide-icon>
+                    </button>
+                  }
+                </span>
+              </div>
+            }
+            <div class="supplies-total">
+              <span>Total suprimentos</span>
+              <span class="mono">{{ formatBrl(totalSuppliesCost()) }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- Inline Supply Form -->
+        @if (showSupplyForm()) {
+          <div class="inline-form supply-form">
+            <form (ngSubmit)="addSupply()">
+              <div class="form-row">
+                <div class="form-field form-field-search">
+                  <label for="supplySearch">Suprimento</label>
+                  <div class="search-dropdown-wrapper">
+                    <div class="search-input-wrapper">
+                      <lucide-icon [img]="searchIcon" [size]="14"></lucide-icon>
+                      <input
+                        id="supplySearch"
+                        type="text"
+                        [value]="supplySearchQuery()"
+                        (input)="onSupplySearchInput($event)"
+                        (focus)="onSupplySearchFocus()"
+                        (blur)="onSupplySearchBlur()"
+                        placeholder="Buscar suprimento..."
+                        autocomplete="off"
+                      >
+                    </div>
+                    @if (showSupplyDropdown()) {
+                      <div class="search-dropdown">
+                        @for (supply of filteredSupplies(); track supply.id) {
+                          <button type="button" class="dropdown-item" (mousedown)="selectSupply(supply)">
+                            <span>{{ supply.name }}</span>
+                            <span class="dropdown-item-price mono">{{ formatBrl(supply.unitCost) }}</span>
+                          </button>
+                        }
+                        @if (filteredSupplies().length === 0) {
+                          <div class="dropdown-empty">Nenhum suprimento encontrado</div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+                <div class="form-field form-field-qty">
+                  <label for="supplyQty">Quantidade</label>
+                  <input
+                    id="supplyQty"
+                    type="number"
+                    [value]="supplyQuantity()"
+                    (input)="onSupplyQtyChange($event)"
+                    min="1"
+                    step="1"
+                  >
+                </div>
+              </div>
+              @if (getSelectedSupply(); as sel) {
+                <div class="supply-preview">
+                  <span>{{ sel.name }} x{{ supplyQuantity() }}</span>
+                  <span class="mono">{{ formatBrl(sel.unitCost * supplyQuantity()) }}</span>
+                </div>
+              }
+              <div class="form-actions">
+                <button type="button" class="btn-outline btn-sm" (click)="cancelSupplyForm()">Cancelar</button>
+                <button type="submit" class="btn-primary btn-sm" [disabled]="!selectedSupplyId()">Adicionar</button>
+              </div>
+            </form>
+          </div>
+        }
+
+        @if (!isLocked() && !showSupplyForm()) {
+          <button class="add-cost-btn" (click)="openSupplyForm()">
+            <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
+            Adicionar suprimento
+          </button>
+        }
+      </section>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-right">
+      <!-- Buyer Section -->
+      <section class="detail-section">
+        <h2 class="section-title">
+          <lucide-icon [img]="userIcon" [size]="18"></lucide-icon>
+          Comprador
+        </h2>
+        <div class="buyer-info">
+          <div class="buyer-row">
+            <span class="buyer-label">Nome</span>
+            <span class="buyer-value">{{ o.buyer.name }}</span>
+          </div>
+          <div class="buyer-row">
+            <span class="buyer-label">Nickname</span>
+            <span class="buyer-value buyer-mono">{{ o.buyer.nickname }}</span>
+          </div>
+          <div class="buyer-row">
+            <span class="buyer-label">Email</span>
+            <span class="buyer-value">{{ o.buyer.email }}</span>
+          </div>
+          <div class="buyer-row">
+            <span class="buyer-label">Telefone</span>
+            <span class="buyer-value">{{ o.buyer.phone }}</span>
+          </div>
+          <div class="buyer-stats">
+            <div class="buyer-stat">
+              <span class="stat-value">{{ o.buyer.totalOrders }}</span>
+              <span class="stat-label">Pedidos</span>
+            </div>
+            <div class="buyer-stat">
+              <span class="stat-value">{{ formatBrl(o.buyer.totalSpent) }}</span>
+              <span class="stat-label">Total gasto</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Shipping Section -->
+      <section class="detail-section">
+        <h2 class="section-title">
+          <lucide-icon [img]="truckIcon" [size]="18"></lucide-icon>
+          Envio
+        </h2>
+        <div class="shipping-info">
+          <div class="shipping-row">
+            <span class="shipping-label">Rastreio</span>
+            <div class="tracking-row">
+              <span class="tracking-number">{{ o.shipping.trackingNumber }}</span>
+              <button class="copy-btn" (click)="copyTracking()" [title]="copySuccess() ? 'Copiado!' : 'Copiar'">
+                <lucide-icon [img]="copyIcon" [size]="14"></lucide-icon>
+                {{ copySuccess() ? 'Copiado!' : 'Copiar' }}
+              </button>
+            </div>
+          </div>
+          <div class="shipping-row">
+            <span class="shipping-label">Transportadora</span>
+            <span class="shipping-value">{{ o.shipping.carrier }}</span>
+          </div>
+          <div class="shipping-row">
+            <span class="shipping-label">Tipo logístico</span>
+            <app-badge [label]="o.shipping.logisticType" [variant]="getLogisticVariant(o.shipping.logisticType)"></app-badge>
+          </div>
+          <div class="timeline">
+            @for (step of o.shipping.timeline; track step.label; let i = $index; let last = $last) {
+              <div class="timeline-step" [class.completed]="step.completed" [class.last]="last">
+                <div class="timeline-dot">
+                  @if (step.completed) {
+                    <lucide-icon [img]="checkIcon" [size]="12"></lucide-icon>
+                  }
+                </div>
+                @if (!last) {
+                  <div class="timeline-line"></div>
+                }
+                <div class="timeline-content">
+                  <span class="timeline-label">{{ step.label }}</span>
+                  @if (step.date) {
+                    <span class="timeline-date">{{ step.date }}</span>
+                  } @else {
+                    <span class="timeline-date timeline-pending">Pendente</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Payment Section -->
+      <section class="detail-section">
+        <h2 class="section-title">
+          <lucide-icon [img]="creditCardIcon" [size]="18"></lucide-icon>
+          Pagamento
+        </h2>
+        <div class="payment-info">
+          <div class="payment-row">
+            <span class="payment-label">Método</span>
+            <div class="payment-method">
+              <lucide-icon [img]="creditCardIcon" [size]="16"></lucide-icon>
+              <span>{{ o.payment.method }}</span>
+            </div>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">Parcelas</span>
+            <span class="payment-value">{{ o.payment.installments }}x de {{ formatBrl(o.payment.amount / o.payment.installments) }}</span>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">Valor total</span>
+            <span class="payment-value payment-total">{{ formatBrl(o.payment.amount) }}</span>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">Status</span>
+            <app-badge [label]="o.payment.status" [variant]="o.payment.statusVariant"></app-badge>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+}

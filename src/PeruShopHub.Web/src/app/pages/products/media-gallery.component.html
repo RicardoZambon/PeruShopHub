@@ -1,0 +1,109 @@
+<div class="media-gallery">
+  <!-- Video Section -->
+  <div class="gallery-section">
+    <h3 class="section-title">
+      <lucide-icon [img]="videoIcon" [size]="18"></lucide-icon>
+      Video
+    </h3>
+
+    @if (videoThumbnail()) {
+      <div class="video-preview">
+        <img [src]="videoThumbnail()!" alt="Video thumbnail" class="video-thumbnail" />
+        <div class="video-play-overlay">
+          <lucide-icon [img]="playIcon" [size]="32"></lucide-icon>
+        </div>
+        <button
+          type="button"
+          class="video-clear-btn"
+          (click)="clearVideo()"
+          aria-label="Remover video"
+        >
+          <lucide-icon [img]="closeIcon" [size]="14"></lucide-icon>
+        </button>
+      </div>
+    } @else {
+      <div class="video-input-wrapper">
+        <input
+          type="text"
+          class="video-url-input"
+          placeholder="Cole a URL do YouTube aqui..."
+          [value]="videoInputValue()"
+          (input)="onVideoUrlInput($any($event.target).value)"
+        />
+      </div>
+    }
+    <p class="section-hint">
+      YouTube URL. Para Clips: MP4/MOV, 10-60s, vertical 9:16, até 280 MB
+    </p>
+  </div>
+
+  <!-- Images Section -->
+  <div class="gallery-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <lucide-icon [img]="cameraIcon" [size]="18"></lucide-icon>
+        Imagens
+      </h3>
+      <span class="image-counter">{{ imageCount() }}/{{ maxImages }} imagens</span>
+    </div>
+
+    <div
+      class="image-grid"
+      cdkDropList
+      [cdkDropListData]="images()"
+      (cdkDropListDropped)="onDrop($event)"
+    >
+      <!-- Filled image slots -->
+      @for (image of images(); track image.id; let i = $index) {
+        <div
+          class="image-slot filled"
+          cdkDrag
+          [cdkDragData]="image"
+        >
+          <div class="drag-placeholder" *cdkDragPlaceholder></div>
+
+          <div class="image-content" [style.background-color]="image.color">
+            <span class="image-number">{{ i + 1 }}</span>
+
+            <!-- Drag handle -->
+            <div class="drag-handle" cdkDragHandle>
+              <lucide-icon [img]="gripIcon" [size]="16"></lucide-icon>
+            </div>
+
+            <!-- Principal badge on first slot -->
+            @if (i === 0) {
+              <div class="principal-badge">
+                <lucide-icon [img]="starIcon" [size]="12"></lucide-icon>
+                Principal
+              </div>
+            }
+
+            <!-- Remove button on hover -->
+            <button
+              type="button"
+              class="image-remove-btn"
+              (click)="removeImage(i)"
+              aria-label="Remover imagem"
+            >
+              <lucide-icon [img]="closeIcon" [size]="14"></lucide-icon>
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Empty slots -->
+      @for (slot of emptySlots(); track $index) {
+        <div class="image-slot empty" (click)="addMockImage()">
+          <div class="empty-content">
+            <lucide-icon [img]="cameraIcon" [size]="24"></lucide-icon>
+            <span class="empty-text">Adicionar</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <p class="section-hint">
+      JPG/PNG, 500-1920px, até 10 MB, fundo branco recomendado
+    </p>
+  </div>
+</div>

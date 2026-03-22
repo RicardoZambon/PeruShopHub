@@ -1,0 +1,448 @@
+<div class="variant-manager">
+  <!-- Header -->
+  <div class="vm-header">
+    <h3 class="vm-title">Variantes</h3>
+    <span class="vm-count">{{ variants().length }} variantes</span>
+  </div>
+
+  <!-- Variation Fields Selection (creation flow) -->
+  @if (variationFields().length > 0) {
+    <div class="variation-fields-section">
+      <h4 class="vf-section-title">Campos de variacao</h4>
+
+      <div class="vf-fields-list">
+        @for (field of variationFields(); track field.id) {
+          <div class="vf-field">
+            <div class="vf-field-header">
+              <span class="vf-field-name">{{ field.name }}</span>
+              <span class="vf-type-badge" [class.vf-type-select]="field.type === 'select'" [class.vf-type-text]="field.type === 'text'">
+                {{ field.type === 'select' ? 'Opcoes' : 'Texto' }}
+              </span>
+              @if (field.inheritedFrom) {
+                <span class="vf-inherited-label">Herdado de {{ field.inheritedFrom }}</span>
+              }
+            </div>
+
+            <div class="vf-field-body">
+              @if (field.type === 'select') {
+                <div class="vf-checkboxes">
+                  @for (option of field.options; track option) {
+                    <label class="vf-checkbox-label">
+                      <input
+                        type="checkbox"
+                        [checked]="isOptionSelected(field.name, option)"
+                        (change)="toggleOption(field.name, option)"
+                      />
+                      <span class="vf-checkbox-text">{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              } @else {
+                <!-- Text: chip input -->
+                <div class="vf-chip-input-wrapper">
+                  <div class="vf-chips">
+                    @for (chip of getSelectedValuesForField(field.name); track chip) {
+                      <span class="vf-chip">
+                        {{ chip }}
+                        <button type="button" class="vf-chip-remove" (click)="removeTextChip(field.name, chip)">
+                          <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
+                        </button>
+                      </span>
+                    }
+                  </div>
+                  <div class="vf-chip-input-row">
+                    <input
+                      type="text"
+                      class="vf-chip-input"
+                      placeholder="Digite e pressione Enter"
+                      [value]="getTextInputValue(field.name)"
+                      (input)="updateTextInput(field.name, $any($event.target).value)"
+                      (keydown)="onTextKeydown($event, field.name)"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-primary"
+                      (click)="addTextChip(field.name)"
+                      [disabled]="!getTextInputValue(field.name).trim()"
+                    >
+                      <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
+                      Adicionar
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Generate Combinations -->
+      <div class="vf-generate-section">
+        @if (combinationWarning()) {
+          <div class="vf-warning">
+            <lucide-icon [img]="alertIcon" [size]="16"></lucide-icon>
+            <span>Atencao: isso ira gerar {{ combinationCount() }} combinacoes. Deseja continuar?</span>
+            <button type="button" class="btn btn-sm btn-primary" (click)="forceGenerateCombinations()">
+              Sim, gerar
+            </button>
+            <button type="button" class="btn btn-sm btn-ghost" (click)="combinationWarning.set(false)">
+              Cancelar
+            </button>
+          </div>
+        }
+
+        <div class="vf-generate-row">
+          @if (combinationCount() > 0) {
+            <span class="vf-combo-count">{{ combinationCount() }} combinacoes</span>
+          }
+          <button
+            type="button"
+            class="btn btn-sm btn-accent"
+            [disabled]="combinationCount() === 0 || generating()"
+            (click)="generateCombinations()"
+          >
+            @if (generating()) {
+              <span class="spinner-sm"></span>
+              Gerando...
+            } @else {
+              <lucide-icon [img]="shuffleIcon" [size]="14"></lucide-icon>
+              Gerar Combinacoes
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Bulk Actions -->
+  @if (variants().length > 0) {
+    <div class="bulk-actions">
+      <div class="bulk-row">
+        <label class="bulk-label">Definir preco para todos:</label>
+        <div class="bulk-input-group">
+          <div class="input-prefix">
+            <span class="prefix">R$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0,00"
+              [value]="bulkPrice()"
+              (input)="updateBulkPrice($any($event.target).value)"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            [disabled]="bulkPrice() === null"
+            (click)="applyBulkPrice()"
+          >
+            <lucide-icon [img]="dollarIcon" [size]="14"></lucide-icon>
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Desktop Table -->
+  <div class="vm-table-wrapper">
+    <table class="vm-table">
+      <thead>
+        <tr>
+          <th class="col-expand"></th>
+          @for (key of attributeKeys(); track key) {
+            <th>{{ key }}</th>
+          }
+          <th>Estoque</th>
+          <th>SKU</th>
+          <th class="col-active">Ativo</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (variant of variants(); track variant.id) {
+          <!-- Main row -->
+          <tr class="vm-row" [class.expanded]="isExpanded(variant.id)">
+            <td class="col-expand">
+              <button
+                type="button"
+                class="expand-btn"
+                (click)="toggleExpand(variant.id)"
+                [attr.aria-expanded]="isExpanded(variant.id)"
+              >
+                <lucide-icon
+                  [img]="isExpanded(variant.id) ? chevronUpIcon : chevronDownIcon"
+                  [size]="16"
+                ></lucide-icon>
+              </button>
+            </td>
+            @for (key of attributeKeys(); track key) {
+              <td>{{ variant.attributes[key] || '-' }}</td>
+            }
+            <td>
+              <input
+                type="number"
+                class="inline-input inline-stock"
+                min="0"
+                [value]="variant.stock"
+                (change)="updateVariantStock(variant.id, +$any($event.target).value)"
+              />
+            </td>
+            <td>
+              <input
+                type="text"
+                class="inline-input inline-sku"
+                [value]="variant.sku"
+                (change)="updateVariantSku(variant.id, $any($event.target).value)"
+              />
+            </td>
+            <td class="col-active">
+              <label class="toggle-switch-sm">
+                <input
+                  type="checkbox"
+                  [checked]="variant.isActive"
+                  (change)="updateVariantActive(variant.id, $any($event.target).checked)"
+                />
+                <span class="toggle-slider-sm"></span>
+              </label>
+            </td>
+            <td class="col-actions">
+              <button
+                type="button"
+                class="btn-icon btn-danger-icon"
+                (click)="deleteVariant(variant.id)"
+                aria-label="Excluir variante"
+              >
+                <lucide-icon [img]="trashIcon" [size]="16"></lucide-icon>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Expandable detail row -->
+          @if (isExpanded(variant.id)) {
+            <tr class="vm-detail-row">
+              <td [attr.colspan]="attributeKeys().length + 5">
+                <div class="detail-content">
+                  <!-- Price and Costs Section -->
+                  <div class="detail-section">
+                    <h4 class="detail-section-title">Preco e custos</h4>
+                    <div class="detail-fields">
+                      <div class="detail-field">
+                        <label>Preco de venda</label>
+                        <div class="input-prefix">
+                          <span class="prefix">R$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Usar preco base"
+                            [value]="variant.price"
+                            (change)="updateVariantPrice(variant.id, $any($event.target).value ? +$any($event.target).value : null)"
+                          />
+                        </div>
+                      </div>
+                      <div class="detail-field">
+                        <label>Custo de aquisicao</label>
+                        <div class="input-prefix">
+                          <span class="prefix">R$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0,00"
+                            [value]="variant.costs?.custoAquisicao"
+                            (change)="updateVariantCostAquisicao(variant, $any($event.target).value ? +$any($event.target).value : null)"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Dimensions Section -->
+                  <div class="detail-section">
+                    <h4 class="detail-section-title">Dimensoes</h4>
+                    <div class="detail-fields detail-fields--4">
+                      <div class="detail-field">
+                        <label>Peso (kg)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00"
+                          [value]="variant.shipping?.peso"
+                          (change)="updateVariantShippingField(variant, 'peso', $any($event.target).value ? +$any($event.target).value : null)"
+                        />
+                      </div>
+                      <div class="detail-field">
+                        <label>Altura (cm)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="0"
+                          [value]="variant.shipping?.altura"
+                          (change)="updateVariantShippingField(variant, 'altura', $any($event.target).value ? +$any($event.target).value : null)"
+                        />
+                      </div>
+                      <div class="detail-field">
+                        <label>Largura (cm)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="0"
+                          [value]="variant.shipping?.largura"
+                          (change)="updateVariantShippingField(variant, 'largura', $any($event.target).value ? +$any($event.target).value : null)"
+                        />
+                      </div>
+                      <div class="detail-field">
+                        <label>Comprimento (cm)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="0"
+                          [value]="variant.shipping?.comprimento"
+                          (change)="updateVariantShippingField(variant, 'comprimento', $any($event.target).value ? +$any($event.target).value : null)"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile Card View -->
+  <div class="vm-cards">
+    @for (variant of variants(); track variant.id) {
+      <div class="vm-card" [class.inactive]="!variant.isActive">
+        <div class="card-header" (click)="toggleExpand(variant.id)">
+          <div class="card-attrs">
+            @for (key of attributeKeys(); track key) {
+              <span class="card-attr">
+                <span class="card-attr-label">{{ key }}:</span>
+                {{ variant.attributes[key] || '-' }}
+              </span>
+            }
+          </div>
+          <div class="card-summary">
+            <span class="card-stock">Est: {{ variant.stock }}</span>
+            <span class="card-sku">{{ variant.sku }}</span>
+          </div>
+          <lucide-icon
+            [img]="isExpanded(variant.id) ? chevronUpIcon : chevronDownIcon"
+            [size]="16"
+            class="card-chevron"
+          ></lucide-icon>
+        </div>
+
+        @if (isExpanded(variant.id)) {
+          <div class="card-detail">
+            <!-- Price and Costs -->
+            <h4 class="detail-section-title">Preco e custos</h4>
+            <div class="card-detail-fields">
+              <div class="detail-field">
+                <label>Preco de venda</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Usar preco base"
+                    [value]="variant.price"
+                    (change)="updateVariantPrice(variant.id, $any($event.target).value ? +$any($event.target).value : null)"
+                  />
+                </div>
+              </div>
+              <div class="detail-field">
+                <label>Custo de aquisicao</label>
+                <div class="input-prefix">
+                  <span class="prefix">R$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    [value]="variant.costs?.custoAquisicao"
+                    (change)="updateVariantCostAquisicao(variant, $any($event.target).value ? +$any($event.target).value : null)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Dimensions -->
+            <h4 class="detail-section-title">Dimensoes</h4>
+            <div class="card-detail-fields card-detail-fields--2">
+              <div class="detail-field">
+                <label>Peso (kg)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  [value]="variant.shipping?.peso"
+                  (change)="updateVariantShippingField(variant, 'peso', $any($event.target).value ? +$any($event.target).value : null)"
+                />
+              </div>
+              <div class="detail-field">
+                <label>Altura (cm)</label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="0"
+                  [value]="variant.shipping?.altura"
+                  (change)="updateVariantShippingField(variant, 'altura', $any($event.target).value ? +$any($event.target).value : null)"
+                />
+              </div>
+              <div class="detail-field">
+                <label>Largura (cm)</label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="0"
+                  [value]="variant.shipping?.largura"
+                  (change)="updateVariantShippingField(variant, 'largura', $any($event.target).value ? +$any($event.target).value : null)"
+                />
+              </div>
+              <div class="detail-field">
+                <label>Comprimento (cm)</label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="0"
+                  [value]="variant.shipping?.comprimento"
+                  (change)="updateVariantShippingField(variant, 'comprimento', $any($event.target).value ? +$any($event.target).value : null)"
+                />
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card-actions">
+              <label class="toggle-switch-sm">
+                <input
+                  type="checkbox"
+                  [checked]="variant.isActive"
+                  (change)="updateVariantActive(variant.id, $any($event.target).checked)"
+                />
+                <span class="toggle-slider-sm"></span>
+              </label>
+              <span class="card-active-label">{{ variant.isActive ? 'Ativo' : 'Inativo' }}</span>
+              <button
+                type="button"
+                class="btn-icon btn-danger-icon"
+                (click)="deleteVariant(variant.id)"
+                aria-label="Excluir variante"
+              >
+                <lucide-icon [img]="trashIcon" [size]="16"></lucide-icon>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
