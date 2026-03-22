@@ -1,3 +1,24 @@
 # Ralph Progress - PeruShopHub UI/UX Design System
 # Branch: ralph/ui-ux-design-system
 # Created: 2026-03-21
+
+## Codebase Patterns
+- Angular CLI v21 with standalone components (no NgModules)
+- All page components use `loadComponent` for lazy loading in app.routes.ts
+- Working directory for Angular commands: `src/PeruShopHub.Web/`
+- Build: `npx ng build`, Typecheck: `npx tsc --noEmit -p tsconfig.app.json`
+- Proxy config in `proxy.conf.json` targets `http://localhost:5000` for `/api` routes
+
+## 2026-03-22 - US-001
+- Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
+- Installed ng2-charts, chart.js, lucide-angular
+- Configured lazy-loaded routes for: dashboard, produtos, vendas, perguntas, clientes, financeiro, estoque, configuracoes, login
+- Set up Google Fonts (Inter 400-700, Roboto Mono 400-500), lang="pt-BR", viewport meta
+- Created proxy.conf.json targeting localhost:5000 and wired into angular.json serve config
+- Simplified app.html to just `<router-outlet />`
+- Files changed: all new under src/PeruShopHub.Web/
+- **Learnings for future iterations:**
+  - Angular CLI v21 generates `.ts` component files (not `.component.ts` by default) but we use `.component.ts` naming for clarity
+  - Build and typecheck commands must run from `src/PeruShopHub.Web/` directory (or use `--project` flag)
+  - The `npx ng build` output shows lazy chunk files confirming routes are properly configured
+---
