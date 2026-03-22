@@ -349,3 +349,23 @@
   - `navigator.clipboard.writeText()` for copy-to-clipboard with signal-based success feedback
   - Two-column detail layout: use `grid-template-columns: 1fr 1fr` on desktop, single column on tablet via `@include m.tablet`
 ---
+
+## 2026-03-22 - US-022
+- Added "Decomposição de Custos" section to OrderDetailComponent (left column, below items)
+- Stacked horizontal bar (32px height) with segments proportional to each cost as % of revenue, final segment = lucro in --success color
+- Tooltip on hover showing category name + value + percentage
+- Legend below bar with colored dots and category names
+- Cost breakdown table with columns: Categoria (with colored dot), Valor (BRL, mono, right-aligned), % Receita (mono, right-aligned), Fonte (badge: API=primary, Manual=warning, Calculado=success)
+- 9 cost rows: Comissão ML, Taxa fixa, Frete vendedor, Taxa de pagamento, Custo do produto, Embalagem, Impostos, Armazenagem, Advertising
+- TOTAL CUSTOS row with --neutral-50 background and separator border
+- LUCRO LÍQUIDO row with double-border separator, metric font, green/red coloring based on positive/negative
+- Margin percentage displayed next to profit value
+- "+ Adicionar custo manual" text button below table (non-functional)
+- Mock data: R$ 159.90 revenue matching design spec
+- Files changed: `venda-detail.component.ts` (updated), `venda-detail.component.html` (updated), `venda-detail.component.scss` (updated)
+- **Learnings for future iterations:**
+  - `computed()` signals chain well for derived financial calculations (totalCosts → netProfit → profitMargin → costBarSegments)
+  - CSS `flex` with percentage widths works better than `grid` for proportional stacked bars
+  - `tfoot` with double-border separator (`border-top: 3px double`) gives visual emphasis to the profit row
+  - Cost source badges reuse BadgeComponent with variant mapping from `CostSource` type
+---

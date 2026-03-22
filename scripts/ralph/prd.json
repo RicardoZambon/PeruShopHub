@@ -419,7 +419,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": "This is the product's core differentiator screen. Must be pixel-perfect per Docs/PeruShopHub-Design-System.md section 4."
     },
     {
