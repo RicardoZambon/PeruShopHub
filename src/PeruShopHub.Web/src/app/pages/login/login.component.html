@@ -1,0 +1,67 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo">PeruShopHub</div>
+      <p class="tagline">Gestão inteligente de marketplaces</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="error-alert">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="login-form">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="seu@email.com"
+          [class.invalid]="email.touched && email.invalid"
+          [attr.disabled]="loading() ? '' : null"
+        />
+        @if (email.touched && email.hasError('required')) {
+          <span class="field-error">E-mail é obrigatório</span>
+        }
+        @if (email.touched && email.hasError('email') && !email.hasError('required')) {
+          <span class="field-error">E-mail inválido</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="password">Senha</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="••••••"
+          [class.invalid]="password.touched && password.invalid"
+          [attr.disabled]="loading() ? '' : null"
+        />
+        @if (password.touched && password.hasError('required')) {
+          <span class="field-error">Senha é obrigatória</span>
+        }
+        @if (password.touched && password.hasError('minlength') && !password.hasError('required')) {
+          <span class="field-error">Senha deve ter no mínimo 6 caracteres</span>
+        }
+      </div>
+
+      <button
+        type="submit"
+        class="btn-primary"
+        [disabled]="form.invalid || loading()"
+      >
+        @if (loading()) {
+          <span class="spinner"></span>
+          Entrando...
+        } @else {
+          Entrar
+        }
+      </button>
+    </form>
+
+    <a href="javascript:void(0)" class="forgot-link">Esqueceu a senha?</a>
+  </div>
+</div>
