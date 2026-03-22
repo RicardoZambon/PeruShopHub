@@ -1,0 +1,158 @@
+@if (!hasData()) {
+  <div class="produtos-empty">
+    <app-empty-state
+      title="Nenhum produto cadastrado"
+      description="Comece adicionando seus produtos para acompanhar vendas e lucratividade."
+      actionLabel="Novo Produto"
+      (actionClick)="onNewProduct()"
+    ></app-empty-state>
+  </div>
+} @else {
+  <div class="produtos">
+    <!-- Header -->
+    <div class="produtos__header">
+      <h1 class="produtos__title">Produtos</h1>
+      <button class="produtos__new-btn" (click)="onNewProduct()">
+        <lucide-icon [img]="plusIcon" [size]="18"></lucide-icon>
+        Novo Produto
+      </button>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="produtos__action-bar">
+      <div class="produtos__search">
+        <lucide-icon [img]="searchIcon" [size]="16" class="produtos__search-icon"></lucide-icon>
+        <input
+          type="text"
+          class="produtos__search-input"
+          placeholder="Buscar por nome ou SKU..."
+          [value]="searchQuery()"
+          (input)="onSearchChange($any($event.target).value)"
+        />
+      </div>
+      <select class="produtos__status-filter" (change)="onStatusChange($event)">
+        <option value="Todos">Todos</option>
+        <option value="Ativo">Ativo</option>
+        <option value="Pausado">Pausado</option>
+        <option value="Encerrado">Encerrado</option>
+      </select>
+    </div>
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <app-data-table
+        [columns]="columns"
+        [data]="[]"
+        [loading]="true"
+        [totalItems]="0"
+      ></app-data-table>
+    } @else if (filteredProducts().length === 0) {
+      <app-data-table
+        [columns]="columns"
+        [data]="[]"
+        [loading]="false"
+        emptyTitle="Nenhum produto encontrado"
+        emptyDescription="Tente ajustar os filtros de busca."
+        [totalItems]="0"
+      ></app-data-table>
+    } @else {
+      <!-- Custom Table (not using DataTable for custom cell rendering) -->
+      <div class="produtos-table">
+        <!-- Desktop/Tablet Table -->
+        <div class="produtos-table__scroll-wrapper">
+          <table class="produtos-table__table produtos-table__table--desktop">
+            <thead>
+              <tr>
+                <th class="produtos-table__th" style="width: 56px; text-align: center">Foto</th>
+                <th class="produtos-table__th">Nome</th>
+                <th class="produtos-table__th produtos-table__th--mono">SKU</th>
+                <th class="produtos-table__th" style="text-align: right">Preço</th>
+                <th class="produtos-table__th" style="text-align: right">Estoque</th>
+                <th class="produtos-table__th">Status</th>
+                <th class="produtos-table__th" style="text-align: right">Margem</th>
+                <th class="produtos-table__th" style="text-align: center; width: 56px">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (product of filteredProducts(); track product.id) {
+                <tr class="produtos-table__row" (click)="onRowClick(product)">
+                  <td class="produtos-table__td" style="text-align: center">
+                    <div class="produtos-table__thumb">
+                      <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
+                    </div>
+                  </td>
+                  <td class="produtos-table__td produtos-table__td--name">{{ product.nome }}</td>
+                  <td class="produtos-table__td produtos-table__td--mono">{{ product.sku }}</td>
+                  <td class="produtos-table__td produtos-table__td--mono" style="text-align: right">{{ formatBrl(product.preco) }}</td>
+                  <td class="produtos-table__td" style="text-align: right"
+                    [class.produtos-table__td--low-stock]="product.estoque > 0 && product.estoque <= 10"
+                    [class.produtos-table__td--no-stock]="product.estoque === 0">
+                    {{ product.estoque }}
+                  </td>
+                  <td class="produtos-table__td">
+                    <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
+                  </td>
+                  <td class="produtos-table__td" style="text-align: right">
+                    <span class="margin-badge" [ngClass]="getMarginClass(product.margem)">
+                      {{ product.margem.toFixed(1) }}%
+                    </span>
+                  </td>
+                  <td class="produtos-table__td" style="text-align: center">
+                    <button class="produtos-table__edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', product.id, 'editar'])">
+                      <lucide-icon [img]="editIcon" [size]="16"></lucide-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Card List -->
+        <div class="produtos-table__cards">
+          @for (product of filteredProducts(); track product.id) {
+            <div class="produtos-table__card" (click)="onRowClick(product)">
+              <div class="produtos-table__card-header">
+                <div class="produtos-table__thumb produtos-table__thumb--sm">
+                  <lucide-icon [img]="packageIcon" [size]="16"></lucide-icon>
+                </div>
+                <div class="produtos-table__card-title">
+                  <span class="produtos-table__card-name">{{ product.nome }}</span>
+                  <span class="produtos-table__card-sku">{{ product.sku }}</span>
+                </div>
+                <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
+              </div>
+              <div class="produtos-table__card-body">
+                <div class="produtos-table__card-field">
+                  <span class="produtos-table__card-label">Preço</span>
+                  <span class="produtos-table__card-value produtos-table__td--mono">{{ formatBrl(product.preco) }}</span>
+                </div>
+                <div class="produtos-table__card-field">
+                  <span class="produtos-table__card-label">Estoque</span>
+                  <span class="produtos-table__card-value"
+                    [class.produtos-table__td--low-stock]="product.estoque > 0 && product.estoque <= 10"
+                    [class.produtos-table__td--no-stock]="product.estoque === 0">
+                    {{ product.estoque }}
+                  </span>
+                </div>
+                <div class="produtos-table__card-field">
+                  <span class="produtos-table__card-label">Margem</span>
+                  <span class="margin-badge" [ngClass]="getMarginClass(product.margem)">
+                    {{ product.margem.toFixed(1) }}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Pagination -->
+        <div class="produtos-table__pagination">
+          <span class="produtos-table__pagination-info">
+            Mostrando 1-{{ filteredProducts().length }} de {{ filteredProducts().length }}
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+}

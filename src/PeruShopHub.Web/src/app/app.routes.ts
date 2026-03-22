@@ -23,6 +23,21 @@ export const routes: Routes = [
           import('./pages/produtos/produtos-list.component').then(m => m.ProdutosListComponent),
       },
       {
+        path: 'produtos/novo',
+        loadComponent: () =>
+          import('./pages/produtos/produto-form.component').then(m => m.ProdutoFormComponent),
+      },
+      {
+        path: 'produtos/:id',
+        loadComponent: () =>
+          import('./pages/produtos/produto-detail.component').then(m => m.ProdutoDetailComponent),
+      },
+      {
+        path: 'produtos/:id/editar',
+        loadComponent: () =>
+          import('./pages/produtos/produto-form.component').then(m => m.ProdutoFormComponent),
+      },
+      {
         path: 'vendas',
         loadComponent: () =>
           import('./pages/vendas/vendas-list.component').then(m => m.VendasListComponent),
