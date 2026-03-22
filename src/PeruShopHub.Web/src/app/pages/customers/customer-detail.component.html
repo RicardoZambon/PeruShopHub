@@ -1,0 +1,105 @@
+<!-- Loading skeleton -->
+@if (loading()) {
+  <div class="detail-page">
+    <div class="detail-page__back">
+      <div class="skeleton skeleton--rect" style="width: 160px; height: 32px;"></div>
+    </div>
+    <div class="detail-page__header">
+      <div class="skeleton skeleton--rect" style="width: 80px; height: 80px; border-radius: 50%;"></div>
+      <div style="flex: 1;">
+        <div class="skeleton skeleton--text" style="width: 250px; height: 24px; margin-bottom: 8px;"></div>
+        <div class="skeleton skeleton--text" style="width: 200px; height: 16px; margin-bottom: 4px;"></div>
+        <div class="skeleton skeleton--text" style="width: 150px; height: 16px;"></div>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="skeleton skeleton--rect" style="height: 100px; border-radius: 8px;"></div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Loaded content -->
+@if (!loading() && customer()) {
+  <div class="detail-page">
+    <!-- Back button -->
+    <a class="detail-page__back" routerLink="/clientes">
+      <lucide-icon [img]="ArrowLeft" [size]="18"></lucide-icon>
+      Voltar para Clientes
+    </a>
+
+    <!-- Header section -->
+    <div class="detail-page__header">
+      <div class="detail-page__avatar">
+        <lucide-icon [img]="UserIcon" [size]="32" class="detail-page__avatar-icon"></lucide-icon>
+      </div>
+      <div class="detail-page__info">
+        <h1 class="detail-page__name">{{ customer()!.name }}</h1>
+        <div class="detail-page__contact">
+          <span class="detail-page__contact-item">
+            <lucide-icon [img]="MailIcon" [size]="14"></lucide-icon>
+            {{ customer()!.email }}
+          </span>
+          <span class="detail-page__contact-item">
+            <lucide-icon [img]="PhoneIcon" [size]="14"></lucide-icon>
+            {{ customer()!.phone }}
+          </span>
+        </div>
+        <div class="detail-page__meta">
+          <span class="detail-page__meta-item">
+            <lucide-icon [img]="MapPinIcon" [size]="14"></lucide-icon>
+            {{ customer()!.address }}
+          </span>
+          <span class="detail-page__cpf">CPF: {{ customer()!.cpf }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="kpi-grid">
+      @for (kpi of kpis(); track kpi.label) {
+        <app-kpi-card
+          [label]="kpi.label"
+          [value]="kpi.value"
+        ></app-kpi-card>
+      }
+    </div>
+
+    <!-- Recent orders section -->
+    <div class="detail-page__sections">
+      <div class="detail-page__section detail-page__section--full">
+        <h2 class="detail-page__section-title">Pedidos Recentes</h2>
+        <div class="detail-page__table-wrap">
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Pedido #</th>
+                <th>Data</th>
+                <th class="text-right">Valor</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of recentOrders(); track order.id) {
+                <tr class="detail-table__row--clickable" [routerLink]="'/vendas/' + order.id">
+                  <td class="mono">#{{ order.id }}</td>
+                  <td>{{ formatDate(order.date) }}</td>
+                  <td class="text-right mono">{{ order.value | brlCurrency }}</td>
+                  <td>
+                    <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)"></app-badge>
+                  </td>
+                </tr>
+              }
+              @if (recentOrders().length === 0) {
+                <tr>
+                  <td colspan="4" class="detail-table__empty">Nenhum pedido encontrado</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+}

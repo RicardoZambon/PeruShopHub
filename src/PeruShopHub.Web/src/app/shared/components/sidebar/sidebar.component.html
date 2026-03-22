@@ -21,23 +21,33 @@
     </button>
   </div>
 
-  <!-- Nav items -->
+  <!-- Nav items grouped -->
   <ul class="sidebar-nav">
-    @for (item of navItems; track item.route) {
-      <li>
-        <a
-          class="nav-item"
-          [routerLink]="item.route"
-          routerLinkActive="active"
-          [title]="sidebar.collapsed() ? item.label : ''"
-          (click)="onNavClick()"
-        >
-          <lucide-angular [img]="item.icon" [size]="20" class="nav-icon" />
-          @if (!sidebar.collapsed() || sidebar.mobileOpen()) {
-            <span class="nav-label">{{ item.label }}</span>
-          }
-        </a>
-      </li>
+    @for (group of navGroups; track group.label) {
+      @if (group.label) {
+        <!-- Group label (expanded) / divider (collapsed) -->
+        @if (!sidebar.collapsed() || sidebar.mobileOpen()) {
+          <li class="nav-group-label">{{ group.label }}</li>
+        } @else {
+          <li class="nav-group-divider"></li>
+        }
+      }
+      @for (item of group.items; track item.route) {
+        <li>
+          <a
+            class="nav-item"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            [title]="sidebar.collapsed() ? item.label : ''"
+            (click)="onNavClick()"
+          >
+            <lucide-angular [img]="item.icon" [size]="20" class="nav-icon" />
+            @if (!sidebar.collapsed() || sidebar.mobileOpen()) {
+              <span class="nav-label">{{ item.label }}</span>
+            }
+          </a>
+        </li>
+      }
     }
   </ul>
 

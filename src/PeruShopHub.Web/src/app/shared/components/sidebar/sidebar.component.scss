@@ -147,6 +147,27 @@
   text-overflow: ellipsis;
 }
 
+.nav-group-label {
+  list-style: none;
+  font-size: var(--label-size, 12px);
+  font-weight: var(--label-weight, 500);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--neutral-500);
+  padding: 0 var(--space-4);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.nav-group-divider {
+  list-style: none;
+  height: 0;
+  border-top: 1px solid var(--neutral-300);
+  margin: var(--space-2) var(--space-3);
+}
+
 .collapse-toggle {
   display: flex;
   align-items: center;

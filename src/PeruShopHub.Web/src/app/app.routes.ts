@@ -66,6 +66,21 @@ export const routes: Routes = [
           import('./pages/customers/customers.component').then(m => m.CustomersComponent),
       },
       {
+        path: 'clientes/:id',
+        loadComponent: () =>
+          import('./pages/customers/customer-detail.component').then(m => m.CustomerDetailComponent),
+      },
+      {
+        path: 'anuncios',
+        loadComponent: () =>
+          import('./pages/listings/listings.component').then(m => m.ListingsComponent),
+      },
+      {
+        path: 'suprimentos',
+        loadComponent: () =>
+          import('./pages/supplies/supplies.component').then(m => m.SuppliesComponent),
+      },
+      {
         path: 'financeiro',
         loadComponent: () =>
           import('./pages/finance/finance.component').then(m => m.FinanceComponent),

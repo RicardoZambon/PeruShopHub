@@ -14,6 +14,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   X,
+  Megaphone,
+  PackageOpen,
 } from 'lucide-angular';
 import { SidebarService } from '../../../services/sidebar.service';
 
@@ -21,6 +23,12 @@ interface NavItem {
   label: string;
   route: string;
   icon: LucideIconData;
+  group?: string;
+}
+
+interface NavGroup {
+  label: string | null;
+  items: NavItem[];
 }
 
 @Component({
@@ -35,15 +43,23 @@ export class SidebarComponent {
 
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: LayoutDashboard },
-    { label: 'Produtos', route: '/produtos', icon: Package },
-    { label: 'Categorias', route: '/categorias', icon: FolderTree },
-    { label: 'Vendas', route: '/vendas', icon: ShoppingCart },
-    { label: 'Perguntas', route: '/perguntas', icon: MessageCircle },
-    { label: 'Clientes', route: '/clientes', icon: Users },
-    { label: 'Financeiro', route: '/financeiro', icon: DollarSign },
-    { label: 'Estoque', route: '/estoque', icon: Warehouse },
+
+    { label: 'Vendas', route: '/vendas', icon: ShoppingCart, group: 'COMERCIAL' },
+    { label: 'Perguntas', route: '/perguntas', icon: MessageCircle, group: 'COMERCIAL' },
+    { label: 'Anúncios', route: '/anuncios', icon: Megaphone, group: 'COMERCIAL' },
+    { label: 'Clientes', route: '/clientes', icon: Users, group: 'COMERCIAL' },
+
+    { label: 'Produtos', route: '/produtos', icon: Package, group: 'CATÁLOGO' },
+    { label: 'Categorias', route: '/categorias', icon: FolderTree, group: 'CATÁLOGO' },
+    { label: 'Estoque', route: '/estoque', icon: Warehouse, group: 'CATÁLOGO' },
+    { label: 'Suprimentos', route: '/suprimentos', icon: PackageOpen, group: 'CATÁLOGO' },
+    { label: 'Financeiro', route: '/financeiro', icon: DollarSign, group: 'CATÁLOGO' },
+
     { label: 'Configurações', route: '/configuracoes', icon: Settings },
   ];
+
+  /** Group nav items by their group property for template rendering */
+  readonly navGroups: NavGroup[] = this.buildNavGroups();
 
   readonly collapseIcon = ChevronsLeft;
   readonly expandIcon = ChevronsRight;
@@ -63,5 +79,22 @@ export class SidebarComponent {
     if (this.sidebar.mobileOpen()) {
       this.sidebar.closeMobile();
     }
+  }
+
+  private buildNavGroups(): NavGroup[] {
+    const groups: NavGroup[] = [];
+    let currentGroup: string | null | undefined = undefined;
+
+    for (const item of this.navItems) {
+      const group = item.group ?? null;
+      if (group !== currentGroup) {
+        groups.push({ label: group, items: [item] });
+        currentGroup = group;
+      } else {
+        groups[groups.length - 1].items.push(item);
+      }
+    }
+
+    return groups;
   }
 }

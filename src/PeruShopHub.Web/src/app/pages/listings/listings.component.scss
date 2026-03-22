@@ -1,0 +1,37 @@
+@use '../../../styles/mixins' as m;
+
+.listings {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--space-12) var(--space-6);
+  }
+
+  &__empty-icon {
+    color: var(--neutral-300);
+    margin-bottom: var(--space-4);
+  }
+
+  &__empty-title {
+    font-size: var(--h2-size);
+    font-weight: var(--h2-weight);
+    color: var(--neutral-900);
+    margin: 0 0 var(--space-2);
+  }
+
+  &__empty-description {
+    font-size: var(--body-size);
+    line-height: var(--body-height);
+    color: var(--neutral-600);
+    margin: 0;
+    max-width: 360px;
+  }
+}
