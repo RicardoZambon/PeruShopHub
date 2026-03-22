@@ -10,6 +10,7 @@
 - Proxy config in `proxy.conf.json` targets `http://localhost:5000` for `/api` routes
 - Design tokens in `src/styles/tokens.css`, SCSS mixins in `src/styles/mixins.scss`
 - Use `@use '../styles/mixins' as m;` then `@include m.mobile { ... }` in component SCSS
+- Injectable root services go in `src/app/services/` with `{ providedIn: 'root' }`
 
 ## 2026-03-22 - US-001
 - Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
@@ -36,4 +37,20 @@
   - SCSS mixins are in a separate file and must be `@use`d in component SCSS files that need them
   - Dark theme shadows need higher opacity since dark backgrounds need stronger shadows for visibility
   - Component-specific tokens (sidebar widths, header height, etc.) are also in tokens.css for consistency
+---
+
+## 2026-03-22 - US-003
+- Created `ThemeService` as injectable root service at `src/app/services/theme.service.ts`
+- Implements `currentTheme` signal with type `'light' | 'dark' | 'system'`
+- `resolvedTheme` computed signal resolves 'system' to actual 'light'/'dark' based on `prefers-color-scheme`
+- Loads preference from `localStorage('theme-preference')`, defaults to 'system'
+- `setTheme()` updates signal, persists to localStorage, applies `data-theme` attribute
+- `toggleTheme()` cycles: light → dark → system
+- Listens to `matchMedia` change events for real-time OS theme changes
+- Uses Angular `effect()` to apply theme whenever `resolvedTheme` changes
+- Files changed: `src/app/services/theme.service.ts` (new)
+- **Learnings for future iterations:**
+  - Services go in `src/app/services/` directory
+  - Angular 21 signals + `effect()` work well for reactive theme management
+  - Theme applies by setting/removing `data-theme="dark"` on `document.documentElement` (matching tokens.css selectors)
 ---
