@@ -463,3 +463,14 @@
   - ABC classification: calculate cumulative % of total profit, assign A <=80%, B <=95%, C >95%
   - Use `(() => { ... })()` IIFE for complex computed mock data that needs cumulative calculations
 ---
+
+## 2026-03-22 - US-028
+- Implemented Inventory screen (`/estoque`) with two active tabs: Visão Geral and Movimentações, plus disabled Estoque Full tab with "Em breve" tooltip
+- Visão Geral: 4 KPI cards (Total SKUs, Unidades em Estoque, Itens Críticos, Valor em Estoque), inventory table with 10 mock rows, color-coded rows for low/zero stock, sync status badges
+- Movimentações: table with 15 mock rows, movement type badges (Entrada=success, Saída=danger, Ajuste=primary), colored +/- quantities, date range filter and type dropdown filter
+- Files changed: `src/app/pages/estoque/estoque.component.ts` (rewritten), `estoque.component.html` (new), `estoque.component.scss` (new)
+- **Learnings for future iterations:**
+  - Disabled tabs pattern: use `disabled` property on tab definition, check in `selectTab()`, add `--disabled` CSS class with `cursor: not-allowed`
+  - Row-level conditional backgrounds (warning-light / danger-light) use `[ngClass]` with a method returning the class string
+  - Movement type filter uses `computed()` with `signal<MovementType | 'all'>` for reactive filtering
+---
