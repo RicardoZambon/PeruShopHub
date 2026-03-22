@@ -1,0 +1,64 @@
+@use '../../../../styles/mixins' as m;
+
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--card-padding-desktop);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+
+  @include m.tablet {
+    padding: var(--card-padding-tablet);
+  }
+
+  @include m.mobile {
+    padding: var(--card-padding-mobile);
+  }
+
+  &__label {
+    font-size: var(--body-small-size);
+    color: var(--neutral-700);
+    font-weight: 400;
+  }
+
+  &__value {
+    font-family: var(--font-mono);
+    font-size: var(--metric-large-size);
+    font-weight: var(--metric-large-weight);
+    color: var(--neutral-900);
+    line-height: 1.2;
+
+    @include m.mobile {
+      font-size: var(--metric-medium-size);
+      font-weight: var(--metric-medium-weight);
+    }
+  }
+
+  &__change {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--label-size);
+    font-weight: 500;
+
+    &--positive {
+      color: var(--success);
+    }
+
+    &--negative {
+      color: var(--danger);
+    }
+  }
+
+  &__arrow {
+    font-size: 12px;
+  }
+
+  &__change-label {
+    color: var(--neutral-500);
+    font-weight: 400;
+    margin-left: var(--space-1);
+  }
+}
