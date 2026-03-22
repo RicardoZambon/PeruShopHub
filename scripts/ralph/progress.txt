@@ -315,3 +315,19 @@
   - KPI computed signal from product signal provides reactive data — pattern: `computed(() => { const p = product(); if (!p) return []; ... })`
   - Skeleton loading in detail pages: inline skeleton divs with fixed dimensions matching real content work well
 ---
+
+## 2026-03-22 - US-020
+- Created VendasListComponent at /vendas with search by ID/buyer, date range picker (two date inputs), status filter dropdown (Todos/Pago/Enviado/Entregue/Cancelado/Devolvido)
+- Custom table with 7 columns: ID (mono), Data, Comprador, Itens (center), Valor (BRL), Lucro (BRL, green/red colored), Status (BadgeComponent with variant mapping)
+- 15 mock orders with realistic Brazilian buyer names and varied statuses/profits
+- Mobile card list with order ID, date, buyer name, status badge, and 3-column metrics grid
+- Row click navigates to /vendas/:id
+- Empty state and filtered empty state via DataTableComponent
+- Loading skeleton state (600ms simulated)
+- Created stub VendaDetailComponent at /vendas/:id route
+- Files changed: `vendas-list.component.ts` (rewritten), `vendas-list.component.html` (new), `vendas-list.component.scss` (new), `venda-detail.component.ts` (new stub), `app.routes.ts` (updated)
+- **Learnings for future iterations:**
+  - Date filtering with string comparison (`>=`, `<=`) works for ISO date format strings (YYYY-MM-DD)
+  - `formatDate()` needs `+ 'T12:00:00'` to avoid timezone offset issues with `new Date('YYYY-MM-DD')`
+  - Orders page follows same patterns as products list: custom table for rich cell rendering, BEM SCSS, mobile card layout
+---
