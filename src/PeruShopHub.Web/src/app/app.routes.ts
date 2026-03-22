@@ -75,6 +75,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/configuracoes/configuracoes.component').then(m => m.ConfiguracoesComponent),
       },
+      {
+        path: '**',
+        loadComponent: () =>
+          import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent),
+      },
     ],
   },
 ];
