@@ -217,7 +217,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "No real auth backend yet. Simulate login with hardcoded credentials or just accept any input."
     },
     {

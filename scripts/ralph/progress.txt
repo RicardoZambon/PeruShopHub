@@ -178,3 +178,22 @@
   - CSS custom properties `--sidebar-width`, `--sidebar-collapsed-width`, `--header-height` from tokens.css used for layout margins
   - Mobile sidebar margin override uses `!important` since it must always be 0 regardless of collapsed state
 ---
+
+## 2026-03-22 - US-012
+- Created full login screen at /login route (rendered WITHOUT app shell layout)
+- Centered card (max-width 400px) with PeruShopHub logo + tagline
+- Reactive form with email (required, email validator) and password (required, min 6 chars) fields
+- Labels above fields, inline error messages on blur/submit
+- Full-width "Entrar" primary button, disabled when form invalid
+- Loading state: spinner in button, fields disabled, simulated 1.5s timeout
+- Error alert placeholder below form header
+- "Esqueceu a senha?" link below button
+- Background: gradient from --primary to --primary-hover
+- Responsive: 100% width with 16px padding on mobile, max 400px centered on desktop
+- Supports dark theme via design tokens
+- Files changed: `src/app/pages/login/login.component.ts` (rewritten), `src/app/pages/login/login.component.html` (new), `src/app/pages/login/login.component.scss` (new)
+- **Learnings for future iterations:**
+  - Angular `[attr.disabled]` with ternary works for conditionally disabling inputs without FormsModule conflicts
+  - Login route is already outside LayoutComponent in app.routes.ts (set up in US-011)
+  - Use `signal()` for simple component state like loading/error instead of plain properties for reactive template binding
+---
