@@ -4,12 +4,28 @@
   padding-bottom: 80px; // space for sticky bottom bar
 }
 
-// Page Header
+// Page Header — matches products-list header alignment
 .page-header {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--space-3);
   margin-bottom: var(--space-6);
+  width: 100%;
+}
+
+.page-header h1 {
+  flex: 1;
+  text-align: left;
+  font-size: var(--heading-2-size);
+  font-weight: var(--heading-2-weight);
+  line-height: var(--heading-2-height);
+  color: var(--neutral-900);
+  margin: 0;
+
+  @include m.mobile {
+    font-size: var(--heading-3-size);
+  }
 }
 
 .btn-back {
@@ -24,22 +40,11 @@
   color: var(--neutral-700);
   cursor: pointer;
   transition: all 200ms ease;
+  flex-shrink: 0;
 
   &:hover {
     background: var(--neutral-100);
     color: var(--neutral-900);
-  }
-}
-
-.page-header h1 {
-  font-size: var(--heading-2-size);
-  font-weight: var(--heading-2-weight);
-  line-height: var(--heading-2-height);
-  color: var(--neutral-900);
-  margin: 0;
-
-  @include m.mobile {
-    font-size: var(--heading-3-size);
   }
 }
 
