@@ -145,3 +145,20 @@
   - Mobile sidebar uses transform translateX(-100%) → translateX(0) for slide-in, not width animation
   - RouterLinkActive directive adds `active` class automatically for styling
 ---
+
+## 2026-03-22 - US-010
+- Created `HeaderComponent` (standalone) with fixed 56px height, --surface background, bottom border
+- Left: hamburger button that calls SidebarService.toggle() on desktop or toggleMobile() on mobile
+- Center: search input with magnifying glass icon, Ctrl+K kbd hint, readonly placeholder (non-functional)
+- Right: green marketplace connection dot, notification bell with badge count (5), theme toggle cycling sun/moon/monitor icons via ThemeService.toggleTheme()
+- Right: user avatar circle with dropdown menu (name, email, role, separator, Configurações link, Sair button)
+- Dropdown closes on outside click (HostListener document:click) and Esc key
+- Responsive: search input hidden on mobile, user name hidden on mobile
+- Barrel export updated in shared/components/index.ts
+- Files changed: `src/app/shared/components/header/header.component.ts` (new), `src/app/shared/components/header/header.component.html` (new), `src/app/shared/components/header/header.component.scss` (new), `src/app/shared/components/index.ts` (updated)
+- **Learnings for future iterations:**
+  - HeaderComponent integrates ThemeService and SidebarService — it orchestrates both
+  - Use `HostListener('document:click')` with `ElementRef.contains()` for outside-click dropdown close
+  - Lucide icons imported individually as const fields for tree-shaking
+  - Search input is readonly placeholder for now — US-032 will implement Ctrl+K command palette
+---
