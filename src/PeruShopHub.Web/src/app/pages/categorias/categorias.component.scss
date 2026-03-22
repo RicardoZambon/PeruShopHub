@@ -1,0 +1,109 @@
+@use '../../../styles/mixins' as m;
+
+.categorias-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.categorias-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6);
+  padding-bottom: var(--space-4);
+  flex-shrink: 0;
+
+  @include m.mobile {
+    padding: var(--page-padding-mobile);
+    padding-bottom: var(--space-3);
+  }
+}
+
+.categorias-page__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.categorias-page__header-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.categorias-page__title {
+  font-size: var(--heading-1-size);
+  font-weight: var(--heading-1-weight);
+  line-height: var(--heading-1-height);
+  color: var(--neutral-900);
+  margin: 0;
+
+  @include m.mobile {
+    font-size: var(--heading-2-size);
+  }
+}
+
+.categorias-page__subtitle {
+  font-size: var(--body-small-size);
+  color: var(--neutral-500);
+  margin: 0;
+}
+
+.categorias-page__content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--neutral-200);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  margin: 0 var(--space-6);
+  margin-bottom: var(--space-6);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+
+  @include m.mobile {
+    margin: 0 var(--page-padding-mobile);
+    margin-bottom: var(--page-padding-mobile);
+    border-radius: var(--radius-md);
+    flex-direction: column;
+  }
+
+  @include m.tablet {
+    margin: 0 var(--page-padding-tablet);
+    margin-bottom: var(--page-padding-tablet);
+  }
+}
+
+.categorias-page__tree-panel {
+  display: flex;
+  flex-shrink: 0;
+
+  @include m.mobile {
+    width: 100%;
+
+    &--hidden-mobile {
+      display: none;
+    }
+  }
+
+  @include m.tablet {
+    width: 280px;
+  }
+}
+
+.categorias-page__detail-panel {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  border-left: 1px solid var(--neutral-200);
+
+  @include m.mobile {
+    width: 100%;
+    border-left: none;
+
+    &--hidden-mobile {
+      display: none;
+    }
+  }
+}

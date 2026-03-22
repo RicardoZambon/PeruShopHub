@@ -1,0 +1,50 @@
+<div class="categorias-page">
+  <div class="categorias-page__header">
+    <div class="categorias-page__header-left">
+      <lucide-icon [img]="folderTreeIcon" [size]="24" class="categorias-page__header-icon"></lucide-icon>
+      <div>
+        <h1 class="categorias-page__title">Categorias</h1>
+        <p class="categorias-page__subtitle">
+          {{ totalCategories() }} categorias &middot; {{ totalProducts() }} produtos
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="categorias-page__content">
+    <div
+      class="categorias-page__tree-panel"
+      [class.categorias-page__tree-panel--hidden-mobile]="mobileView() === 'detail'"
+    >
+      <app-category-tree
+        [categories]="categoryTree()"
+        [selectedId]="selectedCategoryId()"
+        (selectCategory)="onSelectCategory($event)"
+        (addCategory)="onAddCategory()"
+      ></app-category-tree>
+    </div>
+
+    <div
+      class="categorias-page__detail-panel"
+      [class.categorias-page__detail-panel--hidden-mobile]="mobileView() === 'tree'"
+    >
+      <app-category-detail
+        [category]="selectedCategory()"
+        [allCategories]="categoryTree()"
+        (updated)="onCategoryUpdated($event)"
+        (deleted)="onCategoryDeleted($event)"
+        (back)="onBackToTree()"
+      ></app-category-detail>
+    </div>
+  </div>
+</div>
+
+@if (showCreateDialog()) {
+  <app-category-form-dialog
+    [category]="dialogCategory()"
+    [allCategories]="categoryTree()"
+    [preselectedParentId]="selectedCategoryId()"
+    (saved)="onDialogSaved($event)"
+    (closed)="onDialogClosed()"
+  ></app-category-form-dialog>
+}

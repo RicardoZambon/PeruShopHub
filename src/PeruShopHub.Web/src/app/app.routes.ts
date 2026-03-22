@@ -41,6 +41,11 @@ export const routes: Routes = [
         canDeactivate: [unsavedChangesGuard],
       },
       {
+        path: 'categorias',
+        loadComponent: () =>
+          import('./pages/categorias/categorias.component').then(m => m.CategoriasComponent),
+      },
+      {
         path: 'vendas',
         loadComponent: () =>
           import('./pages/vendas/vendas-list.component').then(m => m.VendasListComponent),
