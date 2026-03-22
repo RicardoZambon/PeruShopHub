@@ -8,3 +8,4 @@ export type { SkeletonType } from './skeleton/skeleton.component';
 export { DataTableComponent } from './data-table/data-table.component';
 export type { DataTableColumn, SortEvent, PageEvent } from './data-table/data-table.component';
 export { ToastContainerComponent } from './toast-container/toast-container.component';
+export { SidebarComponent } from './sidebar/sidebar.component';

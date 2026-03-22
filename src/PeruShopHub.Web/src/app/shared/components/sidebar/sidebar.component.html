@@ -1,0 +1,54 @@
+<!-- Mobile backdrop -->
+@if (sidebar.mobileOpen()) {
+  <div class="sidebar-backdrop" (click)="onBackdropClick()"></div>
+}
+
+<nav
+  class="sidebar"
+  [class.collapsed]="sidebar.collapsed()"
+  [class.mobile-open]="sidebar.mobileOpen()"
+>
+  <!-- Logo -->
+  <div class="sidebar-logo">
+    @if (sidebar.collapsed() && !sidebar.mobileOpen()) {
+      <span class="logo-icon">P</span>
+    } @else {
+      <span class="logo-full">PeruShopHub</span>
+    }
+    <!-- Mobile close button -->
+    <button class="mobile-close" (click)="sidebar.closeMobile()">
+      <lucide-angular [img]="closeIcon" [size]="20" />
+    </button>
+  </div>
+
+  <!-- Nav items -->
+  <ul class="sidebar-nav">
+    @for (item of navItems; track item.route) {
+      <li>
+        <a
+          class="nav-item"
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          [title]="sidebar.collapsed() ? item.label : ''"
+          (click)="onNavClick()"
+        >
+          <lucide-angular [img]="item.icon" [size]="20" class="nav-icon" />
+          @if (!sidebar.collapsed() || sidebar.mobileOpen()) {
+            <span class="nav-label">{{ item.label }}</span>
+          }
+        </a>
+      </li>
+    }
+  </ul>
+
+  <!-- Collapse toggle (desktop/tablet only) -->
+  <button class="collapse-toggle" (click)="sidebar.toggle()">
+    <lucide-angular
+      [img]="sidebar.collapsed() ? expandIcon : collapseIcon"
+      [size]="20"
+    />
+    @if (!sidebar.collapsed()) {
+      <span class="toggle-label">Recolher</span>
+    }
+  </button>
+</nav>
