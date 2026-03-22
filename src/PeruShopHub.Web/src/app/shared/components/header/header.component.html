@@ -5,7 +5,7 @@
   </button>
 
   <!-- Center: Search input (hidden on mobile) -->
-  <div class="header__search">
+  <div class="header__search" (click)="openSearchPalette()">
     <lucide-icon [img]="searchIcon" [size]="16" class="header__search-icon" />
     <input
       type="text"
@@ -66,4 +66,8 @@
 
 @if (notificationPanelOpen()) {
   <app-notification-panel (closed)="closeNotificationPanel()" />
+}
+
+@if (searchPaletteOpen()) {
+  <app-search-palette (closed)="closeSearchPalette()" />
 }

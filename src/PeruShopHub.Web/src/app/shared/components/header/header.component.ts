@@ -17,11 +17,12 @@ import {
   type LucideIconData,
 } from 'lucide-angular';
 import { NotificationPanelComponent } from '../notification-panel/notification-panel.component';
+import { SearchPaletteComponent } from '../search-palette/search-palette.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [LucideAngularModule, RouterLink, NotificationPanelComponent],
+  imports: [LucideAngularModule, RouterLink, NotificationPanelComponent, SearchPaletteComponent],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
@@ -33,6 +34,7 @@ export class HeaderComponent {
 
   readonly userMenuOpen = signal(false);
   readonly notificationPanelOpen = signal(false);
+  readonly searchPaletteOpen = signal(false);
 
   // Icons
   readonly menuIcon = Menu;
@@ -95,8 +97,28 @@ export class HeaderComponent {
     }
   }
 
-  @HostListener('document:keydown.escape')
-  onEsc(): void {
+  openSearchPalette(): void {
+    this.searchPaletteOpen.set(true);
     this.closeUserMenu();
+    this.closeNotificationPanel();
+  }
+
+  closeSearchPalette(): void {
+    this.searchPaletteOpen.set(false);
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+      event.preventDefault();
+      this.openSearchPalette();
+    }
+    if (event.key === 'Escape') {
+      if (this.searchPaletteOpen()) {
+        // search palette handles its own Esc
+        return;
+      }
+      this.closeUserMenu();
+    }
   }
 }

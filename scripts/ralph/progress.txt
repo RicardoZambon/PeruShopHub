@@ -528,3 +528,24 @@
   - Slide-over panels follow consistent pattern: backdrop with fadeIn + panel with slideIn animation, z-index 1000/1001
   - The notification panel uses 320px width (narrower than the 400px customer slide-over) for a lightweight feel
 ---
+
+## 2026-03-22 - US-032
+- Implemented global search command palette (Ctrl+K / Cmd+K)
+- SearchPaletteComponent with modal overlay, debounced search (300ms), grouped results (Pedidos, Produtos, Clientes), keyboard navigation (arrows + Enter), Esc to close
+- Mock datasets: 10 products, 15 orders, 10 customers searchable by name/ID/SKU/email
+- Results limited to 3 per group, click or Enter navigates to detail screen
+- Wired into HeaderComponent: click on search input or Ctrl+K/Cmd+K opens palette
+- Footer shows keyboard hints
+- Files changed:
+  - `src/app/shared/components/search-palette/search-palette.component.ts` (new)
+  - `src/app/shared/components/search-palette/search-palette.component.html` (new)
+  - `src/app/shared/components/search-palette/search-palette.component.scss` (new)
+  - `src/app/shared/components/header/header.component.ts` (updated - added search palette import, Ctrl+K listener)
+  - `src/app/shared/components/header/header.component.html` (updated - click handler on search, search palette conditional render)
+  - `src/app/shared/components/index.ts` (updated - export SearchPaletteComponent)
+- **Learnings for future iterations:**
+  - Unified `@HostListener('document:keydown')` is better than separate escape/key listeners when multiple keyboard shortcuts coexist
+  - Search palette z-index (1100) must be higher than notification panel (1000) to overlay properly
+  - Debounce with signals: use a separate `debouncedQuery` signal updated via setTimeout, consumed in computed
+  - Manual browser verification needed
+---
