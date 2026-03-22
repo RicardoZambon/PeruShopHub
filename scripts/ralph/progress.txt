@@ -474,3 +474,18 @@
   - Row-level conditional backgrounds (warning-light / danger-light) use `[ngClass]` with a method returning the class string
   - Movement type filter uses `computed()` with `signal<MovementType | 'all'>` for reactive filtering
 ---
+
+## 2026-03-22 - US-029
+- Implemented Settings screen (`/configuracoes`) with vertical sub-navigation (desktop) / horizontal tabs (mobile)
+- 6 tabs: Empresa, Usuários, Integrações (functional), Custos Fixos, Alertas, Aparência (placeholder with "Em desenvolvimento")
+- Empresa tab: Reactive form with nome, CNPJ (masked input XX.XXX.XXX/XXXX-XX with live formatting), endereço, Salvar button with validation
+- Usuários tab: table (nome, email, role badge Admin/Manager/Viewer, status Ativo/Inativo, edit/delete icons). "Novo Usuário" button opens modal with nome, email, role dropdown, ativo toggle, Salvar/Cancelar. 3 mock users. Mobile card layout
+- Integrações tab: card per marketplace. Mercado Livre card: logo placeholder, seller nickname (PERUSHOP_OFICIAL), "Conectado" badge, last sync time, "Desconectar" danger outline button. Amazon card disabled with "Em breve" state
+- Modal: opens on Novo/Edit click, closes on backdrop click, Esc, or X button
+- Files changed: `configuracoes.component.ts` (rewritten), `configuracoes.component.html` (new), `configuracoes.component.scss` (new)
+- **Learnings for future iterations:**
+  - Settings page uses vertical nav on desktop + horizontal tabs on mobile — different from other pages that use horizontal tabs everywhere
+  - CNPJ mask: apply via (input) event handler that strips non-digits and reformats progressively
+  - User modal follows standard pattern: FormGroup + signal for editing state, backdrop click/Esc to close
+  - Integration cards use `--disabled` class with `opacity: 0.55` and `pointer-events: none` for coming-soon state
+---
