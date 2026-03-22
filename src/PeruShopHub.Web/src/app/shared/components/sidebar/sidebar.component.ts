@@ -4,6 +4,7 @@ import { LucideAngularModule, LucideIconData } from 'lucide-angular';
 import {
   LayoutDashboard,
   Package,
+  FolderTree,
   ShoppingCart,
   MessageCircle,
   Users,
@@ -35,6 +36,7 @@ export class SidebarComponent {
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: LayoutDashboard },
     { label: 'Produtos', route: '/produtos', icon: Package },
+    { label: 'Categorias', route: '/categorias', icon: FolderTree },
     { label: 'Vendas', route: '/vendas', icon: ShoppingCart },
     { label: 'Perguntas', route: '/perguntas', icon: MessageCircle },
     { label: 'Clientes', route: '/clientes', icon: Users },
