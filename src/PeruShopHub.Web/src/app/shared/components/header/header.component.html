@@ -1,0 +1,65 @@
+<header class="header">
+  <!-- Left: Hamburger -->
+  <button class="header__btn" (click)="toggleSidebar()" aria-label="Alternar menu">
+    <lucide-icon [img]="menuIcon" [size]="20" />
+  </button>
+
+  <!-- Center: Search input (hidden on mobile) -->
+  <div class="header__search">
+    <lucide-icon [img]="searchIcon" [size]="16" class="header__search-icon" />
+    <input
+      type="text"
+      class="header__search-input"
+      placeholder="Buscar pedidos, produtos, clientes..."
+      readonly
+    />
+    <kbd class="header__search-kbd">Ctrl+K</kbd>
+  </div>
+
+  <!-- Right actions -->
+  <div class="header__actions">
+    <!-- Marketplace connection dot -->
+    <span class="header__status-dot header__status-dot--connected" title="Mercado Livre conectado"></span>
+
+    <!-- Notification bell -->
+    <button class="header__btn header__btn--bell" aria-label="Notificações">
+      <lucide-icon [img]="bellIcon" [size]="20" />
+      @if (notificationCount() > 0) {
+        <span class="header__badge">{{ notificationCount() }}</span>
+      }
+    </button>
+
+    <!-- Theme toggle -->
+    <button class="header__btn" (click)="toggleTheme()" [attr.aria-label]="'Tema: ' + themeLabel" [title]="'Tema: ' + themeLabel">
+      <lucide-icon [img]="themeIcon" [size]="20" />
+    </button>
+
+    <!-- User avatar + dropdown -->
+    <div class="header__user">
+      <button class="header__user-trigger" (click)="toggleUserMenu()">
+        <span class="header__avatar">RA</span>
+        <span class="header__user-name">Ralph Admin</span>
+        <lucide-icon [img]="chevronDownIcon" [size]="14" />
+      </button>
+
+      @if (userMenuOpen()) {
+        <div class="header__dropdown">
+          <div class="header__dropdown-header">
+            <span class="header__dropdown-name">Ralph Admin</span>
+            <span class="header__dropdown-email">ralph&#64;perushophub.com</span>
+            <span class="header__dropdown-role">Administrador</span>
+          </div>
+          <div class="header__dropdown-divider"></div>
+          <a routerLink="/configuracoes" class="header__dropdown-item" (click)="closeUserMenu()">
+            <lucide-icon [img]="settingsIcon" [size]="16" />
+            Configurações
+          </a>
+          <button class="header__dropdown-item header__dropdown-item--danger" (click)="closeUserMenu()">
+            <lucide-icon [img]="logOutIcon" [size]="16" />
+            Sair
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</header>
