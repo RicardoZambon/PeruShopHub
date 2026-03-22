@@ -17,6 +17,7 @@
 - Type re-exports need `export type { ... }` due to `isolatedModules` in tsconfig
 - Lucide icon data type for `[img]` binding is `LucideIconData` from `lucide-angular` (not `object`)
 - Toast container goes in app root (app.html), inject `ToastService` to show toasts from any component
+- ng2-charts v10: `provideCharts(withDefaultRegisterables())` in app.config.ts, `BaseChartDirective` in component imports, Chart.js colors must be hardcoded hex (no CSS vars)
 
 ## 2026-03-22 - US-001
 - Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
@@ -210,4 +211,20 @@
   - SCSS path from pages is `../../../styles/mixins` (3 levels up, not 4 like shared components)
   - Angular `@for` and `@if` control flow syntax works well with signals
   - Mock data pattern: `Record<Period, KpiData[]>` with computed signal for reactive data switching
+---
+
+## 2026-03-22 - US-014
+- Added Chart.js line chart to dashboard showing Receita Bruta (solid primary) and Lucro Líquido (dashed green) over 30 days
+- Registered `provideCharts(withDefaultRegisterables())` in app.config.ts (required for ng2-charts v10)
+- Chart uses `BaseChartDirective` with `type="line"`, responsive with 320px height (240px mobile)
+- Tooltip shows BRL-formatted values, legend is clickable above chart
+- Chart takes 60% width on desktop (left side), full width on tablet/mobile
+- Mock data: 30 random data points with realistic revenue/profit proportions
+- Files changed: `src/app/app.config.ts` (updated), `src/app/pages/dashboard/dashboard.component.ts` (updated), `dashboard.component.html` (updated), `dashboard.component.scss` (updated)
+- **Learnings for future iterations:**
+  - ng2-charts v10 requires `provideCharts(withDefaultRegisterables())` in app.config.ts providers — without it, charts silently fail
+  - Import `BaseChartDirective` from `ng2-charts` and add to component `imports` array
+  - Chart.js `parsed.y` can be null — use `?? 0` to satisfy strict TypeScript
+  - Use `maintainAspectRatio: false` with a fixed-height container for responsive charts
+  - Chart colors are hardcoded hex values matching design tokens (CSS vars don't work in Chart.js config)
 ---
