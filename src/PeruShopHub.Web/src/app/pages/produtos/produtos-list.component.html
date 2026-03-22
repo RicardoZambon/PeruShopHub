@@ -35,6 +35,7 @@
         <option value="Ativo">Ativo</option>
         <option value="Pausado">Pausado</option>
         <option value="Encerrado">Encerrado</option>
+        <option value="Revisão">Precisa revisão</option>
       </select>
     </div>
 
@@ -68,6 +69,7 @@
                 <th class="produtos-table__th produtos-table__th--mono">SKU</th>
                 <th class="produtos-table__th" style="text-align: right">Preço</th>
                 <th class="produtos-table__th" style="text-align: right">Estoque</th>
+                <th class="produtos-table__th" style="text-align: center">Variantes</th>
                 <th class="produtos-table__th">Status</th>
                 <th class="produtos-table__th" style="text-align: right">Margem</th>
                 <th class="produtos-table__th" style="text-align: center; width: 56px">Ações</th>
@@ -88,6 +90,18 @@
                     [class.produtos-table__td--low-stock]="product.estoque > 0 && product.estoque <= 10"
                     [class.produtos-table__td--no-stock]="product.estoque === 0">
                     {{ product.estoque }}
+                  </td>
+                  <td class="produtos-table__td" style="text-align: center">
+                    @if (product.variantCount > 0) {
+                      <span class="variant-badge" (click)="onVariantClick($event, product.id)">
+                        {{ product.variantCount }} var.
+                      </span>
+                    } @else {
+                      <span class="produtos-table__td--mono">—</span>
+                    }
+                    @if (product.needsReview) {
+                      <span class="review-badge">Revisão</span>
+                    }
                   </td>
                   <td class="produtos-table__td">
                     <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
@@ -119,6 +133,14 @@
                 <div class="produtos-table__card-title">
                   <span class="produtos-table__card-name">{{ product.nome }}</span>
                   <span class="produtos-table__card-sku">{{ product.sku }}</span>
+                  @if (product.variantCount > 0) {
+                    <span class="variant-chip" (click)="onVariantClick($event, product.id)">
+                      {{ product.variantCount }} variantes
+                    </span>
+                  }
+                  @if (product.needsReview) {
+                    <span class="review-chip">Precisa revisão</span>
+                  }
                 </div>
                 <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
               </div>
