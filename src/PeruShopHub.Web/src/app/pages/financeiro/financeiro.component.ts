@@ -4,6 +4,7 @@ import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ToastService } from '../../services/toast.service';
 
 type Period = 'hoje' | '7dias' | '30dias' | 'personalizado';
@@ -15,6 +16,22 @@ interface KpiData {
   change: number;
   changeLabel: string;
   invertColors?: boolean;
+}
+
+type SortField = 'vendas' | 'receita' | 'cmv' | 'comissoes' | 'frete' | 'impostos' | 'lucro' | 'margem';
+type SortDir = 'asc' | 'desc';
+
+interface SkuProfitability {
+  sku: string;
+  produto: string;
+  vendas: number;
+  receita: number;
+  cmv: number;
+  comissoes: number;
+  frete: number;
+  impostos: number;
+  lucro: number;
+  margem: number;
 }
 
 const MOCK_DATA: Record<Exclude<Period, 'personalizado'>, KpiData[]> = {
@@ -267,6 +284,54 @@ export class FinanceiroComponent {
       },
     },
   };
+
+  // SKU Profitability tab data
+  private skuData: SkuProfitability[] = [
+    { sku: 'PSH-001', produto: 'Fone Bluetooth TWS Pro', vendas: 89, receita: 8010.00, cmv: 3560.00, comissoes: 880.00, frete: 534.00, impostos: 480.60, lucro: 2555.40, margem: 31.9 },
+    { sku: 'PSH-002', produto: 'Capa iPhone 15 Silicone', vendas: 215, receita: 6450.00, cmv: 1290.00, comissoes: 709.50, frete: 645.00, impostos: 387.00, lucro: 3418.50, margem: 53.0 },
+    { sku: 'PSH-003', produto: 'Carregador USB-C 65W', vendas: 64, receita: 5760.00, cmv: 2880.00, comissoes: 633.60, frete: 460.80, impostos: 345.60, lucro: 1440.00, margem: 25.0 },
+    { sku: 'PSH-004', produto: 'Suporte Notebook Alumínio', vendas: 31, receita: 4030.00, cmv: 2418.00, comissoes: 443.30, frete: 564.20, impostos: 241.80, lucro: 362.70, margem: 9.0 },
+    { sku: 'PSH-005', produto: 'Película Galaxy S24 Ultra', vendas: 178, receita: 3560.00, cmv: 890.00, comissoes: 391.60, frete: 356.00, impostos: 213.60, lucro: 1708.80, margem: 48.0 },
+    { sku: 'PSH-006', produto: 'Hub USB-C 7 em 1', vendas: 22, receita: 3960.00, cmv: 2376.00, comissoes: 435.60, frete: 396.00, impostos: 237.60, lucro: 514.80, margem: 13.0 },
+    { sku: 'PSH-007', produto: 'Mouse Gamer RGB 12000DPI', vendas: 45, receita: 5850.00, cmv: 3510.00, comissoes: 643.50, frete: 877.50, impostos: 351.00, lucro: 468.00, margem: 8.0 },
+    { sku: 'PSH-008', produto: 'Cabo HDMI 2.1 3m', vendas: 92, receita: 2760.00, cmv: 1840.00, comissoes: 303.60, frete: 414.00, impostos: 165.60, lucro: 36.80, margem: -1.3 },
+  ];
+
+  skuSortField = signal<SortField>('lucro');
+  skuSortDir = signal<SortDir>('desc');
+
+  sortedSkuData = computed(() => {
+    const field = this.skuSortField();
+    const dir = this.skuSortDir();
+    return [...this.skuData].sort((a, b) => {
+      const aVal = a[field];
+      const bVal = b[field];
+      return dir === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  });
+
+  sortSku(field: SortField): void {
+    if (this.skuSortField() === field) {
+      this.skuSortDir.update(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.skuSortField.set(field);
+      this.skuSortDir.set('desc');
+    }
+  }
+
+  getMarginVariant(margem: number): BadgeVariant {
+    if (margem >= 20) return 'success';
+    if (margem >= 10) return 'warning';
+    return 'danger';
+  }
+
+  getMarginBarWidth(margem: number): number {
+    return Math.min(Math.max(Math.abs(margem), 0), 60);
+  }
+
+  formatBrl(value: number): string {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
 
   constructor(private toastService: ToastService) {}
 

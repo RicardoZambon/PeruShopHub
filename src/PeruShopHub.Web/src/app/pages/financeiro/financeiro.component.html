@@ -95,8 +95,108 @@
     </div>
   }
 
+  <!-- Lucratividade por SKU Tab -->
+  @if (activeTab() === 'lucratividade') {
+    <div class="financeiro__content">
+      <div class="sku-table-wrapper">
+        <table class="sku-table">
+          <thead>
+            <tr>
+              <th class="sku-table__th sku-table__th--sticky">SKU</th>
+              <th class="sku-table__th sku-table__th--sticky-produto">Produto</th>
+              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('vendas')">
+                Vendas
+                @if (skuSortField() === 'vendas') {
+                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
+              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('receita')">
+                Receita Bruta
+                @if (skuSortField() === 'receita') {
+                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
+              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('cmv')">
+                CMV
+                @if (skuSortField() === 'cmv') {
+                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
+              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('comissoes')">
+                Comissões
+                @if (skuSortField() === 'comissoes') {
+                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
+              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('frete')">
+                Frete
+                @if (skuSortField() === 'frete') {
+                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
+              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('impostos')">
+                Impostos
+                @if (skuSortField() === 'impostos') {
+                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
+              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('lucro')">
+                Lucro Líquido
+                @if (skuSortField() === 'lucro') {
+                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
+              <th class="sku-table__th sku-table__th--sortable" (click)="sortSku('margem')">
+                Margem %
+                @if (skuSortField() === 'margem') {
+                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of sortedSkuData(); track row.sku) {
+              <tr class="sku-table__row" [class.sku-table__row--negative]="row.margem < 0">
+                <td class="sku-table__td sku-table__td--mono sku-table__td--sticky">{{ row.sku }}</td>
+                <td class="sku-table__td sku-table__td--sticky-produto">{{ row.produto }}</td>
+                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ row.vendas }}</td>
+                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.receita) }}</td>
+                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.cmv) }}</td>
+                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.comissoes) }}</td>
+                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.frete) }}</td>
+                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.impostos) }}</td>
+                <td class="sku-table__td sku-table__td--mono sku-table__td--right" [class.sku-table__td--profit]="row.lucro >= 0" [class.sku-table__td--loss]="row.lucro < 0">
+                  {{ formatBrl(row.lucro) }}
+                </td>
+                <td class="sku-table__td sku-table__td--margin">
+                  <div class="margin-cell">
+                    <div class="margin-bar">
+                      <div
+                        class="margin-bar__fill"
+                        [class.margin-bar__fill--green]="row.margem >= 20"
+                        [class.margin-bar__fill--yellow]="row.margem >= 10 && row.margem < 20"
+                        [class.margin-bar__fill--red]="row.margem < 10"
+                        [style.width.%]="getMarginBarWidth(row.margem)">
+                      </div>
+                    </div>
+                    <span class="margin-cell__value"
+                      [class.margin-cell__value--green]="row.margem >= 20"
+                      [class.margin-cell__value--yellow]="row.margem >= 10 && row.margem < 20"
+                      [class.margin-cell__value--red]="row.margem < 10">
+                      {{ row.margem.toFixed(1) }}%
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
   <!-- Other tabs: placeholder -->
-  @if (activeTab() !== 'resumo') {
+  @if (activeTab() === 'conciliacao' || activeTab() === 'curva-abc') {
     <div class="financeiro__placeholder">
       <div class="placeholder-card">
         <p class="placeholder-card__text">Em desenvolvimento</p>
