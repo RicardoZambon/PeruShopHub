@@ -398,7 +398,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": "Cost breakdown is in the next story."
     },
     {

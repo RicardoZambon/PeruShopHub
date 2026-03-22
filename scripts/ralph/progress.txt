@@ -331,3 +331,21 @@
   - `formatDate()` needs `+ 'T12:00:00'` to avoid timezone offset issues with `new Date('YYYY-MM-DD')`
   - Orders page follows same patterns as products list: custom table for rich cell rendering, BEM SCSS, mobile card layout
 ---
+
+## 2026-03-22 - US-021
+- Created VendaDetailComponent at /vendas/:id with full order detail view
+- Header: order ID (mono), formatted date, status badge, back button to /vendas
+- Two-column layout on desktop (stacked on tablet/mobile)
+- Left column: "Itens do Pedido" section with product thumbnail placeholder, name, SKU (mono), variation, quantity x unit price, subtotal, and total row
+- Right column: "Comprador" section with name, nickname (mono), masked email/phone, total orders and total spent stats
+- Right column: "Envio" section with tracking number + copy button, carrier, logistic type badge (Full/Coleta/Agência), delivery timeline (4 steps with completed/pending states using green dots and connecting lines)
+- Right column: "Pagamento" section with payment method icon, installments breakdown, total amount, status badge
+- Loading skeleton state (600ms simulated)
+- All mock data with realistic Brazilian order details
+- Files changed: `venda-detail.component.ts` (rewritten), `venda-detail.component.html` (new), `venda-detail.component.scss` (new)
+- **Learnings for future iterations:**
+  - Don't import BrlCurrencyPipe if using `formatBrl()` method — Angular build warns on unused imports
+  - Timeline component pattern: use `position: absolute` line between dots, with completed state changing colors from neutral to success
+  - `navigator.clipboard.writeText()` for copy-to-clipboard with signal-based success feedback
+  - Two-column detail layout: use `grid-template-columns: 1fr 1fr` on desktop, single column on tablet via `@include m.tablet`
+---
