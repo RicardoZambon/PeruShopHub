@@ -79,3 +79,15 @@
   - SCSS `@use` path from `src/app/shared/components/{name}/` to `src/styles/` is `../../../../styles/mixins`
   - Type re-exports require `export type` when `isolatedModules` is enabled in tsconfig
 ---
+
+## 2026-03-22 - US-006
+- Created `EmptyStateComponent` (standalone) with title, description, optional icon, optional CTA button with actionClick emitter
+- Created `ErrorStateComponent` (standalone) with default title 'Algo deu errado', description, retry button emitter
+- Created `SkeletonComponent` (standalone) with 3 types: text, rect, circle. Shimmer animation via CSS gradient + keyframes
+- All components use design tokens for colors and spacing
+- Barrel export updated in `src/app/shared/components/index.ts`
+- Files changed: `src/app/shared/components/empty-state/` (new), `src/app/shared/components/error-state/` (new), `src/app/shared/components/skeleton/` (new), `src/app/shared/components/index.ts` (updated)
+- **Learnings for future iterations:**
+  - Skeleton shimmer animation uses `background-size: 200%` with position animation for smooth effect
+  - `git -c safe.directory=...` flag needed for commits in this environment (gitconfig is read-only)
+---
