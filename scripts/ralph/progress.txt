@@ -489,3 +489,16 @@
   - User modal follows standard pattern: FormGroup + signal for editing state, backdrop click/Esc to close
   - Integration cards use `--disabled` class with `opacity: 0.55` and `pointer-events: none` for coming-soon state
 ---
+
+## 2026-03-22 - US-030
+- Replaced placeholder tabs for Custos Fixos, Alertas, and Aparência with full content
+- Custos Fixos: R$ prefix input for embalagem padrão, % input for alíquota Simples Nacional, editable table for other fixed costs with add/delete functionality, 2 mock entries
+- Alertas: 4 toggle cards (Margem mínima, Estoque mínimo, Pergunta sem resposta, Divergência financeira) with enable/disable toggle + threshold input when enabled
+- Aparência: 3 radio-style theme cards (Claro/sun, Escuro/moon, Sistema/monitor) calling ThemeService.setTheme(), disabled language selector with "Em breve" badge
+- Enabled all 3 tabs in navigation (removed disabled: true)
+- Files changed: configuracoes.component.ts (added interfaces, signals, forms, methods), .html (replaced placeholder with 3 tab sections), .scss (added styles for fixed costs table, alerts grid, theme cards, language section, form prefix/suffix groups)
+- **Learnings for future iterations:**
+  - ThemeService exposes `currentTheme` signal and `setTheme(theme)` method - easy to integrate into settings
+  - For form prefix/suffix (R$, %) groups, use flex containers with border-radius overrides on the input
+  - The SCSS budget warning for configuracoes.component.scss (15KB > 12KB limit) is pre-existing from US-029
+---
