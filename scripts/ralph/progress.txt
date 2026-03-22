@@ -429,3 +429,21 @@
   - 5-column KPI grid needs breakpoint handling: 5 → 3 (tablet) → 2 (mobile) for best readability
   - ToastService injected via constructor for export button feedback — simple pattern for non-functional placeholder actions
 ---
+
+## 2026-03-22 - US-026
+- Replaced 'Lucratividade por SKU' tab placeholder with full sortable profitability table
+- Table with 10 columns: SKU (mono), Produto, Vendas, Receita Bruta, CMV, Comissões, Frete, Impostos, Lucro Líquido (green/red colored), Margem % (with horizontal colored bar)
+- Margin column: colored bar + text — green >=20%, yellow 10-19%, red <10%
+- All numeric columns sortable (click toggles asc/desc), default sort by lucro desc
+- Negative margin rows highlighted with --danger-light background
+- Horizontal scroll with sticky SKU + Produto columns on tablet
+- Export buttons show 'Exportação em desenvolvimento' toast (reusing existing onExport method)
+- 8 mock product rows with varied margins (from 53% down to -1.3%)
+- Updated placeholder condition to only show for conciliacao and curva-abc tabs
+- Files changed: `financeiro.component.ts` (updated), `financeiro.component.html` (updated), `financeiro.component.scss` (updated)
+- **Learnings for future iterations:**
+  - Don't import BadgeComponent or BrlCurrencyPipe if only using the type or a method — Angular warns on unused component/pipe imports
+  - Use `type` import (`import type { BadgeVariant }`) for type-only references to avoid unused import warnings
+  - Sticky columns in horizontal-scroll table: use `position: sticky` + `left: Npx` with matching offsets for multiple sticky columns
+  - `computed()` signal for sorted data: spread `[...array].sort()` in computed to avoid mutating source array
+---
