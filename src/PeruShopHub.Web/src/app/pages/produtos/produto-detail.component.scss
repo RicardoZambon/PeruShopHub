@@ -228,3 +228,126 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+// Variant section
+.detail-page__section--full {
+  grid-column: 1 / -1;
+}
+
+.detail-page__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+
+  .detail-page__section-title {
+    margin-bottom: 0;
+  }
+}
+
+.detail-page__section-meta {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--neutral-600);
+}
+
+.variant-review-banner {
+  padding: var(--space-3) var(--space-4);
+  background: var(--warning-light);
+  color: var(--warning);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  margin-bottom: var(--space-4);
+  border-left: 3px solid var(--warning);
+}
+
+.variant-row--warning {
+  background: var(--warning-light);
+}
+
+.variant-row--danger {
+  background: var(--danger-light);
+}
+
+.variant-row--review {
+  background: var(--warning-light);
+  border-left: 3px solid var(--warning);
+}
+
+.text-muted {
+  color: var(--neutral-500);
+  font-style: italic;
+}
+
+// Desktop table visible, mobile hidden
+.variant-table-desktop {
+  @include m.mobile {
+    display: none;
+  }
+}
+
+// Mobile variant cards
+.variant-cards-mobile {
+  display: none;
+
+  @include m.mobile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}
+
+.variant-card-mobile {
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  &__attrs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--neutral-800);
+
+    strong {
+      color: var(--neutral-600);
+      font-weight: 500;
+    }
+  }
+
+  &__body {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__label {
+    font-size: var(--text-xs);
+    color: var(--neutral-500);
+  }
+
+  &__value {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--neutral-900);
+  }
+}

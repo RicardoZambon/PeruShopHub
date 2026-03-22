@@ -1,10 +1,15 @@
-import { Component, signal, computed, HostListener } from '@angular/core';
+import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Save, Send, X, ChevronDown, ChevronUp } from 'lucide-angular';
+import { TreeSelectComponent } from './tree-select.component';
+import { VariantManagerComponent } from './variant-manager.component';
+import { CategoryService } from '../../services/category.service';
+import { ProductVariantService } from '../../services/product-variant.service';
+import { BrlCurrencyPipe } from '../../shared/pipes/brl-currency.pipe';
 
-type TabId = 'basicas' | 'preco' | 'envio';
+type TabId = 'basicas' | 'preco' | 'envio' | 'variacoes';
 
 interface Tab {
   id: TabId;
@@ -15,12 +20,7 @@ const TABS: Tab[] = [
   { id: 'basicas', label: 'Informações Básicas' },
   { id: 'preco', label: 'Preço e Custos' },
   { id: 'envio', label: 'Envio' },
-];
-
-const CATEGORIAS = [
-  'Eletrônicos', 'Celulares e Telefones', 'Informática', 'Games',
-  'Áudio', 'TV e Vídeo', 'Câmeras', 'Acessórios para Veículos',
-  'Casa e Decoração', 'Esportes', 'Moda', 'Beleza e Saúde',
+  { id: 'variacoes', label: 'Variações' },
 ];
 
 const TIPOS_ANUNCIO = [
@@ -38,8 +38,9 @@ const COMISSAO_MAP: Record<string, number> = {
 // Mock product data for edit mode
 const MOCK_PRODUCT = {
   titulo: 'Fone Bluetooth TWS Pro Max',
+  sku: 'FN-BT-001',
   descricao: 'Fone de ouvido bluetooth sem fio com cancelamento de ruído ativo, driver de 13mm, autonomia de 30h com estojo de carga.',
-  categoria: 'Áudio',
+  categoria: 'cat-fones',
   condicao: 'novo',
   precoVenda: 189.90,
   custoAquisicao: 62.00,
@@ -56,7 +57,7 @@ const MOCK_PRODUCT = {
 @Component({
   selector: 'app-produto-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, TreeSelectComponent, VariantManagerComponent, BrlCurrencyPipe],
   templateUrl: './produto-form.component.html',
   styleUrl: './produto-form.component.scss',
 })
@@ -69,48 +70,32 @@ export class ProdutoFormComponent {
   readonly chevronUpIcon = ChevronUp;
 
   readonly tabs = TABS;
-  readonly categorias = CATEGORIAS;
   readonly tiposAnuncio = TIPOS_ANUNCIO;
 
   activeTab = signal<TabId>('basicas');
   isEditMode = signal(false);
+  productId = signal('');
   productName = signal('');
   loading = signal(false);
-  categoriaDropdownOpen = signal(false);
-  categoriaFilter = signal('');
+  showCategoryChangeDialog = signal(false);
+  pendingCategoryId = signal<string | null>(null);
+  previousCategoryId = signal<string | null>(null);
 
   // Mobile accordion: track which tabs are open
   openAccordions = signal<Set<TabId>>(new Set(['basicas']));
 
   form: FormGroup;
 
-  filteredCategorias = computed(() => {
-    const filter = this.categoriaFilter().toLowerCase();
-    if (!filter) return this.categorias;
-    return this.categorias.filter(c => c.toLowerCase().includes(filter));
-  });
-
-  margemEstimada = computed(() => {
-    const preco = this.form?.get('precoVenda')?.value || 0;
-    const custoAquisicao = this.form?.get('custoAquisicao')?.value || 0;
-    const custoEmbalagem = this.form?.get('custoEmbalagem')?.value || 0;
-    const tipoAnuncio = this.form?.get('tipoAnuncio')?.value || 'classico';
-
-    if (preco <= 0) return null;
-
-    const comissao = preco * (COMISSAO_MAP[tipoAnuncio] || 0);
-    const custoTotal = custoAquisicao + custoEmbalagem + comissao;
-    const lucro = preco - custoTotal;
-    return (lucro / preco) * 100;
-  });
-
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
+    public categoryService: CategoryService,
+    private productVariantService: ProductVariantService,
   ) {
     this.form = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(60)]],
+      sku: ['', [Validators.required]],
       descricao: [''],
       categoria: ['', [Validators.required]],
       condicao: ['novo', [Validators.required]],
@@ -129,11 +114,33 @@ export class ProdutoFormComponent {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode.set(true);
+      this.productId.set(id);
       this.loadProduct();
+    }
+
+    // Check for tab query param
+    const tabParam = this.route.snapshot.queryParamMap.get('tab');
+    if (tabParam && TABS.some(t => t.id === tabParam)) {
+      this.activeTab.set(tabParam as TabId);
     }
   }
 
+  margemEstimada = computed(() => {
+    const preco = this.form?.get('precoVenda')?.value || 0;
+    const custoAquisicao = this.form?.get('custoAquisicao')?.value || 0;
+    const custoEmbalagem = this.form?.get('custoEmbalagem')?.value || 0;
+    const tipoAnuncio = this.form?.get('tipoAnuncio')?.value || 'classico';
+
+    if (preco <= 0) return null;
+
+    const comissao = preco * (COMISSAO_MAP[tipoAnuncio] || 0);
+    const custoTotal = custoAquisicao + custoEmbalagem + comissao;
+    const lucro = preco - custoTotal;
+    return (lucro / preco) * 100;
+  });
+
   get titulo() { return this.form.get('titulo')!; }
+  get sku() { return this.form.get('sku')!; }
   get categoria() { return this.form.get('categoria')!; }
   get precoVenda() { return this.form.get('precoVenda')!; }
 
@@ -145,6 +152,7 @@ export class ProdutoFormComponent {
     this.productName.set(MOCK_PRODUCT.titulo);
     this.form.patchValue({
       titulo: MOCK_PRODUCT.titulo,
+      sku: MOCK_PRODUCT.sku,
       descricao: MOCK_PRODUCT.descricao,
       categoria: MOCK_PRODUCT.categoria,
       condicao: MOCK_PRODUCT.condicao,
@@ -159,6 +167,7 @@ export class ProdutoFormComponent {
       comprimento: MOCK_PRODUCT.comprimento,
       freteGratis: MOCK_PRODUCT.freteGratis,
     });
+    this.previousCategoryId.set(MOCK_PRODUCT.categoria);
   }
 
   setActiveTab(tabId: TabId): void {
@@ -179,30 +188,52 @@ export class ProdutoFormComponent {
     return this.openAccordions().has(tabId);
   }
 
-  selectCategoria(cat: string): void {
-    this.form.patchValue({ categoria: cat });
-    this.categoriaDropdownOpen.set(false);
-    this.categoriaFilter.set('');
-  }
+  onCategoryChange(categoryId: string): void {
+    const currentCategoryId = this.form.get('categoria')?.value;
+    const hasVariants = this.productId()
+      ? this.productVariantService.getByProductId(this.productId()).length > 0
+      : false;
 
-  onCategoriaInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.categoriaFilter.set(value);
-    if (!this.categoriaDropdownOpen()) {
-      this.categoriaDropdownOpen.set(true);
+    if (hasVariants && currentCategoryId && currentCategoryId !== categoryId) {
+      // Check if the new category has different variation fields
+      const oldFields = this.categoryService.getAllVariationFieldsForCategory(currentCategoryId);
+      const newFields = this.categoryService.getAllVariationFieldsForCategory(categoryId);
+      const oldFieldNames = new Set(oldFields.map(f => f.name));
+      const newFieldNames = new Set(newFields.map(f => f.name));
+      const hasDifference = oldFields.some(f => !newFieldNames.has(f.name)) ||
+                            newFields.some(f => !oldFieldNames.has(f.name));
+
+      if (hasDifference) {
+        this.pendingCategoryId.set(categoryId);
+        this.showCategoryChangeDialog.set(true);
+        return;
+      }
     }
+
+    this.applyCategoryChange(categoryId);
   }
 
-  toggleCategoriaDropdown(): void {
-    this.categoriaDropdownOpen.set(!this.categoriaDropdownOpen());
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.categoria-dropdown')) {
-      this.categoriaDropdownOpen.set(false);
+  confirmCategoryChange(): void {
+    const newId = this.pendingCategoryId();
+    if (newId) {
+      // Clear variants for this product
+      if (this.productId()) {
+        this.productVariantService.deleteByProductId(this.productId());
+      }
+      this.applyCategoryChange(newId);
     }
+    this.showCategoryChangeDialog.set(false);
+    this.pendingCategoryId.set(null);
+  }
+
+  cancelCategoryChange(): void {
+    this.showCategoryChangeDialog.set(false);
+    this.pendingCategoryId.set(null);
+  }
+
+  private applyCategoryChange(categoryId: string): void {
+    this.form.patchValue({ categoria: categoryId });
+    this.previousCategoryId.set(categoryId);
   }
 
   getMargemColor(): string {
@@ -225,15 +256,17 @@ export class ProdutoFormComponent {
     setTimeout(() => {
       this.loading.set(false);
       this.form.markAsPristine();
-      // Toast would be shown here
+      // Clear review flags on save
+      if (this.productId()) {
+        this.productVariantService.clearReviewFlag(this.productId());
+      }
     }, 800);
   }
 
   onPublish(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      // Switch to tab with first error
-      if (this.titulo.invalid || this.categoria.invalid) {
+      if (this.titulo.invalid || this.sku.invalid || this.categoria.invalid) {
         this.activeTab.set('basicas');
       } else if (this.precoVenda.invalid) {
         this.activeTab.set('preco');
@@ -245,6 +278,10 @@ export class ProdutoFormComponent {
     setTimeout(() => {
       this.loading.set(false);
       this.form.markAsPristine();
+      // Clear review flags on save
+      if (this.productId()) {
+        this.productVariantService.clearReviewFlag(this.productId());
+      }
       this.router.navigate(['/produtos']);
     }, 1000);
   }

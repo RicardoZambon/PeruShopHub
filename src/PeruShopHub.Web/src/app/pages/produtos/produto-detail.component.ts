@@ -5,6 +5,8 @@ import { LucideAngularModule, ArrowLeft, Package, Edit } from 'lucide-angular';
 import { KpiCardComponent, BadgeComponent } from '../../shared/components';
 import type { BadgeVariant } from '../../shared/components';
 import { BrlCurrencyPipe } from '../../shared/pipes';
+import { ProductVariantService } from '../../services/product-variant.service';
+import type { ProductVariant } from '../../models/product-variant.model';
 
 interface ProductDetail {
   id: string;
@@ -50,6 +52,7 @@ export class ProdutoDetailComponent implements OnInit {
   product = signal<ProductDetail | null>(null);
   costHistory = signal<CostHistory[]>([]);
   recentOrders = signal<RecentOrder[]>([]);
+  variants = signal<ProductVariant[]>([]);
 
   kpis = computed(() => {
     const p = this.product();
@@ -63,9 +66,45 @@ export class ProdutoDetailComponent implements OnInit {
     ];
   });
 
+  hasVariants = computed(() => {
+    const v = this.variants();
+    // Don't count default variant (no attributes)
+    return v.length > 0 && !(v.length === 1 && Object.keys(v[0].attributes).length === 0);
+  });
+
+  variantFields = computed(() => {
+    const v = this.variants();
+    if (v.length === 0) return [];
+    // Get field names from the first variant that has attributes
+    const first = v.find(var_ => Object.keys(var_.attributes).length > 0);
+    return first ? Object.keys(first.attributes) : [];
+  });
+
+  totalVariantStock = computed(() => {
+    return this.variants().reduce((sum, v) => sum + v.stock, 0);
+  });
+
+  priceRange = computed(() => {
+    const prices = this.variants()
+      .filter(v => v.price !== null)
+      .map(v => v.price as number);
+    if (prices.length === 0) return null;
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    if (min === max) return this.formatBrl(min);
+    return `${this.formatBrl(min)} — ${this.formatBrl(max)}`;
+  });
+
+  hasNeedsReview = computed(() => {
+    return this.variants().some(v => v.needsReview);
+  });
+
   private productId = '';
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(
+    private route: ActivatedRoute,
+    private variantService: ProductVariantService,
+  ) {}
 
   ngOnInit(): void {
     this.productId = this.route.snapshot.paramMap.get('id') || '1';
@@ -105,6 +144,9 @@ export class ProdutoDetailComponent implements OnInit {
         { id: '2087654230', date: '2026-03-17', qty: 3, value: 479.70, profit: 115.35 },
       ]);
 
+      // Load variants
+      this.variants.set(this.variantService.getByProductId(this.productId));
+
       this.loading.set(false);
     }, 600);
   }
@@ -125,5 +167,12 @@ export class ProdutoDetailComponent implements OnInit {
 
   getProfitClass(profit: number): string {
     return profit >= 0 ? 'value--positive' : 'value--negative';
+  }
+
+  getVariantRowClass(variant: ProductVariant): string {
+    if (variant.needsReview) return 'variant-row--review';
+    if (variant.stock === 0) return 'variant-row--danger';
+    if (variant.stock > 0 && variant.stock <= 5) return 'variant-row--warning';
+    return '';
   }
 }

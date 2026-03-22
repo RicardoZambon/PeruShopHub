@@ -339,3 +339,54 @@
   background: var(--danger-light);
   color: var(--danger);
 }
+
+// Variant badge
+.variant-badge {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(0.95);
+  }
+}
+
+.review-badge {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  background: var(--warning-light);
+  color: var(--warning);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  margin-left: var(--space-1);
+}
+
+// Mobile variant/review chips
+.variant-chip {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.review-chip {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  background: var(--warning-light);
+  color: var(--warning);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  margin-top: 2px;
+}
