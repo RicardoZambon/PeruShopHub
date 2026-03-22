@@ -549,3 +549,16 @@
   - Debounce with signals: use a separate `debouncedQuery` signal updated via setTimeout, consumed in computed
   - Manual browser verification needed
 ---
+
+## 2026-03-22 - US-033
+- Created NotFoundComponent at wildcard route ** (within app shell layout)
+- Centered content: large "404" text (7rem, primary color at 15% opacity), title "Página não encontrada", description, "Voltar ao Dashboard" primary button linking to /dashboard
+- Supports dark theme via CSS custom properties (--primary, --neutral-900, --neutral-600)
+- Responsive: smaller 404 text on mobile (5rem)
+- Added wildcard route as last child of layout route in app.routes.ts
+- Files changed: `not-found.component.ts` (new), `not-found.component.html` (new), `not-found.component.scss` (new), `app.routes.ts` (updated)
+- **Learnings for future iterations:**
+  - Wildcard route `**` must be the last route in the children array to catch all unmatched paths
+  - Placing 404 inside the layout children means it renders within the app shell (sidebar + header visible)
+  - Manual browser verification needed
+---
