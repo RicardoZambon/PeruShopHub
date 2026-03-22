@@ -1,22 +1,24 @@
-<div class="categorias">
-  <!-- Page header: title left, add button right -->
-  <div class="categorias__header">
-    <div class="categorias__header-left">
-      <h1 class="categorias__title">Categorias</h1>
-      <span class="categorias__count">{{ totalCount() }} categorias</span>
+<div class="categorias-page">
+  <!-- Page header: title left, add button right (matching products list) -->
+  <div class="categorias-page__header">
+    <div class="categorias-page__header-left">
+      <h1 class="categorias-page__title">Categorias</h1>
+      <span class="categorias-page__subtitle">
+        {{ totalCategories() }} categorias &middot; {{ totalProducts() }} produtos
+      </span>
     </div>
-    <button class="categorias__add-btn" type="button">
-      <lucide-angular [img]="folderPlusIcon" [size]="18"></lucide-angular>
-      <span>Adicionar Categoria</span>
+    <button class="categorias-page__add-btn" type="button" (click)="onAddCategory()">
+      <lucide-icon [img]="folderPlusIcon" [size]="18"></lucide-icon>
+      Adicionar Categoria
     </button>
   </div>
 
   <!-- Search bar below header, full-width -->
-  <div class="categorias__search">
-    <lucide-angular [img]="searchIcon" [size]="16" class="categorias__search-icon"></lucide-angular>
+  <div class="categorias-page__search">
+    <lucide-icon [img]="searchIcon" [size]="16" class="categorias-page__search-icon"></lucide-icon>
     <input
       type="text"
-      class="categorias__search-input"
+      class="categorias-page__search-input"
       placeholder="Buscar categorias..."
       [value]="searchQuery()"
       (input)="onSearchChange($any($event.target).value)"
@@ -24,69 +26,39 @@
   </div>
 
   <!-- Split panel layout -->
-  <div class="categorias__panels">
-    <!-- Left panel: Category tree -->
-    <div class="categorias__tree-panel" [class.categorias__tree-panel--hidden]="mobileView() === 'detail'">
-      <div class="categorias__tree-header">
-        <h2 class="categorias__tree-title">Navegação</h2>
-      </div>
-
-      <!-- Category tree content -->
-      <div class="categorias__tree-content">
-        @if (categoryTree().length === 0) {
-          <div class="categorias__empty">
-            <lucide-angular [img]="folderTreeIcon" [size]="48" class="categorias__empty-icon"></lucide-angular>
-            <p class="categorias__empty-text">Nenhuma categoria cadastrada</p>
-            <p class="categorias__empty-hint">Crie sua primeira categoria para organizar seus produtos.</p>
-          </div>
-        } @else {
-          <div class="categorias__tree-placeholder">
-            <p class="categorias__placeholder-text">
-              Componente de árvore será renderizado aqui.
-            </p>
-            <p class="categorias__placeholder-count">
-              {{ totalCount() }} categorias carregadas
-            </p>
-          </div>
-        }
-      </div>
+  <div class="categorias-page__content">
+    <div
+      class="categorias-page__tree-panel"
+      [class.categorias-page__tree-panel--hidden-mobile]="mobileView() === 'detail'"
+    >
+      <app-category-tree
+        [categories]="categoryTree()"
+        [selectedId]="selectedCategoryId()"
+        (selectCategory)="onSelectCategory($event)"
+      ></app-category-tree>
     </div>
 
-    <!-- Right panel: Category detail -->
-    <div class="categorias__detail-panel" [class.categorias__detail-panel--hidden]="mobileView() === 'tree'">
-      <!-- Mobile back button -->
-      <button class="categorias__back-btn" type="button" (click)="backToTree()">
-        <lucide-angular [img]="chevronLeftIcon" [size]="16"></lucide-angular>
-        <span>Voltar</span>
-      </button>
-
-      @if (selectedCategory(); as category) {
-        <!-- Category detail content -->
-        <div class="categorias__detail-content">
-          <div class="categorias__detail-breadcrumb">
-            @for (crumb of selectedBreadcrumb(); track crumb; let last = $last) {
-              <span class="categorias__breadcrumb-item">{{ crumb }}</span>
-              @if (!last) {
-                <span class="categorias__breadcrumb-separator">/</span>
-              }
-            }
-          </div>
-          <h2 class="categorias__detail-name">{{ category.name }}</h2>
-          <p class="categorias__detail-info">
-            {{ category.productCount }} produtos &middot;
-            {{ category.isActive ? 'Ativa' : 'Inativa' }}
-          </p>
-          <p class="categorias__placeholder-text">
-            Componente de detalhes será renderizado aqui.
-          </p>
-        </div>
-      } @else {
-        <div class="categorias__no-selection">
-          <lucide-angular [img]="folderTreeIcon" [size]="48" class="categorias__no-selection-icon"></lucide-angular>
-          <p class="categorias__no-selection-text">Selecione uma categoria</p>
-          <p class="categorias__no-selection-hint">Escolha uma categoria no painel ao lado para ver seus detalhes e campos de variação.</p>
-        </div>
-      }
+    <div
+      class="categorias-page__detail-panel"
+      [class.categorias-page__detail-panel--hidden-mobile]="mobileView() === 'tree'"
+    >
+      <app-category-detail
+        [category]="selectedCategory()"
+        [allCategories]="categoryTree()"
+        (updated)="onCategoryUpdated($event)"
+        (deleted)="onCategoryDeleted($event)"
+        (back)="onBackToTree()"
+      ></app-category-detail>
     </div>
   </div>
 </div>
+
+@if (showCreateDialog()) {
+  <app-category-form-dialog
+    [category]="dialogCategory()"
+    [allCategories]="categoryTree()"
+    [preselectedParentId]="selectedCategoryId()"
+    (saved)="onDialogSaved($event)"
+    (closed)="onDialogClosed()"
+  ></app-category-form-dialog>
+}
