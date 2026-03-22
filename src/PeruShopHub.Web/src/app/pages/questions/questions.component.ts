@@ -22,13 +22,13 @@ interface Question {
 }
 
 @Component({
-  selector: 'app-perguntas',
+  selector: 'app-questions',
   standalone: true,
   imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, RelativeDatePipe],
-  templateUrl: './perguntas.component.html',
-  styleUrl: './perguntas.component.scss',
+  templateUrl: './questions.component.html',
+  styleUrl: './questions.component.scss',
 })
-export class PerguntasComponent {
+export class QuestionsComponent {
   readonly messageCircleIcon = MessageCircle;
   readonly clockIcon = Clock;
   readonly packageIcon = Package;

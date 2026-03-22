@@ -9,7 +9,7 @@ import { CategoryFormDialogComponent } from './category-form-dialog.component';
 import type { Category } from '../../models/category.model';
 
 @Component({
-  selector: 'app-categorias',
+  selector: 'app-categories',
   standalone: true,
   imports: [
     CommonModule,
@@ -18,10 +18,10 @@ import type { Category } from '../../models/category.model';
     CategoryDetailComponent,
     CategoryFormDialogComponent,
   ],
-  templateUrl: './categorias.component.html',
-  styleUrl: './categorias.component.scss',
+  templateUrl: './categories.component.html',
+  styleUrl: './categories.component.scss',
 })
-export class CategoriasComponent {
+export class CategoriesComponent {
   readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
 

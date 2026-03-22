@@ -39,13 +39,13 @@ const MOCK_ORDERS: MockOrder[] = [
 ];
 
 @Component({
-  selector: 'app-vendas-list',
+  selector: 'app-sales-list',
   standalone: true,
   imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, DataTableComponent],
-  templateUrl: './vendas-list.component.html',
-  styleUrl: './vendas-list.component.scss',
+  templateUrl: './sales-list.component.html',
+  styleUrl: './sales-list.component.scss',
 })
-export class VendasListComponent {
+export class SalesListComponent {
   readonly searchIcon = Search;
   readonly cartIcon = ShoppingCart;
   readonly eyeIcon = Eye;

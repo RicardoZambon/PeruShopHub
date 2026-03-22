@@ -142,13 +142,13 @@ const MOCK_CUSTOMERS: Customer[] = [
 ];
 
 @Component({
-  selector: 'app-clientes',
+  selector: 'app-customers',
   standalone: true,
   imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, DataTableComponent, RelativeDatePipe],
-  templateUrl: './clientes.component.html',
-  styleUrl: './clientes.component.scss',
+  templateUrl: './customers.component.html',
+  styleUrl: './customers.component.scss',
 })
-export class ClientesComponent {
+export class CustomersComponent {
   readonly searchIcon = Search;
   readonly closeIcon = X;
   readonly bagIcon = ShoppingBag;

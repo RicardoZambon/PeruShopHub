@@ -55,13 +55,13 @@ const MOCK_PRODUCT = {
 };
 
 @Component({
-  selector: 'app-produto-form',
+  selector: 'app-product-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, TreeSelectComponent, VariantManagerComponent, BrlCurrencyPipe],
-  templateUrl: './produto-form.component.html',
-  styleUrl: './produto-form.component.scss',
+  templateUrl: './product-form.component.html',
+  styleUrl: './product-form.component.scss',
 })
-export class ProdutoFormComponent {
+export class ProductFormComponent {
   readonly arrowLeftIcon = ArrowLeft;
   readonly saveIcon = Save;
   readonly sendIcon = Send;

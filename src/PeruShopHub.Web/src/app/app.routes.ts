@@ -21,64 +21,64 @@ export const routes: Routes = [
       {
         path: 'produtos',
         loadComponent: () =>
-          import('./pages/produtos/produtos-list.component').then(m => m.ProdutosListComponent),
+          import('./pages/products/products-list.component').then(m => m.ProductsListComponent),
       },
       {
         path: 'produtos/novo',
         loadComponent: () =>
-          import('./pages/produtos/produto-form.component').then(m => m.ProdutoFormComponent),
+          import('./pages/products/product-form.component').then(m => m.ProductFormComponent),
         canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'produtos/:id',
         loadComponent: () =>
-          import('./pages/produtos/produto-detail.component').then(m => m.ProdutoDetailComponent),
+          import('./pages/products/product-detail.component').then(m => m.ProductDetailComponent),
       },
       {
         path: 'produtos/:id/editar',
         loadComponent: () =>
-          import('./pages/produtos/produto-form.component').then(m => m.ProdutoFormComponent),
+          import('./pages/products/product-form.component').then(m => m.ProductFormComponent),
         canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'categorias',
         loadComponent: () =>
-          import('./pages/categorias/categorias.component').then(m => m.CategoriasComponent),
+          import('./pages/categories/categories.component').then(m => m.CategoriesComponent),
       },
       {
         path: 'vendas',
         loadComponent: () =>
-          import('./pages/vendas/vendas-list.component').then(m => m.VendasListComponent),
+          import('./pages/sales/sales-list.component').then(m => m.SalesListComponent),
       },
       {
         path: 'vendas/:id',
         loadComponent: () =>
-          import('./pages/vendas/venda-detail.component').then(m => m.VendaDetailComponent),
+          import('./pages/sales/sale-detail.component').then(m => m.SaleDetailComponent),
       },
       {
         path: 'perguntas',
         loadComponent: () =>
-          import('./pages/perguntas/perguntas.component').then(m => m.PerguntasComponent),
+          import('./pages/questions/questions.component').then(m => m.QuestionsComponent),
       },
       {
         path: 'clientes',
         loadComponent: () =>
-          import('./pages/clientes/clientes.component').then(m => m.ClientesComponent),
+          import('./pages/customers/customers.component').then(m => m.CustomersComponent),
       },
       {
         path: 'financeiro',
         loadComponent: () =>
-          import('./pages/financeiro/financeiro.component').then(m => m.FinanceiroComponent),
+          import('./pages/finance/finance.component').then(m => m.FinanceComponent),
       },
       {
         path: 'estoque',
         loadComponent: () =>
-          import('./pages/estoque/estoque.component').then(m => m.EstoqueComponent),
+          import('./pages/inventory/inventory.component').then(m => m.InventoryComponent),
       },
       {
         path: 'configuracoes',
         loadComponent: () =>
-          import('./pages/configuracoes/configuracoes.component').then(m => m.ConfiguracoesComponent),
+          import('./pages/settings/settings.component').then(m => m.SettingsComponent),
       },
       {
         path: '**',

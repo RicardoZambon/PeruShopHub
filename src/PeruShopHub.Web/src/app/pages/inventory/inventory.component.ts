@@ -60,13 +60,13 @@ const MOCK_MOVEMENTS: MovementRow[] = [
 ];
 
 @Component({
-  selector: 'app-estoque',
+  selector: 'app-inventory',
   standalone: true,
   imports: [CommonModule, KpiCardComponent, SkeletonComponent, BadgeComponent],
-  templateUrl: './estoque.component.html',
-  styleUrl: './estoque.component.scss',
+  templateUrl: './inventory.component.html',
+  styleUrl: './inventory.component.scss',
 })
-export class EstoqueComponent {
+export class InventoryComponent {
   activeTab = signal<InventoryTab>('visao-geral');
   loading = signal(true);
   movementTypeFilter = signal<MovementType | 'all'>('all');

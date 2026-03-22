@@ -135,13 +135,13 @@ const MOCK_ORDER: OrderDetail = {
 };
 
 @Component({
-  selector: 'app-venda-detail',
+  selector: 'app-sale-detail',
   standalone: true,
   imports: [CommonModule, RouterLink, LucideAngularModule, BadgeComponent],
-  templateUrl: './venda-detail.component.html',
-  styleUrl: './venda-detail.component.scss',
+  templateUrl: './sale-detail.component.html',
+  styleUrl: './sale-detail.component.scss',
 })
-export class VendaDetailComponent implements OnInit {
+export class SaleDetailComponent implements OnInit {
   readonly arrowLeftIcon = ArrowLeft;
   readonly packageIcon = Package;
   readonly copyIcon = Copy;

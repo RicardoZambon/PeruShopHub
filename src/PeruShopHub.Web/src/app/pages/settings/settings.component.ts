@@ -66,13 +66,13 @@ const MOCK_INTEGRATIONS: Integration[] = [
 ];
 
 @Component({
-  selector: 'app-configuracoes',
+  selector: 'app-settings',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, BadgeComponent],
-  templateUrl: './configuracoes.component.html',
-  styleUrl: './configuracoes.component.scss',
+  templateUrl: './settings.component.html',
+  styleUrl: './settings.component.scss',
 })
-export class ConfiguracoesComponent {
+export class SettingsComponent {
   private themeService = inject(ThemeService);
 
   activeTab = signal<SettingsTab>('empresa');

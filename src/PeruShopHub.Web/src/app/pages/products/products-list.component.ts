@@ -40,13 +40,13 @@ const MOCK_PRODUCTS: MockProduct[] = [
 ];
 
 @Component({
-  selector: 'app-produtos-list',
+  selector: 'app-products-list',
   standalone: true,
   imports: [CommonModule, FormsModule, LucideAngularModule, DataTableComponent, BadgeComponent, EmptyStateComponent],
-  templateUrl: './produtos-list.component.html',
-  styleUrl: './produtos-list.component.scss',
+  templateUrl: './products-list.component.html',
+  styleUrl: './products-list.component.scss',
 })
-export class ProdutosListComponent {
+export class ProductsListComponent {
   readonly plusIcon = Plus;
   readonly searchIcon = Search;
   readonly editIcon = Edit;

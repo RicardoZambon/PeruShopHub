@@ -111,13 +111,13 @@ function generateMarginChartData(): { labels: string[]; margin: number[] } {
 }
 
 @Component({
-  selector: 'app-financeiro',
+  selector: 'app-finance',
   standalone: true,
   imports: [CommonModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BaseChartDirective],
-  templateUrl: './financeiro.component.html',
-  styleUrl: './financeiro.component.scss',
+  templateUrl: './finance.component.html',
+  styleUrl: './finance.component.scss',
 })
-export class FinanceiroComponent {
+export class FinanceComponent {
   activePeriod = signal<Period>('30dias');
   activeTab = signal<FinanceTab>('resumo');
   loading = signal(false);

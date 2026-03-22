@@ -37,13 +37,13 @@ interface RecentOrder {
 }
 
 @Component({
-  selector: 'app-produto-detail',
+  selector: 'app-product-detail',
   standalone: true,
   imports: [CommonModule, RouterLink, LucideAngularModule, KpiCardComponent, BadgeComponent, BrlCurrencyPipe],
-  templateUrl: './produto-detail.component.html',
-  styleUrl: './produto-detail.component.scss',
+  templateUrl: './product-detail.component.html',
+  styleUrl: './product-detail.component.scss',
 })
-export class ProdutoDetailComponent implements OnInit {
+export class ProductDetailComponent implements OnInit {
   readonly ArrowLeft = ArrowLeft;
   readonly Package = Package;
   readonly EditIcon = Edit;
