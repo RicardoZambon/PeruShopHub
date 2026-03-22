@@ -70,6 +70,32 @@
 
 .tree-panel__list {
   // Tree nodes render here
+  min-height: 40px;
+}
+
+.tree-panel__drag-placeholder {
+  height: 40px;
+  border: 2px dashed var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--primary-light);
+  opacity: 0.5;
+  margin: var(--space-1) 0;
+}
+
+// CDK drag styles
+.cdk-drag-preview {
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+  opacity: 0.9;
+}
+
+.cdk-drag-animating {
+  transition: transform 200ms ease;
+}
+
+.cdk-drop-list-dragging .cdk-drag {
+  transition: transform 200ms ease;
 }
 
 .tree-panel__no-results {

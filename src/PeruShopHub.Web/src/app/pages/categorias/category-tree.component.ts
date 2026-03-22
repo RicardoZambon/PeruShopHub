@@ -1,9 +1,12 @@
-import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragPlaceholder } from '@angular/cdk/drag-drop';
 import { LucideAngularModule, Search, FolderPlus } from 'lucide-angular';
 import { CategoryTreeNodeComponent } from './category-tree-node.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { CategoryService } from '../../services/category.service';
+import { ToastService } from '../../services/toast.service';
 import type { Category } from '../../models/category.model';
 
 @Component({
@@ -15,6 +18,9 @@ import type { Category } from '../../models/category.model';
     LucideAngularModule,
     CategoryTreeNodeComponent,
     EmptyStateComponent,
+    CdkDropList,
+    CdkDrag,
+    CdkDragPlaceholder,
   ],
   templateUrl: './category-tree.component.html',
   styleUrl: './category-tree.component.scss',
@@ -25,6 +31,9 @@ export class CategoryTreeComponent {
 
   @Output() selectCategory = new EventEmitter<string>();
   @Output() addCategory = new EventEmitter<void>();
+
+  private readonly categoryService = inject(CategoryService);
+  private readonly toast = inject(ToastService);
 
   readonly searchIcon = Search;
   readonly folderPlusIcon = FolderPlus;
@@ -41,6 +50,10 @@ export class CategoryTreeComponent {
     return this.categories && this.categories.length > 0;
   });
 
+  readonly isDragDisabled = computed(() => {
+    return this.searchQuery().trim().length > 0;
+  });
+
   onSearchInput(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.searchQuery.set(value);
@@ -52,6 +65,34 @@ export class CategoryTreeComponent {
 
   onAddCategory(): void {
     this.addCategory.emit();
+  }
+
+  async onRootDrop(event: CdkDragDrop<Category[]>): Promise<void> {
+    if (event.previousIndex !== event.currentIndex) {
+      const items = [...this.filteredTree()];
+      const [moved] = items.splice(event.previousIndex, 1);
+      items.splice(event.currentIndex, 0, moved);
+      const orderedIds = items.map((c) => c.id);
+      await this.categoryService.reorderCategories(null, orderedIds);
+      this.toast.show('Categorias reordenadas', 'success');
+    }
+  }
+
+  async onChildReorder(event: { categoryId: string; newParentId: string | null; newIndex: number }): Promise<void> {
+    // Re-order within a parent
+    const siblings = this.categoryService.allCategories()
+      .filter((c) => c.parentId === event.newParentId)
+      .sort((a, b) => a.order - b.order);
+
+    const currentIndex = siblings.findIndex((c) => c.id === event.categoryId);
+    if (currentIndex === -1) return;
+
+    const items = [...siblings];
+    const [moved] = items.splice(currentIndex, 1);
+    items.splice(event.newIndex, 0, moved);
+    const orderedIds = items.map((c) => c.id);
+    await this.categoryService.reorderCategories(event.newParentId, orderedIds);
+    this.toast.show('Categorias reordenadas', 'success');
   }
 
   private filterTree(categories: Category[], query: string): Category[] {

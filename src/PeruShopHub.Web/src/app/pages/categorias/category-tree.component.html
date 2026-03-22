@@ -14,22 +14,34 @@
 
   <div class="tree-panel__content">
     @if (hasCategories()) {
-      <div class="tree-panel__list">
+      <div
+        class="tree-panel__list"
+        cdkDropList
+        [cdkDropListData]="filteredTree()"
+        id="root-drop-list"
+        (cdkDropListDropped)="onRootDrop($event)"
+        [cdkDropListDisabled]="isDragDisabled()"
+      >
         @for (category of filteredTree(); track category.id) {
-          <app-category-tree-node
-            [category]="category"
-            [selectedId]="selectedId"
-            [depth]="0"
-            (select)="onSelectCategory($event)"
-          ></app-category-tree-node>
-        }
-
-        @if (filteredTree().length === 0) {
-          <div class="tree-panel__no-results">
-            Nenhuma categoria encontrada para "{{ searchQuery() }}"
+          <div cdkDrag [cdkDragData]="category" [cdkDragDisabled]="isDragDisabled()">
+            <div class="tree-panel__drag-placeholder" *cdkDragPlaceholder></div>
+            <app-category-tree-node
+              [category]="category"
+              [selectedId]="selectedId"
+              [depth]="0"
+              [dragEnabled]="!isDragDisabled()"
+              (select)="onSelectCategory($event)"
+              (reorder)="onChildReorder($event)"
+            ></app-category-tree-node>
           </div>
         }
       </div>
+
+      @if (filteredTree().length === 0) {
+        <div class="tree-panel__no-results">
+          Nenhuma categoria encontrada para "{{ searchQuery() }}"
+        </div>
+      }
     } @else {
       <app-empty-state
         title="Nenhuma categoria"

@@ -5,6 +5,12 @@
   [style.padding-left]="indentPx"
   (click)="onSelect()"
 >
+  @if (dragEnabled) {
+    <span class="tree-node__drag-handle" cdkDragHandle>
+      <lucide-icon [img]="gripIcon" [size]="14"></lucide-icon>
+    </span>
+  }
+
   <button
     class="tree-node__toggle"
     [class.tree-node__toggle--visible]="hasChildren"
@@ -28,15 +34,26 @@
 </div>
 
 @if (hasChildren && expanded()) {
-  <div class="tree-node__children">
+  <div
+    class="tree-node__children"
+    cdkDropList
+    [cdkDropListData]="category.children"
+    [id]="dropListId"
+    (cdkDropListDropped)="onDrop($event)"
+  >
     @for (child of category.children; track child.id) {
-      <app-category-tree-node
-        [category]="child"
-        [selectedId]="selectedId"
-        [depth]="depth + 1"
-        (select)="onChildSelect($event)"
-        (toggleExpand)="onChildToggleExpand($event)"
-      ></app-category-tree-node>
+      <div cdkDrag [cdkDragData]="child" [cdkDragDisabled]="!dragEnabled">
+        <div class="tree-node__drag-placeholder" *cdkDragPlaceholder></div>
+        <app-category-tree-node
+          [category]="child"
+          [selectedId]="selectedId"
+          [depth]="depth + 1"
+          [dragEnabled]="dragEnabled"
+          (select)="onChildSelect($event)"
+          (toggleExpand)="onChildToggleExpand($event)"
+          (reorder)="onChildReorder($event)"
+        ></app-category-tree-node>
+      </div>
     }
   </div>
 }
