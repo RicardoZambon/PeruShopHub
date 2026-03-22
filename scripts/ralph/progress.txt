@@ -14,6 +14,8 @@
 - Shared pipes/components go in `src/app/shared/pipes/` and `src/app/shared/components/` with barrel exports via `index.ts`
 - SCSS `@use` path from `src/app/shared/components/{name}/` to `src/styles/` is `../../../../styles/mixins`
 - Type re-exports need `export type { ... }` due to `isolatedModules` in tsconfig
+- Lucide icon data type for `[img]` binding is `LucideIconData` from `lucide-angular` (not `object`)
+- Toast container goes in app root (app.html), inject `ToastService` to show toasts from any component
 
 ## 2026-03-22 - US-001
 - Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
@@ -108,4 +110,20 @@
   - Use `format: 'mono'` or `format: 'currency'` on columns to apply Roboto Mono font
   - Tablet sticky first column uses `position: sticky` with `::after` pseudo-element for border
   - `rowClick` output emitter sends the full row record for navigation
+---
+
+## 2026-03-22 - US-008
+- Created `ToastService` as injectable root service with `show(message, type, duration?, description?)` method
+- Manages toast array via signal, auto-dismisses after configurable duration (default 5s), max 3 visible
+- Created `ToastContainerComponent` (standalone) positioned fixed top-right with 24px margin
+- Each toast: colored left border per type (success/warning/danger/info), Lucide icon, message, optional description, X close button
+- Slide-in animation from right (200ms) via CSS keyframe
+- Mobile: full width minus 24px padding
+- Added ToastContainerComponent to app root (app.html + app.ts)
+- Barrel export updated in `src/app/shared/components/index.ts`
+- Files changed: `src/app/services/toast.service.ts` (new), `src/app/shared/components/toast-container/toast-container.component.ts` (new), `src/app/shared/components/toast-container/toast-container.component.scss` (new), `src/app/shared/components/index.ts` (updated), `src/app/app.ts` (updated), `src/app/app.html` (updated)
+- **Learnings for future iterations:**
+  - Lucide icon data type is `LucideIconData` from `lucide-angular`, not `object` — using `object` causes TS2740 build errors
+  - ToastService uses `signal<Toast[]>` for reactive toast list — components just read `toastService.toasts()`
+  - Toast container is added once in app root, not per-page
 ---
