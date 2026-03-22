@@ -502,3 +502,29 @@
   - For form prefix/suffix (R$, %) groups, use flex containers with border-radius overrides on the input
   - The SCSS budget warning for configuracoes.component.scss (15KB > 12KB limit) is pre-existing from US-029
 ---
+
+## 2026-03-22 - US-031
+- Implemented notification slide-over panel with 8 mock notifications (5 unread, 3 read)
+- Created NotificationService with signals-based state management (notifications, unreadCount, markAsRead, markAllAsRead)
+- Created NotificationPanelComponent as slide-over from right (320px desktop, full width mobile)
+- 5 notification types with distinct icons: sale (cart), question (message-circle), stock (alert-triangle), margin (trending-down), connection (wifi-off)
+- Each notification has colored icon background per type, title, description, relative timestamp, unread dot indicator
+- "Marcar todas como lidas" link in header to mark all as read
+- Click notification: marks as read, logs navigation target, routes to target, closes panel
+- Unread count in header bell badge updates reactively via NotificationService.unreadCount signal
+- Panel opens on bell click, closes on backdrop/Esc/X button
+- Integrated directly in HeaderComponent (same pattern as user dropdown)
+- Files changed:
+  - src/PeruShopHub.Web/src/app/services/notification.service.ts (new)
+  - src/PeruShopHub.Web/src/app/shared/components/notification-panel/notification-panel.component.ts (new)
+  - src/PeruShopHub.Web/src/app/shared/components/notification-panel/notification-panel.component.html (new)
+  - src/PeruShopHub.Web/src/app/shared/components/notification-panel/notification-panel.component.scss (new)
+  - src/PeruShopHub.Web/src/app/shared/components/header/header.component.ts (modified)
+  - src/PeruShopHub.Web/src/app/shared/components/header/header.component.html (modified)
+  - src/PeruShopHub.Web/src/app/shared/components/index.ts (modified)
+- **Learnings for future iterations:**
+  - Notification panel integrated directly in header component rather than layout - keeps related functionality together
+  - Replaced hardcoded notificationCount signal with NotificationService.unreadCount computed signal
+  - Slide-over panels follow consistent pattern: backdrop with fadeIn + panel with slideIn animation, z-index 1000/1001
+  - The notification panel uses 320px width (narrower than the 400px customer slide-over) for a lightweight feel
+---

@@ -11,3 +11,4 @@ export { ToastContainerComponent } from './toast-container/toast-container.compo
 export { SidebarComponent } from './sidebar/sidebar.component';
 export { HeaderComponent } from './header/header.component';
 export { LayoutComponent } from './layout/layout.component';
+export { NotificationPanelComponent } from './notification-panel/notification-panel.component';

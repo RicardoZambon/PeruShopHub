@@ -1,0 +1,44 @@
+<div class="notif-backdrop" (click)="onBackdropClick()"></div>
+<div class="notif-panel">
+  <!-- Header -->
+  <div class="notif-panel__header">
+    <h2 class="notif-panel__title">Notificações</h2>
+    <div class="notif-panel__header-actions">
+      @if (notifications.unreadCount() > 0) {
+        <button class="notif-panel__mark-all" (click)="markAllRead()">
+          Marcar todas como lidas
+        </button>
+      }
+      <button class="notif-panel__close" (click)="onClose()" aria-label="Fechar notificações">
+        <lucide-icon [img]="closeIcon" [size]="20" />
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification list -->
+  <div class="notif-panel__list">
+    @for (notification of notifications.notifications(); track notification.id) {
+      <button
+        class="notif-item"
+        [class.notif-item--unread]="!notification.read"
+        (click)="onNotificationClick(notification)"
+      >
+        <div class="notif-item__icon notif-item__icon--{{ notification.type }}">
+          <lucide-icon [img]="getIcon(notification.type)" [size]="18" />
+        </div>
+        <div class="notif-item__content">
+          <div class="notif-item__title">{{ notification.title }}</div>
+          <div class="notif-item__description">{{ notification.description }}</div>
+          <div class="notif-item__time">{{ notification.timestamp | relativeDate }}</div>
+        </div>
+        @if (!notification.read) {
+          <span class="notif-item__dot"></span>
+        }
+      </button>
+    } @empty {
+      <div class="notif-panel__empty">
+        Nenhuma notificação
+      </div>
+    }
+  </div>
+</div>

@@ -22,10 +22,10 @@
     <span class="header__status-dot header__status-dot--connected" title="Mercado Livre conectado"></span>
 
     <!-- Notification bell -->
-    <button class="header__btn header__btn--bell" aria-label="Notificações">
+    <button class="header__btn header__btn--bell" (click)="toggleNotificationPanel()" aria-label="Notificações">
       <lucide-icon [img]="bellIcon" [size]="20" />
-      @if (notificationCount() > 0) {
-        <span class="header__badge">{{ notificationCount() }}</span>
+      @if (notifications.unreadCount() > 0) {
+        <span class="header__badge">{{ notifications.unreadCount() }}</span>
       }
     </button>
 
@@ -63,3 +63,7 @@
     </div>
   </div>
 </header>
+
+@if (notificationPanelOpen()) {
+  <app-notification-panel (closed)="closeNotificationPanel()" />
+}
