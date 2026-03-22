@@ -447,3 +447,19 @@
   - Sticky columns in horizontal-scroll table: use `position: sticky` + `left: Npx` with matching offsets for multiple sticky columns
   - `computed()` signal for sorted data: spread `[...array].sort()` in computed to avoid mutating source array
 ---
+
+## 2026-03-22 - US-027
+- Replaced placeholder for Conciliação and Curva ABC tabs with full implementations
+- Conciliação tab: table with 6 mock rows (Período, Valor Esperado, Valor Depositado, Diferença, Status badge). 2 rows with divergences highlighted with --warning-light background
+- Curva ABC tab: Chart.js mixed chart (vertical bars for profit + line for cumulative %) with dual Y-axes (R$ left, % right). Products color-coded by classification (A=green, B=yellow, C=red)
+- ABC table below chart: Rank, Produto, SKU, Lucro (BRL), % do Lucro Total, Classificação badge (A/B/C). 10 mock products sorted by profit contribution
+- A=top 80% cumulative, B=next 15%, C=bottom 5%
+- Both tabs have loading skeleton state (600ms simulated) and empty state
+- Imported BadgeComponent for status/classification badges
+- Files changed: `financeiro.component.ts`, `financeiro.component.html`, `financeiro.component.scss`
+- **Learnings for future iterations:**
+  - Mixed chart (bar + line) in Chart.js: use `type: 'bar'` on canvas, then set `type: 'line'` on the line dataset. Use `order` to control z-index (lower = on top)
+  - Dual Y-axes: configure `yAxisID: 'y'` for bars and `yAxisID: 'y1'` for line, set `y1` to `position: 'right'` with `grid: { display: false }`
+  - ABC classification: calculate cumulative % of total profit, assign A <=80%, B <=95%, C >95%
+  - Use `(() => { ... })()` IIFE for complex computed mock data that needs cumulative calculations
+---
