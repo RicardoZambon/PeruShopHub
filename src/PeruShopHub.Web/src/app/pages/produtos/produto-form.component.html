@@ -13,281 +13,249 @@
     </h1>
   </div>
 
-  <!-- Desktop Tabs -->
-  <div class="tabs-nav">
-    @for (tab of tabs; track tab.id) {
-      <button
-        class="tab-btn"
-        [class.active]="activeTab() === tab.id"
-        (click)="setActiveTab(tab.id)"
-      >
-        {{ tab.label }}
-      </button>
-    }
-  </div>
-
-  <form [formGroup]="form" class="form-content">
-
-    <!-- TAB: Informações Básicas -->
-    <!-- Mobile Accordion Header -->
-    <div class="accordion-header" (click)="toggleAccordion('basicas')">
-      <span>Informações Básicas</span>
-      <lucide-icon [img]="isAccordionOpen('basicas') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
-    </div>
-
-    <div
-      class="tab-panel"
-      [class.active]="activeTab() === 'basicas'"
-      [class.accordion-open]="isAccordionOpen('basicas')"
-    >
-      <div class="field">
-        <label for="titulo">Título do anúncio</label>
-        <input
-          id="titulo"
-          type="text"
-          formControlName="titulo"
-          placeholder="Ex: Fone Bluetooth TWS Pro Max"
-          maxlength="60"
-          [class.invalid]="titulo.touched && titulo.invalid"
-        />
-        <div class="field-footer">
-          @if (titulo.touched && titulo.hasError('required')) {
-            <span class="field-error">Título é obrigatório</span>
-          }
-          <span class="char-counter" [class.limit]="tituloLength() >= 55">
-            {{ tituloLength() }}/60
-          </span>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="descricao">Descrição</label>
-        <textarea
-          id="descricao"
-          formControlName="descricao"
-          placeholder="Descreva seu produto em detalhes..."
-          rows="5"
-        ></textarea>
-      </div>
-
-      <div class="field">
-        <label>Categoria</label>
-        <div class="categoria-dropdown">
-          <div class="dropdown-trigger" (click)="toggleCategoriaDropdown()">
-            <input
-              type="text"
-              [value]="categoriaFilter() || form.get('categoria')?.value || ''"
-              (input)="onCategoriaInput($event)"
-              (focus)="categoriaDropdownOpen.set(true)"
-              placeholder="Buscar categoria..."
-              [class.invalid]="categoria.touched && categoria.invalid"
-            />
-            <lucide-icon [img]="chevronDownIcon" [size]="16" class="dropdown-icon"></lucide-icon>
-          </div>
-          @if (categoriaDropdownOpen()) {
-            <div class="dropdown-list">
-              @for (cat of filteredCategorias(); track cat) {
-                <button
-                  type="button"
-                  class="dropdown-item"
-                  [class.selected]="form.get('categoria')?.value === cat"
-                  (click)="selectCategoria(cat)"
-                >
-                  {{ cat }}
-                </button>
-              }
-              @if (filteredCategorias().length === 0) {
-                <div class="dropdown-empty">Nenhuma categoria encontrada</div>
-              }
-            </div>
-          }
-        </div>
-        @if (categoria.touched && categoria.hasError('required')) {
-          <span class="field-error">Categoria é obrigatória</span>
+  <!-- Two-panel layout -->
+  <div class="two-panel-layout">
+    <!-- Left panel: Form -->
+    <div class="form-panel">
+      <!-- Desktop Tabs -->
+      <div class="tabs-nav">
+        @for (tab of tabs; track tab.id) {
+          <button
+            class="tab-btn"
+            [class.active]="activeTab() === tab.id"
+            (click)="setActiveTab(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
         }
       </div>
 
-      <div class="field">
-        <label>Condição</label>
-        <div class="radio-group">
-          <label class="radio-label">
-            <input type="radio" formControlName="condicao" value="novo" />
-            <span class="radio-custom"></span>
-            Novo
-          </label>
-          <label class="radio-label">
-            <input type="radio" formControlName="condicao" value="usado" />
-            <span class="radio-custom"></span>
-            Usado
-          </label>
+      <form [formGroup]="form" class="form-content">
+
+        <!-- TAB: Informações Básicas -->
+        <!-- Mobile Accordion Header -->
+        <div class="accordion-header" (click)="toggleAccordion('basicas')">
+          <span>Informações Básicas</span>
+          <lucide-icon [img]="isAccordionOpen('basicas') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
         </div>
-      </div>
-    </div>
 
-    <!-- TAB: Preço e Custos -->
-    <div class="accordion-header" (click)="toggleAccordion('preco')">
-      <span>Preço e Custos</span>
-      <lucide-icon [img]="isAccordionOpen('preco') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
-    </div>
-
-    <div
-      class="tab-panel"
-      [class.active]="activeTab() === 'preco'"
-      [class.accordion-open]="isAccordionOpen('preco')"
-    >
-      <div class="fields-row">
-        <div class="field">
-          <label for="precoVenda">Preço de venda</label>
-          <div class="input-prefix">
-            <span class="prefix">R$</span>
+        <div
+          class="tab-panel"
+          [class.active]="activeTab() === 'basicas'"
+          [class.accordion-open]="isAccordionOpen('basicas')"
+        >
+          <div class="field">
+            <label for="sku">SKU</label>
             <input
-              id="precoVenda"
-              type="number"
-              formControlName="precoVenda"
-              placeholder="0,00"
-              step="0.01"
-              min="0"
-              [class.invalid]="precoVenda.touched && precoVenda.invalid"
+              id="sku"
+              type="text"
+              formControlName="sku"
+              placeholder="Ex: TWS-PRO-001"
             />
           </div>
-          @if (precoVenda.touched && precoVenda.hasError('required')) {
-            <span class="field-error">Preço é obrigatório</span>
-          }
-          @if (precoVenda.touched && precoVenda.hasError('min')) {
-            <span class="field-error">Preço deve ser maior que zero</span>
-          }
-        </div>
 
-        <div class="field">
-          <label for="custoAquisicao">Custo de aquisição</label>
-          <div class="input-prefix">
-            <span class="prefix">R$</span>
+          <div class="field">
+            <label for="titulo">Título do anúncio</label>
             <input
-              id="custoAquisicao"
-              type="number"
-              formControlName="custoAquisicao"
-              placeholder="0,00"
-              step="0.01"
-              min="0"
+              id="titulo"
+              type="text"
+              formControlName="titulo"
+              placeholder="Ex: Fone Bluetooth TWS Pro Max"
+              maxlength="60"
+              [class.invalid]="titulo.touched && titulo.invalid"
+            />
+            <div class="field-footer">
+              @if (titulo.touched && titulo.hasError('required')) {
+                <span class="field-error">Título é obrigatório</span>
+              }
+              <span class="char-counter" [class.limit]="tituloLength() >= 55">
+                {{ tituloLength() }}/60
+              </span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Categoria</label>
+            <div class="categoria-dropdown">
+              <div class="dropdown-trigger" (click)="toggleCategoriaDropdown()">
+                <input
+                  type="text"
+                  [value]="categoriaFilter() || form.get('categoria')?.value || ''"
+                  (input)="onCategoriaInput($event)"
+                  (focus)="categoriaDropdownOpen.set(true)"
+                  placeholder="Buscar categoria..."
+                  [class.invalid]="categoria.touched && categoria.invalid"
+                />
+                <lucide-icon [img]="chevronDownIcon" [size]="16" class="dropdown-icon"></lucide-icon>
+              </div>
+              @if (categoriaDropdownOpen()) {
+                <div class="dropdown-list">
+                  @for (cat of filteredCategorias(); track cat) {
+                    <button
+                      type="button"
+                      class="dropdown-item"
+                      [class.selected]="form.get('categoria')?.value === cat"
+                      (click)="selectCategoria(cat)"
+                    >
+                      {{ cat }}
+                    </button>
+                  }
+                  @if (filteredCategorias().length === 0) {
+                    <div class="dropdown-empty">Nenhuma categoria encontrada</div>
+                  }
+                </div>
+              }
+            </div>
+            @if (categoria.touched && categoria.hasError('required')) {
+              <span class="field-error">Categoria é obrigatória</span>
+            }
+          </div>
+
+          <div class="field">
+            <label for="descricao">Descrição</label>
+            <textarea
+              id="descricao"
+              formControlName="descricao"
+              placeholder="Descreva seu produto em detalhes..."
+              rows="8"
+            ></textarea>
+          </div>
+
+          <div class="field">
+            <label for="fornecedor">Fornecedor</label>
+            <input
+              id="fornecedor"
+              type="text"
+              formControlName="fornecedor"
+              placeholder="Nome do fornecedor"
             />
           </div>
         </div>
-      </div>
 
-      <div class="fields-row">
-        <div class="field">
-          <label for="custoEmbalagem">Custo embalagem</label>
-          <div class="input-prefix">
-            <span class="prefix">R$</span>
-            <input
-              id="custoEmbalagem"
-              type="number"
-              formControlName="custoEmbalagem"
-              placeholder="0,00"
-              step="0.01"
-              min="0"
-            />
+        <!-- TAB: Preço e Custos -->
+        <div class="accordion-header" (click)="toggleAccordion('preco')">
+          <span>Preço e Custos</span>
+          <lucide-icon [img]="isAccordionOpen('preco') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
+        </div>
+
+        <div
+          class="tab-panel"
+          [class.active]="activeTab() === 'preco'"
+          [class.accordion-open]="isAccordionOpen('preco')"
+        >
+          <div class="fields-row">
+            <div class="field">
+              <label for="precoVenda">Preço de venda</label>
+              <div class="input-prefix">
+                <span class="prefix">R$</span>
+                <input
+                  id="precoVenda"
+                  type="number"
+                  formControlName="precoVenda"
+                  placeholder="0,00"
+                  step="0.01"
+                  min="0"
+                  [class.invalid]="precoVenda.touched && precoVenda.invalid"
+                />
+              </div>
+              @if (precoVenda.touched && precoVenda.hasError('required')) {
+                <span class="field-error">Preço é obrigatório</span>
+              }
+              @if (precoVenda.touched && precoVenda.hasError('min')) {
+                <span class="field-error">Preço deve ser maior que zero</span>
+              }
+            </div>
+
+            <div class="field">
+              <label for="custoAquisicao">Custo de aquisição</label>
+              <div class="input-prefix">
+                <span class="prefix">R$</span>
+                <input
+                  id="custoAquisicao"
+                  type="number"
+                  formControlName="custoAquisicao"
+                  placeholder="0,00"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Margin Calculator -->
+          @if (margemEstimada() !== null) {
+            <div class="margin-calculator">
+              <span class="margin-label">Margem estimada:</span>
+              <span class="margin-value" [style.color]="getMargemColor()">
+                {{ margemEstimada()! | number:'1.1-1' }}%
+              </span>
+            </div>
+          }
+        </div>
+
+        <!-- TAB: Dimensões -->
+        <div class="accordion-header" (click)="toggleAccordion('dimensoes')">
+          <span>Dimensões</span>
+          <lucide-icon [img]="isAccordionOpen('dimensoes') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
+        </div>
+
+        <div
+          class="tab-panel"
+          [class.active]="activeTab() === 'dimensoes'"
+          [class.accordion-open]="isAccordionOpen('dimensoes')"
+        >
+          <div class="fields-row fields-row--4">
+            <div class="field">
+              <label for="peso">Peso (kg)</label>
+              <input
+                id="peso"
+                type="number"
+                formControlName="peso"
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+              />
+            </div>
+            <div class="field">
+              <label for="altura">Altura (cm)</label>
+              <input
+                id="altura"
+                type="number"
+                formControlName="altura"
+                placeholder="0"
+                min="1"
+              />
+            </div>
+            <div class="field">
+              <label for="largura">Largura (cm)</label>
+              <input
+                id="largura"
+                type="number"
+                formControlName="largura"
+                placeholder="0"
+                min="1"
+              />
+            </div>
+            <div class="field">
+              <label for="comprimento">Comprimento (cm)</label>
+              <input
+                id="comprimento"
+                type="number"
+                formControlName="comprimento"
+                placeholder="0"
+                min="1"
+              />
+            </div>
           </div>
         </div>
-
-        <div class="field">
-          <label for="fornecedor">Fornecedor</label>
-          <input
-            id="fornecedor"
-            type="text"
-            formControlName="fornecedor"
-            placeholder="Nome do fornecedor"
-          />
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="tipoAnuncio">Tipo de anúncio</label>
-        <select id="tipoAnuncio" formControlName="tipoAnuncio">
-          @for (tipo of tiposAnuncio; track tipo.value) {
-            <option [value]="tipo.value">{{ tipo.label }}</option>
-          }
-        </select>
-      </div>
-
-      <!-- Margin Calculator -->
-      @if (margemEstimada() !== null) {
-        <div class="margin-calculator">
-          <span class="margin-label">Margem estimada:</span>
-          <span class="margin-value" [style.color]="getMargemColor()">
-            {{ margemEstimada()! | number:'1.1-1' }}%
-          </span>
-        </div>
-      }
+      </form>
     </div>
 
-    <!-- TAB: Envio -->
-    <div class="accordion-header" (click)="toggleAccordion('envio')">
-      <span>Envio</span>
-      <lucide-icon [img]="isAccordionOpen('envio') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
+    <!-- Right panel: Gallery placeholder (to be built by another developer) -->
+    <div class="gallery-panel">
+      <!-- Gallery component will be implemented here -->
     </div>
-
-    <div
-      class="tab-panel"
-      [class.active]="activeTab() === 'envio'"
-      [class.accordion-open]="isAccordionOpen('envio')"
-    >
-      <div class="fields-row fields-row--4">
-        <div class="field">
-          <label for="peso">Peso (kg)</label>
-          <input
-            id="peso"
-            type="number"
-            formControlName="peso"
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-          />
-        </div>
-        <div class="field">
-          <label for="altura">Altura (cm)</label>
-          <input
-            id="altura"
-            type="number"
-            formControlName="altura"
-            placeholder="0"
-            min="1"
-          />
-        </div>
-        <div class="field">
-          <label for="largura">Largura (cm)</label>
-          <input
-            id="largura"
-            type="number"
-            formControlName="largura"
-            placeholder="0"
-            min="1"
-          />
-        </div>
-        <div class="field">
-          <label for="comprimento">Comprimento (cm)</label>
-          <input
-            id="comprimento"
-            type="number"
-            formControlName="comprimento"
-            placeholder="0"
-            min="1"
-          />
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="toggle-label">
-          <span class="toggle-switch">
-            <input type="checkbox" formControlName="freteGratis" />
-            <span class="toggle-slider"></span>
-          </span>
-          <span>Frete grátis</span>
-        </label>
-        <p class="field-hint">O custo do frete será absorvido por você quando ativado.</p>
-      </div>
-    </div>
-  </form>
+  </div>
 
   <!-- Sticky Bottom Bar -->
   <div class="bottom-bar">
@@ -295,17 +263,13 @@
       Cancelar
     </button>
     <div class="bottom-bar-actions">
-      <button type="button" class="btn btn-outline" (click)="onSaveDraft()" [disabled]="loading()">
-        <lucide-icon [img]="saveIcon" [size]="16"></lucide-icon>
-        Salvar Rascunho
-      </button>
-      <button type="button" class="btn btn-accent" (click)="onPublish()" [disabled]="loading()">
+      <button type="button" class="btn btn-accent" (click)="onSave()" [disabled]="loading()">
         @if (loading()) {
           <span class="spinner"></span>
-          Publicando...
+          Salvando...
         } @else {
-          <lucide-icon [img]="sendIcon" [size]="16"></lucide-icon>
-          Publicar
+          <lucide-icon [img]="saveIcon" [size]="16"></lucide-icon>
+          Salvar
         }
       </button>
     </div>
