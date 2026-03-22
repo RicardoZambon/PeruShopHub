@@ -1,8 +1,10 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
+import { ThemeService } from '../../services/theme.service';
+import type { ThemePreference } from '../../services/theme.service';
 
 type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'alertas' | 'aparencia';
 
@@ -22,6 +24,21 @@ interface Integration {
   sellerNickname?: string;
   lastSync?: string;
   comingSoon?: boolean;
+}
+
+interface FixedCost {
+  id: number;
+  nome: string;
+  valor: number;
+}
+
+interface AlertConfig {
+  id: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+  threshold: number;
+  unit: string;
 }
 
 const MOCK_USERS: UserRow[] = [
@@ -56,6 +73,8 @@ const MOCK_INTEGRATIONS: Integration[] = [
   styleUrl: './configuracoes.component.scss',
 })
 export class ConfiguracoesComponent {
+  private themeService = inject(ThemeService);
+
   activeTab = signal<SettingsTab>('empresa');
   showUserModal = signal(false);
   editingUser = signal<UserRow | null>(null);
@@ -64,16 +83,36 @@ export class ConfiguracoesComponent {
     { key: 'empresa', label: 'Empresa' },
     { key: 'usuarios', label: 'Usuários' },
     { key: 'integracoes', label: 'Integrações' },
-    { key: 'custos-fixos', label: 'Custos Fixos', disabled: true },
-    { key: 'alertas', label: 'Alertas', disabled: true },
-    { key: 'aparencia', label: 'Aparência', disabled: true },
+    { key: 'custos-fixos', label: 'Custos Fixos' },
+    { key: 'alertas', label: 'Alertas' },
+    { key: 'aparencia', label: 'Aparência' },
   ];
 
   users = signal<UserRow[]>([...MOCK_USERS]);
   integrations = signal<Integration[]>([...MOCK_INTEGRATIONS]);
 
+  // Fixed costs
+  embalagemPadrao = signal(2.50);
+  aliquotaSimples = signal(6.0);
+  fixedCosts = signal<FixedCost[]>([
+    { id: 1, nome: 'Internet e Telefone', valor: 150.00 },
+    { id: 2, nome: 'Software e Ferramentas', valor: 89.90 },
+  ]);
+
+  // Alerts
+  alerts = signal<AlertConfig[]>([
+    { id: 'margem', label: 'Margem mínima', description: 'Alerta quando a margem de um produto ficar abaixo do limite', enabled: true, threshold: 10, unit: '%' },
+    { id: 'estoque', label: 'Estoque mínimo', description: 'Alerta quando o estoque ficar abaixo do limite', enabled: true, threshold: 5, unit: 'unidades' },
+    { id: 'pergunta', label: 'Pergunta sem resposta', description: 'Alerta quando uma pergunta ficar sem resposta por mais de', enabled: false, threshold: 24, unit: 'horas' },
+    { id: 'divergencia', label: 'Divergência financeira', description: 'Alerta quando a divergência entre esperado e depositado exceder', enabled: false, threshold: 5, unit: '%' },
+  ]);
+
+  // Theme
+  currentTheme = this.themeService.currentTheme;
+
   companyForm: FormGroup;
   userForm: FormGroup;
+  fixedCostsForm: FormGroup;
 
   constructor(private fb: FormBuilder) {
     this.companyForm = this.fb.group({
@@ -87,6 +126,11 @@ export class ConfiguracoesComponent {
       email: ['', [Validators.required, Validators.email]],
       role: ['Viewer', Validators.required],
       ativo: [true],
+    });
+
+    this.fixedCostsForm = this.fb.group({
+      embalagemPadrao: [2.50, [Validators.required, Validators.min(0)]],
+      aliquotaSimples: [6.0, [Validators.required, Validators.min(0), Validators.max(100)]],
     });
   }
 
@@ -193,5 +237,53 @@ export class ConfiguracoesComponent {
     if (event.key === 'Escape') {
       this.closeUserModal();
     }
+  }
+
+  // Fixed Costs
+  saveFixedCosts(): void {
+    if (this.fixedCostsForm.valid) {
+      this.embalagemPadrao.set(this.fixedCostsForm.value.embalagemPadrao);
+      this.aliquotaSimples.set(this.fixedCostsForm.value.aliquotaSimples);
+      alert('Custos fixos salvos com sucesso!');
+    }
+  }
+
+  addFixedCost(): void {
+    const costs = this.fixedCosts();
+    const newId = costs.length > 0 ? Math.max(...costs.map(c => c.id)) + 1 : 1;
+    this.fixedCosts.update(list => [...list, { id: newId, nome: '', valor: 0 }]);
+  }
+
+  updateFixedCostName(id: number, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.fixedCosts.update(list => list.map(c => c.id === id ? { ...c, nome: value } : c));
+  }
+
+  updateFixedCostValue(id: number, event: Event): void {
+    const value = parseFloat((event.target as HTMLInputElement).value) || 0;
+    this.fixedCosts.update(list => list.map(c => c.id === id ? { ...c, valor: value } : c));
+  }
+
+  removeFixedCost(id: number): void {
+    this.fixedCosts.update(list => list.filter(c => c.id !== id));
+  }
+
+  // Alerts
+  toggleAlert(id: string): void {
+    this.alerts.update(list =>
+      list.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a)
+    );
+  }
+
+  updateAlertThreshold(id: string, event: Event): void {
+    const value = parseFloat((event.target as HTMLInputElement).value) || 0;
+    this.alerts.update(list =>
+      list.map(a => a.id === id ? { ...a, threshold: value } : a)
+    );
+  }
+
+  // Appearance
+  selectTheme(theme: ThemePreference): void {
+    this.themeService.setTheme(theme);
   }
 }
