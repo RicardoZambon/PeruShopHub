@@ -12,6 +12,8 @@
 - Use `@use '../styles/mixins' as m;` then `@include m.mobile { ... }` in component SCSS
 - Injectable root services go in `src/app/services/` with `{ providedIn: 'root' }`
 - Shared pipes/components go in `src/app/shared/pipes/` and `src/app/shared/components/` with barrel exports via `index.ts`
+- SCSS `@use` path from `src/app/shared/components/{name}/` to `src/styles/` is `../../../../styles/mixins`
+- Type re-exports need `export type { ... }` due to `isolatedModules` in tsconfig
 
 ## 2026-03-22 - US-001
 - Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
@@ -65,4 +67,15 @@
   - Shared pipes live in `src/app/shared/pipes/` with barrel export via `index.ts`
   - `toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })` handles BRL formatting natively
   - Import pipes from `@shared/pipes` if path alias is configured, otherwise relative paths
+---
+
+## 2026-03-22 - US-005
+- Created `BadgeComponent` (standalone) with 6 variants: success, warning, danger, primary, neutral, accent. Pill-shaped with design token colors.
+- Created `KpiCardComponent` (standalone) with label, value, optional change percentage with arrow, changeLabel, and invertColors flag for cost metrics.
+- Barrel export from `src/app/shared/components/index.ts`
+- Files changed: `src/app/shared/components/badge/badge.component.ts` (new), `src/app/shared/components/badge/badge.component.scss` (new), `src/app/shared/components/kpi-card/kpi-card.component.ts` (new), `src/app/shared/components/kpi-card/kpi-card.component.scss` (new), `src/app/shared/components/index.ts` (new)
+- **Learnings for future iterations:**
+  - Shared components go in `src/app/shared/components/{name}/` with barrel export via `src/app/shared/components/index.ts`
+  - SCSS `@use` path from `src/app/shared/components/{name}/` to `src/styles/` is `../../../../styles/mixins`
+  - Type re-exports require `export type` when `isolatedModules` is enabled in tsconfig
 ---
