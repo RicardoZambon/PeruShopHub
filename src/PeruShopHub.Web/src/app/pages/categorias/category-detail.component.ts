@@ -4,12 +4,13 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { LucideAngularModule, Pencil, Trash2, ArrowLeft } from 'lucide-angular';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
+import { VariationFieldsComponent } from './variation-fields.component';
 import type { Category, UpdateCategoryDto } from '../../models/category.model';
 
 @Component({
   selector: 'app-category-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, VariationFieldsComponent],
   templateUrl: './category-detail.component.html',
   styleUrl: './category-detail.component.scss',
 })

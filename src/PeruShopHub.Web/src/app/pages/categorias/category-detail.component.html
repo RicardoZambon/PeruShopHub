@@ -140,8 +140,8 @@
       </div>
     }
 
-    <!-- Variation fields placeholder: filled by Task B6 -->
-    <div class="detail-panel__section" id="variation-fields-section"></div>
+    <!-- Variation fields -->
+    <app-variation-fields [categoryId]="category.id"></app-variation-fields>
   </div>
 } @else {
   <div class="detail-panel detail-panel--empty">
