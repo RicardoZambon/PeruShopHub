@@ -18,6 +18,9 @@
 - Lucide icon data type for `[img]` binding is `LucideIconData` from `lucide-angular` (not `object`)
 - Toast container goes in app root (app.html), inject `ToastService` to show toasts from any component
 - ng2-charts v10: `provideCharts(withDefaultRegisterables())` in app.config.ts, `BaseChartDirective` in component imports, Chart.js colors must be hardcoded hex (no CSS vars)
+- For custom cell rendering (badges, icons, colored values), build a custom table instead of DataTableComponent
+- Badge variant methods must return `BadgeVariant` type, not `string` — Angular strict template checking enforces this
+- Route order: specific paths like `/produtos/novo` must come BEFORE parameterized `/produtos/:id`
 
 ## 2026-03-22 - US-001
 - Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
@@ -259,4 +262,21 @@
   - Component style budget in angular.json may need increasing as pages grow (especially dashboard with many sections)
   - `ngClass` with string concatenation (`'prefix--' + variant`) works well for variant-based styling without needing a separate component
   - Product tables with BRL formatting: use a component method `formatBrl()` rather than importing BrlCurrencyPipe for simple cases
+---
+
+## 2026-03-22 - US-017
+- Created full ProductsListComponent at /produtos with search by name/SKU, status filter dropdown (Todos/Ativo/Pausado/Encerrado)
+- Custom table with 8 columns: Foto (package icon placeholder), Nome, SKU (mono), Preço (BRL), Estoque (colored for low/zero), Status (BadgeComponent), Margem (colored badge), Ações (edit icon)
+- 10 mock products with realistic Brazilian tech product names and varied margins/statuses
+- Mobile card list layout with product thumbnail, name, SKU, status badge, and key metrics in 3-column grid
+- Row click navigates to /produtos/:id, edit icon navigates to /produtos/:id/editar, "Novo Produto" button to /produtos/novo
+- Empty state with EmptyStateComponent when no data, filtered empty state when search yields no results
+- Loading skeleton state (600ms simulated)
+- Added routes for /produtos/novo, /produtos/:id, /produtos/:id/editar with stub components
+- Files changed: `produtos-list.component.ts` (rewritten), `produtos-list.component.html` (new), `produtos-list.component.scss` (new), `produto-detail.component.ts` (new stub), `produto-form.component.ts` (new stub), `app.routes.ts` (updated)
+- **Learnings for future iterations:**
+  - `getStatusVariant()` must return `BadgeVariant` type, not `string` — Angular strict template checking catches this at build time
+  - For custom cell rendering (thumbnails, badges, colored margins, action buttons), build a custom table rather than using DataTableComponent which only renders `row[col.key]` text
+  - Route order matters: `/produtos/novo` must come before `/produtos/:id` to avoid "novo" being captured as an ID parameter
+  - `$event.stopPropagation()` on edit button click prevents row click from also firing
 ---
