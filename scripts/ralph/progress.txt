@@ -228,3 +228,18 @@
   - Use `maintainAspectRatio: false` with a fixed-height container for responsive charts
   - Chart colors are hardcoded hex values matching design tokens (CSS vars don't work in Chart.js config)
 ---
+
+## 2026-03-22 - US-015
+- Added Chart.js doughnut chart to dashboard showing cost distribution across 8 categories
+- Donut chart takes 40% width on desktop (right of line chart), full width on tablet/mobile
+- Center text plugin renders "Total Custos" + BRL formatted total inside the donut hole
+- Custom legend labels show category name + percentage, positioned below chart
+- Tooltip shows category name, BRL value, and percentage
+- Mock data: Comissão ML, Frete, Custo Produto, Embalagem, Impostos, Armazenagem, Advertising, Outros with realistic proportions
+- Files changed: `dashboard.component.ts` (updated), `dashboard.component.html` (updated), `dashboard.component.scss` (updated)
+- **Learnings for future iterations:**
+  - Chart.js `Plugin<'doughnut'>` type with `afterDraw` hook works for center text in donut charts
+  - `cutout: '65%'` creates the donut hole; use canvas ctx for text rendering in center
+  - Custom `generateLabels` in legend config can append percentage to each legend item
+  - Donut chart needs slightly more height (360px) than line chart (320px) to fit legend below
+---
