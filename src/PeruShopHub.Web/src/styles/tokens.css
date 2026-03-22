@@ -1,0 +1,230 @@
+/* ============================================================
+   PeruShopHub Design Tokens
+   All design tokens as CSS custom properties.
+   Light theme in :root, dark theme in :root[data-theme="dark"]
+   ============================================================ */
+
+:root {
+  /* ── Colors: Primary (Dark Blue) ── */
+  --primary: #1A237E;
+  --primary-hover: #283593;
+  --primary-light: #E8EAF6;
+
+  /* ── Colors: Accent (Orange) ── */
+  --accent: #FF6F00;
+  --accent-hover: #E65100;
+  --accent-light: #FFF3E0;
+
+  /* ── Colors: Semantic ── */
+  --success: #2E7D32;
+  --success-light: #E8F5E9;
+  --warning: #F57F17;
+  --warning-light: #FFFDE7;
+  --danger: #C62828;
+  --danger-light: #FFEBEE;
+
+  /* ── Colors: Neutral Scale ── */
+  --neutral-900: #212121;
+  --neutral-700: #616161;
+  --neutral-500: #9E9E9E;
+  --neutral-300: #E0E0E0;
+  --neutral-100: #F5F5F5;
+  --neutral-50: #FAFAFA;
+
+  /* ── Colors: Surfaces ── */
+  --surface: #FFFFFF;
+  --page-bg: #F5F5F5;
+  --overlay: rgba(0, 0, 0, 0.5);
+
+  /* ── Typography: Font Families ── */
+  --font-ui: "Inter", sans-serif;
+  --font-mono: "Roboto Mono", monospace;
+
+  /* ── Typography: Heading 1 ── */
+  --heading-1-size: 24px;
+  --heading-1-weight: 700;
+  --heading-1-height: 32px;
+
+  /* ── Typography: Heading 2 ── */
+  --heading-2-size: 20px;
+  --heading-2-weight: 600;
+  --heading-2-height: 28px;
+
+  /* ── Typography: Heading 3 ── */
+  --heading-3-size: 16px;
+  --heading-3-weight: 600;
+  --heading-3-height: 24px;
+
+  /* ── Typography: Body ── */
+  --body-size: 14px;
+  --body-weight: 400;
+  --body-height: 20px;
+
+  /* ── Typography: Body Small ── */
+  --body-small-size: 12px;
+  --body-small-weight: 400;
+  --body-small-height: 16px;
+
+  /* ── Typography: Label ── */
+  --label-size: 12px;
+  --label-weight: 500;
+  --label-height: 16px;
+
+  /* ── Typography: Mono ── */
+  --mono-size: 13px;
+  --mono-weight: 400;
+  --mono-height: 18px;
+
+  /* ── Typography: Metric Large ── */
+  --metric-large-size: 32px;
+  --metric-large-weight: 700;
+  --metric-large-height: 40px;
+
+  /* ── Typography: Metric Medium ── */
+  --metric-medium-size: 20px;
+  --metric-medium-weight: 600;
+  --metric-medium-height: 28px;
+
+  /* ── Spacing (4px base) ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Responsive Spacing ── */
+  --page-padding-desktop: 24px;
+  --page-padding-tablet: 16px;
+  --page-padding-mobile: 12px;
+
+  --card-gap-desktop: 16px;
+  --card-gap-tablet: 16px;
+  --card-gap-mobile: 12px;
+
+  --card-padding-desktop: 16px;
+  --card-padding-tablet: 16px;
+  --card-padding-mobile: 12px;
+
+  --section-gap-desktop: 24px;
+  --section-gap-tablet: 20px;
+  --section-gap-mobile: 16px;
+
+  --table-cell-h-padding: 12px;
+  --table-cell-v-padding: 8px;
+  --table-cell-h-padding-mobile: 8px;
+  --table-cell-v-padding-mobile: 6px;
+
+  /* ── Elevation / Shadows ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  /* ── Border Radius ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ── Breakpoints (as custom properties for JS access) ── */
+  --bp-mobile: 0px;
+  --bp-mobile-landscape: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1024px;
+  --bp-desktop-lg: 1280px;
+  --bp-desktop-xl: 1536px;
+
+  /* ── Component: Buttons ── */
+  --button-height-sm: 36px;
+  --button-height-md: 40px;
+  --button-height-lg: 44px;
+  --button-padding-h-sm: 16px;
+  --button-padding-h-md: 20px;
+  --button-padding-h-lg: 24px;
+  --button-font-size: 14px;
+  --button-font-weight: 500;
+  --button-border-radius: var(--radius-sm);
+  --button-transition: 150ms ease;
+
+  /* ── Component: Tables ── */
+  --table-row-height: 48px;
+  --table-header-bg: var(--neutral-100);
+  --table-header-text: var(--neutral-700);
+  --table-row-hover-bg: var(--neutral-50);
+
+  /* ── Component: Modals ── */
+  --modal-sm-width: 480px;
+  --modal-md-width: 640px;
+  --modal-lg-width: 800px;
+  --modal-border-radius: var(--radius-md);
+  --modal-shadow: var(--shadow-lg);
+  --modal-animation-duration: 150ms;
+
+  /* ── Component: Toast ── */
+  --toast-width-desktop: 360px;
+  --toast-position-right: 24px;
+  --toast-position-top: 24px;
+  --toast-auto-dismiss: 5000ms;
+  --toast-max-visible: 3;
+  --toast-gap: 8px;
+  --toast-animation-duration: 200ms;
+
+  /* ── Component: Slide-over ── */
+  --slideover-width-desktop: 400px;
+  --slideover-width-mobile: 100%;
+  --slideover-animation-duration: 200ms;
+
+  /* ── Component: Sidebar ── */
+  --sidebar-width-expanded: 256px;
+  --sidebar-width-collapsed: 64px;
+
+  /* ── Component: Header ── */
+  --header-height: 56px;
+
+  /* ── Chart Colors ── */
+  --chart-comissao: #5C6BC0;
+  --chart-frete: #42A5F5;
+  --chart-produto: #66BB6A;
+  --chart-embalagem: #FFA726;
+  --chart-impostos: #EF5350;
+  --chart-armazenagem: #AB47BC;
+  --chart-advertising: #26C6DA;
+  --chart-outros: #BDBDBD;
+}
+
+/* ── Dark Theme ── */
+:root[data-theme="dark"] {
+  --primary: #7986CB;
+  --primary-hover: #9FA8DA;
+  --primary-light: #1A237E;
+
+  --accent: #FFB74D;
+  --accent-hover: #FFA726;
+  --accent-light: #3E2723;
+
+  --success: #66BB6A;
+  --success-light: #1B3A1B;
+  --warning: #FFF176;
+  --warning-light: #3E3A00;
+  --danger: #EF5350;
+  --danger-light: #3E1111;
+
+  --neutral-900: #FAFAFA;
+  --neutral-700: #BDBDBD;
+  --neutral-500: #757575;
+  --neutral-300: #424242;
+  --neutral-100: #303030;
+  --neutral-50: #252525;
+
+  --surface: #1E1E1E;
+  --page-bg: #121212;
+  --overlay: rgba(0, 0, 0, 0.7);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+}
