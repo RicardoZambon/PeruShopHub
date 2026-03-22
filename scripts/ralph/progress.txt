@@ -299,3 +299,19 @@
   - Mobile accordion pattern: use `display: none/block` toggled by a `Set<TabId>` signal, tabs hidden on mobile via media query
   - `R$` prefix input: use `position: relative` container with absolute prefix span and extra left padding on input
 ---
+
+## 2026-03-22 - US-019
+- Created ProductDetailComponent at /produtos/:id with full product detail view
+- Header section: product photo placeholder (Package icon), name, SKU (mono), status badge, "Editar" outline button linking to /produtos/:id/editar
+- 5 KPI cards row: Vendas 30d, Receita 30d, Lucro 30d, Margem 30d, Estoque using KpiCardComponent
+- "Histórico de Custos" table: date, type, value (BRL) with 5 mock rows
+- "Vendas Recentes" table: order ID (mono), date, qty, value, profit (green/red colored) with 5 mock rows
+- Back button to /produtos list with ArrowLeft icon
+- Loading skeleton state (600ms simulated)
+- Responsive: 5-col KPI grid → 3-col tablet → 2-col mobile; two-column sections → single column on tablet/mobile
+- Files changed: `produto-detail.component.ts` (rewritten), `produto-detail.component.html` (new), `produto-detail.component.scss` (new)
+- **Learnings for future iterations:**
+  - BrlCurrencyPipe can be used directly in templates with `| brlCurrency` — no need for a component method when pipe is imported
+  - KPI computed signal from product signal provides reactive data — pattern: `computed(() => { const p = product(); if (!p) return []; ... })`
+  - Skeleton loading in detail pages: inline skeleton divs with fixed dimensions matching real content work well
+---
