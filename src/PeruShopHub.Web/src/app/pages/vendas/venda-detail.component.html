@@ -66,6 +66,84 @@
           <span class="total-value">{{ formatBrl(itemsSubtotal()) }}</span>
         </div>
       </section>
+
+      <!-- Cost Breakdown Section -->
+      <section class="detail-section cost-breakdown-section">
+        <h2 class="section-title">
+          <lucide-icon [img]="creditCardIcon" [size]="18"></lucide-icon>
+          Decomposição de Custos
+        </h2>
+
+        <!-- Stacked Horizontal Bar -->
+        <div class="cost-bar-container">
+          <div class="cost-bar">
+            @for (seg of costBarSegments(); track seg.category) {
+              <div
+                class="cost-bar-segment"
+                [style.width.%]="seg.pct"
+                [style.background]="seg.color"
+                [title]="seg.category + ': ' + formatBrl(seg.value) + ' (' + seg.pct.toFixed(1) + '%)'"
+              ></div>
+            }
+          </div>
+          <div class="cost-bar-legend">
+            @for (seg of costBarSegments(); track seg.category) {
+              <div class="legend-item">
+                <span class="legend-dot" [style.background]="seg.color"></span>
+                <span class="legend-label">{{ seg.category }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Cost Breakdown Table -->
+        <div class="cost-table-wrapper">
+          <table class="cost-table">
+            <thead>
+              <tr>
+                <th class="col-category">Categoria</th>
+                <th class="col-value">Valor</th>
+                <th class="col-pct">% Receita</th>
+                <th class="col-source">Fonte</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cost of o.costs; track cost.category) {
+                <tr>
+                  <td class="col-category">
+                    <span class="category-dot" [style.background]="cost.color"></span>
+                    {{ cost.category }}
+                  </td>
+                  <td class="col-value mono">{{ formatBrl(cost.value) }}</td>
+                  <td class="col-pct mono">{{ costPct(cost.value).toFixed(1) }}%</td>
+                  <td class="col-source">
+                    <app-badge [label]="cost.source" [variant]="getSourceVariant(cost.source)"></app-badge>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="total-costs-row">
+                <td class="col-category"><strong>TOTAL CUSTOS</strong></td>
+                <td class="col-value mono"><strong>{{ formatBrl(totalCosts()) }}</strong></td>
+                <td class="col-pct mono"><strong>{{ costPct(totalCosts()).toFixed(1) }}%</strong></td>
+                <td class="col-source"></td>
+              </tr>
+              <tr class="net-profit-row" [class.profit-positive]="netProfit() >= 0" [class.profit-negative]="netProfit() < 0">
+                <td class="col-category"><strong>LUCRO LÍQUIDO</strong></td>
+                <td class="col-value mono profit-value">{{ formatBrl(netProfit()) }}</td>
+                <td class="col-pct mono profit-value">{{ profitMargin().toFixed(1) }}%</td>
+                <td class="col-source"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <button class="add-cost-btn">
+          <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
+          Adicionar custo manual
+        </button>
+      </section>
     </div>
 
     <!-- Right Column -->

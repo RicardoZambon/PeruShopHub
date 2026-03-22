@@ -1,12 +1,13 @@
 import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideAngularModule, ArrowLeft, Package, Copy, Truck, CreditCard, User, MapPin, Clock, Check, Circle } from 'lucide-angular';
+import { LucideAngularModule, ArrowLeft, Package, Copy, Truck, CreditCard, User, MapPin, Clock, Check, Circle, Plus } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
 type LogisticType = 'Full' | 'Coleta' | 'Agência';
+type CostSource = 'API' | 'Manual' | 'Calculado';
 
 interface OrderItem {
   productId: string;
@@ -48,6 +49,13 @@ interface PaymentInfo {
   statusVariant: BadgeVariant;
 }
 
+interface CostItem {
+  category: string;
+  value: number;
+  color: string;
+  source: CostSource;
+}
+
 interface OrderDetail {
   id: string;
   date: string;
@@ -57,6 +65,8 @@ interface OrderDetail {
   buyer: Buyer;
   shipping: ShippingInfo;
   payment: PaymentInfo;
+  revenue: number;
+  costs: CostItem[];
 }
 
 const MOCK_ORDER: OrderDetail = {
@@ -110,6 +120,18 @@ const MOCK_ORDER: OrderDetail = {
     status: 'Aprovado',
     statusVariant: 'success',
   },
+  revenue: 159.90,
+  costs: [
+    { category: 'Comissão ML', value: 17.59, color: '#5C6BC0', source: 'API' },
+    { category: 'Taxa fixa', value: 6.00, color: '#7986CB', source: 'API' },
+    { category: 'Frete vendedor', value: 18.90, color: '#42A5F5', source: 'API' },
+    { category: 'Taxa de pagamento', value: 7.52, color: '#64B5F6', source: 'API' },
+    { category: 'Custo do produto', value: 45.00, color: '#66BB6A', source: 'Manual' },
+    { category: 'Embalagem', value: 3.50, color: '#FFA726', source: 'Manual' },
+    { category: 'Impostos', value: 9.59, color: '#EF5350', source: 'Calculado' },
+    { category: 'Armazenagem', value: 2.40, color: '#AB47BC', source: 'Calculado' },
+    { category: 'Advertising', value: 8.00, color: '#26C6DA', source: 'Manual' },
+  ],
 };
 
 @Component({
@@ -130,6 +152,7 @@ export class VendaDetailComponent implements OnInit {
   readonly clockIcon = Clock;
   readonly checkIcon = Check;
   readonly circleIcon = Circle;
+  readonly plusIcon = Plus;
 
   loading = signal(true);
   order = signal<OrderDetail | null>(null);
@@ -141,6 +164,60 @@ export class VendaDetailComponent implements OnInit {
     if (!o) return 0;
     return o.items.reduce((sum, item) => sum + item.subtotal, 0);
   });
+
+  totalCosts = computed(() => {
+    const o = this.order();
+    if (!o) return 0;
+    return o.costs.reduce((sum, c) => sum + c.value, 0);
+  });
+
+  netProfit = computed(() => {
+    const o = this.order();
+    if (!o) return 0;
+    return o.revenue - this.totalCosts();
+  });
+
+  profitMargin = computed(() => {
+    const o = this.order();
+    if (!o || o.revenue === 0) return 0;
+    return (this.netProfit() / o.revenue) * 100;
+  });
+
+  costBarSegments = computed(() => {
+    const o = this.order();
+    if (!o || o.revenue === 0) return [];
+    const segments = o.costs.map(c => ({
+      category: c.category,
+      value: c.value,
+      color: c.color,
+      pct: (c.value / o.revenue) * 100,
+    }));
+    const profit = this.netProfit();
+    if (profit > 0) {
+      segments.push({
+        category: 'Lucro Líquido',
+        value: profit,
+        color: 'var(--success)',
+        pct: (profit / o.revenue) * 100,
+      });
+    }
+    return segments;
+  });
+
+  getSourceVariant(source: CostSource): BadgeVariant {
+    const map: Record<CostSource, BadgeVariant> = {
+      'API': 'primary',
+      'Manual': 'warning',
+      'Calculado': 'success',
+    };
+    return map[source];
+  }
+
+  costPct(value: number): number {
+    const o = this.order();
+    if (!o || o.revenue === 0) return 0;
+    return (value / o.revenue) * 100;
+  }
 
   constructor(private route: ActivatedRoute) {}
 
