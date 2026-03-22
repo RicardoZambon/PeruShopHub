@@ -42,9 +42,14 @@ export class ProductVariantService {
   private readonly variantsData = signal<ProductVariant[]>([...SEED_VARIANTS]);
   private readonly productCategoryMap = signal<Record<string, string>>({ ...PRODUCT_CATEGORIES });
 
-  async getByProductId(productId: string): Promise<ProductVariant[]> {
-    await delay();
+  getByProductId(productId: string): ProductVariant[] {
     return this.variantsData().filter((v) => v.productId === productId);
+  }
+
+  deleteByProductId(productId: string): void {
+    this.variantsData.update((variants) =>
+      variants.filter((v) => v.productId !== productId)
+    );
   }
 
   async create(productId: string, dto: CreateVariantDto): Promise<ProductVariant> {

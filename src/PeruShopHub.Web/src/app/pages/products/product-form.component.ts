@@ -7,7 +7,6 @@ import { TreeSelectComponent } from './tree-select.component';
 import { VariantManagerComponent } from './variant-manager.component';
 import { CategoryService } from '../../services/category.service';
 import { ProductVariantService } from '../../services/product-variant.service';
-import { BrlCurrencyPipe } from '../../shared/pipes/brl-currency.pipe';
 
 type TabId = 'basicas' | 'preco' | 'envio' | 'variacoes';
 
@@ -57,7 +56,7 @@ const MOCK_PRODUCT = {
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, TreeSelectComponent, VariantManagerComponent, BrlCurrencyPipe],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, TreeSelectComponent, VariantManagerComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })

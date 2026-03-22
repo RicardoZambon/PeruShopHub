@@ -222,10 +222,16 @@ export class CategoryService {
     return result;
   }
 
-  getAllVariationFieldsForCategory(categoryId: string): (VariationField | InheritedVariationField)[] {
+  getAllVariationFieldsForCategory(categoryId: string): InheritedVariationField[] {
     const inherited = this.getInheritedVariationFields(categoryId);
     const own = this.getVariationFields(categoryId);
-    return [...inherited, ...own];
+    const category = this.categoriesData().find(c => c.id === categoryId);
+    const ownAsInherited: InheritedVariationField[] = own.map(f => ({
+      ...f,
+      inheritedFrom: category?.name ?? '',
+      inheritedFromId: categoryId,
+    }));
+    return [...inherited, ...ownAsInherited];
   }
 
   getBreadcrumb(categoryId: string): string[] {

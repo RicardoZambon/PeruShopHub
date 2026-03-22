@@ -6,7 +6,6 @@ import { CategoryService } from '../../services/category.service';
 import { ProductVariantService } from '../../services/product-variant.service';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { BrlCurrencyPipe } from '../../shared/pipes/brl-currency.pipe';
 import type { InheritedVariationField } from '../../models/category.model';
 import type { ProductVariant } from '../../models/product-variant.model';
 
@@ -23,12 +22,12 @@ interface EditableVariant extends ProductVariant {
 @Component({
   selector: 'app-variant-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, BrlCurrencyPipe],
+  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent],
   templateUrl: './variant-manager.component.html',
   styleUrl: './variant-manager.component.scss',
 })
 export class VariantManagerComponent implements OnChanges {
-  private readonly categoryService = inject(CategoryService);
+  readonly categoryService = inject(CategoryService);
   private readonly variantService = inject(ProductVariantService);
 
   readonly plusIcon = Plus;
