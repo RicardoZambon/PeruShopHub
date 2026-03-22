@@ -59,5 +59,20 @@
         </div>
       </div>
     </div>
+
+    <div class="dashboard__chart-donut">
+      <div class="chart-card">
+        <h2 class="chart-card__title">Distribuição de Custos</h2>
+        <div class="chart-card__body chart-card__body--donut">
+          <canvas
+            baseChart
+            type="doughnut"
+            [data]="donutChartData"
+            [options]="donutChartOptions"
+            [plugins]="[donutCenterTextPlugin]">
+          </canvas>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

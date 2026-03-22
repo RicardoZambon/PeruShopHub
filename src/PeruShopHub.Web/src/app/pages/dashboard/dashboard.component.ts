@@ -1,7 +1,7 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData } from 'chart.js';
+import { ChartConfiguration, ChartData, Plugin } from 'chart.js';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 
@@ -110,6 +110,125 @@ export class DashboardComponent {
         borderWidth: 2,
       },
     ],
+  };
+
+  // Donut chart data
+  donutChartData: ChartData<'doughnut'> = {
+    labels: [
+      'Comissão ML',
+      'Frete',
+      'Custo Produto',
+      'Embalagem',
+      'Impostos',
+      'Armazenagem',
+      'Advertising',
+      'Outros',
+    ],
+    datasets: [
+      {
+        data: [2850, 2100, 3200, 680, 1450, 520, 980, 340],
+        backgroundColor: [
+          '#5C6BC0',
+          '#42A5F5',
+          '#66BB6A',
+          '#FFA726',
+          '#EF5350',
+          '#AB47BC',
+          '#26C6DA',
+          '#BDBDBD',
+        ],
+        borderWidth: 0,
+        hoverOffset: 6,
+      },
+    ],
+  };
+
+  donutTotal = (this.donutChartData.datasets[0].data as number[]).reduce(
+    (sum, v) => sum + v,
+    0
+  );
+
+  donutCenterTextPlugin: Plugin<'doughnut'> = {
+    id: 'donutCenterText',
+    afterDraw: (chart) => {
+      const { ctx, width, height } = chart;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      ctx.font = '500 12px Inter';
+      ctx.fillStyle = '#757575';
+      ctx.fillText('Total Custos', centerX, centerY - 12);
+
+      const formatted = this.donutTotal.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      });
+      ctx.font = '700 18px Roboto Mono';
+      ctx.fillStyle = '#212121';
+      ctx.fillText(formatted, centerX, centerY + 12);
+
+      ctx.restore();
+    },
+  };
+
+  donutChartOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 12,
+          font: { family: 'Inter', size: 12 },
+          generateLabels: (chart) => {
+            const data = chart.data;
+            const dataset = data.datasets[0];
+            const total = (dataset.data as number[]).reduce(
+              (sum, v) => sum + v,
+              0
+            );
+            return (data.labels ?? []).map((label, i) => ({
+              text: `${label}  ${(
+                ((dataset.data[i] as number) / total) *
+                100
+              ).toFixed(0)}%`,
+              fillStyle: (dataset.backgroundColor as string[])[i],
+              strokeStyle: 'transparent',
+              index: i,
+              hidden: false,
+            }));
+          },
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { family: 'Inter', size: 13 },
+        bodyFont: { family: 'Roboto Mono', size: 12 },
+        padding: 12,
+        callbacks: {
+          label: (ctx) => {
+            const value = ctx.parsed ?? 0;
+            const total = (ctx.dataset.data as number[]).reduce(
+              (sum, v) => sum + v,
+              0
+            );
+            const pct = ((value / total) * 100).toFixed(1);
+            const formatted = value.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            });
+            return `${ctx.label}: ${formatted} (${pct}%)`;
+          },
+        },
+      },
+    },
   };
 
   lineChartOptions: ChartConfiguration<'line'>['options'] = {

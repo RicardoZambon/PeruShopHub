@@ -85,6 +85,11 @@
       flex: 1;
     }
   }
+
+  &__chart-donut {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .chart-card {
@@ -114,6 +119,14 @@
 
     @include m.mobile {
       height: 240px;
+    }
+
+    &--donut {
+      height: 360px;
+
+      @include m.mobile {
+        height: 300px;
+      }
     }
   }
 }
