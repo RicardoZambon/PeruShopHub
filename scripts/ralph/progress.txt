@@ -162,3 +162,19 @@
   - Lucide icons imported individually as const fields for tree-shaking
   - Search input is readonly placeholder for now — US-032 will implement Ctrl+K command palette
 ---
+
+## 2026-03-22 - US-011
+- Created `LayoutComponent` (standalone) combining HeaderComponent, SidebarComponent, and `<router-outlet>`
+- Content area uses CSS margin-left matching sidebar width (256px expanded, 64px collapsed) with 200ms transition
+- Responsive padding: 24px desktop, 16px tablet, 12px mobile
+- Mobile: margin-left 0 (sidebar is overlay drawer)
+- Restructured `app.routes.ts`: login route at top level (no layout), all other routes as children of LayoutComponent
+- LayoutComponent is lazy-loaded via `loadComponent` in routes
+- Barrel export updated in `shared/components/index.ts`
+- Files changed: `src/app/shared/components/layout/` (new), `src/app/app.routes.ts` (updated), `src/app/shared/components/index.ts` (updated)
+- **Learnings for future iterations:**
+  - Layout wrapping via child routes in Angular: put LayoutComponent as `loadComponent` on parent route, page components as `children`
+  - Login and other full-page routes go ABOVE the layout route in `app.routes.ts` (first match wins)
+  - CSS custom properties `--sidebar-width`, `--sidebar-collapsed-width`, `--header-height` from tokens.css used for layout margins
+  - Mobile sidebar margin override uses `!important` since it must always be 0 regardless of collapsed state
+---
