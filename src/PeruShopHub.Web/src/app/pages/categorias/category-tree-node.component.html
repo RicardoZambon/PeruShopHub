@@ -1,0 +1,42 @@
+<div
+  class="tree-node"
+  [class.tree-node--selected]="isSelected"
+  [class.tree-node--inactive]="!category.isActive"
+  [style.padding-left]="indentPx"
+  (click)="onSelect()"
+>
+  <button
+    class="tree-node__toggle"
+    [class.tree-node__toggle--visible]="hasChildren"
+    (click)="onToggleExpand($event)"
+    [attr.aria-label]="expanded() ? 'Recolher' : 'Expandir'"
+    [attr.aria-expanded]="expanded()"
+  >
+    @if (hasChildren) {
+      <lucide-icon
+        [img]="expanded() ? chevronDownIcon : chevronRightIcon"
+        [size]="16"
+      ></lucide-icon>
+    }
+  </button>
+
+  <span class="tree-node__name">{{ category.name }}</span>
+
+  @if (category.productCount > 0) {
+    <span class="tree-node__count">{{ category.productCount }}</span>
+  }
+</div>
+
+@if (hasChildren && expanded()) {
+  <div class="tree-node__children">
+    @for (child of category.children; track child.id) {
+      <app-category-tree-node
+        [category]="child"
+        [selectedId]="selectedId"
+        [depth]="depth + 1"
+        (select)="onChildSelect($event)"
+        (toggleExpand)="onChildToggleExpand($event)"
+      ></app-category-tree-node>
+    }
+  </div>
+}

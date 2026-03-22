@@ -1,0 +1,96 @@
+@use '../../../styles/mixins' as m;
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  padding-right: var(--space-4);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  user-select: none;
+  min-height: 40px;
+
+  &:hover {
+    background: var(--neutral-50);
+  }
+
+  &--selected {
+    background: var(--primary-light);
+    border-left-color: var(--primary);
+
+    &:hover {
+      background: var(--primary-light);
+    }
+  }
+
+  &--inactive {
+    opacity: 0.5;
+  }
+}
+
+.tree-node__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--neutral-500);
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    color: var(--neutral-700);
+    background: var(--neutral-100);
+  }
+
+  &--visible {
+    visibility: visible;
+  }
+
+  &:not(.tree-node__toggle--visible) {
+    visibility: hidden;
+  }
+}
+
+.tree-node__name {
+  flex: 1;
+  font-size: var(--body-size);
+  font-weight: 400;
+  color: var(--neutral-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .tree-node--selected & {
+    font-weight: 500;
+    color: var(--primary);
+  }
+}
+
+.tree-node__count {
+  flex-shrink: 0;
+  font-size: var(--body-small-size);
+  font-weight: 500;
+  color: var(--neutral-500);
+  background: var(--neutral-100);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  min-width: 20px;
+  text-align: center;
+
+  .tree-node--selected & {
+    background: var(--primary);
+    color: var(--text-on-primary);
+  }
+}
+
+.tree-node__children {
+  // Children are rendered by the recursive component itself
+}
