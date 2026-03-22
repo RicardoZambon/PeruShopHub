@@ -1,56 +1,114 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule } from 'lucide-angular';
-import { FolderTree, FolderPlus, ChevronLeft } from 'lucide-angular';
+import { LucideAngularModule, FolderTree } from 'lucide-angular';
 import { CategoryService } from '../../services/category.service';
+import { ToastService } from '../../services/toast.service';
+import { CategoryTreeComponent } from './category-tree.component';
+import { CategoryDetailComponent } from './category-detail.component';
+import { CategoryFormDialogComponent } from './category-form-dialog.component';
+import type { Category } from '../../models/category.model';
 
 @Component({
   selector: 'app-categorias',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [
+    CommonModule,
+    LucideAngularModule,
+    CategoryTreeComponent,
+    CategoryDetailComponent,
+    CategoryFormDialogComponent,
+  ],
   templateUrl: './categorias.component.html',
   styleUrl: './categorias.component.scss',
 })
 export class CategoriasComponent {
-  private readonly categoryService = inject(CategoryService);
+  readonly categoryService = inject(CategoryService);
+  private readonly toast = inject(ToastService);
 
-  /** Icons */
   readonly folderTreeIcon = FolderTree;
-  readonly folderPlusIcon = FolderPlus;
-  readonly chevronLeftIcon = ChevronLeft;
 
-  /** Currently selected category ID */
+  // State
   readonly selectedCategoryId = signal<string | null>(null);
-
-  /** Mobile view mode — tree or detail panel */
   readonly mobileView = signal<'tree' | 'detail'>('tree');
+  readonly showCreateDialog = signal(false);
+  readonly dialogCategory = signal<Category | null>(null);
 
-  /** Category tree from service */
+  // Computed
   readonly categoryTree = this.categoryService.categoryTree;
 
-  /** Total category count */
-  readonly totalCount = this.categoryService.totalCount;
-
-  /** Selected category object */
-  readonly selectedCategory = computed(() => {
+  readonly selectedCategory = computed<Category | null>(() => {
     const id = this.selectedCategoryId();
     if (!id) return null;
-    return this.categoryService.categories().find(c => c.id === id) ?? null;
+    return this.findCategoryById(this.categoryTree(), id) ?? null;
   });
 
-  /** Breadcrumb path for selected category */
-  readonly selectedBreadcrumb = computed(() => {
-    const id = this.selectedCategoryId();
-    if (!id) return [];
-    return this.categoryService.getBreadcrumb(id);
+  readonly totalCategories = computed(() => {
+    return this.categoryService.allCategories().length;
   });
 
-  selectCategory(id: string): void {
+  readonly totalProducts = this.categoryService.totalProductCount;
+
+  // ── Tree events ──
+
+  onSelectCategory(id: string): void {
     this.selectedCategoryId.set(id);
     this.mobileView.set('detail');
   }
 
-  backToTree(): void {
+  onAddCategory(): void {
+    this.dialogCategory.set(null);
+    this.showCreateDialog.set(true);
+  }
+
+  // ── Detail events ──
+
+  onCategoryUpdated(category: Category): void {
+    // Tree auto-updates via signals
+    this.selectedCategoryId.set(category.id);
+  }
+
+  onCategoryDeleted(id: string): void {
+    // Select parent or null
+    const deleted = this.categoryService.allCategories().find((c) => c.id === id);
+    if (deleted?.parentId) {
+      this.selectedCategoryId.set(deleted.parentId);
+    } else {
+      this.selectedCategoryId.set(null);
+    }
     this.mobileView.set('tree');
+  }
+
+  onBackToTree(): void {
+    this.mobileView.set('tree');
+  }
+
+  // ── Dialog events ──
+
+  onDialogSaved(category: Category): void {
+    this.showCreateDialog.set(false);
+    this.selectedCategoryId.set(category.id);
+    this.mobileView.set('detail');
+    this.toast.show(
+      this.dialogCategory() ? 'Categoria atualizada com sucesso' : 'Categoria criada com sucesso',
+      'success'
+    );
+  }
+
+  onDialogClosed(): void {
+    this.showCreateDialog.set(false);
+    this.dialogCategory.set(null);
+  }
+
+  // ── Helpers ──
+
+  private findCategoryById(tree: Category[], id: string): Category | undefined {
+    for (const cat of tree) {
+      if (cat.id === id) return cat;
+      if (cat.children.length > 0) {
+        const found = this.findCategoryById(cat.children, id);
+        if (found) return found;
+      }
+    }
+    return undefined;
   }
 }

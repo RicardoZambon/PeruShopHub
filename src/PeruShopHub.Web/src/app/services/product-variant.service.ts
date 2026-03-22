@@ -1,37 +1,56 @@
-import { Injectable, signal, computed } from '@angular/core';
-import {
+import { Injectable, signal, inject } from '@angular/core';
+import type {
   ProductVariant,
   CreateVariantDto,
   UpdateVariantDto,
 } from '../models/product-variant.model';
+import { CategoryService } from './category.service';
 
-export interface CombinationResult {
-  combinations: Record<string, string>[];
-  warning: boolean;
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 11);
 }
+
+function delay(ms = 300): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Mock product-category associations
+const PRODUCT_CATEGORIES: Record<string, string> = {
+  'prod-1': 'cat-camisetas',
+  'prod-2': 'cat-camisetas',
+  'prod-3': 'cat-cabos',
+};
+
+// Pre-seeded variants for a Camiseta product
+const SEED_VARIANTS: ProductVariant[] = [
+  { id: 'var-1', productId: 'prod-1', sku: 'CAM-001-P-PRETO', attributes: { Cor: 'Preto', Tamanho: 'P' }, price: 49.90, stock: 15, isActive: true, needsReview: false },
+  { id: 'var-2', productId: 'prod-1', sku: 'CAM-001-M-PRETO', attributes: { Cor: 'Preto', Tamanho: 'M' }, price: 49.90, stock: 23, isActive: true, needsReview: false },
+  { id: 'var-3', productId: 'prod-1', sku: 'CAM-001-G-PRETO', attributes: { Cor: 'Preto', Tamanho: 'G' }, price: 54.90, stock: 8, isActive: true, needsReview: false },
+  { id: 'var-4', productId: 'prod-1', sku: 'CAM-001-P-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'P' }, price: null, stock: 12, isActive: true, needsReview: false },
+  { id: 'var-5', productId: 'prod-1', sku: 'CAM-001-M-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'M' }, price: null, stock: 18, isActive: true, needsReview: false },
+  { id: 'var-6', productId: 'prod-1', sku: 'CAM-001-G-BRANCO', attributes: { Cor: 'Branco', Tamanho: 'G' }, price: 54.90, stock: 5, isActive: true, needsReview: false },
+
+  // Cable product variants
+  { id: 'var-7', productId: 'prod-3', sku: 'CB-HDMI-1M-110V', attributes: { Comprimento: '1m', Voltagem: '110V' }, price: 29.90, stock: 30, isActive: true, needsReview: false },
+  { id: 'var-8', productId: 'prod-3', sku: 'CB-HDMI-2M-110V', attributes: { Comprimento: '2m', Voltagem: '110V' }, price: 39.90, stock: 20, isActive: true, needsReview: false },
+  { id: 'var-9', productId: 'prod-3', sku: 'CB-HDMI-1M-220V', attributes: { Comprimento: '1m', Voltagem: '220V' }, price: 29.90, stock: 25, isActive: true, needsReview: false },
+];
 
 @Injectable({ providedIn: 'root' })
 export class ProductVariantService {
-  private readonly variantsSignal = signal<ProductVariant[]>(SEED_VARIANTS);
+  private readonly categoryService = inject(CategoryService);
+  private readonly variantsData = signal<ProductVariant[]>([...SEED_VARIANTS]);
+  private readonly productCategoryMap = signal<Record<string, string>>({ ...PRODUCT_CATEGORIES });
 
-  /** All variants across all products */
-  readonly variants = this.variantsSignal.asReadonly();
-
-  /** Total variant count */
-  readonly totalCount = computed(() => this.variantsSignal().length);
-
-  // ---------------------------------------------------------------------------
-  // CRUD
-  // ---------------------------------------------------------------------------
-
-  getByProductId(productId: string): ProductVariant[] {
-    return this.variantsSignal().filter(v => v.productId === productId);
+  async getByProductId(productId: string): Promise<ProductVariant[]> {
+    await delay();
+    return this.variantsData().filter((v) => v.productId === productId);
   }
 
   async create(productId: string, dto: CreateVariantDto): Promise<ProductVariant> {
-    await this.delay();
+    await delay();
     const variant: ProductVariant = {
-      id: this.generateId(),
+      id: generateId(),
       productId,
       sku: dto.sku,
       attributes: { ...dto.attributes },
@@ -40,53 +59,60 @@ export class ProductVariantService {
       isActive: dto.isActive,
       needsReview: false,
     };
-    this.variantsSignal.update(list => [...list, variant]);
+
+    this.variantsData.update((variants) => [...variants, variant]);
     return variant;
   }
 
   async update(variantId: string, dto: UpdateVariantDto): Promise<ProductVariant | undefined> {
-    await this.delay();
+    await delay();
     let updated: ProductVariant | undefined;
-    this.variantsSignal.update(list =>
-      list.map(v => {
-        if (v.id !== variantId) return v;
-        updated = { ...v, ...dto };
-        return updated;
-      }),
+    this.variantsData.update((variants) =>
+      variants.map((v) => {
+        if (v.id === variantId) {
+          updated = { ...v, ...dto };
+          return updated;
+        }
+        return v;
+      })
     );
     return updated;
   }
 
   async delete(variantId: string): Promise<boolean> {
-    await this.delay();
-    const before = this.variantsSignal().length;
-    this.variantsSignal.update(list => list.filter(v => v.id !== variantId));
-    return this.variantsSignal().length < before;
+    await delay();
+    const exists = this.variantsData().some((v) => v.id === variantId);
+    if (!exists) return false;
+
+    this.variantsData.update((variants) =>
+      variants.filter((v) => v.id !== variantId)
+    );
+    return true;
   }
 
-  // ---------------------------------------------------------------------------
-  // Combination generator
-  // ---------------------------------------------------------------------------
-
-  generateCombinations(fields: { name: string; values: string[] }[]): CombinationResult {
-    // Filter out fields with no values
-    const activeFields = fields.filter(f => f.values.length > 0);
-    if (activeFields.length === 0) {
+  generateCombinations(
+    fields: { name: string; values: string[] }[]
+  ): { combinations: Record<string, string>[]; warning: boolean } {
+    if (fields.length === 0 || fields.some((f) => f.values.length === 0)) {
       return { combinations: [], warning: false };
     }
 
-    // Cartesian product
-    const combinations: Record<string, string>[] = [{}];
-    for (const field of activeFields) {
-      const newCombinations: Record<string, string>[] = [];
-      for (const existing of combinations) {
-        for (const value of field.values) {
-          newCombinations.push({ ...existing, [field.name]: value });
-        }
+    const combinations: Record<string, string>[] = [];
+
+    const generate = (index: number, current: Record<string, string>): void => {
+      if (index === fields.length) {
+        combinations.push({ ...current });
+        return;
       }
-      combinations.length = 0;
-      combinations.push(...newCombinations);
-    }
+
+      const field = fields[index];
+      for (const value of field.values) {
+        current[field.name] = value;
+        generate(index + 1, current);
+      }
+    };
+
+    generate(0, {});
 
     return {
       combinations,
@@ -94,114 +120,101 @@ export class ProductVariantService {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // SKU validation
-  // ---------------------------------------------------------------------------
-
   isSkuUnique(sku: string, excludeId?: string): boolean {
-    return !this.variantsSignal().some(
-      v => v.sku.toLowerCase() === sku.toLowerCase() && v.id !== excludeId,
+    return !this.variantsData().some(
+      (v) => v.sku === sku && v.id !== excludeId
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Review flags
-  // ---------------------------------------------------------------------------
+  async flagForReview(categoryId: string): Promise<number> {
+    await delay(100);
+    const descendantIds = this.categoryService.getDescendantIds(categoryId);
+    const affectedCategoryIds = [categoryId, ...descendantIds];
 
-  /**
-   * Flag all variants for products in the given category (and descendants)
-   * as needing review. In a real app, this would query products by category.
-   * For mock purposes, we flag variants that belong to pre-seeded product IDs.
-   */
-  flagForReview(categoryId: string): number {
-    // Mock: map known categories to product IDs for demo purposes
-    const categoryProductMap: Record<string, string[]> = {
-      'camisetas': ['prod-cam-001'],
-      'moda': ['prod-cam-001'],
-      'feminina': ['prod-cam-001'],
-      'cabos': ['prod-cabo-001'],
-      'audio': ['prod-cabo-001'],
-      'eletronicos': ['prod-cabo-001'],
-    };
+    // Find all products in affected categories
+    const affectedProductIds: string[] = [];
+    const map = this.productCategoryMap();
+    for (const [productId, catId] of Object.entries(map)) {
+      if (affectedCategoryIds.includes(catId)) {
+        affectedProductIds.push(productId);
+      }
+    }
 
-    const productIds = categoryProductMap[categoryId] ?? [];
+    // Flag all variants for those products
     let count = 0;
-
-    this.variantsSignal.update(list =>
-      list.map(v => {
-        if (productIds.includes(v.productId) && !v.needsReview) {
+    this.variantsData.update((variants) =>
+      variants.map((v) => {
+        if (affectedProductIds.includes(v.productId) && !v.needsReview) {
           count++;
           return { ...v, needsReview: true };
         }
         return v;
-      }),
+      })
     );
 
     return count;
   }
 
-  flagForReviewByProduct(productId: string): void {
-    this.variantsSignal.update(list =>
-      list.map(v =>
-        v.productId === productId ? { ...v, needsReview: true } : v,
-      ),
+  async flagForReviewByProduct(productId: string): Promise<void> {
+    await delay(100);
+    this.variantsData.update((variants) =>
+      variants.map((v) => {
+        if (v.productId === productId) {
+          return { ...v, needsReview: true };
+        }
+        return v;
+      })
     );
   }
 
-  clearReviewFlag(productId: string): void {
-    this.variantsSignal.update(list =>
-      list.map(v =>
-        v.productId === productId ? { ...v, needsReview: false } : v,
-      ),
+  async clearReviewFlag(productId: string): Promise<void> {
+    await delay(100);
+    this.variantsData.update((variants) =>
+      variants.map((v) => {
+        if (v.productId === productId) {
+          return { ...v, needsReview: false };
+        }
+        return v;
+      })
     );
   }
 
   getAffectedProductCount(categoryId: string): number {
-    // Mock: return count based on known seed data
-    const categoryProductMap: Record<string, string[]> = {
-      'camisetas': ['prod-cam-001'],
-      'moda': ['prod-cam-001'],
-      'feminina': ['prod-cam-001'],
-      'cabos': ['prod-cabo-001'],
-      'audio': ['prod-cabo-001'],
-      'eletronicos': ['prod-cabo-001'],
+    const descendantIds = this.categoryService.getDescendantIds(categoryId);
+    const affectedCategoryIds = [categoryId, ...descendantIds];
+
+    const affectedProductIds = new Set<string>();
+    const map = this.productCategoryMap();
+    for (const [productId, catId] of Object.entries(map)) {
+      if (affectedCategoryIds.includes(catId)) {
+        affectedProductIds.add(productId);
+      }
+    }
+
+    // Count variants for those products
+    return this.variantsData().filter((v) =>
+      affectedProductIds.has(v.productId)
+    ).length;
+  }
+
+  async ensureDefaultVariant(productId: string, sku: string): Promise<ProductVariant> {
+    const existing = this.variantsData().filter((v) => v.productId === productId);
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const variant: ProductVariant = {
+      id: generateId(),
+      productId,
+      sku,
+      attributes: {},
+      price: null,
+      stock: 0,
+      isActive: true,
+      needsReview: false,
     };
 
-    const productIds = new Set(categoryProductMap[categoryId] ?? []);
-    return productIds.size;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  private generateId(): string {
-    return 'var-' + Math.random().toString(36).substring(2, 10);
-  }
-
-  private delay(ms = 300): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    this.variantsData.update((variants) => [...variants, variant]);
+    return variant;
   }
 }
-
-// =============================================================================
-// Seed data — Camiseta product with Cor + Tamanho variants
-// =============================================================================
-
-const SEED_VARIANTS: ProductVariant[] = [
-  // Product: Camiseta Básica Feminina (prod-cam-001)
-  { id: 'var-001', productId: 'prod-cam-001', sku: 'CAM-001-P-PRETO',    attributes: { Cor: 'Preto',   Tamanho: 'P' },  price: null,  stock: 15, isActive: true,  needsReview: false },
-  { id: 'var-002', productId: 'prod-cam-001', sku: 'CAM-001-M-PRETO',    attributes: { Cor: 'Preto',   Tamanho: 'M' },  price: null,  stock: 23, isActive: true,  needsReview: false },
-  { id: 'var-003', productId: 'prod-cam-001', sku: 'CAM-001-G-PRETO',    attributes: { Cor: 'Preto',   Tamanho: 'G' },  price: 54.90, stock: 8,  isActive: true,  needsReview: false },
-  { id: 'var-004', productId: 'prod-cam-001', sku: 'CAM-001-GG-PRETO',   attributes: { Cor: 'Preto',   Tamanho: 'GG' }, price: 54.90, stock: 5,  isActive: true,  needsReview: false },
-  { id: 'var-005', productId: 'prod-cam-001', sku: 'CAM-001-P-BRANCO',   attributes: { Cor: 'Branco',  Tamanho: 'P' },  price: null,  stock: 12, isActive: true,  needsReview: false },
-  { id: 'var-006', productId: 'prod-cam-001', sku: 'CAM-001-M-BRANCO',   attributes: { Cor: 'Branco',  Tamanho: 'M' },  price: null,  stock: 20, isActive: true,  needsReview: false },
-  { id: 'var-007', productId: 'prod-cam-001', sku: 'CAM-001-G-BRANCO',   attributes: { Cor: 'Branco',  Tamanho: 'G' },  price: null,  stock: 0,  isActive: false, needsReview: false },
-  { id: 'var-008', productId: 'prod-cam-001', sku: 'CAM-001-P-AZUL',     attributes: { Cor: 'Azul',    Tamanho: 'P' },  price: null,  stock: 18, isActive: true,  needsReview: false },
-  { id: 'var-009', productId: 'prod-cam-001', sku: 'CAM-001-M-AZUL',     attributes: { Cor: 'Azul',    Tamanho: 'M' },  price: null,  stock: 14, isActive: true,  needsReview: false },
-
-  // Product: Cabo USB-C (prod-cabo-001) — Comprimento variants
-  { id: 'var-010', productId: 'prod-cabo-001', sku: 'CABO-001-1M',       attributes: { Comprimento: '1m' },             price: 29.90, stock: 50, isActive: true,  needsReview: false },
-  { id: 'var-011', productId: 'prod-cabo-001', sku: 'CABO-001-2M',       attributes: { Comprimento: '2m' },             price: 39.90, stock: 35, isActive: true,  needsReview: false },
-  { id: 'var-012', productId: 'prod-cabo-001', sku: 'CABO-001-3M',       attributes: { Comprimento: '3m' },             price: 49.90, stock: 20, isActive: true,  needsReview: false },
-];

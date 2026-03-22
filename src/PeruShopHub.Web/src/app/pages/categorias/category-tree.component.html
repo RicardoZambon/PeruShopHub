@@ -1,0 +1,61 @@
+<div class="tree-panel">
+  <div class="tree-panel__header">
+    <div class="tree-panel__search">
+      <lucide-icon [img]="searchIcon" [size]="16" class="tree-panel__search-icon"></lucide-icon>
+      <input
+        type="text"
+        class="tree-panel__search-input"
+        placeholder="Buscar categoria..."
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+      />
+    </div>
+  </div>
+
+  <div class="tree-panel__content">
+    @if (hasCategories()) {
+      <div
+        class="tree-panel__list"
+        cdkDropList
+        [cdkDropListData]="filteredTree()"
+        id="root-drop-list"
+        (cdkDropListDropped)="onRootDrop($event)"
+        [cdkDropListDisabled]="isDragDisabled()"
+      >
+        @for (category of filteredTree(); track category.id) {
+          <div cdkDrag [cdkDragData]="category" [cdkDragDisabled]="isDragDisabled()">
+            <div class="tree-panel__drag-placeholder" *cdkDragPlaceholder></div>
+            <app-category-tree-node
+              [category]="category"
+              [selectedId]="selectedId"
+              [depth]="0"
+              [dragEnabled]="!isDragDisabled()"
+              (select)="onSelectCategory($event)"
+              (reorder)="onChildReorder($event)"
+            ></app-category-tree-node>
+          </div>
+        }
+      </div>
+
+      @if (filteredTree().length === 0) {
+        <div class="tree-panel__no-results">
+          Nenhuma categoria encontrada para "{{ searchQuery() }}"
+        </div>
+      }
+    } @else {
+      <app-empty-state
+        title="Nenhuma categoria"
+        description="Crie sua primeira categoria para organizar seus produtos."
+        actionLabel="Criar primeira categoria"
+        (actionClick)="onAddCategory()"
+      ></app-empty-state>
+    }
+  </div>
+
+  <div class="tree-panel__footer">
+    <button class="tree-panel__add-btn" (click)="onAddCategory()">
+      <lucide-icon [img]="folderPlusIcon" [size]="16"></lucide-icon>
+      <span>Adicionar Categoria</span>
+    </button>
+  </div>
+</div>

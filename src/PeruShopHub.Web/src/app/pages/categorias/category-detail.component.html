@@ -1,0 +1,152 @@
+@if (category) {
+  <div class="detail-panel">
+    <div class="detail-panel__header">
+      <button class="detail-panel__back" (click)="onBack()" aria-label="Voltar">
+        <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
+      </button>
+
+      <div class="detail-panel__header-info">
+        <div class="detail-panel__breadcrumb">
+          @for (crumb of breadcrumb(); track crumb; let last = $last) {
+            <span>{{ crumb }}</span>
+            @if (!last) {
+              <span class="detail-panel__breadcrumb-sep">/</span>
+            }
+          }
+        </div>
+        <h2 class="detail-panel__title">{{ category.name }}</h2>
+      </div>
+
+      <div class="detail-panel__actions">
+        @if (!editing()) {
+          <button
+            class="btn btn-icon"
+            (click)="startEditing()"
+            aria-label="Editar"
+          >
+            <lucide-icon [img]="pencilIcon" [size]="16"></lucide-icon>
+          </button>
+          <button
+            class="btn btn-icon btn-icon--danger"
+            (click)="onDeleteClick()"
+            [disabled]="hasChildren()"
+            [title]="hasChildren() ? 'Remova as subcategorias primeiro' : 'Excluir categoria'"
+            aria-label="Excluir"
+          >
+            <lucide-icon [img]="trashIcon" [size]="16"></lucide-icon>
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (confirmingDelete()) {
+      <div class="detail-panel__confirm-delete">
+        <p class="confirm-delete__message">
+          @if (category.productCount > 0) {
+            Esta categoria possui {{ category.productCount }} produtos. Deseja realmente excluir?
+          } @else {
+            Deseja realmente excluir esta categoria?
+          }
+        </p>
+        <div class="confirm-delete__actions">
+          <button class="btn btn-ghost btn-sm" (click)="cancelDelete()">Cancelar</button>
+          <button class="btn btn-danger btn-sm" (click)="confirmDelete()">Excluir</button>
+        </div>
+      </div>
+    }
+
+    @if (editing() && form) {
+      <form class="detail-panel__form" [formGroup]="form" (ngSubmit)="saveEditing()">
+        <div class="field">
+          <label for="edit-name">Nome</label>
+          <input
+            id="edit-name"
+            type="text"
+            formControlName="name"
+            maxlength="100"
+            [class.invalid]="form.get('name')!.touched && form.get('name')!.invalid"
+          />
+          @if (form.get('name')!.touched && form.get('name')!.hasError('required')) {
+            <span class="field-error">Nome é obrigatório</span>
+          }
+        </div>
+
+        <div class="field">
+          <label class="toggle-label">
+            <span class="toggle-switch">
+              <input type="checkbox" formControlName="isActive" />
+              <span class="toggle-slider"></span>
+            </span>
+            <span>Ativo</span>
+          </label>
+        </div>
+
+        <div class="detail-panel__form-actions">
+          <button type="button" class="btn btn-ghost btn-sm" (click)="cancelEditing()">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="btn btn-accent btn-sm"
+            [disabled]="saving() || form.invalid"
+          >
+            @if (saving()) {
+              <span class="spinner"></span>
+            }
+            Salvar
+          </button>
+        </div>
+      </form>
+    } @else {
+      <div class="detail-panel__info">
+        <div class="detail-panel__info-row">
+          <span class="detail-panel__info-label">Status</span>
+          <span class="detail-panel__info-value">
+            <span
+              class="status-dot"
+              [class.status-dot--active]="category.isActive"
+              [class.status-dot--inactive]="!category.isActive"
+            ></span>
+            {{ category.isActive ? 'Ativo' : 'Inativo' }}
+          </span>
+        </div>
+
+        <div class="detail-panel__info-row">
+          <span class="detail-panel__info-label">Produtos</span>
+          <span class="detail-panel__info-value">{{ category.productCount }}</span>
+        </div>
+
+        @if (childCount() > 0) {
+          <div class="detail-panel__info-row">
+            <span class="detail-panel__info-label">Subcategorias</span>
+            <span class="detail-panel__info-value">{{ childCount() }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="detail-panel__meta">
+        <div class="detail-panel__meta-row">
+          <span class="detail-panel__meta-label">ID</span>
+          <span class="detail-panel__meta-value mono">{{ category.id }}</span>
+        </div>
+        <div class="detail-panel__meta-row">
+          <span class="detail-panel__meta-label">Criado em</span>
+          <span class="detail-panel__meta-value">{{ formatDate(category.createdAt) }}</span>
+        </div>
+        <div class="detail-panel__meta-row">
+          <span class="detail-panel__meta-label">Atualizado em</span>
+          <span class="detail-panel__meta-value">{{ formatDate(category.updatedAt) }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Variation fields -->
+    <app-variation-fields [categoryId]="category.id"></app-variation-fields>
+  </div>
+} @else {
+  <div class="detail-panel detail-panel--empty">
+    <div class="detail-panel__empty-state">
+      <p>Selecione uma categoria na árvore para ver os detalhes</p>
+    </div>
+  </div>
+}

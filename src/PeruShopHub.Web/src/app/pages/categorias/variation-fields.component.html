@@ -1,0 +1,273 @@
+<div class="variation-fields">
+  <div class="variation-fields__header">
+    <h3 class="variation-fields__title">Campos de Variação</h3>
+    <button
+      class="btn btn-sm btn-outline"
+      (click)="openAddForm()"
+      [disabled]="showAddForm()"
+    >
+      <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
+      <span>Adicionar Campo</span>
+    </button>
+  </div>
+
+  <!-- Inherited fields (read-only) -->
+  @if (inheritedFields().length > 0) {
+    <div class="variation-fields__section">
+      <span class="variation-fields__section-label">Herdados</span>
+      @for (field of inheritedFields(); track field.id) {
+        <div class="field-card field-card--inherited">
+          <div class="field-card__row">
+            <lucide-icon [img]="linkIcon" [size]="14" class="field-card__inherited-icon"></lucide-icon>
+            <span class="field-card__name">{{ field.name }}</span>
+            <span class="field-card__type-badge">
+              <lucide-icon [img]="field.type === 'text' ? typeIcon : listChecksIcon" [size]="12"></lucide-icon>
+              {{ field.type === 'text' ? 'Texto' : 'Opções' }}
+            </span>
+            @if (field.required) {
+              <span class="field-card__required">Obrigatório</span>
+            }
+          </div>
+          <div class="field-card__inherited-label">
+            Herdado de {{ field.inheritedFrom }}
+          </div>
+          @if (field.type === 'select' && field.options.length > 0) {
+            <div class="field-card__options">
+              @for (opt of field.options; track opt) {
+                <span class="chip chip--readonly">{{ opt }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Own fields (editable) -->
+  <div class="variation-fields__section">
+    @if (inheritedFields().length > 0) {
+      <span class="variation-fields__section-label">Próprios</span>
+    }
+
+    @if (ownFields().length > 0) {
+      <div
+        cdkDropList
+        [cdkDropListData]="ownFields()"
+        (cdkDropListDropped)="onFieldDrop($event)"
+        class="variation-fields__list"
+      >
+        @for (field of ownFields(); track field.id) {
+          <div cdkDrag [cdkDragData]="field">
+            <div class="field-card__drag-placeholder" *cdkDragPlaceholder></div>
+
+            @if (editingFieldId() === field.id && editForm) {
+              <!-- Edit mode -->
+              <div class="field-card field-card--editing">
+                <form [formGroup]="editForm" (ngSubmit)="saveEdit()">
+                  <div class="field-form__field">
+                    <label>Nome</label>
+                    <input
+                      type="text"
+                      formControlName="name"
+                      placeholder="Nome do campo"
+                    />
+                  </div>
+
+                  <div class="field-form__field">
+                    <label>Tipo</label>
+                    <div class="radio-group">
+                      <label class="radio-label">
+                        <input type="radio" formControlName="type" value="text" />
+                        <span class="radio-custom"></span>
+                        Texto livre
+                      </label>
+                      <label class="radio-label">
+                        <input type="radio" formControlName="type" value="select" />
+                        <span class="radio-custom"></span>
+                        Opções predefinidas
+                      </label>
+                    </div>
+                  </div>
+
+                  @if (editForm.get('type')!.value === 'select') {
+                    <div class="field-form__field">
+                      <label>Opções</label>
+                      <div class="chip-input">
+                        <div class="chip-input__chips">
+                          @for (opt of editFormOptions; track opt; let i = $index) {
+                            <span class="chip">
+                              {{ opt }}
+                              <button
+                                type="button"
+                                class="chip__remove"
+                                (click)="removeEditOption(i)"
+                              >
+                                <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
+                              </button>
+                            </span>
+                          }
+                        </div>
+                        <input
+                          type="text"
+                          class="chip-input__input"
+                          placeholder="Digite e pressione Enter..."
+                          [value]="editChipInput()"
+                          (input)="editChipInput.set($any($event.target).value)"
+                          (keydown)="onEditChipKeydown($event)"
+                        />
+                      </div>
+                    </div>
+                  }
+
+                  <div class="field-form__field">
+                    <label class="toggle-label">
+                      <span class="toggle-switch">
+                        <input type="checkbox" formControlName="required" />
+                        <span class="toggle-slider"></span>
+                      </span>
+                      <span>Obrigatório</span>
+                    </label>
+                  </div>
+
+                  <div class="field-form__actions">
+                    <button type="button" class="btn btn-sm btn-ghost" (click)="cancelEdit()">
+                      Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-sm btn-accent">
+                      Salvar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            } @else {
+              <!-- Display mode -->
+              <div class="field-card">
+                <div class="field-card__row">
+                  <span class="field-card__grip" cdkDragHandle>
+                    <lucide-icon [img]="gripIcon" [size]="14"></lucide-icon>
+                  </span>
+                  <span class="field-card__name">{{ field.name }}</span>
+                  <span class="field-card__type-badge">
+                    <lucide-icon [img]="field.type === 'text' ? typeIcon : listChecksIcon" [size]="12"></lucide-icon>
+                    {{ field.type === 'text' ? 'Texto' : 'Opções' }}
+                  </span>
+                  @if (field.required) {
+                    <span class="field-card__required">Obrigatório</span>
+                  }
+                  <div class="field-card__actions">
+                    <button
+                      class="field-card__action-btn"
+                      (click)="startEdit(field)"
+                      aria-label="Editar campo"
+                    >
+                      <lucide-icon [img]="pencilIcon" [size]="14"></lucide-icon>
+                    </button>
+                    <button
+                      class="field-card__action-btn field-card__action-btn--danger"
+                      (click)="deleteField(field)"
+                      aria-label="Remover campo"
+                    >
+                      <lucide-icon [img]="trashIcon" [size]="14"></lucide-icon>
+                    </button>
+                  </div>
+                </div>
+                @if (field.type === 'select' && field.options.length > 0) {
+                  <div class="field-card__options">
+                    @for (opt of field.options; track opt) {
+                      <span class="chip chip--readonly">{{ opt }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @else if (!showAddForm()) {
+      <div class="variation-fields__empty">
+        Nenhum campo de variação definido para esta categoria.
+      </div>
+    }
+  </div>
+
+  <!-- Add form -->
+  @if (showAddForm() && addForm) {
+    <div class="field-card field-card--adding">
+      <form [formGroup]="addForm" (ngSubmit)="saveAdd()">
+        <div class="field-form__field">
+          <label>Nome</label>
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Ex: Cor, Tamanho, Voltagem..."
+          />
+        </div>
+
+        <div class="field-form__field">
+          <label>Tipo</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" formControlName="type" value="text" />
+              <span class="radio-custom"></span>
+              Texto livre
+            </label>
+            <label class="radio-label">
+              <input type="radio" formControlName="type" value="select" />
+              <span class="radio-custom"></span>
+              Opções predefinidas
+            </label>
+          </div>
+        </div>
+
+        @if (addForm.get('type')!.value === 'select') {
+          <div class="field-form__field">
+            <label>Opções</label>
+            <div class="chip-input">
+              <div class="chip-input__chips">
+                @for (opt of addFormOptions; track opt; let i = $index) {
+                  <span class="chip">
+                    {{ opt }}
+                    <button
+                      type="button"
+                      class="chip__remove"
+                      (click)="removeAddOption(i)"
+                    >
+                      <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
+                    </button>
+                  </span>
+                }
+              </div>
+              <input
+                type="text"
+                class="chip-input__input"
+                placeholder="Digite e pressione Enter..."
+                [value]="chipInput()"
+                (input)="chipInput.set($any($event.target).value)"
+                (keydown)="onAddChipKeydown($event)"
+              />
+            </div>
+          </div>
+        }
+
+        <div class="field-form__field">
+          <label class="toggle-label">
+            <span class="toggle-switch">
+              <input type="checkbox" formControlName="required" />
+              <span class="toggle-slider"></span>
+            </span>
+            <span>Obrigatório</span>
+          </label>
+        </div>
+
+        <div class="field-form__actions">
+          <button type="button" class="btn btn-sm btn-ghost" (click)="cancelAdd()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-sm btn-accent">
+            Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>
