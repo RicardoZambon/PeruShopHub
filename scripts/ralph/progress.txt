@@ -13,6 +13,7 @@
 - Injectable root services go in `src/app/services/` with `{ providedIn: 'root' }`
 - Shared pipes/components go in `src/app/shared/pipes/` and `src/app/shared/components/` with barrel exports via `index.ts`
 - SCSS `@use` path from `src/app/shared/components/{name}/` to `src/styles/` is `../../../../styles/mixins`
+- SCSS `@use` path from `src/app/pages/{name}/` to `src/styles/` is `../../../styles/mixins`
 - Type re-exports need `export type { ... }` due to `isolatedModules` in tsconfig
 - Lucide icon data type for `[img]` binding is `LucideIconData` from `lucide-angular` (not `object`)
 - Toast container goes in app root (app.html), inject `ToastService` to show toasts from any component
@@ -196,4 +197,17 @@
   - Angular `[attr.disabled]` with ternary works for conditionally disabling inputs without FormsModule conflicts
   - Login route is already outside LayoutComponent in app.routes.ts (set up in US-011)
   - Use `signal()` for simple component state like loading/error instead of plain properties for reactive template binding
+---
+
+## 2026-03-22 - US-013
+- Created DashboardComponent with period selector (Hoje, 7 dias, 30 dias, Personalizado) and 4 KPI cards
+- Period selector: button group with active state styling, Personalizado toggles date range inputs
+- KPI cards: Vendas, Receita Bruta, Lucro Líquido, Margem Média with mock data per period
+- Loading state: 4 skeleton cards with shimmer animation during period switch (600ms simulated)
+- Responsive: 4-col grid on desktop, 2-col on tablet, 1-col on mobile
+- Files changed: `src/app/pages/dashboard/dashboard.component.ts` (rewritten), `dashboard.component.html` (new), `dashboard.component.scss` (new)
+- **Learnings for future iterations:**
+  - SCSS path from pages is `../../../styles/mixins` (3 levels up, not 4 like shared components)
+  - Angular `@for` and `@if` control flow syntax works well with signals
+  - Mock data pattern: `Record<Period, KpiData[]>` with computed signal for reactive data switching
 ---
