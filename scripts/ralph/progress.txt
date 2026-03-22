@@ -8,6 +8,8 @@
 - Working directory for Angular commands: `src/PeruShopHub.Web/`
 - Build: `npx ng build`, Typecheck: `npx tsc --noEmit -p tsconfig.app.json`
 - Proxy config in `proxy.conf.json` targets `http://localhost:5000` for `/api` routes
+- Design tokens in `src/styles/tokens.css`, SCSS mixins in `src/styles/mixins.scss`
+- Use `@use '../styles/mixins' as m;` then `@include m.mobile { ... }` in component SCSS
 
 ## 2026-03-22 - US-001
 - Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
@@ -21,4 +23,17 @@
   - Angular CLI v21 generates `.ts` component files (not `.component.ts` by default) but we use `.component.ts` naming for clarity
   - Build and typecheck commands must run from `src/PeruShopHub.Web/` directory (or use `--project` flag)
   - The `npx ng build` output shows lazy chunk files confirming routes are properly configured
+---
+
+## 2026-03-22 - US-002
+- Created `src/styles/tokens.css` with all CSS custom properties: colors (primary, accent, success, warning, danger, neutrals, surface, page-bg), typography sizes, spacing scale, elevation shadows, border radii, breakpoints, component tokens, chart colors
+- Light theme tokens in `:root`, dark theme in `:root[data-theme="dark"]` with inverted neutrals and adjusted semantic colors
+- Created `src/styles/mixins.scss` with responsive breakpoint mixins: `@mixin mobile`, `@mixin tablet`, `@mixin desktop`, `@mixin desktop-lg`
+- Updated `styles.scss` to import tokens.css and set base body styles (font-family Inter, background var(--page-bg), color var(--neutral-900))
+- Files changed: `src/styles/tokens.css` (new), `src/styles/mixins.scss` (new), `src/styles.scss` (updated)
+- **Learnings for future iterations:**
+  - CSS custom properties in tokens.css are imported via `@import "styles/tokens.css"` in styles.scss
+  - SCSS mixins are in a separate file and must be `@use`d in component SCSS files that need them
+  - Dark theme shadows need higher opacity since dark backgrounds need stronger shadows for visibility
+  - Component-specific tokens (sidebar widths, header height, etc.) are also in tokens.css for consistency
 ---
