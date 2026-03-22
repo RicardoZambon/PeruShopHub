@@ -1,0 +1,112 @@
+@use '../../../styles/mixins' as m;
+
+.tree-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface);
+  border-right: 1px solid var(--neutral-200);
+  width: 300px;
+  flex-shrink: 0;
+
+  @include m.tablet {
+    width: 100%;
+    border-right: none;
+  }
+
+  @include m.mobile {
+    width: 100%;
+    border-right: none;
+  }
+}
+
+.tree-panel__header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--neutral-200);
+}
+
+.tree-panel__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tree-panel__search-icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--neutral-500);
+  pointer-events: none;
+}
+
+.tree-panel__search-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  padding-left: var(--space-8);
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: var(--body-size);
+  color: var(--neutral-900);
+  background: var(--surface);
+  outline: none;
+  transition: border-color 200ms ease;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--neutral-500);
+  }
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.tree-panel__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2) 0;
+}
+
+.tree-panel__list {
+  // Tree nodes render here
+}
+
+.tree-panel__no-results {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-size: var(--body-small-size);
+  color: var(--neutral-500);
+}
+
+.tree-panel__footer {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--neutral-200);
+}
+
+.tree-panel__add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  border: 1px dashed var(--neutral-300);
+  border-radius: var(--radius-md);
+  background: none;
+  font-family: var(--font-ui);
+  font-size: var(--body-size);
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 150ms ease;
+
+  &:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
