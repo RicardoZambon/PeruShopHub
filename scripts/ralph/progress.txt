@@ -91,3 +91,21 @@
   - Skeleton shimmer animation uses `background-size: 200%` with position animation for smooth effect
   - `git -c safe.directory=...` flag needed for commits in this environment (gitconfig is read-only)
 ---
+
+## 2026-03-22 - US-007
+- Created `DataTableComponent` (standalone) with responsive desktop table and mobile card list
+- Desktop (>=1024px): standard HTML table with sortable column headers (asc/desc toggle), configurable cell alignment
+- Tablet (768-1023px): horizontal scroll with first column sticky
+- Mobile (<768px): each row renders as a card with label:value pairs stacked vertically
+- Loading state: 6 skeleton rows using SkeletonComponent
+- Empty state: uses EmptyStateComponent with configurable title/description
+- Pagination bar: 'Mostrando X-Y de Z', page size selector (10/25/50), prev/next buttons
+- Sort and page change emit output events for server-side handling
+- Barrel export updated in `src/app/shared/components/index.ts`
+- Files changed: `src/app/shared/components/data-table/data-table.component.ts` (new), `src/app/shared/components/data-table/data-table.component.scss` (new), `src/app/shared/components/index.ts` (updated)
+- **Learnings for future iterations:**
+  - DataTableComponent accepts `columns` array with `{key, label, align, format, sortable}` and `data` array of records
+  - Use `format: 'mono'` or `format: 'currency'` on columns to apply Roboto Mono font
+  - Tablet sticky first column uses `position: sticky` with `::after` pseudo-element for border
+  - `rowClick` output emitter sends the full row record for navigation
+---
