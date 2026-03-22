@@ -127,3 +127,21 @@
   - ToastService uses `signal<Toast[]>` for reactive toast list — components just read `toastService.toasts()`
   - Toast container is added once in app root, not per-page
 ---
+
+## 2026-03-22 - US-009
+- Created `SidebarService` with `collapsed` signal persisted to localStorage and `mobileOpen` signal for overlay drawer
+- Created `SidebarComponent` (standalone) with 8 nav items using Lucide icons and RouterLink/RouterLinkActive
+- Desktop (>=1024px): expanded 256px by default, collapsible to 64px icons-only
+- Tablet (768-1023px): starts collapsed by default
+- Mobile (<768px): hidden by default, overlay drawer with backdrop when `mobileOpen` is true
+- Logo shows "PeruShopHub" when expanded, "P" when collapsed
+- Collapse toggle button at bottom, Esc key closes mobile drawer
+- Smooth 200ms transitions, active route highlight with --primary-light/--primary colors
+- Barrel export updated in shared/components/index.ts
+- Files changed: `src/app/services/sidebar.service.ts` (new), `src/app/shared/components/sidebar/` (new), `src/app/shared/components/index.ts` (updated)
+- **Learnings for future iterations:**
+  - SidebarService exposes `collapsed` and `mobileOpen` signals — header component will use `sidebar.toggleMobile()` to open drawer
+  - Lucide icons import individually: `import { LayoutDashboard, Package, ... } from 'lucide-angular'`
+  - Mobile sidebar uses transform translateX(-100%) → translateX(0) for slide-in, not width animation
+  - RouterLinkActive directive adds `active` class automatically for styling
+---
