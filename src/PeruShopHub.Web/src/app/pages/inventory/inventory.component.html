@@ -213,9 +213,9 @@
     <div class="modal__header">
       <h2 id="entry-modal-title" class="modal__title">Registrar Entrada</h2>
     </div>
-    <form [formGroup]="entryForm" (ngSubmit)="saveEntry()" class="modal__body">
-      <!-- Produto -->
-      <div class="form-field">
+    <form [formGroup]="entryForm" (ngSubmit)="saveEntry()" class="modal__body modal__body--grid">
+      <!-- Produto (full width) -->
+      <div class="form-field form-field--full">
         <label class="form-field__label" for="entry-produto">Produto *</label>
         <div class="form-field__autocomplete">
           <input
@@ -282,7 +282,7 @@
       </div>
 
       <!-- Nota fiscal -->
-      <div class="form-field">
+      <div class="form-field form-field--full">
         <label class="form-field__label" for="entry-nf">Nota fiscal</label>
         <input
           id="entry-nf"
@@ -294,7 +294,7 @@
       </div>
 
       <!-- Observação -->
-      <div class="form-field">
+      <div class="form-field form-field--full">
         <label class="form-field__label" for="entry-obs">Observação</label>
         <textarea
           id="entry-obs"
@@ -306,7 +306,7 @@
       </div>
 
       <!-- Actions -->
-      <div class="modal__actions">
+      <div class="modal__actions form-field--full">
         <button type="button" class="modal__btn modal__btn--cancel" (click)="closeEntryModal()">Cancelar</button>
         <button type="submit" class="modal__btn modal__btn--save">Salvar</button>
       </div>

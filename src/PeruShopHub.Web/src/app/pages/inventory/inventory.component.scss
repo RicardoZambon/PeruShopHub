@@ -507,6 +507,21 @@
   }
 }
 
+// Modal body grid layout
+.modal__body--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+
+  @include m.mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-field--full {
+  grid-column: 1 / -1;
+}
+
 // Form fields
 .form-field {
   display: flex;
