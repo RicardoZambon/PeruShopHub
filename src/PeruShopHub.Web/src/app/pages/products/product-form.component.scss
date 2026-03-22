@@ -79,6 +79,43 @@
   }
 }
 
+// Two-panel layout
+.two-panel-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: var(--space-6);
+
+  @include m.tablet {
+    grid-template-columns: 1fr;
+  }
+
+  @include m.mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-panel {
+  min-width: 0; // prevent grid blowout
+}
+
+.gallery-panel {
+  min-height: 300px;
+  border: 2px dashed var(--neutral-300);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--neutral-50, var(--surface));
+
+  @include m.tablet {
+    display: none;
+  }
+
+  @include m.mobile {
+    display: none;
+  }
+}
+
 // Tabs Navigation (desktop/tablet)
 .tabs-nav {
   display: flex;
