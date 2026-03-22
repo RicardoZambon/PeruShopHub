@@ -11,6 +11,7 @@
 - Design tokens in `src/styles/tokens.css`, SCSS mixins in `src/styles/mixins.scss`
 - Use `@use '../styles/mixins' as m;` then `@include m.mobile { ... }` in component SCSS
 - Injectable root services go in `src/app/services/` with `{ providedIn: 'root' }`
+- Shared pipes/components go in `src/app/shared/pipes/` and `src/app/shared/components/` with barrel exports via `index.ts`
 
 ## 2026-03-22 - US-001
 - Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
@@ -53,4 +54,15 @@
   - Services go in `src/app/services/` directory
   - Angular 21 signals + `effect()` work well for reactive theme management
   - Theme applies by setting/removing `data-theme="dark"` on `document.documentElement` (matching tokens.css selectors)
+---
+
+## 2026-03-22 - US-004
+- Created `BrlCurrencyPipe` with full (`R$ 1.234,56`) and compact (`R$ 18,4k` / `R$ 1,2M`) modes using `toLocaleString('pt-BR')`
+- Created `RelativeDatePipe` with relative format for <7 days (`ha 2h`, `ha 1d`, `ha 3sem`) and absolute `toLocaleDateString` for older dates
+- Both pipes are standalone, exported from `src/app/shared/pipes/index.ts`
+- Files changed: `src/app/shared/pipes/brl-currency.pipe.ts` (new), `src/app/shared/pipes/relative-date.pipe.ts` (new), `src/app/shared/pipes/index.ts` (new)
+- **Learnings for future iterations:**
+  - Shared pipes live in `src/app/shared/pipes/` with barrel export via `index.ts`
+  - `toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })` handles BRL formatting natively
+  - Import pipes from `@shared/pipes` if path alias is configured, otherwise relative paths
 ---
