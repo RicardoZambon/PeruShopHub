@@ -280,3 +280,22 @@
   - Route order matters: `/produtos/novo` must come before `/produtos/:id` to avoid "novo" being captured as an ID parameter
   - `$event.stopPropagation()` on edit button click prevents row click from also firing
 ---
+
+## 2026-03-22 - US-018
+- Created full ProductFormComponent with 3-tab form: Informações Básicas, Preço e Custos, Envio
+- Tab navigation on desktop/tablet, accordion sections on mobile
+- Basic info: título with 60-char counter, descrição textarea, searchable categoria dropdown (12 hardcoded categories), condição radio (Novo/Usado)
+- Pricing: preço de venda (R$ prefix), custo aquisição, custo embalagem, fornecedor, tipo de anúncio select (Grátis/Clássico/Premium), real-time margin calculator
+- Shipping: peso/altura/largura/comprimento inputs in 4-column grid, frete grátis toggle switch
+- Sticky bottom bar with Cancelar (ghost), Salvar Rascunho (outline), Publicar (accent) buttons
+- Edit mode loads mock product data when route has :id param
+- Created unsavedChangesGuard (CanDeactivateFn) wired to /produtos/novo and /produtos/:id/editar routes
+- Increased anyComponentStyle budget to 12kB/20kB in angular.json
+- Files changed: `produto-form.component.ts` (rewritten), `produto-form.component.html` (new), `produto-form.component.scss` (new), `guards/unsaved-changes.guard.ts` (new), `app.routes.ts` (updated), `angular.json` (updated)
+- **Learnings for future iterations:**
+  - Functional `CanDeactivateFn<T>` guards are simpler than class-based guards in Angular 17+ — define interface + function
+  - Searchable dropdown: use a text input + dropdown list + filter signal, close on document click via `@HostListener`
+  - Computed signals work for real-time margin calculation from reactive form values (read form values in computed)
+  - Mobile accordion pattern: use `display: none/block` toggled by a `Set<TabId>` signal, tabs hidden on mobile via media query
+  - `R$` prefix input: use `position: relative` container with absolute prefix span and extra left padding on input
+---
