@@ -44,4 +44,20 @@
       }
     }
   </div>
+
+  <div class="dashboard__charts">
+    <div class="dashboard__chart-line">
+      <div class="chart-card">
+        <h2 class="chart-card__title">Vendas e Lucro</h2>
+        <div class="chart-card__body">
+          <canvas
+            baseChart
+            type="line"
+            [data]="lineChartData"
+            [options]="lineChartOptions">
+          </canvas>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

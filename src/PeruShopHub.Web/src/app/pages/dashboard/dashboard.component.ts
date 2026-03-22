@@ -1,5 +1,7 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartData } from 'chart.js';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 
@@ -34,10 +36,29 @@ const MOCK_DATA: Record<Exclude<Period, 'personalizado'>, KpiData[]> = {
   ],
 };
 
+function generateMockChartData(): { labels: string[]; revenue: number[]; profit: number[] } {
+  const labels: string[] = [];
+  const revenue: number[] = [];
+  const profit: number[] = [];
+  const now = new Date();
+
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    labels.push(date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+
+    const baseRevenue = 500 + Math.random() * 400;
+    revenue.push(Math.round(baseRevenue * 100) / 100);
+    profit.push(Math.round(baseRevenue * (0.18 + Math.random() * 0.12) * 100) / 100);
+  }
+
+  return { labels, revenue, profit };
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent, SkeletonComponent],
+  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BaseChartDirective],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -58,6 +79,91 @@ export class DashboardComponent {
     if (period === 'personalizado') return MOCK_DATA['30dias'];
     return MOCK_DATA[period];
   });
+
+  // Chart data
+  private mockChart = generateMockChartData();
+
+  lineChartData: ChartData<'line'> = {
+    labels: this.mockChart.labels,
+    datasets: [
+      {
+        label: 'Receita Bruta',
+        data: this.mockChart.revenue,
+        borderColor: '#1A237E',
+        backgroundColor: 'rgba(26, 35, 126, 0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        borderWidth: 2,
+      },
+      {
+        label: 'Lucro Líquido',
+        data: this.mockChart.profit,
+        borderColor: '#2E7D32',
+        backgroundColor: 'rgba(46, 125, 50, 0.1)',
+        fill: true,
+        tension: 0.3,
+        borderDash: [6, 3],
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  lineChartOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+        align: 'start',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'line',
+          padding: 16,
+          font: { family: 'Inter', size: 13 },
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { family: 'Inter', size: 13 },
+        bodyFont: { family: 'Roboto Mono', size: 12 },
+        padding: 12,
+        callbacks: {
+          label: (ctx) => {
+            const value = ctx.parsed.y ?? 0;
+            const formatted = value.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            });
+            return `${ctx.dataset.label}: ${formatted}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          font: { family: 'Inter', size: 11 },
+          maxTicksLimit: 10,
+        },
+      },
+      y: {
+        grid: { color: 'rgba(0, 0, 0, 0.06)' },
+        ticks: {
+          font: { family: 'Roboto Mono', size: 11 },
+          callback: (value) => `R$ ${Number(value).toLocaleString('pt-BR')}`,
+        },
+      },
+    },
+  };
 
   selectPeriod(period: Period): void {
     if (period === 'personalizado') {

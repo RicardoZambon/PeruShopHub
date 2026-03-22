@@ -61,6 +61,61 @@
       padding: var(--card-padding-mobile);
     }
   }
+
+  &__charts {
+    display: flex;
+    gap: var(--card-gap-desktop);
+
+    @include m.tablet {
+      flex-direction: column;
+      gap: var(--card-gap-tablet);
+    }
+
+    @include m.mobile {
+      flex-direction: column;
+      gap: var(--card-gap-mobile);
+    }
+  }
+
+  &__chart-line {
+    flex: 0 0 60%;
+    min-width: 0;
+
+    @include m.tablet {
+      flex: 1;
+    }
+  }
+}
+
+.chart-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--card-padding-desktop);
+
+  @include m.tablet {
+    padding: var(--card-padding-tablet);
+  }
+
+  @include m.mobile {
+    padding: var(--card-padding-mobile);
+  }
+
+  &__title {
+    font-size: var(--h4-size);
+    font-weight: var(--h4-weight);
+    color: var(--neutral-900);
+    margin: 0 0 var(--space-4) 0;
+  }
+
+  &__body {
+    position: relative;
+    height: 320px;
+
+    @include m.mobile {
+      height: 240px;
+    }
+  }
 }
 
 .period-selector {
