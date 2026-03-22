@@ -369,3 +369,22 @@
   - `tfoot` with double-border separator (`border-top: 3px double`) gives visual emphasis to the profit row
   - Cost source badges reuse BadgeComponent with variant mapping from `CostSource` type
 ---
+
+## 2026-03-22 - US-023
+- Created PerguntasComponent at /perguntas with tab filters (Sem Resposta with count badge, Respondidas, Todas)
+- Each question rendered as card: product icon + name + ID, buyer nickname, question text, relative timestamp via RelativeDatePipe
+- Time indicator turns --danger color if > 24h unanswered
+- Unanswered cards have "Responder" accent outline button that expands inline textarea with "Enviar" and "Cancelar" actions
+- On submit: question status updated to 'answered', success toast shown via ToastService, card moves to Respondidas tab
+- Unanswered sorted oldest first, answered sorted newest first
+- 8 mock questions (5 unanswered, 3 answered) with realistic Brazilian product/buyer data
+- Answer display section for answered questions with green left border
+- Loading skeleton state (600ms simulated), empty states per tab
+- Responsive: full-width cards on mobile, reply actions stack vertically
+- Files changed: `perguntas.component.ts` (rewritten), `perguntas.component.html` (new), `perguntas.component.scss` (new)
+- **Learnings for future iterations:**
+  - `FormsModule` + `ngModel` with signals: use `[ngModel]="signal()"` and `(ngModelChange)="signal.set($event)"` for two-way binding
+  - Tab filter pattern: signal for active tab + computed for filtered list works cleanly
+  - Card-based question list is simpler than DataTableComponent for this use case (variable height content, expandable sections)
+  - Unanswered indicator: compare hours since creation with `(Date.now() - date.getTime()) / (1000 * 60 * 60)` for >24h check
+---
