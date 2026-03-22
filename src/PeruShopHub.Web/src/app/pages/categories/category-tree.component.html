@@ -1,17 +1,4 @@
 <div class="tree-panel">
-  <div class="tree-panel__header">
-    <div class="tree-panel__search">
-      <lucide-icon [img]="searchIcon" [size]="16" class="tree-panel__search-icon"></lucide-icon>
-      <input
-        type="text"
-        class="tree-panel__search-input"
-        placeholder="Buscar categoria..."
-        [value]="searchQuery()"
-        (input)="onSearchInput($event)"
-      />
-    </div>
-  </div>
-
   <div class="tree-panel__content">
     @if (hasCategories()) {
       <div
@@ -52,10 +39,4 @@
     }
   </div>
 
-  <div class="tree-panel__footer">
-    <button class="tree-panel__add-btn" (click)="onAddCategory()">
-      <lucide-icon [img]="folderPlusIcon" [size]="16"></lucide-icon>
-      <span>Adicionar Categoria</span>
-    </button>
-  </div>
 </div>
