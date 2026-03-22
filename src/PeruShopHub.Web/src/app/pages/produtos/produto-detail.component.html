@@ -119,6 +119,102 @@
           </table>
         </div>
       </div>
+
+      <!-- Variant section -->
+      @if (hasVariants()) {
+        <div class="detail-page__section detail-page__section--full">
+          <div class="detail-page__section-header">
+            <h2 class="detail-page__section-title">Variações</h2>
+            <div class="detail-page__section-meta">
+              <span>{{ variants().length }} variantes</span>
+              <span class="mono">Estoque total: {{ totalVariantStock() }}</span>
+              @if (priceRange()) {
+                <span class="mono">{{ priceRange() }}</span>
+              }
+            </div>
+          </div>
+
+          @if (hasNeedsReview()) {
+            <div class="variant-review-banner">
+              Os campos de variação da categoria foram alterados. Revise as variantes deste produto.
+            </div>
+          }
+
+          <!-- Desktop table -->
+          <div class="detail-page__table-wrap variant-table-desktop">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  @for (field of variantFields(); track field) {
+                    <th>{{ field }}</th>
+                  }
+                  <th class="text-right">Preço</th>
+                  <th class="text-right">Estoque</th>
+                  <th>SKU</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (variant of variants(); track variant.id) {
+                  <tr [class]="getVariantRowClass(variant)">
+                    @for (field of variantFields(); track field) {
+                      <td>{{ variant.attributes[field] }}</td>
+                    }
+                    <td class="text-right mono">
+                      @if (variant.price !== null) {
+                        {{ variant.price | brlCurrency }}
+                      } @else {
+                        <span class="text-muted">Preço base</span>
+                      }
+                    </td>
+                    <td class="text-right">{{ variant.stock }}</td>
+                    <td class="mono">{{ variant.sku }}</td>
+                    <td>
+                      <app-badge [label]="variant.isActive ? 'Ativo' : 'Inativo'" [variant]="variant.isActive ? 'success' : 'neutral'"></app-badge>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile card list -->
+          <div class="variant-cards-mobile">
+            @for (variant of variants(); track variant.id) {
+              <div class="variant-card-mobile" [class]="getVariantRowClass(variant)">
+                <div class="variant-card-mobile__header">
+                  <div class="variant-card-mobile__attrs">
+                    @for (field of variantFields(); track field) {
+                      <span><strong>{{ field }}:</strong> {{ variant.attributes[field] }}</span>
+                    }
+                  </div>
+                  <app-badge [label]="variant.isActive ? 'Ativo' : 'Inativo'" [variant]="variant.isActive ? 'success' : 'neutral'"></app-badge>
+                </div>
+                <div class="variant-card-mobile__body">
+                  <div class="variant-card-mobile__field">
+                    <span class="variant-card-mobile__label">Preço</span>
+                    <span class="variant-card-mobile__value mono">
+                      @if (variant.price !== null) {
+                        {{ variant.price | brlCurrency }}
+                      } @else {
+                        Preço base
+                      }
+                    </span>
+                  </div>
+                  <div class="variant-card-mobile__field">
+                    <span class="variant-card-mobile__label">Estoque</span>
+                    <span class="variant-card-mobile__value">{{ variant.stock }}</span>
+                  </div>
+                  <div class="variant-card-mobile__field">
+                    <span class="variant-card-mobile__label">SKU</span>
+                    <span class="variant-card-mobile__value mono">{{ variant.sku }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
   </div>
 }
