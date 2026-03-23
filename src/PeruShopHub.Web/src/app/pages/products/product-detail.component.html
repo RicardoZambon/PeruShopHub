@@ -67,26 +67,44 @@
       <!-- Cost history -->
       <div class="detail-page__section">
         <h2 class="detail-page__section-title">Histórico de Custos</h2>
-        <div class="detail-page__table-wrap">
-          <table class="detail-table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Tipo</th>
-                <th class="text-right">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (cost of costHistory(); track cost.date + cost.type) {
+        @if (costHistory().length === 0) {
+          <div class="detail-page__empty-state">
+            Nenhum histórico de custo
+          </div>
+        } @else {
+          <div class="detail-page__table-wrap">
+            <table class="detail-table">
+              <thead>
                 <tr>
-                  <td>{{ formatDate(cost.date) }}</td>
-                  <td>{{ cost.type }}</td>
-                  <td class="text-right mono">{{ cost.value | brlCurrency }}</td>
+                  <th>Data</th>
+                  <th>Ref. Compra</th>
+                  <th class="text-right">Qtd</th>
+                  <th class="text-right">Custo Pago</th>
+                  <th class="text-right">Custo Anterior</th>
+                  <th class="text-right">Novo Custo</th>
                 </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                @for (cost of costHistory(); track cost.id) {
+                  <tr>
+                    <td>{{ formatDate(cost.date) }}</td>
+                    <td>
+                      @if (cost.purchaseOrderId) {
+                        <a class="detail-table__link" [routerLink]="'/compras/' + cost.purchaseOrderId">{{ cost.purchaseOrderId }}</a>
+                      } @else {
+                        <span class="text-muted">—</span>
+                      }
+                    </td>
+                    <td class="text-right">{{ cost.quantity }}</td>
+                    <td class="text-right mono">{{ cost.unitCostPaid | brlCurrency }}</td>
+                    <td class="text-right mono">{{ cost.previousCost | brlCurrency }}</td>
+                    <td class="text-right mono" [ngClass]="getCostChangeClass(cost.previousCost, cost.newCost)">{{ cost.newCost | brlCurrency }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
 
       <!-- Recent orders -->

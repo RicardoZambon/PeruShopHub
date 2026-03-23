@@ -1,69 +1,35 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, firstValueFrom } from 'rxjs';
-import { PagedResult } from '../models/api.models';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
-export interface Product {
+export interface CostHistoryItem {
   id: string;
-  name: string;
-  nome: string;
-  sku: string;
-  description?: string;
-  categoryId?: string;
-  supplier?: string;
-  price: number;
-  preco: number;
-  acquisitionCost: number;
-  weight?: number;
-  height?: number;
-  width?: number;
-  length?: number;
-  imageUrl?: string;
-  status: string;
-  stock: number;
-  estoque: number;
-  variantCount: number;
-  needsReview: boolean;
-  margin: number;
-  margem: number;
-  sales30d: number;
-  revenue30d: number;
-  profit30d: number;
-  margin30d: number;
-  [key: string]: any;
+  date: string;
+  previousCost: number;
+  newCost: number;
+  quantity: number;
+  unitCostPaid: number;
+  purchaseOrderId: string | null;
+  reason: string;
 }
 
-export type PaginatedResult<T> = PagedResult<T>;
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/products`;
 
-  list(params: { page?: number; pageSize?: number; search?: string; status?: string; sortBy?: string; sortDir?: string; sortDirection?: string } = {}): Promise<PagedResult<any>> {
-    let httpParams = new HttpParams();
-    if (params.page) httpParams = httpParams.set('page', params.page);
-    if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
-    if (params.search) httpParams = httpParams.set('search', params.search);
-    if (params.status) httpParams = httpParams.set('status', params.status);
-    if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
-    const sortDir = params.sortDir ?? params.sortDirection;
-    if (sortDir) httpParams = httpParams.set('sortDir', sortDir);
-    return firstValueFrom(this.http.get<PagedResult<any>>('/api/products', { params: httpParams }));
-  }
-
-  getById(id: string): Promise<any> {
-    return firstValueFrom(this.http.get<any>(`/api/products/${id}`));
-  }
-
-  getVariants(id: string): Promise<any[]> {
-    return firstValueFrom(this.http.get<any[]>(`/api/products/${id}/variants`));
-  }
-
-  create(dto: any): Promise<any> {
-    return firstValueFrom(this.http.post<any>('/api/products', dto));
-  }
-
-  update(id: string, dto: any): Promise<any> {
-    return firstValueFrom(this.http.put<any>(`/api/products/${id}`, dto));
+  getCostHistory(id: string, page = 1, pageSize = 20): Observable<PagedResult<CostHistoryItem>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('pageSize', pageSize.toString());
+    return this.http.get<PagedResult<CostHistoryItem>>(`${this.baseUrl}/${id}/cost-history`, { params });
   }
 }

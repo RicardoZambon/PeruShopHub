@@ -1,18 +1,28 @@
-import { Component, signal, computed, OnInit, inject } from '@angular/core';
+import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Package, Edit } from 'lucide-angular';
 import { KpiCardComponent, BadgeComponent } from '../../shared/components';
 import type { BadgeVariant } from '../../shared/components';
 import { BrlCurrencyPipe } from '../../shared/pipes';
-import { ProductService, Product } from '../../services/product.service';
 import { ProductVariantService } from '../../services/product-variant.service';
+import { ProductService } from '../../services/product.service';
+import type { CostHistoryItem } from '../../services/product.service';
 import type { ProductVariant } from '../../models/product-variant.model';
 
-interface CostHistory {
-  date: string;
-  type: string;
-  value: number;
+interface ProductDetail {
+  id: string;
+  name: string;
+  sku: string;
+  status: string;
+  statusVariant: BadgeVariant;
+  imageUrl: string | null;
+  sales30d: number;
+  revenue30d: number;
+  profit30d: number;
+  margin30d: number;
+  stock: number;
+  acquisitionCost: number;
 }
 
 interface RecentOrder {
@@ -35,41 +45,35 @@ export class ProductDetailComponent implements OnInit {
   readonly Package = Package;
   readonly EditIcon = Edit;
 
-  private readonly productService = inject(ProductService);
-  private readonly variantService = inject(ProductVariantService);
-
   loading = signal(true);
-  product = signal<Product | null>(null);
-  costHistory = signal<CostHistory[]>([]);
+  product = signal<ProductDetail | null>(null);
+  costHistory = signal<CostHistoryItem[]>([]);
   recentOrders = signal<RecentOrder[]>([]);
   variants = signal<ProductVariant[]>([]);
-
-  statusVariant = computed<BadgeVariant>(() => {
-    const p = this.product();
-    if (!p) return 'neutral';
-    return this.getStatusVariant(p.status);
-  });
 
   kpis = computed(() => {
     const p = this.product();
     if (!p) return [];
     return [
-      { label: 'Vendas 30d', value: String(p.sales30d), change: 12.5, changeLabel: 'vs mes anterior' },
-      { label: 'Receita 30d', value: this.formatBrl(p.revenue30d), change: 8.3, changeLabel: 'vs mes anterior' },
-      { label: 'Lucro 30d', value: this.formatBrl(p.profit30d), change: -2.1, changeLabel: 'vs mes anterior' },
-      { label: 'Margem 30d', value: `${p.margin30d.toFixed(1)}%`, change: -1.3, changeLabel: 'vs mes anterior' },
+      { label: 'Vendas 30d', value: String(p.sales30d), change: 12.5, changeLabel: 'vs mês anterior' },
+      { label: 'Receita 30d', value: this.formatBrl(p.revenue30d), change: 8.3, changeLabel: 'vs mês anterior' },
+      { label: 'Lucro 30d', value: this.formatBrl(p.profit30d), change: -2.1, changeLabel: 'vs mês anterior' },
+      { label: 'Margem 30d', value: `${p.margin30d.toFixed(1)}%`, change: -1.3, changeLabel: 'vs mês anterior' },
       { label: 'Estoque', value: String(p.stock), change: undefined, changeLabel: undefined },
+      { label: 'Custo Médio', value: this.formatBrl(p.acquisitionCost), change: undefined, changeLabel: undefined },
     ];
   });
 
   hasVariants = computed(() => {
     const v = this.variants();
+    // Don't count default variant (no attributes)
     return v.length > 0 && !(v.length === 1 && Object.keys(v[0].attributes).length === 0);
   });
 
   variantFields = computed(() => {
     const v = this.variants();
     if (v.length === 0) return [];
+    // Get field names from the first variant that has attributes
     const first = v.find(var_ => Object.keys(var_.attributes).length > 0);
     return first ? Object.keys(first.attributes) : [];
   });
@@ -97,6 +101,8 @@ export class ProductDetailComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private variantService: ProductVariantService,
+    private productService: ProductService,
   ) {}
 
   ngOnInit(): void {
@@ -104,27 +110,47 @@ export class ProductDetailComponent implements OnInit {
     this.loadData();
   }
 
-  private async loadData(): Promise<void> {
+  private loadData(): void {
     this.loading.set(true);
-    try {
-      const [product, variants] = await Promise.all([
-        this.productService.getById(this.productId),
-        this.productService.getVariants(this.productId),
+    setTimeout(() => {
+      this.product.set({
+        id: this.productId,
+        name: 'Fone de Ouvido Bluetooth TWS Pro Max',
+        sku: 'FONE-BT-PRO-001',
+        status: 'Ativo',
+        statusVariant: 'success',
+        imageUrl: null,
+        sales30d: 47,
+        revenue30d: 7506.30,
+        profit30d: 1876.58,
+        margin30d: 25.0,
+        stock: 83,
+        acquisitionCost: 45.00,
+      });
+
+      this.recentOrders.set([
+        { id: '2087654321', date: '2026-03-21', qty: 1, value: 159.90, profit: 38.45 },
+        { id: '2087654298', date: '2026-03-20', qty: 2, value: 319.80, profit: 76.90 },
+        { id: '2087654275', date: '2026-03-19', qty: 1, value: 159.90, profit: 40.12 },
+        { id: '2087654250', date: '2026-03-18', qty: 1, value: 159.90, profit: 37.80 },
+        { id: '2087654230', date: '2026-03-17', qty: 3, value: 479.70, profit: 115.35 },
       ]);
 
-      this.product.set(product);
-      this.variants.set(variants);
+      // Load variants
+      this.variants.set(this.variantService.getByProductId(this.productId));
 
-      // Cost history and recent orders would come from dedicated endpoints
-      // For now these remain empty until those endpoints are available
-      this.costHistory.set([]);
-      this.recentOrders.set([]);
-    } catch {
-      this.product.set(null);
-      this.variants.set([]);
-    } finally {
       this.loading.set(false);
-    }
+    }, 600);
+
+    // Load cost history from API
+    this.productService.getCostHistory(this.productId).subscribe({
+      next: (result) => {
+        this.costHistory.set(result.items);
+      },
+      error: () => {
+        this.costHistory.set([]);
+      },
+    });
   }
 
   formatBrl(value: number): string {
@@ -145,19 +171,16 @@ export class ProductDetailComponent implements OnInit {
     return profit >= 0 ? 'value--positive' : 'value--negative';
   }
 
+  getCostChangeClass(previous: number, current: number): string {
+    if (current > previous) return 'value--negative'; // Cost increase is bad
+    if (current < previous) return 'value--positive'; // Cost decrease is good
+    return '';
+  }
+
   getVariantRowClass(variant: ProductVariant): string {
     if (variant.needsReview) return 'variant-row--review';
     if (variant.stock === 0) return 'variant-row--danger';
     if (variant.stock > 0 && variant.stock <= 5) return 'variant-row--warning';
     return '';
-  }
-
-  private getStatusVariant(status: string): BadgeVariant {
-    switch (status) {
-      case 'Ativo': return 'success';
-      case 'Pausado': return 'warning';
-      case 'Encerrado': return 'danger';
-      default: return 'neutral';
-    }
   }
 }
