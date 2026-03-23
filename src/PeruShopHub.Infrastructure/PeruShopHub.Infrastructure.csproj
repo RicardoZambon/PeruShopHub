@@ -21,4 +21,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Persistence\Seeds\SeedData.sql" />
+  </ItemGroup>
+
 </Project>
