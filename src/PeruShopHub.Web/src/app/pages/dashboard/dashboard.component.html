@@ -63,7 +63,7 @@
             <canvas
               baseChart
               type="line"
-              [data]="lineChartData"
+              [data]="lineChartData()"
               [options]="lineChartOptions">
             </canvas>
           </div>
@@ -77,7 +77,7 @@
             <canvas
               baseChart
               type="doughnut"
-              [data]="donutChartData"
+              [data]="donutChartData()"
               [options]="donutChartOptions"
               [plugins]="[donutCenterTextPlugin]">
             </canvas>
@@ -102,7 +102,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (product of topProfitable; track product.id) {
+              @for (product of topProfitable(); track product.id) {
                 <tr class="product-table__row" (click)="onProductClick(product.id)">
                   <td class="product-table__td product-table__td--name">{{ product.name }}</td>
                   <td class="product-table__td product-table__td--mono product-table__td--right">{{ product.sales }}</td>
@@ -132,7 +132,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (product of leastProfitable; track product.id) {
+              @for (product of leastProfitable(); track product.id) {
                 <tr class="product-table__row" [class.product-table__row--negative]="product.margin < 0" (click)="onProductClick(product.id)">
                   <td class="product-table__td product-table__td--name">{{ product.name }}</td>
                   <td class="product-table__td product-table__td--mono product-table__td--right">{{ product.sales }}</td>
@@ -154,7 +154,7 @@
       <div class="chart-card">
         <h2 class="chart-card__title">Ações Pendentes</h2>
         <div class="pending-actions">
-          @for (action of pendingActions; track action.label) {
+          @for (action of pendingActions(); track action.label) {
             <button class="pending-action" [ngClass]="'pending-action--' + action.variant">
               <span class="pending-action__count">{{ action.count }}</span>
               <span class="pending-action__label">{{ action.label }}</span>

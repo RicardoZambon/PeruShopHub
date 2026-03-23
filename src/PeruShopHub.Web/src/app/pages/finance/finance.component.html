@@ -74,7 +74,7 @@
             <canvas
               baseChart
               type="bar"
-              [data]="barChartData"
+              [data]="barChartData()"
               [options]="barChartOptions">
             </canvas>
           </div>
@@ -86,7 +86,7 @@
             <canvas
               baseChart
               type="line"
-              [data]="marginChartData"
+              [data]="marginChartData()"
               [options]="marginChartOptions">
             </canvas>
           </div>
@@ -210,7 +210,7 @@
             </div>
           }
         </div>
-      } @else if (reconciliationData.length === 0) {
+      } @else if (reconciliationData().length === 0) {
         <div class="empty-state">
           <p class="empty-state__text">Nenhum dado de conciliação disponível</p>
         </div>
@@ -227,7 +227,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (row of reconciliationData; track row.periodo) {
+              @for (row of reconciliationData(); track row.periodo) {
                 <tr class="conciliacao-table__row" [class.conciliacao-table__row--divergence]="row.status === 'Divergência'">
                   <td class="conciliacao-table__td">{{ row.periodo }}</td>
                   <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right">{{ formatBrl(row.valorEsperado) }}</td>
@@ -267,7 +267,7 @@
             </div>
           }
         </div>
-      } @else if (abcData.length === 0) {
+      } @else if (abcData().length === 0) {
         <div class="empty-state">
           <p class="empty-state__text">Nenhum dado de curva ABC disponível</p>
         </div>
@@ -279,7 +279,7 @@
             <canvas
               baseChart
               type="bar"
-              [data]="abcMixedChartData"
+              [data]="abcMixedChartData()"
               [options]="abcChartOptions">
             </canvas>
           </div>
@@ -299,7 +299,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (row of abcData; track row.sku) {
+              @for (row of abcData(); track row.sku) {
                 <tr class="abc-table__row">
                   <td class="abc-table__td abc-table__td--center abc-table__td--mono">{{ row.rank }}</td>
                   <td class="abc-table__td">{{ row.produto }}</td>
