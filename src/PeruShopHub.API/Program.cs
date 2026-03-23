@@ -6,6 +6,7 @@ using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Cache;
 using PeruShopHub.Infrastructure.Notifications;
 using PeruShopHub.Infrastructure.Persistence;
+using PeruShopHub.Infrastructure.Services;
 using PeruShopHub.Infrastructure.Storage;
 using StackExchange.Redis;
 
@@ -34,6 +35,9 @@ builder.Services.AddScoped<INotificationDispatcher, SignalRNotificationDispatche
 
 // ── File Storage ──────────────────────────────────────────
 builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+
+// ── Cost Calculation ─────────────────────────────────────
+builder.Services.AddScoped<ICostCalculationService, CostCalculationService>();
 
 // ── Controllers + JSON ────────────────────────────────────
 builder.Services.AddControllers()

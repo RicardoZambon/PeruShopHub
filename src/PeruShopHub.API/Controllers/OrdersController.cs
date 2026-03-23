@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Orders;
+using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
@@ -11,10 +12,12 @@ namespace PeruShopHub.API.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly ICostCalculationService _costService;
 
-    public OrdersController(PeruShopHubDbContext db)
+    public OrdersController(PeruShopHubDbContext db, ICostCalculationService costService)
     {
         _db = db;
+        _costService = costService;
     }
 
     [HttpGet]
@@ -156,6 +159,15 @@ public class OrdersController : ControllerBase
             costs);
 
         return Ok(detail);
+    }
+
+    [HttpPost("{id:guid}/recalculate-costs")]
+    public async Task<IActionResult> RecalculateCosts(Guid id, CancellationToken ct)
+    {
+        var order = await _db.Orders.FindAsync([id], ct);
+        if (order is null) return NotFound();
+        await _costService.RecalculateOrderCostsAsync(id, ct);
+        return NoContent();
     }
 
     private static IReadOnlyList<TimelineStepDto> BuildTimeline(string status, DateTime orderDate)
