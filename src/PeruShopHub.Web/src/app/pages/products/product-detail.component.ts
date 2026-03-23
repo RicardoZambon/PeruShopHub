@@ -51,6 +51,12 @@ export class ProductDetailComponent implements OnInit {
   recentOrders = signal<RecentOrder[]>([]);
   variants = signal<ProductVariant[]>([]);
 
+  statusVariant = computed<BadgeVariant>(() => {
+    const p = this.product();
+    if (!p) return 'neutral';
+    return p.statusVariant;
+  });
+
   kpis = computed(() => {
     const p = this.product();
     if (!p) return [];
@@ -137,7 +143,7 @@ export class ProductDetailComponent implements OnInit {
       ]);
 
       // Load variants
-      this.variants.set(this.variantService.getByProductId(this.productId));
+      this.variantService.getByProductId(this.productId).then(v => this.variants.set(v));
 
       this.loading.set(false);
     }, 600);

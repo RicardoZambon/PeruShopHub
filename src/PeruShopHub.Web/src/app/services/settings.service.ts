@@ -41,6 +41,7 @@ export interface CommissionRule {
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private http = inject(HttpClient);
+  private readonly baseUrl = '/api/settings';
 
   getUsers(): Observable<UserRow[]> {
     return this.http.get<UserRow[]>('/api/settings/users');

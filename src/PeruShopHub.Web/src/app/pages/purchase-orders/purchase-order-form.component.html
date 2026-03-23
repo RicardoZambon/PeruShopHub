@@ -70,7 +70,7 @@
                   @for (product of productSearchResults(); track product.id) {
                     <button type="button" class="dropdown-item" (mousedown)="selectProduct(product)">
                       <div class="dropdown-item__info">
-                        <span class="dropdown-item__name">{{ product.name || product.nome }}</span>
+                        <span class="dropdown-item__name">{{ product.name }}</span>
                         <span class="dropdown-item__sku">{{ product.sku }}</span>
                       </div>
                       <span class="dropdown-item__price mono">{{ formatBrl(product.acquisitionCost || 0) }}</span>

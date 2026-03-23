@@ -138,7 +138,7 @@ export class PurchaseOrderFormComponent {
         {
           productId: product.id,
           variantId: product.id,
-          name: product.name || product.nome,
+          name: product.name,
           sku: product.sku,
           quantity: 1,
           unitCost: product.acquisitionCost || 0,

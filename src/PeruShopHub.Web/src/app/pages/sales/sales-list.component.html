@@ -89,14 +89,14 @@
               @for (order of filteredOrders(); track order.id) {
                 <tr class="vendas-table__row" (click)="onRowClick(order)">
                   <td class="vendas-table__td vendas-table__td--mono">#{{ order.id }}</td>
-                  <td class="vendas-table__td">{{ formatDate(order.data) }}</td>
-                  <td class="vendas-table__td vendas-table__td--name">{{ order.comprador }}</td>
-                  <td class="vendas-table__td" style="text-align: center">{{ order.itens }}</td>
-                  <td class="vendas-table__td vendas-table__td--mono" style="text-align: right">{{ formatBrl(order.valor) }}</td>
+                  <td class="vendas-table__td">{{ formatDate(order.date) }}</td>
+                  <td class="vendas-table__td vendas-table__td--name">{{ order.buyer }}</td>
+                  <td class="vendas-table__td" style="text-align: center">{{ order.itemCount }}</td>
+                  <td class="vendas-table__td vendas-table__td--mono" style="text-align: right">{{ formatBrl(order.total) }}</td>
                   <td class="vendas-table__td vendas-table__td--mono" style="text-align: right"
-                    [class.vendas-table__td--profit]="order.lucro >= 0"
-                    [class.vendas-table__td--loss]="order.lucro < 0">
-                    {{ formatBrl(order.lucro) }}
+                    [class.vendas-table__td--profit]="order.profit >= 0"
+                    [class.vendas-table__td--loss]="order.profit < 0">
+                    {{ formatBrl(order.profit) }}
                   </td>
                   <td class="vendas-table__td">
                     <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)"></app-badge>
@@ -114,26 +114,26 @@
               <div class="vendas-table__card-header">
                 <div class="vendas-table__card-title">
                   <span class="vendas-table__card-id">#{{ order.id }}</span>
-                  <span class="vendas-table__card-date">{{ formatDate(order.data) }}</span>
+                  <span class="vendas-table__card-date">{{ formatDate(order.date) }}</span>
                 </div>
                 <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)"></app-badge>
               </div>
-              <div class="vendas-table__card-buyer">{{ order.comprador }}</div>
+              <div class="vendas-table__card-buyer">{{ order.buyer }}</div>
               <div class="vendas-table__card-body">
                 <div class="vendas-table__card-field">
                   <span class="vendas-table__card-label">Itens</span>
-                  <span class="vendas-table__card-value">{{ order.itens }}</span>
+                  <span class="vendas-table__card-value">{{ order.itemCount }}</span>
                 </div>
                 <div class="vendas-table__card-field">
                   <span class="vendas-table__card-label">Valor</span>
-                  <span class="vendas-table__card-value vendas-table__td--mono">{{ formatBrl(order.valor) }}</span>
+                  <span class="vendas-table__card-value vendas-table__td--mono">{{ formatBrl(order.total) }}</span>
                 </div>
                 <div class="vendas-table__card-field">
                   <span class="vendas-table__card-label">Lucro</span>
                   <span class="vendas-table__card-value vendas-table__td--mono"
-                    [class.vendas-table__td--profit]="order.lucro >= 0"
-                    [class.vendas-table__td--loss]="order.lucro < 0">
-                    {{ formatBrl(order.lucro) }}
+                    [class.vendas-table__td--profit]="order.profit >= 0"
+                    [class.vendas-table__td--loss]="order.profit < 0">
+                    {{ formatBrl(order.profit) }}
                   </span>
                 </div>
               </div>

@@ -83,13 +83,13 @@
                       <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
                     </div>
                   </td>
-                  <td class="produtos-table__td produtos-table__td--name">{{ product.nome }}</td>
+                  <td class="produtos-table__td produtos-table__td--name">{{ product.name }}</td>
                   <td class="produtos-table__td produtos-table__td--mono">{{ product.sku }}</td>
-                  <td class="produtos-table__td produtos-table__td--mono" style="text-align: right">{{ formatBrl(product.preco) }}</td>
+                  <td class="produtos-table__td produtos-table__td--mono" style="text-align: right">{{ formatBrl(product.price) }}</td>
                   <td class="produtos-table__td" style="text-align: right"
-                    [class.produtos-table__td--low-stock]="product.estoque > 0 && product.estoque <= 10"
-                    [class.produtos-table__td--no-stock]="product.estoque === 0">
-                    {{ product.estoque }}
+                    [class.produtos-table__td--low-stock]="product.stock > 0 && product.stock <= 10"
+                    [class.produtos-table__td--no-stock]="product.stock === 0">
+                    {{ product.stock }}
                   </td>
                   <td class="produtos-table__td" style="text-align: center">
                     @if (product.variantCount > 0) {
@@ -107,8 +107,8 @@
                     <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
                   </td>
                   <td class="produtos-table__td" style="text-align: right">
-                    <span class="margin-badge" [ngClass]="getMarginClass(product.margem)">
-                      {{ product.margem.toFixed(1) }}%
+                    <span class="margin-badge" [ngClass]="getMarginClass(product.margin)">
+                      {{ product.margin.toFixed(1) }}%
                     </span>
                   </td>
                   <td class="produtos-table__td" style="text-align: center">
@@ -131,7 +131,7 @@
                   <lucide-icon [img]="packageIcon" [size]="16"></lucide-icon>
                 </div>
                 <div class="produtos-table__card-title">
-                  <span class="produtos-table__card-name">{{ product.nome }}</span>
+                  <span class="produtos-table__card-name">{{ product.name }}</span>
                   <span class="produtos-table__card-sku">{{ product.sku }}</span>
                   @if (product.variantCount > 0) {
                     <span class="variant-chip" (click)="onVariantClick($event, product.id)">
@@ -147,20 +147,20 @@
               <div class="produtos-table__card-body">
                 <div class="produtos-table__card-field">
                   <span class="produtos-table__card-label">Preço</span>
-                  <span class="produtos-table__card-value produtos-table__td--mono">{{ formatBrl(product.preco) }}</span>
+                  <span class="produtos-table__card-value produtos-table__td--mono">{{ formatBrl(product.price) }}</span>
                 </div>
                 <div class="produtos-table__card-field">
                   <span class="produtos-table__card-label">Estoque</span>
                   <span class="produtos-table__card-value"
-                    [class.produtos-table__td--low-stock]="product.estoque > 0 && product.estoque <= 10"
-                    [class.produtos-table__td--no-stock]="product.estoque === 0">
-                    {{ product.estoque }}
+                    [class.produtos-table__td--low-stock]="product.stock > 0 && product.stock <= 10"
+                    [class.produtos-table__td--no-stock]="product.stock === 0">
+                    {{ product.stock }}
                   </span>
                 </div>
                 <div class="produtos-table__card-field">
                   <span class="produtos-table__card-label">Margem</span>
-                  <span class="margin-badge" [ngClass]="getMarginClass(product.margem)">
-                    {{ product.margem.toFixed(1) }}%
+                  <span class="margin-badge" [ngClass]="getMarginClass(product.margin)">
+                    {{ product.margin.toFixed(1) }}%
                   </span>
                 </div>
               </div>
