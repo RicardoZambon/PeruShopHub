@@ -1,7 +1,6 @@
-using PeruShopHub.Worker;
-
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
+
+// Background services will be registered here in Phase 2
 
 var host = builder.Build();
 host.Run();
