@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,38 +6,12 @@ import { LucideAngularModule, Plus, Search, Edit, Package } from 'lucide-angular
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { ProductVariantService } from '../../services/product-variant.service';
+import { ProductService, Product, PaginatedResult } from '../../services/product.service';
 import type { DataTableColumn, SortEvent, PageEvent } from '../../shared/components/data-table/data-table.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 
 type ProductStatus = 'Ativo' | 'Pausado' | 'Encerrado';
 type FilterStatus = 'Todos' | ProductStatus | 'Revisão';
-
-interface MockProduct {
-  id: number;
-  foto: string;
-  nome: string;
-  sku: string;
-  preco: number;
-  estoque: number;
-  status: ProductStatus;
-  margem: number;
-  variantCount: number;
-  needsReview: boolean;
-}
-
-const MOCK_PRODUCTS: MockProduct[] = [
-  { id: 1, foto: '', nome: 'Fone Bluetooth TWS Pro Max', sku: 'FN-BT-001', preco: 189.90, estoque: 45, status: 'Ativo', margem: 32.5, variantCount: 3, needsReview: false },
-  { id: 2, foto: '', nome: 'Capinha iPhone 15 Silicone Premium', sku: 'CP-IP15-002', preco: 49.90, estoque: 230, status: 'Ativo', margem: 45.2, variantCount: 0, needsReview: false },
-  { id: 3, foto: '', nome: 'Carregador USB-C 65W GaN', sku: 'CR-USC-003', preco: 129.90, estoque: 78, status: 'Ativo', margem: 28.1, variantCount: 0, needsReview: false },
-  { id: 4, foto: '', nome: 'Smartwatch Fitness Band Pro', sku: 'SW-FIT-004', preco: 259.90, estoque: 12, status: 'Ativo', margem: 18.7, variantCount: 6, needsReview: true },
-  { id: 5, foto: '', nome: 'Cabo HDMI 2.1 4K 2m', sku: 'CB-HDMI-005', preco: 39.90, estoque: 0, status: 'Pausado', margem: 8.3, variantCount: 3, needsReview: false },
-  { id: 6, foto: '', nome: 'Mouse Gamer RGB 12000dpi', sku: 'MS-GM-006', preco: 149.90, estoque: 56, status: 'Ativo', margem: 25.4, variantCount: 0, needsReview: false },
-  { id: 7, foto: '', nome: 'Teclado Mecânico Compacto 60%', sku: 'TC-MEC-007', preco: 299.90, estoque: 8, status: 'Ativo', margem: 22.0, variantCount: 0, needsReview: false },
-  { id: 8, foto: '', nome: 'Suporte Notebook Alumínio Ajustável', sku: 'SP-NB-008', preco: 89.90, estoque: 34, status: 'Ativo', margem: 15.6, variantCount: 0, needsReview: false },
-  { id: 9, foto: '', nome: 'Webcam Full HD 1080p Autofoco', sku: 'WC-FHD-009', preco: 199.90, estoque: 0, status: 'Encerrado', margem: 5.2, variantCount: 0, needsReview: false },
-  { id: 10, foto: '', nome: 'Hub USB-C 7 em 1 Dock Station', sku: 'HB-USC-010', preco: 219.90, estoque: 22, status: 'Ativo', margem: 31.8, variantCount: 0, needsReview: false },
-];
 
 @Component({
   selector: 'app-products-list',
@@ -46,7 +20,9 @@ const MOCK_PRODUCTS: MockProduct[] = [
   templateUrl: './products-list.component.html',
   styleUrl: './products-list.component.scss',
 })
-export class ProductsListComponent {
+export class ProductsListComponent implements OnInit {
+  private readonly productService = inject(ProductService);
+
   readonly plusIcon = Plus;
   readonly searchIcon = Search;
   readonly editIcon = Edit;
@@ -56,6 +32,13 @@ export class ProductsListComponent {
   readonly statusFilter = signal<FilterStatus>('Todos');
   readonly loading = signal(true);
   readonly hasData = signal(true);
+
+  readonly products = signal<Product[]>([]);
+  readonly totalCount = signal(0);
+  readonly currentPage = signal(1);
+  readonly pageSize = signal(20);
+  readonly sortBy = signal<string | null>(null);
+  readonly sortDirection = signal<'asc' | 'desc'>('asc');
 
   readonly columns: DataTableColumn[] = [
     { key: 'foto', label: 'Foto', align: 'center' },
@@ -70,35 +53,53 @@ export class ProductsListComponent {
   ];
 
   readonly filteredProducts = computed(() => {
-    let products = [...MOCK_PRODUCTS];
-    const query = this.searchQuery().toLowerCase();
-    const status = this.statusFilter();
-
-    if (query) {
-      products = products.filter(
-        p => p.nome.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)
-      );
-    }
-
-    if (status === 'Revisão') {
-      products = products.filter(p => p.needsReview);
-    } else if (status !== 'Todos') {
-      products = products.filter(p => p.status === status);
-    }
-
-    return products;
+    return this.products();
   });
 
   readonly tableData = computed(() => {
-    return this.filteredProducts().map(p => ({
-      ...p,
-      precoFormatted: this.formatBrl(p.preco),
-      margemFormatted: `${p.margem.toFixed(1)}%`,
+    return this.products().map(p => ({
+      id: p.id,
+      foto: p.imageUrl ?? '',
+      nome: p.name,
+      sku: p.sku,
+      preco: p.price,
+      estoque: p.stock,
+      status: p.status,
+      margem: p.margin,
+      variantCount: p.variantCount,
+      needsReview: p.needsReview,
+      precoFormatted: this.formatBrl(p.price),
+      margemFormatted: `${p.margin.toFixed(1)}%`,
     }));
   });
 
-  constructor(public router: Router) {
-    setTimeout(() => this.loading.set(false), 600);
+  constructor(public router: Router) {}
+
+  ngOnInit(): void {
+    this.loadProducts();
+  }
+
+  async loadProducts(): Promise<void> {
+    this.loading.set(true);
+    try {
+      const result = await this.productService.list({
+        page: this.currentPage(),
+        pageSize: this.pageSize(),
+        search: this.searchQuery() || undefined,
+        status: this.statusFilter() === 'Todos' ? undefined : this.statusFilter(),
+        sortBy: this.sortBy() ?? undefined,
+        sortDirection: this.sortDirection(),
+      });
+      this.products.set(result.items);
+      this.totalCount.set(result.totalCount);
+      this.hasData.set(result.items.length > 0 || this.searchQuery().length > 0 || this.statusFilter() !== 'Todos');
+    } catch {
+      this.products.set([]);
+      this.totalCount.set(0);
+      this.hasData.set(false);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   formatBrl(value: number): string {
@@ -121,10 +122,14 @@ export class ProductsListComponent {
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
+    this.currentPage.set(1);
+    this.loadProducts();
   }
 
   onStatusChange(event: Event): void {
     this.statusFilter.set((event.target as HTMLSelectElement).value as FilterStatus);
+    this.currentPage.set(1);
+    this.loadProducts();
   }
 
   onRowClick(row: Record<string, any>): void {
@@ -141,10 +146,14 @@ export class ProductsListComponent {
   }
 
   onSort(event: SortEvent): void {
-    console.log('Sort:', event);
+    this.sortBy.set(event.column);
+    this.sortDirection.set(event.direction);
+    this.loadProducts();
   }
 
   onPageChange(event: PageEvent): void {
-    console.log('Page:', event);
+    this.currentPage.set(event.page);
+    this.pageSize.set(event.pageSize);
+    this.loadProducts();
   }
 }

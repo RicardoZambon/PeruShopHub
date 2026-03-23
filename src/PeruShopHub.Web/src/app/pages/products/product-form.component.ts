@@ -1,10 +1,11 @@
-import { Component, signal, computed, HostListener } from '@angular/core';
+import { Component, signal, computed, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Save, X, ChevronDown, ChevronUp } from 'lucide-angular';
 import { MediaGalleryComponent, GalleryImage } from './media-gallery.component';
 import { VariantManagerComponent } from './variant-manager.component';
+import { ProductService } from '../../services/product.service';
 
 type TabId = 'basicas' | 'preco' | 'dimensoes' | 'variacoes';
 
@@ -26,21 +27,6 @@ const CATEGORIAS = [
   'Casa e Decoração', 'Esportes', 'Moda', 'Beleza e Saúde',
 ];
 
-// Mock product data for edit mode
-const MOCK_PRODUCT = {
-  sku: 'TWS-PRO-001',
-  titulo: 'Fone Bluetooth TWS Pro Max',
-  descricao: 'Fone de ouvido bluetooth sem fio com cancelamento de ruído ativo, driver de 13mm, autonomia de 30h com estojo de carga.',
-  categoria: 'Áudio',
-  fornecedor: 'ShenzhenTech Imports',
-  precoVenda: 189.90,
-  custoAquisicao: 62.00,
-  peso: 0.25,
-  altura: 8,
-  largura: 12,
-  comprimento: 15,
-};
-
 @Component({
   selector: 'app-product-form',
   standalone: true,
@@ -49,6 +35,8 @@ const MOCK_PRODUCT = {
   styleUrl: './product-form.component.scss',
 })
 export class ProductFormComponent {
+  private readonly productService = inject(ProductService);
+
   readonly arrowLeftIcon = ArrowLeft;
   readonly saveIcon = Save;
   readonly closeIcon = X;
@@ -112,7 +100,7 @@ export class ProductFormComponent {
     if (id) {
       this.isEditMode.set(true);
       this.productId.set(id);
-      this.loadProduct();
+      this.loadProduct(id);
     }
   }
 
@@ -124,27 +112,29 @@ export class ProductFormComponent {
     return (this.form.get('titulo')?.value || '').length;
   }
 
-  private loadProduct(): void {
-    this.productName.set(MOCK_PRODUCT.titulo);
-    this.form.patchValue({
-      sku: MOCK_PRODUCT.sku,
-      titulo: MOCK_PRODUCT.titulo,
-      descricao: MOCK_PRODUCT.descricao,
-      categoria: MOCK_PRODUCT.categoria,
-      fornecedor: MOCK_PRODUCT.fornecedor,
-      precoVenda: MOCK_PRODUCT.precoVenda,
-      custoAquisicao: MOCK_PRODUCT.custoAquisicao,
-      peso: MOCK_PRODUCT.peso,
-      altura: MOCK_PRODUCT.altura,
-      largura: MOCK_PRODUCT.largura,
-      comprimento: MOCK_PRODUCT.comprimento,
-    });
-
-    this.galleryImages.set([
-      { id: '1', color: '#5C6BC0', order: 0 },
-      { id: '2', color: '#42A5F5', order: 1 },
-      { id: '3', color: '#66BB6A', order: 2 },
-    ]);
+  private async loadProduct(id: string): Promise<void> {
+    this.loading.set(true);
+    try {
+      const product = await this.productService.getById(id);
+      this.productName.set(product.name);
+      this.form.patchValue({
+        sku: product.sku,
+        titulo: product.name,
+        descricao: product.description ?? '',
+        categoria: product.categoryId ?? '',
+        fornecedor: product.supplier ?? '',
+        precoVenda: product.price,
+        custoAquisicao: product.acquisitionCost,
+        peso: product.weight,
+        altura: product.height,
+        largura: product.width,
+        comprimento: product.length,
+      });
+    } catch {
+      // Product not found or API error — stay on form with empty values
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   setActiveTab(tabId: TabId): void {
@@ -214,7 +204,7 @@ export class ProductFormComponent {
     this.router.navigate(['/produtos']);
   }
 
-  onSave(): void {
+  async onSave(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       // Switch to tab with first error
@@ -227,11 +217,34 @@ export class ProductFormComponent {
     }
 
     this.loading.set(true);
-    setTimeout(() => {
-      this.loading.set(false);
+    try {
+      const formValue = this.form.value;
+      const dto = {
+        name: formValue.titulo,
+        sku: formValue.sku || undefined,
+        description: formValue.descricao || undefined,
+        categoryId: formValue.categoria || undefined,
+        supplier: formValue.fornecedor || undefined,
+        price: formValue.precoVenda,
+        acquisitionCost: formValue.custoAquisicao ?? undefined,
+        weight: formValue.peso ?? undefined,
+        height: formValue.altura ?? undefined,
+        width: formValue.largura ?? undefined,
+        length: formValue.comprimento ?? undefined,
+      };
+
+      if (this.isEditMode()) {
+        await this.productService.update(this.productId(), dto);
+      } else {
+        const created = await this.productService.create(dto);
+        this.router.navigate(['/produtos', created.id, 'editar']);
+      }
       this.form.markAsPristine();
-      // Toast would be shown here
-    }, 800);
+    } catch {
+      // Error handling — toast would be shown here
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   canDeactivate(): boolean {

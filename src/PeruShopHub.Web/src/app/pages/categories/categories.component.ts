@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule, FolderTree, FolderPlus, Search } from 'lucide-angular';
 import { CategoryService } from '../../services/category.service';
@@ -21,7 +21,7 @@ import type { Category } from '../../models/category.model';
   templateUrl: './categories.component.html',
   styleUrl: './categories.component.scss',
 })
-export class CategoriesComponent {
+export class CategoriesComponent implements OnInit {
   readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
 
@@ -35,6 +35,7 @@ export class CategoriesComponent {
   readonly mobileView = signal<'tree' | 'detail'>('tree');
   readonly showCreateDialog = signal(false);
   readonly dialogCategory = signal<Category | null>(null);
+  readonly loading = signal(true);
 
   // Computed
   readonly categoryTree = this.categoryService.categoryTree;
@@ -50,6 +51,19 @@ export class CategoriesComponent {
   });
 
   readonly totalProducts = this.categoryService.totalProductCount;
+
+  // ── Lifecycle ──
+
+  async ngOnInit(): Promise<void> {
+    this.loading.set(true);
+    try {
+      await this.categoryService.getAll();
+    } catch {
+      this.toast.show('Erro ao carregar categorias', 'danger');
+    } finally {
+      this.loading.set(false);
+    }
+  }
 
   // ── Tree events ──
 
