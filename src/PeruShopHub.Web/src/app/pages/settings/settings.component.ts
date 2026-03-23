@@ -1,30 +1,13 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
+import { SettingsService, type UserRow, type Integration, type FixedCostsResponse } from '../../services/settings.service';
 
 type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'alertas' | 'aparencia';
-
-interface UserRow {
-  id: number;
-  nome: string;
-  email: string;
-  role: 'Admin' | 'Manager' | 'Viewer';
-  ativo: boolean;
-}
-
-interface Integration {
-  id: string;
-  name: string;
-  logo: string;
-  connected: boolean;
-  sellerNickname?: string;
-  lastSync?: string;
-  comingSoon?: boolean;
-}
 
 interface FixedCost {
   id: number;
@@ -41,30 +24,6 @@ interface AlertConfig {
   unit: string;
 }
 
-const MOCK_USERS: UserRow[] = [
-  { id: 1, nome: 'Carlos Silva', email: 'carlos@perushophub.com', role: 'Admin', ativo: true },
-  { id: 2, nome: 'Ana Costa', email: 'ana@perushophub.com', role: 'Manager', ativo: true },
-  { id: 3, nome: 'Pedro Santos', email: 'pedro@perushophub.com', role: 'Viewer', ativo: false },
-];
-
-const MOCK_INTEGRATIONS: Integration[] = [
-  {
-    id: 'mercadolivre',
-    name: 'Mercado Livre',
-    logo: 'ML',
-    connected: true,
-    sellerNickname: 'PERUSHOP_OFICIAL',
-    lastSync: '2026-03-22 14:45',
-  },
-  {
-    id: 'amazon',
-    name: 'Amazon',
-    logo: 'AZ',
-    connected: false,
-    comingSoon: true,
-  },
-];
-
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -72,8 +31,9 @@ const MOCK_INTEGRATIONS: Integration[] = [
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
-export class SettingsComponent {
-  private themeService = inject(ThemeService);
+export class SettingsComponent implements OnInit {
+  private readonly themeService = inject(ThemeService);
+  private readonly settingsService = inject(SettingsService);
 
   activeTab = signal<SettingsTab>('empresa');
   showUserModal = signal(false);
@@ -88,16 +48,13 @@ export class SettingsComponent {
     { key: 'aparencia', label: 'Aparência' },
   ];
 
-  users = signal<UserRow[]>([...MOCK_USERS]);
-  integrations = signal<Integration[]>([...MOCK_INTEGRATIONS]);
+  users = signal<UserRow[]>([]);
+  integrations = signal<Integration[]>([]);
 
   // Fixed costs
-  embalagemPadrao = signal(2.50);
-  aliquotaSimples = signal(6.0);
-  fixedCosts = signal<FixedCost[]>([
-    { id: 1, nome: 'Internet e Telefone', valor: 150.00 },
-    { id: 2, nome: 'Software e Ferramentas', valor: 89.90 },
-  ]);
+  embalagemPadrao = signal(0);
+  aliquotaSimples = signal(0);
+  fixedCosts = signal<FixedCost[]>([]);
 
   // Alerts
   alerts = signal<AlertConfig[]>([
@@ -129,9 +86,15 @@ export class SettingsComponent {
     });
 
     this.fixedCostsForm = this.fb.group({
-      embalagemPadrao: [2.50, [Validators.required, Validators.min(0)]],
-      aliquotaSimples: [6.0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      embalagemPadrao: [0, [Validators.required, Validators.min(0)]],
+      aliquotaSimples: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     });
+  }
+
+  ngOnInit(): void {
+    this.loadUsers();
+    this.loadIntegrations();
+    this.loadCosts();
   }
 
   selectTab(tab: SettingsTab): void {
@@ -285,5 +248,34 @@ export class SettingsComponent {
   // Appearance
   selectTheme(theme: ThemePreference): void {
     this.themeService.setTheme(theme);
+  }
+
+  private loadUsers(): void {
+    this.settingsService.getUsers().subscribe({
+      next: (data) => this.users.set(data),
+      error: (err) => console.error('Failed to load users:', err),
+    });
+  }
+
+  private loadIntegrations(): void {
+    this.settingsService.getIntegrations().subscribe({
+      next: (data) => this.integrations.set(data),
+      error: (err) => console.error('Failed to load integrations:', err),
+    });
+  }
+
+  private loadCosts(): void {
+    this.settingsService.getCosts().subscribe({
+      next: (data) => {
+        this.embalagemPadrao.set(data.embalagemPadrao);
+        this.aliquotaSimples.set(data.aliquotaSimples);
+        this.fixedCosts.set(data.fixedCosts);
+        this.fixedCostsForm.patchValue({
+          embalagemPadrao: data.embalagemPadrao,
+          aliquotaSimples: data.aliquotaSimples,
+        });
+      },
+      error: (err) => console.error('Failed to load costs:', err),
+    });
   }
 }

@@ -1,4 +1,4 @@
-import { Component, signal, computed, HostListener } from '@angular/core';
+import { Component, signal, computed, HostListener, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LucideAngularModule, Search, Plus } from 'lucide-angular';
@@ -6,6 +6,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
+import { SupplyService, type SupplyDto, type CreateSupplyDto } from '../../services/supply.service';
 
 type SupplyCategory = 'Embalagem' | 'Etiqueta' | 'Caixa' | 'Fita' | 'Proteção' | 'Outros';
 
@@ -21,15 +22,6 @@ interface Supply {
   status: 'Ativo' | 'Inativo';
 }
 
-const MOCK_SUPPLIES: Supply[] = [
-  { id: '1', nome: 'Plástico bolha rolo 50m', sku: 'SUP-PB-50M', categoria: 'Proteção', custoUnitario: 25.90, estoque: 12, estoqueMinimo: 5, fornecedor: 'EmbalaPack', status: 'Ativo' },
-  { id: '2', nome: 'Caixa correio tamanho M', sku: 'SUP-CX-M', categoria: 'Caixa', custoUnitario: 3.50, estoque: 150, estoqueMinimo: 50, fornecedor: 'BoxMaster', status: 'Ativo' },
-  { id: '3', nome: 'Caixa correio tamanho G', sku: 'SUP-CX-G', categoria: 'Caixa', custoUnitario: 5.20, estoque: 3, estoqueMinimo: 20, fornecedor: 'BoxMaster', status: 'Ativo' },
-  { id: '4', nome: 'Fita adesiva transparente', sku: 'SUP-FT-TRANSP', categoria: 'Fita', custoUnitario: 4.90, estoque: 45, estoqueMinimo: 10, fornecedor: 'FitaBR', status: 'Ativo' },
-  { id: '5', nome: 'Etiqueta térmica 100x150mm', sku: 'SUP-ET-100', categoria: 'Etiqueta', custoUnitario: 0.08, estoque: 0, estoqueMinimo: 500, fornecedor: 'LabelPro', status: 'Ativo' },
-  { id: '6', nome: 'Saco plástico 30x40cm', sku: 'SUP-SP-3040', categoria: 'Embalagem', custoUnitario: 0.15, estoque: 800, estoqueMinimo: 200, fornecedor: 'EmbalaPack', status: 'Ativo' },
-];
-
 const CATEGORIES: SupplyCategory[] = ['Embalagem', 'Etiqueta', 'Caixa', 'Fita', 'Proteção', 'Outros'];
 
 @Component({
@@ -39,7 +31,9 @@ const CATEGORIES: SupplyCategory[] = ['Embalagem', 'Etiqueta', 'Caixa', 'Fita', 
   templateUrl: './supplies.component.html',
   styleUrl: './supplies.component.scss',
 })
-export class SuppliesComponent {
+export class SuppliesComponent implements OnInit {
+  private readonly supplyService = inject(SupplyService);
+
   readonly searchIcon = Search;
   readonly plusIcon = Plus;
   readonly categories = CATEGORIES;
@@ -47,7 +41,7 @@ export class SuppliesComponent {
   readonly searchQuery = signal('');
   readonly categoryFilter = signal<SupplyCategory | 'Todas'>('Todas');
   readonly loading = signal(true);
-  readonly supplies = signal<Supply[]>([...MOCK_SUPPLIES]);
+  readonly supplies = signal<Supply[]>([]);
 
   // Modal state
   readonly modalOpen = signal(false);
@@ -84,8 +78,10 @@ export class SuppliesComponent {
       fornecedor: [''],
       observacao: [''],
     });
+  }
 
-    setTimeout(() => this.loading.set(false), 600);
+  ngOnInit(): void {
+    this.loadSupplies();
   }
 
   @HostListener('document:keydown.escape')
@@ -160,8 +156,7 @@ export class SuppliesComponent {
     }
 
     const val = this.supplyForm.value;
-    const newSupply: Supply = {
-      id: String(Date.now()),
+    const dto: CreateSupplyDto = {
       nome: val.nome,
       sku: val.sku,
       categoria: val.categoria,
@@ -169,10 +164,31 @@ export class SuppliesComponent {
       estoque: val.estoque || 0,
       estoqueMinimo: val.estoqueMinimo || 0,
       fornecedor: val.fornecedor || '',
-      status: 'Ativo',
+      observacao: val.observacao || '',
     };
 
-    this.supplies.update(list => [...list, newSupply]);
-    this.closeModal();
+    this.supplyService.create(dto).subscribe({
+      next: (created) => {
+        this.supplies.update(list => [...list, created as Supply]);
+        this.closeModal();
+      },
+      error: (err) => {
+        console.error('Failed to create supply:', err);
+      },
+    });
+  }
+
+  private loadSupplies(): void {
+    this.loading.set(true);
+    this.supplyService.list().subscribe({
+      next: (data) => {
+        this.supplies.set(data as Supply[]);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load supplies:', err);
+        this.loading.set(false);
+      },
+    });
   }
 }
