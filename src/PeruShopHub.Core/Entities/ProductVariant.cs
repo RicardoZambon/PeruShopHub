@@ -9,6 +9,7 @@ public class ProductVariant
     public decimal? Price { get; set; }
     public int Stock { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsDefault { get; set; }
     public bool NeedsReview { get; set; }
     public decimal? PurchaseCost { get; set; }
     public decimal? Weight { get; set; }
