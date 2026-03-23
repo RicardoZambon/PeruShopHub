@@ -5,6 +5,7 @@ public record FinanceSummaryDto(
     decimal TotalCosts,
     decimal TotalProfit,
     decimal AverageMargin,
+    decimal AverageTicket,
     decimal RevenueChange,
     decimal ProfitChange,
     IReadOnlyList<CostBreakdownDto> CostBreakdown);
@@ -37,5 +38,31 @@ public record AbcProductDto(
     string Sku,
     string Name,
     decimal Revenue,
+    decimal Profit,
     decimal CumulativePercentage,
     string Classification);
+
+public record SkuProfitabilityDetailDto(
+    Guid ProductId,
+    string Sku,
+    string Name,
+    int UnitsSold,
+    decimal Revenue,
+    decimal Cmv,
+    decimal Commissions,
+    decimal Shipping,
+    decimal Taxes,
+    decimal TotalCosts,
+    decimal Profit,
+    decimal Margin);
+
+public record MonthlyReconciliationDto(
+    int Month,
+    string MonthName,
+    decimal ExpectedRevenue,
+    decimal DepositedRevenue,
+    decimal Difference);
+
+public record MarginChartPointDto(
+    string Label,
+    decimal Margin);
