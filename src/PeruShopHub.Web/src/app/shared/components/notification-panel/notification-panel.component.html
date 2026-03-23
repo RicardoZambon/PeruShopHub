@@ -20,7 +20,7 @@
     @for (notification of notifications.notifications(); track notification.id) {
       <button
         class="notif-item"
-        [class.notif-item--unread]="!notification.read"
+        [class.notif-item--unread]="!notification.isRead"
         (click)="onNotificationClick(notification)"
       >
         <div class="notif-item__icon notif-item__icon--{{ notification.type }}">
@@ -31,7 +31,7 @@
           <div class="notif-item__description">{{ notification.description }}</div>
           <div class="notif-item__time">{{ notification.timestamp | relativeDate }}</div>
         </div>
-        @if (!notification.read) {
+        @if (!notification.isRead) {
           <span class="notif-item__dot"></span>
         }
       </button>

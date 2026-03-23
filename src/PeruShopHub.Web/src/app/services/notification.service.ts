@@ -1,4 +1,8 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, OnDestroy } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Subscription } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { SignalRService, type SignalRNotification } from './signalr.service';
 
 export interface Notification {
   id: string;
@@ -6,105 +10,65 @@ export interface Notification {
   title: string;
   description: string;
   timestamp: Date;
-  read: boolean;
+  isRead: boolean;
   navigationTarget?: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
-  readonly notifications = signal<Notification[]>(MOCK_NOTIFICATIONS);
-  readonly unreadCount = computed(() => this.notifications().filter(n => !n.read).length);
+  private readonly http = inject(HttpClient);
+  private readonly signalRService = inject(SignalRService);
+  private readonly baseUrl = `${environment.apiUrl}/notifications`;
+  private signalRSub: Subscription | null = null;
+
+  readonly notifications = signal<Notification[]>([]);
+  readonly unreadCount = computed(() => this.notifications().filter(n => !n.isRead).length);
+
+  constructor() {
+    this.loadNotifications();
+    this.signalRService.start();
+    this.signalRSub = this.signalRService.notifications$.subscribe((n: SignalRNotification) => {
+      const notification: Notification = {
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        description: n.description,
+        timestamp: new Date(n.timestamp),
+        isRead: n.isRead,
+        navigationTarget: n.navigationTarget,
+      };
+      this.notifications.update(list => [notification, ...list]);
+    });
+  }
 
   markAsRead(id: string): void {
     this.notifications.update(list =>
-      list.map(n => n.id === id ? { ...n, read: true } : n)
+      list.map(n => n.id === id ? { ...n, isRead: true } : n)
     );
+    this.http.patch(`${this.baseUrl}/${id}/read`, {}).subscribe({
+      error: (err) => console.error('Failed to mark notification as read:', err),
+    });
   }
 
   markAllAsRead(): void {
     this.notifications.update(list =>
-      list.map(n => ({ ...n, read: true }))
+      list.map(n => ({ ...n, isRead: true }))
     );
+    this.http.patch(`${this.baseUrl}/read-all`, {}).subscribe({
+      error: (err) => console.error('Failed to mark all notifications as read:', err),
+    });
+  }
+
+  private loadNotifications(): void {
+    this.http.get<Notification[]>(this.baseUrl).subscribe({
+      next: (data) => {
+        const notifications = data.map(n => ({
+          ...n,
+          timestamp: new Date(n.timestamp),
+        }));
+        this.notifications.set(notifications);
+      },
+      error: (err) => console.error('Failed to load notifications:', err),
+    });
   }
 }
-
-const now = new Date();
-
-function hoursAgo(h: number): Date {
-  return new Date(now.getTime() - h * 60 * 60 * 1000);
-}
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'n1',
-    type: 'sale',
-    title: 'Nova venda realizada',
-    description: 'Pedido #2087654328 - Fone Bluetooth JBL Tune 510BT - R$ 219,90',
-    timestamp: hoursAgo(0.5),
-    read: false,
-    navigationTarget: '/vendas/2087654328',
-  },
-  {
-    id: 'n2',
-    type: 'question',
-    title: 'Nova pergunta recebida',
-    description: '"Esse produto vem com carregador incluso?" - Produto: Carregador USB-C 20W',
-    timestamp: hoursAgo(1.2),
-    read: false,
-    navigationTarget: '/perguntas',
-  },
-  {
-    id: 'n3',
-    type: 'stock',
-    title: 'Alerta de estoque baixo',
-    description: 'Capa iPhone 15 Pro Max Silicone - Apenas 3 unidades restantes',
-    timestamp: hoursAgo(2),
-    read: false,
-    navigationTarget: '/estoque',
-  },
-  {
-    id: 'n4',
-    type: 'margin',
-    title: 'Alerta de margem baixa',
-    description: 'Película Vidro Samsung Galaxy S24 - Margem caiu para 4.2%',
-    timestamp: hoursAgo(3.5),
-    read: false,
-    navigationTarget: '/financeiro',
-  },
-  {
-    id: 'n5',
-    type: 'sale',
-    title: 'Nova venda realizada',
-    description: 'Pedido #2087654325 - Kit Cabos USB-C (3 unidades) - R$ 49,90',
-    timestamp: hoursAgo(5),
-    read: false,
-    navigationTarget: '/vendas/2087654325',
-  },
-  {
-    id: 'n6',
-    type: 'connection',
-    title: 'Erro de conexão resolvido',
-    description: 'Conexão com Mercado Livre restabelecida após 15 minutos',
-    timestamp: hoursAgo(8),
-    read: true,
-    navigationTarget: '/configuracoes',
-  },
-  {
-    id: 'n7',
-    type: 'question',
-    title: 'Nova pergunta recebida',
-    description: '"Qual o prazo de entrega para SP capital?" - Produto: Mousepad Gamer RGB',
-    timestamp: hoursAgo(12),
-    read: true,
-    navigationTarget: '/perguntas',
-  },
-  {
-    id: 'n8',
-    type: 'stock',
-    title: 'Alerta de estoque baixo',
-    description: 'Suporte Notebook Alumínio Ajustável - Apenas 2 unidades restantes',
-    timestamp: hoursAgo(24),
-    read: true,
-    navigationTarget: '/estoque',
-  },
-];

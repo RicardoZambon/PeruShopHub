@@ -20,14 +20,8 @@ import {
   Users,
   type LucideIconData,
 } from 'lucide-angular';
-
-interface SearchResult {
-  type: 'pedido' | 'produto' | 'cliente';
-  id: string;
-  primary: string;
-  secondary: string;
-  route: string;
-}
+import { SearchService, type SearchResult } from '../../../services/search.service';
+import { Subscription } from 'rxjs';
 
 interface SearchGroup {
   type: 'pedido' | 'produto' | 'cliente';
@@ -36,51 +30,13 @@ interface SearchGroup {
   results: SearchResult[];
 }
 
-const MOCK_PRODUCTS: SearchResult[] = [
-  { type: 'produto', id: 'p1', primary: 'Fone Bluetooth TWS Pro', secondary: 'SKU: FBT-001', route: '/produtos/1' },
-  { type: 'produto', id: 'p2', primary: 'Capinha iPhone 15 Silicone', secondary: 'SKU: CIP-015', route: '/produtos/2' },
-  { type: 'produto', id: 'p3', primary: 'Carregador USB-C 65W', secondary: 'SKU: CRG-065', route: '/produtos/3' },
-  { type: 'produto', id: 'p4', primary: 'Pelicula Vidro Samsung S24', secondary: 'SKU: PVS-024', route: '/produtos/4' },
-  { type: 'produto', id: 'p5', primary: 'Suporte Celular Veicular', secondary: 'SKU: SCV-001', route: '/produtos/5' },
-  { type: 'produto', id: 'p6', primary: 'Cabo HDMI 2.1 4K 2m', secondary: 'SKU: CHD-021', route: '/produtos/6' },
-  { type: 'produto', id: 'p7', primary: 'Mouse Gamer RGB 12000dpi', secondary: 'SKU: MGR-120', route: '/produtos/7' },
-  { type: 'produto', id: 'p8', primary: 'Teclado Mecanico Compacto', secondary: 'SKU: TMC-001', route: '/produtos/8' },
-  { type: 'produto', id: 'p9', primary: 'Webcam Full HD 1080p', secondary: 'SKU: WFH-108', route: '/produtos/9' },
-  { type: 'produto', id: 'p10', primary: 'Hub USB-C 7 em 1', secondary: 'SKU: HUB-007', route: '/produtos/10' },
-];
-
-const MOCK_ORDERS: SearchResult[] = [
-  { type: 'pedido', id: 'o1', primary: 'Pedido #2087654321', secondary: '15 mar 2026', route: '/vendas/2087654321' },
-  { type: 'pedido', id: 'o2', primary: 'Pedido #2087654322', secondary: '14 mar 2026', route: '/vendas/2087654322' },
-  { type: 'pedido', id: 'o3', primary: 'Pedido #2087654323', secondary: '14 mar 2026', route: '/vendas/2087654323' },
-  { type: 'pedido', id: 'o4', primary: 'Pedido #2087654324', secondary: '13 mar 2026', route: '/vendas/2087654324' },
-  { type: 'pedido', id: 'o5', primary: 'Pedido #2087654325', secondary: '12 mar 2026', route: '/vendas/2087654325' },
-  { type: 'pedido', id: 'o6', primary: 'Pedido #2087654326', secondary: '11 mar 2026', route: '/vendas/2087654326' },
-  { type: 'pedido', id: 'o7', primary: 'Pedido #2087654327', secondary: '10 mar 2026', route: '/vendas/2087654327' },
-  { type: 'pedido', id: 'o8', primary: 'Pedido #2087654328', secondary: '09 mar 2026', route: '/vendas/2087654328' },
-  { type: 'pedido', id: 'o9', primary: 'Pedido #2087654329', secondary: '08 mar 2026', route: '/vendas/2087654329' },
-  { type: 'pedido', id: 'o10', primary: 'Pedido #2087654330', secondary: '07 mar 2026', route: '/vendas/2087654330' },
-  { type: 'pedido', id: 'o11', primary: 'Pedido #2087654331', secondary: '06 mar 2026', route: '/vendas/2087654331' },
-  { type: 'pedido', id: 'o12', primary: 'Pedido #2087654332', secondary: '05 mar 2026', route: '/vendas/2087654332' },
-  { type: 'pedido', id: 'o13', primary: 'Pedido #2087654333', secondary: '04 mar 2026', route: '/vendas/2087654333' },
-  { type: 'pedido', id: 'o14', primary: 'Pedido #2087654334', secondary: '03 mar 2026', route: '/vendas/2087654334' },
-  { type: 'pedido', id: 'o15', primary: 'Pedido #2087654335', secondary: '02 mar 2026', route: '/vendas/2087654335' },
-];
-
-const MOCK_CUSTOMERS: SearchResult[] = [
-  { type: 'cliente', id: 'c1', primary: 'Maria Silva', secondary: 'maria.silva@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c2', primary: 'Joao Santos', secondary: 'joao.santos@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c3', primary: 'Ana Oliveira', secondary: 'ana.oliveira@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c4', primary: 'Carlos Pereira', secondary: 'carlos.pereira@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c5', primary: 'Fernanda Costa', secondary: 'fernanda.costa@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c6', primary: 'Pedro Almeida', secondary: 'pedro.almeida@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c7', primary: 'Lucia Ferreira', secondary: 'lucia.ferreira@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c8', primary: 'Rafael Souza', secondary: 'rafael.souza@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c9', primary: 'Beatriz Lima', secondary: 'beatriz.lima@email.com', route: '/clientes' },
-  { type: 'cliente', id: 'c10', primary: 'Marcos Rodrigues', secondary: 'marcos.rodrigues@email.com', route: '/clientes' },
-];
-
 const MAX_PER_GROUP = 3;
+
+const TYPE_CONFIG: Record<SearchResult['type'], { label: string; icon: LucideIconData }> = {
+  pedido: { label: 'Pedidos', icon: ShoppingCart },
+  produto: { label: 'Produtos', icon: Package },
+  cliente: { label: 'Clientes', icon: Users },
+};
 
 @Component({
   selector: 'app-search-palette',
@@ -91,6 +47,7 @@ const MAX_PER_GROUP = 3;
 })
 export class SearchPaletteComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly searchService = inject(SearchService);
   readonly closed = output<void>();
 
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
@@ -101,33 +58,31 @@ export class SearchPaletteComponent implements AfterViewInit, OnDestroy {
   readonly query = signal('');
   readonly activeIndex = signal(-1);
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly debouncedQuery = signal('');
+  private searchSubscription: Subscription | null = null;
+
+  readonly apiResults = signal<SearchResult[]>([]);
 
   readonly groups = computed<SearchGroup[]>(() => {
-    const q = this.debouncedQuery().toLowerCase().trim();
-    if (!q) return [];
+    const results = this.apiResults();
+    if (results.length === 0) return [];
+
+    const grouped = new Map<SearchResult['type'], SearchResult[]>();
+    for (const r of results) {
+      const existing = grouped.get(r.type) || [];
+      if (existing.length < MAX_PER_GROUP) {
+        existing.push(r);
+        grouped.set(r.type, existing);
+      }
+    }
 
     const groups: SearchGroup[] = [];
-
-    const matchedOrders = MOCK_ORDERS.filter(
-      (r) => r.primary.toLowerCase().includes(q) || r.secondary.toLowerCase().includes(q),
-    ).slice(0, MAX_PER_GROUP);
-    if (matchedOrders.length > 0) {
-      groups.push({ type: 'pedido', label: 'Pedidos', icon: ShoppingCart, results: matchedOrders });
-    }
-
-    const matchedProducts = MOCK_PRODUCTS.filter(
-      (r) => r.primary.toLowerCase().includes(q) || r.secondary.toLowerCase().includes(q),
-    ).slice(0, MAX_PER_GROUP);
-    if (matchedProducts.length > 0) {
-      groups.push({ type: 'produto', label: 'Produtos', icon: Package, results: matchedProducts });
-    }
-
-    const matchedCustomers = MOCK_CUSTOMERS.filter(
-      (r) => r.primary.toLowerCase().includes(q) || r.secondary.toLowerCase().includes(q),
-    ).slice(0, MAX_PER_GROUP);
-    if (matchedCustomers.length > 0) {
-      groups.push({ type: 'cliente', label: 'Clientes', icon: Users, results: matchedCustomers });
+    const typeOrder: SearchResult['type'][] = ['pedido', 'produto', 'cliente'];
+    for (const type of typeOrder) {
+      const items = grouped.get(type);
+      if (items && items.length > 0) {
+        const config = TYPE_CONFIG[type];
+        groups.push({ type, label: config.label, icon: config.icon, results: items });
+      }
     }
 
     return groups;
@@ -137,7 +92,7 @@ export class SearchPaletteComponent implements AfterViewInit, OnDestroy {
     return this.groups().flatMap((g) => g.results);
   });
 
-  readonly hasQuery = computed(() => this.debouncedQuery().trim().length > 0);
+  readonly hasQuery = computed(() => this.query().trim().length > 0);
   readonly noResults = computed(() => this.hasQuery() && this.flatResults().length === 0);
 
   ngAfterViewInit(): void {
@@ -148,6 +103,7 @@ export class SearchPaletteComponent implements AfterViewInit, OnDestroy {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
+    this.searchSubscription?.unsubscribe();
   }
 
   onInput(event: Event): void {
@@ -159,7 +115,7 @@ export class SearchPaletteComponent implements AfterViewInit, OnDestroy {
       clearTimeout(this.debounceTimer);
     }
     this.debounceTimer = setTimeout(() => {
-      this.debouncedQuery.set(value);
+      this.performSearch(value);
     }, 300);
   }
 
@@ -207,5 +163,22 @@ export class SearchPaletteComponent implements AfterViewInit, OnDestroy {
   isActive(result: SearchResult): boolean {
     const idx = this.flatResults().indexOf(result);
     return idx === this.activeIndex();
+  }
+
+  private performSearch(query: string): void {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      this.apiResults.set([]);
+      return;
+    }
+
+    this.searchSubscription?.unsubscribe();
+    this.searchSubscription = this.searchService.search(trimmed).subscribe({
+      next: (results) => this.apiResults.set(results),
+      error: (err) => {
+        console.error('Search failed:', err);
+        this.apiResults.set([]);
+      },
+    });
   }
 }
