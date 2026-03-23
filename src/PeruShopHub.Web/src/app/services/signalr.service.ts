@@ -4,6 +4,16 @@ import * as signalR from '@microsoft/signalr';
 import { environment } from '../environments/environment';
 import { DataChangeEvent } from '../models/api.models';
 
+export interface SignalRNotification {
+  id: string;
+  type: 'sale' | 'question' | 'stock' | 'margin' | 'connection';
+  title: string;
+  description: string;
+  timestamp: string;
+  isRead: boolean;
+  navigationTarget?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SignalRService {
   private connection: signalR.HubConnection | null = null;

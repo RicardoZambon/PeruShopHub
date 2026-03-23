@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { KpiCard, ChartDataPoint, PagedResult } from '../models/api.models';
+import { KpiCard, ChartDataPoint, SkuProfitability, ReconciliationRow, AbcProduct } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class FinanceService {
@@ -22,22 +22,23 @@ export class FinanceService {
     return this.http.get<ChartDataPoint[]>('/api/finance/margin-chart', { params });
   }
 
-  getSkuProfitability(params: { page?: number; pageSize?: number; search?: string; sortBy?: string; sortDir?: string } = {}): Observable<PagedResult<any>> {
+  getSkuProfitability(params: { period?: string; page?: number; pageSize?: number; search?: string; sortBy?: string; sortDir?: string } = {}): Observable<SkuProfitability[]> {
     let httpParams = new HttpParams();
+    if (params.period) httpParams = httpParams.set('period', params.period);
     if (params.page) httpParams = httpParams.set('page', params.page);
     if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
     if (params.search) httpParams = httpParams.set('search', params.search);
     if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
     if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
-    return this.http.get<PagedResult<any>>('/api/finance/sku-profitability', { params: httpParams });
+    return this.http.get<SkuProfitability[]>('/api/finance/sku-profitability', { params: httpParams });
   }
 
-  getReconciliation(year: number): Observable<any[]> {
+  getReconciliation(year: number): Observable<ReconciliationRow[]> {
     const params = new HttpParams().set('year', year);
-    return this.http.get<any[]>('/api/finance/reconciliation', { params });
+    return this.http.get<ReconciliationRow[]>('/api/finance/reconciliation', { params });
   }
 
-  getAbcCurve(): Observable<any[]> {
-    return this.http.get<any[]>('/api/finance/abc-curve');
+  getAbcCurve(): Observable<AbcProduct[]> {
+    return this.http.get<AbcProduct[]>('/api/finance/abc-curve');
   }
 }

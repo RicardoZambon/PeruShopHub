@@ -6,7 +6,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
-import { SupplyService, type SupplyDto, type CreateSupplyDto } from '../../services/supply.service';
+import { SupplyService, type CreateSupplyDto } from '../../services/supply.service';
 
 type SupplyCategory = 'Embalagem' | 'Etiqueta' | 'Caixa' | 'Fita' | 'Proteção' | 'Outros';
 

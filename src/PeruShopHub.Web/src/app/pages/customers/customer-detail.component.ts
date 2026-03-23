@@ -88,7 +88,7 @@ export class CustomerDetailComponent implements OnInit {
         lastOrder: response.lastPurchase ?? response.createdAt,
       };
 
-      const orders: CustomerOrder[] = response.recentOrders.map(order => ({
+      const orders: CustomerOrder[] = response.recentOrders.map((order: any) => ({
         id: order.externalOrderId || order.id,
         date: order.orderDate,
         value: order.totalAmount,

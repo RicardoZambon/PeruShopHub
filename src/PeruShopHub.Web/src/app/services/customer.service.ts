@@ -1,7 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { PagedResult } from '../models/api.models';
+
+export interface CustomerListItem {
+  id: string;
+  nome: string;
+  nickname: string;
+  email: string;
+  phone: string;
+  totalPedidos: number;
+  totalGasto: number;
+  ultimaCompra: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CustomerService {
@@ -17,7 +28,7 @@ export class CustomerService {
     return this.http.get<PagedResult<any>>('/api/customers', { params: httpParams });
   }
 
-  getById(id: string): Observable<any> {
-    return this.http.get<any>(`/api/customers/${id}`);
+  getById(id: string): Promise<any> {
+    return firstValueFrom(this.http.get<any>(`/api/customers/${id}`));
   }
 }

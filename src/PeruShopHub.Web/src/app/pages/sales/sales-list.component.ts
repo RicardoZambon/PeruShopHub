@@ -7,8 +7,8 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
-import { OrderService } from '../../services/order.service';
-import type { OrderListItem } from '../../services/order.service';
+import { OrderService, type OrderListItem } from '../../services/order.service';
+import { firstValueFrom } from 'rxjs';
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
 
@@ -48,13 +48,13 @@ export class SalesListComponent {
   private async loadOrders(search: string, status: string, dateFrom: string, dateTo: string): Promise<void> {
     this.loading.set(true);
     try {
-      const response = await this.orderService.list({
+      const response = await firstValueFrom(this.orderService.list({
         search: search || undefined,
         status: status !== 'Todos' ? status : undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      });
-      this.filteredOrders.set(response.items);
+      }));
+      this.filteredOrders.set(response.items as OrderListItem[]);
       this.hasData.set(response.totalCount > 0 || !!search || status !== 'Todos' || !!dateFrom || !!dateTo);
     } catch {
       this.filteredOrders.set([]);

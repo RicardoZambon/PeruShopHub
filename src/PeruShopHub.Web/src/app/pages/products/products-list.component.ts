@@ -6,7 +6,7 @@ import { LucideAngularModule, Plus, Search, Edit, Package } from 'lucide-angular
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { ProductService, Product, PaginatedResult } from '../../services/product.service';
+import { ProductService, Product } from '../../services/product.service';
 import type { DataTableColumn, SortEvent, PageEvent } from '../../shared/components/data-table/data-table.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 
@@ -112,11 +112,12 @@ export class ProductsListComponent implements OnInit {
     return 'margin--danger';
   }
 
-  getStatusVariant(status: ProductStatus): BadgeVariant {
+  getStatusVariant(status: string): BadgeVariant {
     switch (status) {
       case 'Ativo': return 'success';
       case 'Pausado': return 'warning';
       case 'Encerrado': return 'danger';
+      default: return 'neutral';
     }
   }
 
@@ -140,7 +141,7 @@ export class ProductsListComponent implements OnInit {
     this.router.navigate(['/produtos/novo']);
   }
 
-  onVariantClick(event: Event, productId: number): void {
+  onVariantClick(event: Event, productId: string | number): void {
     event.stopPropagation();
     this.router.navigate(['/produtos', productId, 'editar'], { queryParams: { tab: 'variacoes' } });
   }

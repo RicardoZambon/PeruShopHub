@@ -1,4 +1,4 @@
-import { Component, Input, signal, computed, inject, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, signal, computed, inject, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -28,7 +28,7 @@ import type { InheritedVariationField } from '../../models/category.model';
   templateUrl: './variant-manager.component.html',
   styleUrl: './variant-manager.component.scss',
 })
-export class VariantManagerComponent implements OnChanges {
+export class VariantManagerComponent implements OnChanges, OnInit {
   private variantService = inject(ProductVariantService);
   private categoryService = inject(CategoryService);
 
@@ -45,7 +45,12 @@ export class VariantManagerComponent implements OnChanges {
   @Input() categoryId = '';  // Accepts category ID (e.g., 'cat-fones') or category name (e.g., 'Áudio')
   @Input() productSku = 'PROD';
 
-  variants = computed(() => this.variantService.getByProductId(this.productId));
+  private readonly variantsSignal = signal<ProductVariant[]>([]);
+  variants = this.variantsSignal.asReadonly();
+
+  ngOnInit(): void {
+    this.loadVariants();
+  }
 
   expandedRows = signal<Set<string>>(new Set());
   bulkPrice = signal<number | null>(null);
@@ -75,6 +80,19 @@ export class VariantManagerComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['categoryId']) {
       this.loadVariationFields();
+    }
+    if (changes['productId']) {
+      this.loadVariants();
+    }
+  }
+
+  private async loadVariants(): Promise<void> {
+    if (!this.productId) return;
+    try {
+      const variants = await this.variantService.getByProductId(this.productId);
+      this.variantsSignal.set(variants);
+    } catch {
+      this.variantsSignal.set([]);
     }
   }
 
@@ -219,6 +237,7 @@ export class VariantManagerComponent implements OnChanges {
     }
 
     this.generating.set(false);
+    await this.loadVariants();
 
     // Clear selections after generation
     const cleared: Record<string, string[]> = {};
@@ -263,6 +282,7 @@ export class VariantManagerComponent implements OnChanges {
       }
 
       this.generating.set(false);
+      await this.loadVariants();
       const cleared: Record<string, string[]> = {};
       for (const field of this.variationFields()) {
         cleared[field.name] = [];
@@ -292,23 +312,28 @@ export class VariantManagerComponent implements OnChanges {
 
   async updateVariantPrice(variantId: string, price: number | null): Promise<void> {
     await this.variantService.update(variantId, { price });
+    this.variantsSignal.update(list => list.map(v => v.id === variantId ? { ...v, price } : v));
   }
 
   async updateVariantStock(variantId: string, stock: number): Promise<void> {
     await this.variantService.update(variantId, { stock });
+    this.variantsSignal.update(list => list.map(v => v.id === variantId ? { ...v, stock } : v));
   }
 
   async updateVariantSku(variantId: string, sku: string): Promise<void> {
     await this.variantService.update(variantId, { sku });
+    this.variantsSignal.update(list => list.map(v => v.id === variantId ? { ...v, sku } : v));
   }
 
   async updateVariantActive(variantId: string, isActive: boolean): Promise<void> {
     await this.variantService.update(variantId, { isActive });
+    this.variantsSignal.update(list => list.map(v => v.id === variantId ? { ...v, isActive } : v));
   }
 
   async updateVariantCostAquisicao(variant: ProductVariant, value: number | null): Promise<void> {
     const costs = { ...(variant.costs ?? DEFAULT_VARIANT_COSTS), custoAquisicao: value };
     await this.variantService.update(variant.id, { costs });
+    this.variantsSignal.update(list => list.map(v => v.id === variant.id ? { ...v, costs } : v));
   }
 
   async updateVariantShippingField(
@@ -318,11 +343,13 @@ export class VariantManagerComponent implements OnChanges {
   ): Promise<void> {
     const shipping = { ...(variant.shipping ?? DEFAULT_VARIANT_SHIPPING), [field]: value };
     await this.variantService.update(variant.id, { shipping });
+    this.variantsSignal.update(list => list.map(v => v.id === variant.id ? { ...v, shipping } : v));
   }
 
   async deleteVariant(variantId: string): Promise<void> {
     if (!confirm('Tem certeza que deseja excluir esta variante?')) return;
     await this.variantService.delete(variantId);
+    this.variantsSignal.update(list => list.filter(v => v.id !== variantId));
   }
 
   updateBulkPrice(value: string): void {
@@ -337,6 +364,7 @@ export class VariantManagerComponent implements OnChanges {
     for (const v of vs) {
       await this.variantService.update(v.id, { price });
     }
+    this.variantsSignal.update(list => list.map(v => ({ ...v, price })));
     this.bulkPrice.set(null);
   }
 

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { KpiCard, ChartDataPoint } from '../models/api.models';
+import { KpiCard, ChartDataPoint, CostBreakdownItem, ProductRow, PendingAction } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -17,18 +17,22 @@ export class DashboardService {
     return this.http.get<ChartDataPoint[]>('/api/dashboard/revenue-profit', { params });
   }
 
-  getCostBreakdown(period: string): Observable<ChartDataPoint[]> {
+  getCostBreakdown(period: string): Observable<CostBreakdownItem[]> {
     const params = new HttpParams().set('period', period);
-    return this.http.get<ChartDataPoint[]>('/api/dashboard/cost-breakdown', { params });
+    return this.http.get<CostBreakdownItem[]>('/api/dashboard/cost-breakdown', { params });
   }
 
-  getTopProducts(limit: number): Observable<any[]> {
+  getTopProducts(limit: number): Observable<ProductRow[]> {
     const params = new HttpParams().set('limit', limit);
-    return this.http.get<any[]>('/api/dashboard/top-products', { params });
+    return this.http.get<ProductRow[]>('/api/dashboard/top-products', { params });
   }
 
-  getLeastProfitable(limit: number): Observable<any[]> {
+  getLeastProfitable(limit: number): Observable<ProductRow[]> {
     const params = new HttpParams().set('limit', limit);
-    return this.http.get<any[]>('/api/dashboard/least-profitable', { params });
+    return this.http.get<ProductRow[]>('/api/dashboard/least-profitable', { params });
+  }
+
+  getPendingActions(): Observable<PendingAction[]> {
+    return this.http.get<PendingAction[]>('/api/dashboard/pending-actions');
   }
 }

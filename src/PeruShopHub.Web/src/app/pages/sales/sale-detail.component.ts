@@ -313,7 +313,7 @@ export class SaleDetailComponent implements OnInit {
         date: response.orderDate,
         status: response.status as OrderStatus,
         statusVariant: getStatusVariant(response.status),
-        items: response.items.map(item => ({
+        items: response.items.map((item: any) => ({
           productId: item.productId ?? item.id,
           name: item.name,
           sku: item.sku,
@@ -334,7 +334,7 @@ export class SaleDetailComponent implements OnInit {
           trackingNumber: response.shipping.trackingNumber ?? '',
           carrier: response.shipping.carrier ?? '',
           logisticType: (response.shipping.logisticType as LogisticType) ?? 'Coleta',
-          timeline: response.shipping.timeline?.map(step => ({
+          timeline: response.shipping.timeline?.map((step: any) => ({
             label: step.description ?? step.status,
             date: step.timestamp ? new Date(step.timestamp).toLocaleString('pt-BR') : null,
             completed: step.timestamp !== null,
@@ -348,7 +348,7 @@ export class SaleDetailComponent implements OnInit {
           statusVariant: getStatusVariant(response.payment.status ?? ''),
         },
         revenue: response.totalAmount,
-        costs: response.costs.map(cost => ({
+        costs: response.costs.map((cost: any) => ({
           id: cost.id,
           category: cost.category,
           value: cost.value,

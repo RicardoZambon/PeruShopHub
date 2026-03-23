@@ -6,8 +6,8 @@ import { LucideAngularModule, Search } from 'lucide-angular';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { RelativeDatePipe } from '../../shared/pipes/relative-date.pipe';
-import { CustomerService } from '../../services/customer.service';
-import type { CustomerListItem } from '../../services/customer.service';
+import { CustomerService, type CustomerListItem } from '../../services/customer.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-customers',
@@ -40,12 +40,12 @@ export class CustomersComponent {
   private async loadCustomers(search: string, sortBy: string, sortDirection: 'asc' | 'desc'): Promise<void> {
     this.loading.set(true);
     try {
-      const response = await this.customerService.list({
+      const response = await firstValueFrom(this.customerService.list({
         search: search || undefined,
         sortBy,
-        sortDirection,
-      });
-      this.filteredCustomers.set(response.items);
+        sortDir: sortDirection,
+      }));
+      this.filteredCustomers.set(response.items as CustomerListItem[]);
       this.hasData.set(response.totalCount > 0 || !!search);
     } catch {
       this.filteredCustomers.set([]);
