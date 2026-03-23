@@ -1,19 +1,22 @@
 # PeruShop Hub - Roadmap MVP → Go-Live
 
+> Ultima atualizacao: 2026-03-23
+
 ## Stack Definitivo
 
 | Camada | Tecnologia | Versao |
 |--------|-----------|--------|
-| Backend | C# / ASP.NET Core Web API | .NET 8+ |
-| Frontend | Angular | 17+ |
-| UI Components | Angular Material ou PrimeNG | - |
+| Backend | C# / ASP.NET Core Web API | .NET 9 |
+| Frontend | Angular (standalone components, signals) | 21 |
+| UI Components | Custom components (CSS custom properties) | - |
 | Banco de dados | PostgreSQL | 16 |
 | Cache / Fila | Redis | 7+ |
-| ORM | Entity Framework Core | 8+ |
-| Real-time | SignalR | - |
-| Containerizacao | Docker + Docker Compose | - |
-| Reverse Proxy | Nginx | - |
-| CI/CD | GitHub Actions | - |
+| ORM | Entity Framework Core | 9 |
+| Real-time | SignalR (Redis backplane) | - |
+| Upload de arquivos | Local disk (abstração IFileStorageService) | - |
+| Background Jobs | .NET BackgroundService | - |
+| Containerizacao | Docker (containers individuais por enquanto) | - |
+| CI/CD | GitHub Actions (pendente) | - |
 
 ---
 
@@ -27,160 +30,214 @@
 - [ ] Anotar: `client_id`, `client_secret`, `redirect_uri`
 - [ ] Criar usuarios de teste (POST /users/test_user) para desenvolvimento
 
-### Infraestrutura Local (Docker)
+### Infraestrutura Local
 
-- [ ] PostgreSQL container rodando
-- [ ] Redis container rodando
-- [ ] Nginx container (reverse proxy) configurado
-- [ ] Volumes persistentes para banco e redis
+- [x] PostgreSQL container rodando (`docker run -d --name perushophub-db -p 5432:5432 -e POSTGRES_PASSWORD=dev postgres:16`)
+- [x] Redis container rodando (`docker run -d --name perushophub-redis -p 6379:6379 redis:7-alpine`)
+- [ ] Nginx container (reverse proxy) — pendente para producao
+- [ ] Volumes persistentes para banco e redis — pendente para producao
 
 ---
 
-## Fase 0 - Fundacao (Semana 1)
+## Fase 0 - Fundacao ✅ CONCLUIDA
 
-**Objetivo**: Projeto estruturado, rodando em Docker, com CI basico.
+**Objetivo**: Projeto estruturado com backend funcional conectado ao frontend.
 
-### Entregas
+> Esta fase foi expandida para incluir o design system completo do frontend,
+> a estruturacao completa do backend, e a conexao entre ambos.
 
-- [ ] Estrutura do projeto (monolito modular)
+### Entregas — Design System & Frontend (PR #1, branch `ralph/ui-ux-design-system`)
+
+- [x] Design system completo com CSS custom properties (temas light + dark)
+- [x] Fontes: Inter (UI) + Roboto Mono (dados financeiros)
+- [x] Layout responsivo: sidebar colapsavel (256px/64px), header fixo (56px), drawer mobile
+- [x] 12+ paginas completas com dados mockados:
+  - Dashboard (KPIs, graficos receita/lucro, donut custos, top/bottom produtos)
+  - Produtos (listagem, detalhe, formulario com variantes e galeria)
+  - Categorias (arvore hierarquica com campos de variacao)
+  - Vendas (listagem, detalhe com breakdown de custos, timeline, comprador)
+  - Clientes (listagem, detalhe com historico de pedidos)
+  - Suprimentos (CRUD com alertas de estoque)
+  - Financeiro (KPIs, graficos, lucratividade por SKU, conciliacao, curva ABC)
+  - Configuracoes (usuarios, integracoes, custos, alertas, aparencia)
+  - Login
+- [x] Componentes compartilhados: DataTable, KpiCard, Badge, Skeleton, EmptyState, Toast, SearchPalette (Ctrl+K)
+- [x] Breakpoints responsivos: mobile (<768px), tablet (768-1023px), desktop (1024px+)
+
+### Entregas — Backend & Wiring (branch `ralph/backend-wiring`)
+
+- [x] Estrutura do projeto (monolito modular — 5 projetos .NET)
   ```
   PeruShopHub/
   ├── src/
-  │   ├── PeruShopHub.Core/            # Dominio (entidades, interfaces, value objects)
-  │   ├── PeruShopHub.Infrastructure/  # Adapters, persistencia, clients HTTP
-  │   ├── PeruShopHub.Application/     # Casos de uso, services
-  │   ├── PeruShopHub.API/             # Controllers, webhooks, SignalR hubs
-  │   ├── PeruShopHub.Worker/          # Background jobs
-  │   └── PeruShopHub.Web/             # Frontend Angular
-  ├── tests/
-  │   ├── PeruShopHub.UnitTests/
-  │   └── PeruShopHub.IntegrationTests/
-  ├── docker/
-  │   ├── Dockerfile.api
-  │   ├── Dockerfile.worker
-  │   ├── Dockerfile.web
-  │   └── nginx.conf
-  ├── docker-compose.yml
-  ├── docker-compose.override.yml      # Config local (secrets, ports)
-  └── .github/workflows/ci.yml
+  │   ├── PeruShopHub.Core/            # Dominio (12 entidades, interfaces, value objects)
+  │   ├── PeruShopHub.Infrastructure/  # EF Core, Redis, SignalR, FileStorage
+  │   ├── PeruShopHub.Application/     # 30+ DTOs, PagedResult
+  │   ├── PeruShopHub.API/             # 11 controllers, 40+ endpoints, SignalR hub
+  │   ├── PeruShopHub.Worker/          # StockAlertWorker, NotificationCleanupWorker
+  │   └── PeruShopHub.Web/             # Frontend Angular 21
   ```
-- [ ] Docker Compose com todos os servicos (API, Worker, Angular, PostgreSQL, Redis, Nginx)
-- [ ] Migrations iniciais do banco (EF Core)
-- [ ] Health checks em todos os containers
-- [ ] Swagger/OpenAPI configurado
-- [ ] Estrutura base do Angular (layout, roteamento, auth guard)
+- [x] Migrations iniciais do banco (EF Core) com schema completo (12 tabelas)
+- [x] Seed data: 27 categorias, 10 produtos, 12 variantes, 15 pedidos, 96 itens de custo, 10 clientes, 7 suprimentos, 8 notificacoes, 3 usuarios, 2 conexoes marketplace
+- [x] Health check em `/health`
+- [x] Swagger/OpenAPI em `/swagger`
+- [x] Redis cache em endpoints de leitura pesada (dashboard, produtos)
+- [x] SignalR hub em `/hubs/notifications` com Redis backplane
+- [x] Background workers: alerta de estoque (15min) + limpeza de notificacoes (diario)
+- [x] Upload de arquivos: `IFileStorageService` com armazenamento local (extensivel para S3/Azure Blob)
+- [x] 11 servicos Angular com HttpClient (um por dominio)
+- [x] Proxy Angular (`/api`, `/hubs`, `/uploads` → backend)
+- [x] Interceptor de erros HTTP com toast notifications
+- [x] Todas as 12+ paginas conectadas ao backend via API real
+- [x] Zero dados mockados restantes no frontend
 
-### Modelo de dados inicial
+### Endpoints da API
+
+| Dominio | Endpoints |
+|---------|-----------|
+| Dashboard | summary, chart/revenue-profit, chart/cost-breakdown, top-products, least-profitable, pending-actions |
+| Produtos | list (paginado), getById, getVariants, create, update |
+| Categorias | list por parent (lazy-load), getById, create, update, delete |
+| Pedidos | list (paginado, filtros), getById (itens, comprador, envio, pagamento, custos) |
+| Clientes | list (paginado), getById (com historico de pedidos) |
+| Suprimentos | list (paginado), create, update |
+| Financeiro | summary, chart/revenue-profit, chart/margin, sku-profitability, reconciliation, abc-curve |
+| Configuracoes | users, integrations, costs |
+| Notificacoes | list, mark-read, mark-all-read |
+| Busca | busca global em produtos, pedidos, clientes |
+| Arquivos | upload, list por entidade, delete |
+
+### Modelo de dados implementado
 
 ```
-marketplace_connections   - Conexoes OAuth por marketplace
-products                  - Cadastro master de produtos
-product_costs             - Historico de custos por SKU
-inventory                 - Estoque master
-inventory_allocations     - Alocacao por marketplace
-product_listings          - Mapeamento produto → anuncio em cada marketplace
+products                  - Cadastro master de produtos (10 seed)
+product_variants          - Variantes com atributos JSON (12 seed)
+categories                - Categorias hierarquicas (27 seed)
+orders                    - Pedidos com status e lucro (15 seed)
+order_items               - Itens por pedido
+order_costs               - Decomposicao de custos por pedido (96 seed)
+customers                 - Clientes com historico (10 seed)
+supplies                  - Suprimentos/embalagens (7 seed)
+notifications             - Notificacoes do sistema (8 seed)
+system_users              - Usuarios do sistema (3 seed)
+marketplace_connections   - Conexoes com marketplaces (2 seed)
+file_uploads              - Uploads de arquivos (polimorficos entityType+entityId)
 ```
+
+### Debito tecnico identificado
+
+| Item | Severidade | Descricao |
+|------|-----------|-----------|
+| Controllers gordos | Baixa | Logica de negocio nos controllers. Extrair para Application services ao adicionar testes. |
+| `RemoveByPrefixAsync` stub | Baixa | Invalidacao por prefixo no Redis nao implementada (precisa `IConnectionMultiplexer` direto). |
+| Versao NuGet no Worker | Baixa | `EntityFrameworkCore.Relational` 9.0.1 vs 9.0.14 — alinhar versoes. |
+| Arquivos environment duplicados | Baixa | `environment.ts` em dois caminhos — limpar os orfaos. |
+| Queries em memoria | Media | Dashboard e Finance carregam todos os itens de pedido em memoria. Adicionar filtro por data. |
+| Hierarquia de categorias rasa | Baixa | 27 categorias mas maioria raiz. Aprofundar para testes mais realistas. |
 
 ---
 
-## Fase 1 - MVP Core (Semanas 2-4)
+## Fase 1 - MVP Core (Proxima)
 
-**Objetivo**: Conectar ao Mercado Livre, receber pedidos, ver lucratividade basica.
+**Objetivo**: Conectar ao Mercado Livre, receber pedidos reais, autenticacao do sistema.
 
-### Sprint 1 (Semana 2) - Autenticacao + Produtos
+> **Pre-requisito**: Fase 0 concluida. Conta no DevCenter ML criada.
+
+### Sprint 1 - Autenticacao do Sistema
+
+Backend:
+- [ ] JWT authentication (login, access + refresh tokens)
+- [ ] Hash de senha (bcrypt) para SystemUser
+- [ ] Role-based authorization (admin, manager, viewer)
+- [ ] Middleware de autenticacao em todos os endpoints
+- [ ] Refresh token rotation
+
+Frontend:
+- [ ] Conectar tela de login ao endpoint de autenticacao
+- [ ] Route guards em todas as rotas protegidas
+- [ ] Interceptor HTTP para adicionar JWT no header
+- [ ] Redirect automatico para login quando token expira
+
+### Sprint 2 - Integracao Mercado Livre: OAuth + Produtos
 
 Backend:
 - [ ] OAuth 2.0 flow com Mercado Livre (authorize, token, refresh)
-- [ ] Background worker para renovacao proativa de tokens
+- [ ] Criptografia de tokens OAuth em repouso (AES-256)
+- [ ] Background worker para renovacao proativa de tokens (30 min antes de expirar)
 - [ ] Circuit breaker (Polly) para chamadas a API do ML
 - [ ] Rate limiter (18k req/hora)
-- [ ] CRUD de produtos (SKU master)
-- [ ] Registro de custo de aquisicao por produto
+- [ ] `MercadoLivreAdapter` implementando `IMarketplaceAdapter` (DI keyed services)
 - [ ] Sync de anuncios existentes do ML (GET /users/{id}/items)
+- [ ] Mapeamento produto interno → anuncio ML
 
 Frontend:
-- [ ] Tela de login / setup da conexao ML (OAuth redirect)
-- [ ] Tela de produtos (listagem, cadastro, edicao)
-- [ ] Campo de custo de aquisicao por produto
+- [ ] Tela de setup da conexao ML (OAuth redirect flow)
 - [ ] Status da conexao ML (ativo, expirando, erro)
+- [ ] Indicador de sync por produto
 
-### Sprint 2 (Semana 3) - Pedidos + Financeiro Basico
-
-Backend:
-- [ ] Webhook receiver para pedidos (`orders_v2`)
-- [ ] Processamento assincrono de webhooks (Redis queue)
-- [ ] Sync de pedidos (GET /orders/search)
-- [ ] Mapeamento de pedido → produto interno
-- [ ] Consulta de taxas por pedido (Billing API)
-- [ ] Calculo automatico: receita - comissao - taxa fixa - custo produto = lucro
-
-Frontend:
-- [ ] Tela de pedidos (listagem com filtros por status, data)
-- [ ] Detalhe do pedido (itens, comprador, envio, custos)
-- [ ] Indicador de lucro por pedido (verde/amarelo/vermelho)
-
-### Sprint 3 (Semana 4) - Dashboard + Perguntas
+### Sprint 3 - Integracao Mercado Livre: Pedidos + Webhooks
 
 Backend:
-- [ ] Endpoints de metricas (vendas, receita, lucro por periodo)
-- [ ] Webhook receiver para perguntas (`questions`)
-- [ ] Listar e responder perguntas via API
-- [ ] Endpoint de resumo financeiro
+- [ ] Webhook receiver para pedidos (`orders_v2`) — validacao + enqueue < 500ms
+- [ ] Processamento assincrono de webhooks (Redis queue → Worker)
+- [ ] Sync de pedidos historicos (GET /orders/search)
+- [ ] Webhooks para: `items`, `questions`, `payments`, `shipments`
+- [ ] Mapeamento de pedido ML → pedido interno
+- [ ] Worker de processamento de fila de webhooks
 
 Frontend:
-- [ ] Dashboard home:
-  - Vendas hoje / semana / mes
-  - Receita bruta vs lucro liquido
-  - Top 5 produtos mais vendidos
-  - Top 5 produtos mais lucrativos
-- [ ] Tela de perguntas (listar, responder, marcar como lida)
+- [ ] Tela de perguntas (listar, responder via API ML)
 - [ ] Notificacoes em tempo real (SignalR) para novas vendas e perguntas
 
 ### Entregavel do MVP
 
 Sistema funcional que:
-1. Conecta ao Mercado Livre via OAuth
-2. Recebe pedidos automaticamente via webhook
-3. Mostra lucro por venda (receita - comissao - custo produto)
-4. Permite responder perguntas
-5. Dashboard basico com metricas
+1. Tem autenticacao propria (JWT + roles)
+2. Conecta ao Mercado Livre via OAuth
+3. Importa anuncios existentes
+4. Recebe pedidos automaticamente via webhook
+5. Exibe pedidos e produtos reais no dashboard
+6. Permite responder perguntas
 
 ---
 
-## Fase 2 - Financeiro Completo (Semanas 5-7)
+## Fase 2 - Financeiro Completo
 
-**Objetivo**: Rastreabilidade total de custos. O diferencial do sistema.
+**Objetivo**: Calculo real de lucratividade por venda. O diferencial do sistema.
 
-### Sprint 4 (Semana 5) - Decomposicao de Custos
+> **Nota**: Atualmente os dados financeiros sao pre-calculados no seed.
+> Esta fase implementa o motor de calculo real.
+
+### Sprint 4 - Motor de Calculo de Custos
 
 Backend:
-- [ ] Integracao completa com Billing API (periodos, documentos, summary)
-- [ ] Decomposicao automatica por venda:
-  - Comissao do marketplace
-  - Taxa fixa
-  - Custo de frete (seller)
-  - Taxa de pagamento (Mercado Pago)
-  - Custo do produto
-  - Custo de embalagem (configuravel)
+- [ ] Engine de comissoes (varia por categoria, reputacao do vendedor, tipo de anuncio)
+- [ ] Calculo de frete (peso × distancia × tabela da transportadora)
+- [ ] Calculo de impostos (ICMS, PIS/COFINS, Simples Nacional — varia por estado e regime)
+- [ ] Lookup de taxas de fulfillment (ML Full)
+- [ ] Calculo de taxa de pagamento (depende do numero de parcelas)
+- [ ] Servico de composicao que agrega todas as categorias de custo por venda
+- [ ] Integracao com Billing API do ML (`GET /orders/{id}/billing_info`)
 - [ ] Registro de custos adicionais manuais
 - [ ] Historico de custos de produto (com effective_from/until)
 
 Frontend:
-- [ ] Detalhe financeiro do pedido (breakdown completo de custos)
+- [ ] Detalhe financeiro do pedido (breakdown completo de custos reais)
 - [ ] Configuracao de custos fixos (embalagem, por categoria)
 - [ ] Edicao de custo de produto com historico
+- [ ] Indicador de lucro por pedido (verde/amarelo/vermelho)
 
-### Sprint 5 (Semana 6) - Relatorios e Conciliacao
+### Sprint 5 - Relatorios e Conciliacao
 
 Backend:
-- [ ] View materializada de lucratividade por SKU
-- [ ] Conciliacao: valor depositado ML vs valor esperado
-- [ ] Identificacao de divergencias em comissoes
+- [ ] View materializada de lucratividade por SKU (refresh periodico)
+- [ ] Conciliacao: valor depositado ML vs valor esperado (dados reais)
+- [ ] Identificacao automatica de divergencias em comissoes
 - [ ] Exportacao PDF (QuestPDF) e Excel (ClosedXML)
-- [ ] Curva ABC por margem de lucro
+- [ ] Curva ABC por margem de lucro (dados reais)
 
 Frontend:
-- [ ] Tela de relatorios:
+- [ ] Tela de relatorios com dados reais:
   - Lucratividade por SKU (tabela + grafico)
   - Lucratividade por periodo
   - Comparativo receita bruta vs lucro liquido
@@ -188,7 +245,7 @@ Frontend:
 - [ ] Tela de conciliacao financeira
 - [ ] Exportacao de relatorios (PDF/Excel)
 
-### Sprint 6 (Semana 7) - Alertas e Precificacao
+### Sprint 6 - Alertas e Precificacao
 
 Backend:
 - [ ] Sistema de alertas configuravel:
@@ -201,17 +258,17 @@ Backend:
 
 Frontend:
 - [ ] Configuracao de alertas
-- [ ] Central de notificacoes
+- [ ] Central de notificacoes (ja existe a infraestrutura SignalR)
 - [ ] Calculadora de preco interativa
 - [ ] Simulador de cenarios
 
 ---
 
-## Fase 3 - Estoque e Fulfillment (Semanas 8-9)
+## Fase 3 - Estoque e Fulfillment
 
 **Objetivo**: Gestao completa de estoque, integracao com ML Full.
 
-### Sprint 7 (Semana 8) - Gestao de Estoque
+### Sprint 7 - Gestao de Estoque
 
 Backend:
 - [ ] CRUD de movimentacoes de estoque (entrada, saida, ajuste)
@@ -219,6 +276,7 @@ Backend:
 - [ ] Atualizacao automatica de estoque no ML ao registrar entrada
 - [ ] Webhook de items para detectar mudancas externas de estoque
 - [ ] Reconciliacao periodica (worker compara estoque local vs ML)
+- [ ] Optimistic locking com coluna `version` para evitar overselling
 
 Frontend:
 - [ ] Tela de estoque (quantidades, status de sync)
@@ -226,7 +284,7 @@ Frontend:
 - [ ] Historico de movimentacoes
 - [ ] Indicadores de estoque critico
 
-### Sprint 8 (Semana 9) - Fulfillment (ML Full)
+### Sprint 8 - Fulfillment (ML Full)
 
 Backend:
 - [ ] Consulta de estoque no CD (GET /inventories/{id}/stock/fulfillment)
@@ -245,11 +303,11 @@ Frontend:
 
 ---
 
-## Fase 4 - Marketing e Ads (Semana 10)
+## Fase 4 - Marketing e Ads
 
 **Objetivo**: Integracao com Mercado Ads, ROI real por campanha.
 
-### Sprint 9 (Semana 10)
+### Sprint 9
 
 Backend:
 - [ ] Consulta de campanhas e metricas (Advertising API)
@@ -267,11 +325,11 @@ Frontend:
 
 ---
 
-## Fase 5 - Multi-Marketplace (Semanas 11-14)
+## Fase 5 - Multi-Marketplace
 
 **Objetivo**: Expandir para Amazon e Shopee.
 
-### Sprint 10-11 (Semanas 11-12) - Amazon
+### Sprint 10-11 - Amazon
 
 Backend:
 - [ ] Adapter Amazon SP-API (implementar IMarketplaceAdapter)
@@ -285,7 +343,7 @@ Frontend:
 - [ ] Todos os paineis existentes agora mostram dados Amazon tambem
 - [ ] Filtro por marketplace em todas as telas
 
-### Sprint 12-13 (Semanas 13-14) - Shopee + Sync Multi-Canal
+### Sprint 12-13 - Shopee + Sync Multi-Canal
 
 Backend:
 - [ ] Adapter Shopee Open Platform
@@ -302,16 +360,16 @@ Frontend:
 
 ---
 
-## Fase 6 - Pos-Venda e Mensageria (Semana 15)
+## Fase 6 - Pos-Venda e Mensageria
 
 **Objetivo**: Gestao completa de comunicacao com compradores.
 
-### Sprint 14 (Semana 15)
+### Sprint 14
 
 Backend:
 - [ ] Mensagens pos-venda (enviar/receber por marketplace)
 - [ ] Gestao de reclamacoes e devolucoes
-- [ ] Templates de resposta (configuráveis por tipo de situacao)
+- [ ] Templates de resposta (configuraveis por tipo de situacao)
 - [ ] Webhook de mensagens para notificacao em tempo real
 
 Frontend:
@@ -322,46 +380,55 @@ Frontend:
 
 ---
 
-## Fase 7 - Polish e Go-Live (Semanas 16-17)
+## Fase 7 - Infraestrutura & Go-Live
 
 **Objetivo**: Sistema pronto para uso real em producao.
 
-### Sprint 15 (Semana 16) - Seguranca e Robustez
+### Sprint 15 - Testes e CI/CD
 
-- [ ] Autenticacao do sistema (login, JWT, refresh)
-- [ ] Criptografia de tokens OAuth em repouso (AES-256)
+- [ ] Projeto de testes unitarios (`tests/PeruShopHub.UnitTests/` com xUnit)
+- [ ] Projeto de testes de integracao (`tests/PeruShopHub.IntegrationTests/` com TestContainers)
+- [ ] Testes de controllers (status codes e shapes de resposta)
+- [ ] Testes de logica de negocio
+- [ ] Testes Angular (componentes + servicos)
+- [ ] Pipeline CI/CD no GitHub Actions
+
+### Sprint 16 - Docker e Deploy
+
+- [ ] Dockerfile.api (multi-stage build)
+- [ ] Dockerfile.worker (multi-stage build)
+- [ ] Dockerfile.web (Nginx servindo build Angular)
+- [ ] docker-compose.yml (API, Worker, Angular, PostgreSQL, Redis, Nginx)
+- [ ] nginx.conf (reverse proxy)
+- [ ] Gerenciamento de secrets e connection strings de producao
+- [ ] Volumes persistentes para banco e redis
+- [ ] Backup automatizado do PostgreSQL (cron + pg_dump)
+
+### Sprint 17 - Seguranca e Polish
+
 - [ ] Rate limiting na API propria
 - [ ] Logs estruturados (Serilog → arquivo/seq)
-- [ ] Health checks completos
-- [ ] Backup automatizado do PostgreSQL (cron + pg_dump)
 - [ ] Monitoramento basico (uptime, erros, latencia)
 - [ ] Tratamento de erros global + paginas de erro no frontend
-
-### Sprint 16 (Semana 17) - UX Final e Documentacao
-
 - [ ] Revisao de UX em todas as telas
-- [ ] Responsividade (funcionar em tablet/mobile para consultas rapidas)
+- [ ] Responsividade final (tablet/mobile para consultas rapidas)
 - [ ] Onboarding flow (primeira conexao com marketplace)
-- [ ] Configuracoes do sistema (dados da empresa, impostos, custos fixos)
-- [ ] Tela "Sobre" com versao e info do sistema
 - [ ] Documentacao tecnica basica (como rodar, variaveis de ambiente)
 
 ---
 
 ## Resumo do Roadmap
 
-| Fase | Semanas | Entrega |
-|------|---------|---------|
-| 0 - Fundacao | 1 | Projeto estruturado, Docker, migrations |
-| 1 - MVP Core | 2-4 | OAuth ML, pedidos, lucro basico, perguntas, dashboard |
-| 2 - Financeiro | 5-7 | Custos detalhados, relatorios, conciliacao, alertas |
-| 3 - Estoque/Full | 8-9 | Gestao estoque, integracao ML Full, armazenagem |
-| 4 - Marketing | 10 | Mercado Ads, ROI real, promocoes |
-| 5 - Multi-Marketplace | 11-14 | Amazon, Shopee, sync multi-canal |
-| 6 - Pos-Venda | 15 | Mensageria unificada, reclamacoes, templates |
-| 7 - Go-Live | 16-17 | Seguranca, polish, documentacao |
-
-**Total estimado: ~17 semanas (4 meses)**
+| Fase | Status | Entrega |
+|------|--------|---------|
+| 0 - Fundacao | ✅ Concluida | Design system, backend completo, 40+ endpoints, frontend conectado |
+| 1 - MVP Core | ⬜ Proxima | Autenticacao JWT, OAuth ML, webhooks, pedidos reais |
+| 2 - Financeiro | ⬜ Pendente | Motor de custos real, relatorios, conciliacao, alertas |
+| 3 - Estoque/Full | ⬜ Pendente | Gestao estoque, integracao ML Full, armazenagem |
+| 4 - Marketing | ⬜ Pendente | Mercado Ads, ROI real, promocoes |
+| 5 - Multi-Marketplace | ⬜ Pendente | Amazon, Shopee, sync multi-canal |
+| 6 - Pos-Venda | ⬜ Pendente | Mensageria unificada, reclamacoes, templates |
+| 7 - Go-Live | ⬜ Pendente | Testes, Docker, seguranca, polish, documentacao |
 
 ---
 
@@ -369,8 +436,8 @@ Frontend:
 
 | Item | Quando precisa | Acao necessaria |
 |------|---------------|-----------------|
-| Conta vendedor ML | Fase 0 | Criar em mercadolivre.com.br |
-| App no DevCenter ML | Fase 0 | Registrar em developers.mercadolivre.com.br |
+| Conta vendedor ML | Fase 1 | Criar em mercadolivre.com.br |
+| App no DevCenter ML | Fase 1 | Registrar em developers.mercadolivre.com.br |
 | CNPJ / MEI | Antes de vender | Necessario para NF-e e ML Coleta |
 | Conta Amazon Seller | Fase 5 | Registrar em sellercentral.amazon.com.br |
 | Conta Shopee Seller | Fase 5 | Registrar em seller.shopee.com.br |
@@ -380,12 +447,38 @@ Frontend:
 
 ## Marcos de Validacao (Checkpoints)
 
-| Marco | Criterio de aceite |
-|-------|-------------------|
-| **M1 - Conexao** | Sistema conectado ao ML, importando anuncios existentes |
-| **M2 - Primeira venda rastreada** | Pedido recebido via webhook com calculo de lucro |
-| **M3 - Dashboard funcional** | Metricas de vendas/lucro visiveis no painel |
-| **M4 - Financeiro completo** | Decomposicao total de custos, relatorio exportavel |
-| **M5 - Estoque operacional** | Entrada de mercadoria reflete no ML automaticamente |
-| **M6 - Multi-marketplace** | Venda na Amazon/Shopee atualiza estoque no ML |
-| **M7 - Go-Live** | Sistema em producao, uso diario real |
+| Marco | Criterio de aceite | Status |
+|-------|-------------------|--------|
+| **M0 - Fundacao** | Projeto estruturado, backend funcional, frontend conectado | ✅ Concluido |
+| **M1 - Conexao** | Sistema conectado ao ML, importando anuncios existentes | ⬜ |
+| **M2 - Primeira venda rastreada** | Pedido recebido via webhook com calculo de lucro | ⬜ |
+| **M3 - Dashboard funcional** | Metricas de vendas/lucro visiveis com dados reais | ⬜ |
+| **M4 - Financeiro completo** | Decomposicao total de custos, relatorio exportavel | ⬜ |
+| **M5 - Estoque operacional** | Entrada de mercadoria reflete no ML automaticamente | ⬜ |
+| **M6 - Multi-marketplace** | Venda na Amazon/Shopee atualiza estoque no ML | ⬜ |
+| **M7 - Go-Live** | Sistema em producao, uso diario real | ⬜ |
+
+---
+
+## Como rodar o sistema atualmente
+
+```bash
+# 1. Iniciar PostgreSQL e Redis
+docker run -d --name perushophub-db -p 5432:5432 -e POSTGRES_PASSWORD=dev postgres:16
+docker run -d --name perushophub-redis -p 6379:6379 redis:7-alpine
+
+# 2. Aplicar migrations (cria schema + seed data)
+dotnet ef database update --project src/PeruShopHub.Infrastructure --startup-project src/PeruShopHub.API
+
+# 3. Iniciar a API (http://localhost:5000)
+dotnet run --project src/PeruShopHub.API
+
+# 4. Iniciar o Worker (jobs em background)
+dotnet run --project src/PeruShopHub.Worker
+
+# 5. Iniciar o frontend Angular (http://localhost:4200)
+cd src/PeruShopHub.Web && npm install && npx ng serve
+
+# Swagger: http://localhost:5000/swagger
+# Health: http://localhost:5000/health
+```
