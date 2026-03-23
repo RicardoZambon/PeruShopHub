@@ -1,0 +1,166 @@
+@if (loading()) {
+  <div class="po-detail-skeleton">
+    <div class="skeleton-header">
+      <div class="skeleton-block" style="width: 200px; height: 32px;"></div>
+      <div class="skeleton-block" style="width: 100px; height: 28px;"></div>
+    </div>
+    <div class="skeleton-block" style="width: 100%; height: 200px; margin-top: 24px;"></div>
+    <div class="skeleton-block" style="width: 100%; height: 150px; margin-top: 16px;"></div>
+    <div class="skeleton-block" style="width: 100%; height: 100px; margin-top: 16px;"></div>
+  </div>
+} @else if (order(); as o) {
+  <!-- Header -->
+  <div class="po-detail__header">
+    <div class="po-detail__header-left">
+      <a routerLink="/compras" class="po-detail__back-btn">
+        <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
+      </a>
+      <div class="po-detail__header-info">
+        <h1 class="po-detail__title">{{ o.supplier || 'Sem fornecedor' }}</h1>
+        <span class="po-detail__date">Criado em {{ formatDate(o.createdAt) }}</span>
+      </div>
+    </div>
+    <div class="po-detail__header-right">
+      <app-badge [label]="o.status" [variant]="getStatusVariant(o.status)" />
+      @if (o.status === 'Rascunho') {
+        <button class="po-detail__receive-btn" (click)="receiveStock()" [disabled]="receiving()">
+          <lucide-icon [img]="checkCircleIcon" [size]="16"></lucide-icon>
+          @if (receiving()) {
+            Recebendo...
+          } @else {
+            Receber Estoque
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Notes -->
+  @if (o.notes) {
+    <div class="po-detail__notes">
+      <strong>Notas:</strong> {{ o.notes }}
+    </div>
+  }
+
+  <!-- Received date -->
+  @if (o.status === 'Recebido' && o.receivedAt) {
+    <div class="po-detail__received-info">
+      <lucide-icon [img]="checkCircleIcon" [size]="16"></lucide-icon>
+      Recebido em {{ formatDate(o.receivedAt) }}
+    </div>
+  }
+
+  <!-- Items Table -->
+  <section class="po-detail__section">
+    <h2 class="po-detail__section-title">
+      <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
+      Itens
+    </h2>
+    <div class="po-detail__table-wrapper">
+      <table class="po-detail__table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th class="col-mono">SKU</th>
+            <th class="col-right">Qtd</th>
+            <th class="col-right col-mono">Custo Unit.</th>
+            <th class="col-right col-mono">Custo Total</th>
+            <th class="col-right col-mono">Custos Alocados</th>
+            <th class="col-right col-mono">Custo Efetivo Unit.</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of o.items; track item.id) {
+            <tr>
+              <td class="td-name">{{ item.productName }}</td>
+              <td class="td-mono">{{ item.sku }}</td>
+              <td class="col-right">{{ item.quantity }}</td>
+              <td class="col-right td-mono">{{ item.unitCost | brlCurrency }}</td>
+              <td class="col-right td-mono">{{ item.totalCost | brlCurrency }}</td>
+              <td class="col-right td-mono">{{ item.allocatedAdditionalCost | brlCurrency }}</td>
+              <td class="col-right td-mono td-highlight">{{ item.effectiveUnitCost | brlCurrency }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Cards -->
+    <div class="po-detail__cards">
+      @for (item of o.items; track item.id) {
+        <div class="po-detail__card">
+          <div class="po-detail__card-header">
+            <span class="po-detail__card-name">{{ item.productName }}</span>
+            <span class="po-detail__card-sku">{{ item.sku }}</span>
+          </div>
+          <div class="po-detail__card-body">
+            <div class="po-detail__card-field">
+              <span class="po-detail__card-label">Qtd</span>
+              <span>{{ item.quantity }}</span>
+            </div>
+            <div class="po-detail__card-field">
+              <span class="po-detail__card-label">Custo Unit.</span>
+              <span class="td-mono">{{ item.unitCost | brlCurrency }}</span>
+            </div>
+            <div class="po-detail__card-field">
+              <span class="po-detail__card-label">Custo Total</span>
+              <span class="td-mono">{{ item.totalCost | brlCurrency }}</span>
+            </div>
+            <div class="po-detail__card-field">
+              <span class="po-detail__card-label">Custos Alocados</span>
+              <span class="td-mono">{{ item.allocatedAdditionalCost | brlCurrency }}</span>
+            </div>
+            <div class="po-detail__card-field">
+              <span class="po-detail__card-label">Custo Efetivo</span>
+              <span class="td-mono td-highlight">{{ item.effectiveUnitCost | brlCurrency }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Additional Costs Table -->
+  @if (o.costs.length > 0) {
+    <section class="po-detail__section">
+      <h2 class="po-detail__section-title">Custos Adicionais</h2>
+      <div class="po-detail__table-wrapper">
+        <table class="po-detail__table">
+          <thead>
+            <tr>
+              <th>Descricao</th>
+              <th class="col-right col-mono">Valor</th>
+              <th>Metodo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cost of o.costs; track cost.id) {
+              <tr>
+                <td>{{ cost.description }}</td>
+                <td class="col-right td-mono">{{ cost.value | brlCurrency }}</td>
+                <td>{{ getMethodLabel(cost.distributionMethod) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- Summary -->
+  <section class="po-detail__section po-detail__summary">
+    <div class="po-detail__summary-row">
+      <span>Subtotal (produtos)</span>
+      <span class="td-mono">{{ o.subtotal | brlCurrency }}</span>
+    </div>
+    <div class="po-detail__summary-row">
+      <span>Custos Adicionais</span>
+      <span class="td-mono">{{ o.additionalCosts | brlCurrency }}</span>
+    </div>
+    <div class="po-detail__summary-divider"></div>
+    <div class="po-detail__summary-row po-detail__summary-row--total">
+      <span>Total</span>
+      <span class="td-mono">{{ o.total | brlCurrency }}</span>
+    </div>
+  </section>
+}

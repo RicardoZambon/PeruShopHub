@@ -81,6 +81,21 @@ export const routes: Routes = [
           import('./pages/supplies/supplies.component').then(m => m.SuppliesComponent),
       },
       {
+        path: 'compras',
+        loadComponent: () =>
+          import('./pages/purchase-orders/purchase-orders-list.component').then(m => m.PurchaseOrdersListComponent),
+      },
+      {
+        path: 'compras/novo',
+        loadComponent: () =>
+          import('./pages/purchase-orders/purchase-order-form.component').then(m => m.PurchaseOrderFormComponent),
+      },
+      {
+        path: 'compras/:id',
+        loadComponent: () =>
+          import('./pages/purchase-orders/purchase-order-detail.component').then(m => m.PurchaseOrderDetailComponent),
+      },
+      {
         path: 'financeiro',
         loadComponent: () =>
           import('./pages/finance/finance.component').then(m => m.FinanceComponent),

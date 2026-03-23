@@ -1,0 +1,136 @@
+<div class="po-list">
+  <!-- Header -->
+  <div class="po-list__header">
+    <h1 class="po-list__title">Compras</h1>
+    <button class="po-list__new-btn" (click)="onNewOrder()">
+      <lucide-icon [img]="plusIcon" [size]="18"></lucide-icon>
+      Nova Compra
+    </button>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="po-list__action-bar">
+    <div class="po-list__search">
+      <lucide-icon [img]="searchIcon" [size]="16" class="po-list__search-icon"></lucide-icon>
+      <input
+        type="text"
+        class="po-list__search-input"
+        placeholder="Buscar por fornecedor..."
+        [value]="searchQuery()"
+        (input)="onSearchChange($any($event.target).value)"
+      />
+    </div>
+    <select class="po-list__status-filter" (change)="onStatusChange($event)">
+      <option value="Todos">Todos os status</option>
+      <option value="Rascunho">Rascunho</option>
+      <option value="Recebido">Recebido</option>
+      <option value="Cancelado">Cancelado</option>
+    </select>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="po-table">
+      <div class="po-table__skeleton">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="po-table__skeleton-row">
+            <div class="skeleton skeleton--text" style="width: 180px; height: 16px;"></div>
+            <div class="skeleton skeleton--text" style="width: 80px; height: 24px;"></div>
+            <div class="skeleton skeleton--text" style="width: 40px; height: 16px;"></div>
+            <div class="skeleton skeleton--text" style="width: 100px; height: 16px;"></div>
+            <div class="skeleton skeleton--text" style="width: 90px; height: 16px;"></div>
+            <div class="skeleton skeleton--text" style="width: 90px; height: 16px;"></div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (orders().length === 0) {
+    <div class="po-empty">
+      <app-empty-state
+        title="Nenhuma compra encontrada"
+        description="Tente ajustar os filtros de busca ou crie uma nova ordem de compra."
+        actionLabel="Nova Compra"
+        (actionClick)="onNewOrder()"
+      ></app-empty-state>
+    </div>
+  } @else {
+    <!-- Table -->
+    <div class="po-table">
+      <!-- Desktop/Tablet Table -->
+      <div class="po-table__scroll-wrapper">
+        <table class="po-table__table">
+          <thead>
+            <tr>
+              <th class="po-table__th">Fornecedor</th>
+              <th class="po-table__th">Status</th>
+              <th class="po-table__th" style="text-align: right">Itens</th>
+              <th class="po-table__th" style="text-align: right">Total</th>
+              <th class="po-table__th">Data Criacao</th>
+              <th class="po-table__th">Recebido em</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (order of orders(); track order.id) {
+              <tr class="po-table__row" (click)="onRowClick(order)">
+                <td class="po-table__td po-table__td--name">
+                  {{ order.supplier || 'Sem fornecedor' }}
+                </td>
+                <td class="po-table__td">
+                  <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)" />
+                </td>
+                <td class="po-table__td" style="text-align: right">
+                  {{ order.itemCount }}
+                </td>
+                <td class="po-table__td po-table__td--mono" style="text-align: right">
+                  {{ order.total | brlCurrency }}
+                </td>
+                <td class="po-table__td">
+                  {{ formatDate(order.createdAt) }}
+                </td>
+                <td class="po-table__td">
+                  {{ formatDate(order.receivedAt) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Card List -->
+      <div class="po-table__cards">
+        @for (order of orders(); track order.id) {
+          <div class="po-table__card" (click)="onRowClick(order)">
+            <div class="po-table__card-header">
+              <div class="po-table__card-title">
+                <span class="po-table__card-name">{{ order.supplier || 'Sem fornecedor' }}</span>
+                <span class="po-table__card-date">{{ formatDate(order.createdAt) }}</span>
+              </div>
+              <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)" />
+            </div>
+            <div class="po-table__card-body">
+              <div class="po-table__card-field">
+                <span class="po-table__card-label">Itens</span>
+                <span class="po-table__card-value">{{ order.itemCount }}</span>
+              </div>
+              <div class="po-table__card-field">
+                <span class="po-table__card-label">Total</span>
+                <span class="po-table__card-value po-table__td--mono">{{ order.total | brlCurrency }}</span>
+              </div>
+              <div class="po-table__card-field">
+                <span class="po-table__card-label">Recebido</span>
+                <span class="po-table__card-value">{{ formatDate(order.receivedAt) }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Pagination -->
+      <div class="po-table__pagination">
+        <span class="po-table__pagination-info">
+          Mostrando {{ orders().length }} de {{ totalCount() }}
+        </span>
+      </div>
+    </div>
+  }
+</div>

@@ -16,6 +16,7 @@ import {
   X,
   Megaphone,
   PackageOpen,
+  ClipboardList,
 } from 'lucide-angular';
 import { SidebarService } from '../../../services/sidebar.service';
 
@@ -53,6 +54,7 @@ export class SidebarComponent {
     { label: 'Categorias', route: '/categorias', icon: FolderTree, group: 'CATÁLOGO' },
     { label: 'Estoque', route: '/estoque', icon: Warehouse, group: 'CATÁLOGO' },
     { label: 'Suprimentos', route: '/suprimentos', icon: PackageOpen, group: 'CATÁLOGO' },
+    { label: 'Compras', route: '/compras', icon: ClipboardList, group: 'CATÁLOGO' },
     { label: 'Financeiro', route: '/financeiro', icon: DollarSign, group: 'CATÁLOGO' },
 
     { label: 'Configurações', route: '/configuracoes', icon: Settings },

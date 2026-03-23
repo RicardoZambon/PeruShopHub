@@ -1,0 +1,251 @@
+<div class="po-form">
+  <!-- Header -->
+  <div class="po-form__header">
+    <div class="po-form__header-left">
+      <button class="po-form__back-btn" (click)="goBack()">
+        <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
+      </button>
+      <h1 class="po-form__title">Nova Ordem de Compra</h1>
+    </div>
+  </div>
+
+  <div class="po-form__content">
+    <div class="po-form__main">
+      <!-- Supplier Section -->
+      <section class="po-form__section">
+        <h2 class="po-form__section-title">Informacoes gerais</h2>
+        <div class="form-field">
+          <label class="form-field__label" for="po-supplier">Fornecedor</label>
+          <input
+            id="po-supplier"
+            type="text"
+            class="form-field__input"
+            placeholder="Nome do fornecedor"
+            [value]="supplier()"
+            (input)="onSupplierChange($event)"
+          />
+        </div>
+        <div class="form-field">
+          <label class="form-field__label" for="po-notes">Notas</label>
+          <textarea
+            id="po-notes"
+            class="form-field__textarea"
+            placeholder="Observacoes opcionais..."
+            rows="2"
+            [value]="notes()"
+            (input)="onNotesChange($event)"
+          ></textarea>
+        </div>
+      </section>
+
+      <!-- Products Section -->
+      <section class="po-form__section">
+        <h2 class="po-form__section-title">
+          <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
+          Produtos
+        </h2>
+
+        <!-- Product Search -->
+        <div class="po-form__product-search">
+          <div class="search-dropdown-wrapper">
+            <div class="search-input-wrapper">
+              <lucide-icon [img]="searchIcon" [size]="14"></lucide-icon>
+              <input
+                type="text"
+                [value]="productSearchQuery()"
+                (input)="onProductSearch($event)"
+                (focus)="onProductSearchFocus()"
+                (blur)="onProductSearchBlur()"
+                placeholder="Buscar produto por nome ou SKU..."
+                autocomplete="off"
+              />
+            </div>
+            @if (showProductDropdown()) {
+              <div class="search-dropdown">
+                @if (searchLoading()) {
+                  <div class="dropdown-loading">Buscando...</div>
+                } @else if (productSearchResults().length === 0) {
+                  <div class="dropdown-empty">Nenhum produto encontrado</div>
+                } @else {
+                  @for (product of productSearchResults(); track product.id) {
+                    <button type="button" class="dropdown-item" (mousedown)="selectProduct(product)">
+                      <div class="dropdown-item__info">
+                        <span class="dropdown-item__name">{{ product.name || product.nome }}</span>
+                        <span class="dropdown-item__sku">{{ product.sku }}</span>
+                      </div>
+                      <span class="dropdown-item__price mono">{{ formatBrl(product.acquisitionCost || 0) }}</span>
+                    </button>
+                  }
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Selected Items Table -->
+        @if (selectedItems().length > 0) {
+          <div class="po-form__items-table">
+            <div class="items-header">
+              <span class="items-col items-col--name">Produto</span>
+              <span class="items-col items-col--sku">SKU</span>
+              <span class="items-col items-col--qty">Qtd</span>
+              <span class="items-col items-col--cost">Custo Unit.</span>
+              <span class="items-col items-col--total">Total</span>
+              <span class="items-col items-col--actions"></span>
+            </div>
+            @for (item of selectedItems(); track item.productId; let i = $index) {
+              <div class="items-row">
+                <span class="items-col items-col--name">{{ item.name }}</span>
+                <span class="items-col items-col--sku mono">{{ item.sku }}</span>
+                <span class="items-col items-col--qty">
+                  <input
+                    type="number"
+                    class="items-input"
+                    [value]="item.quantity"
+                    (input)="onItemQuantityChange(i, $event)"
+                    min="1"
+                    step="1"
+                  />
+                </span>
+                <span class="items-col items-col--cost">
+                  <div class="input-prefix-wrapper">
+                    <span class="input-prefix">R$</span>
+                    <input
+                      type="number"
+                      class="items-input items-input--prefixed"
+                      [value]="item.unitCost"
+                      (input)="onItemUnitCostChange(i, $event)"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </span>
+                <span class="items-col items-col--total mono">{{ item.quantity * item.unitCost | brlCurrency }}</span>
+                <span class="items-col items-col--actions">
+                  <button class="btn-icon btn-icon-danger" (click)="removeItem(i)" title="Remover produto">
+                    <lucide-icon [img]="trashIcon" [size]="14"></lucide-icon>
+                  </button>
+                </span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="po-form__empty-hint">Busque e adicione produtos acima.</p>
+        }
+      </section>
+
+      <!-- Additional Costs Section -->
+      <section class="po-form__section">
+        <h2 class="po-form__section-title">Custos Adicionais</h2>
+
+        @if (additionalCosts().length > 0) {
+          <div class="po-form__costs-table">
+            <div class="costs-header">
+              <span class="costs-col costs-col--desc">Descricao</span>
+              <span class="costs-col costs-col--value">Valor</span>
+              <span class="costs-col costs-col--method">Metodo</span>
+              <span class="costs-col costs-col--actions"></span>
+            </div>
+            @for (cost of additionalCosts(); track $index; let i = $index) {
+              <div class="costs-row">
+                <span class="costs-col costs-col--desc">{{ cost.description }}</span>
+                <span class="costs-col costs-col--value mono">{{ cost.value | brlCurrency }}</span>
+                <span class="costs-col costs-col--method">{{ getMethodLabel(cost.distributionMethod) }}</span>
+                <span class="costs-col costs-col--actions">
+                  <button class="btn-icon btn-icon-danger" (click)="removeCost(i)" title="Remover custo">
+                    <lucide-icon [img]="trashIcon" [size]="14"></lucide-icon>
+                  </button>
+                </span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (showCostForm()) {
+          <div class="po-form__cost-form">
+            <div class="form-field">
+              <label class="form-field__label" for="cost-desc">Descricao</label>
+              <input
+                id="cost-desc"
+                type="text"
+                class="form-field__input"
+                placeholder="Ex: Frete, Imposto..."
+                [value]="costDescription()"
+                (input)="onCostDescriptionChange($event)"
+              />
+            </div>
+            <div class="form-field__row">
+              <div class="form-field">
+                <label class="form-field__label" for="cost-value">Valor</label>
+                <div class="form-field__prefix-wrap">
+                  <span class="form-field__prefix">R$</span>
+                  <input
+                    id="cost-value"
+                    type="number"
+                    class="form-field__input form-field__input--prefixed"
+                    placeholder="0,00"
+                    step="0.01"
+                    min="0"
+                    [value]="costValue()"
+                    (input)="onCostValueChange($event)"
+                  />
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-field__label" for="cost-method">Metodo de distribuicao</label>
+                <select
+                  id="cost-method"
+                  class="form-field__select"
+                  [value]="costMethod()"
+                  (change)="onCostMethodChange($event)"
+                >
+                  <option value="Por Valor">Por Valor</option>
+                  <option value="Por Quantidade">Por Quantidade</option>
+                  <option value="Manual">Manual</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-outline btn-sm" (click)="cancelCostForm()">Cancelar</button>
+              <button type="button" class="btn-primary btn-sm" (click)="addCost()">Adicionar</button>
+            </div>
+          </div>
+        } @else {
+          <button class="add-cost-btn" (click)="openCostForm()">
+            <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
+            Adicionar custo
+          </button>
+        }
+      </section>
+    </div>
+
+    <!-- Summary Sidebar -->
+    <aside class="po-form__summary">
+      <h3 class="po-form__summary-title">Resumo</h3>
+      <div class="po-form__summary-row">
+        <span>Subtotal (produtos)</span>
+        <span class="mono">{{ subtotal() | brlCurrency }}</span>
+      </div>
+      <div class="po-form__summary-row">
+        <span>Custos Adicionais</span>
+        <span class="mono">{{ totalAdditionalCosts() | brlCurrency }}</span>
+      </div>
+      <div class="po-form__summary-divider"></div>
+      <div class="po-form__summary-row po-form__summary-row--total">
+        <span>Total</span>
+        <span class="mono">{{ total() | brlCurrency }}</span>
+      </div>
+      <button
+        class="po-form__save-btn"
+        (click)="save()"
+        [disabled]="saving() || selectedItems().length === 0"
+      >
+        @if (saving()) {
+          Salvando...
+        } @else {
+          Salvar Ordem de Compra
+        }
+      </button>
+    </aside>
+  </div>
+</div>
