@@ -13,6 +13,8 @@ public class ProductVariantConfiguration : IEntityTypeConfiguration<ProductVaria
         builder.Property(v => v.Sku).HasMaxLength(100).IsRequired();
         builder.Property(v => v.Attributes).HasColumnType("jsonb").IsRequired();
 
+        builder.Property(v => v.IsDefault).HasDefaultValue(false);
+
         builder.Property(v => v.Price).HasPrecision(18, 4);
         builder.Property(v => v.PurchaseCost).HasPrecision(18, 4);
         builder.Property(v => v.Weight).HasPrecision(18, 4);

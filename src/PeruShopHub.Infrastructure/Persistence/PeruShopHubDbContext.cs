@@ -19,6 +19,12 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<SystemUser> SystemUsers => Set<SystemUser>();
     public DbSet<MarketplaceConnection> MarketplaceConnections => Set<MarketplaceConnection>();
     public DbSet<FileUpload> FileUploads => Set<FileUpload>();
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
+    public DbSet<PurchaseOrderCost> PurchaseOrderCosts => Set<PurchaseOrderCost>();
+    public DbSet<ProductCostHistory> ProductCostHistories => Set<ProductCostHistory>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<CommissionRule> CommissionRules => Set<CommissionRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
