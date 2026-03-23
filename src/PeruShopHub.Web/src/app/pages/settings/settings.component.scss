@@ -700,6 +700,102 @@
   }
 }
 
+// Settings subsection
+.settings__subsection {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--neutral-200);
+}
+
+.settings__subsection-title {
+  font-size: var(--body-size);
+  font-weight: 600;
+  color: var(--neutral-700);
+  margin: 0;
+}
+
+// Commission rules table
+.commission-rules-table-wrapper {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: var(--space-4);
+}
+
+.commission-rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--body-small-size);
+  min-width: 600px;
+
+  &__th {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    font-weight: 600;
+    color: var(--neutral-600);
+    background: var(--neutral-50);
+    border-bottom: 2px solid var(--neutral-200);
+    white-space: nowrap;
+
+    &--rate {
+      text-align: right;
+      width: 100px;
+    }
+
+    &--actions {
+      text-align: right;
+      width: 80px;
+    }
+  }
+
+  &__row {
+    transition: background-color 150ms ease;
+
+    &:hover {
+      background: var(--neutral-50);
+    }
+  }
+
+  &__td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--neutral-100);
+    color: var(--neutral-800);
+    white-space: nowrap;
+
+    &--mono {
+      font-family: var(--font-mono);
+      text-align: right;
+    }
+
+    &--actions {
+      text-align: right;
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+    }
+  }
+
+  &__empty {
+    padding: var(--space-4) var(--space-3);
+    text-align: center;
+    color: var(--neutral-400);
+    font-style: italic;
+  }
+}
+
+.icon-btn--disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+
+  &:hover {
+    color: var(--neutral-500);
+    border-color: var(--neutral-200);
+    background: transparent;
+  }
+}
+
 .btn-text {
   background: transparent;
   border: none;

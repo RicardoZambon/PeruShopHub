@@ -29,6 +29,15 @@ export interface FixedCostsResponse {
   fixedCosts: { id: number; nome: string; valor: number }[];
 }
 
+export interface CommissionRule {
+  id: string;
+  marketplace: string;
+  categoryPattern: string;
+  listingType: string;
+  rate: number;
+  isDefault: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private http = inject(HttpClient);
@@ -43,5 +52,25 @@ export class SettingsService {
 
   getCosts(): Observable<FixedCostsResponse> {
     return this.http.get<FixedCostsResponse>('/api/settings/costs');
+  }
+
+  getCommissionRules(): Observable<CommissionRule[]> {
+    return this.http.get<CommissionRule[]>(`${this.baseUrl}/commission-rules`);
+  }
+
+  createCommissionRule(dto: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/commission-rules`, dto);
+  }
+
+  updateCommissionRule(id: string, dto: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/commission-rules/${id}`, dto);
+  }
+
+  deleteCommissionRule(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/commission-rules/${id}`);
+  }
+
+  updateCosts(dto: { taxRate: number }): Observable<any> {
+    return this.http.put(`${this.baseUrl}/costs`, dto);
   }
 }

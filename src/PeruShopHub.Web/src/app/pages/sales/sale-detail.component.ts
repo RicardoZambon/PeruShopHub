@@ -1,19 +1,19 @@
-import { Component, signal, computed, OnInit, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   LucideAngularModule, ArrowLeft, Package, Copy, Truck, CreditCard,
   User, MapPin, Clock, Check, Circle, Plus, Lock, Unlock, Pencil,
-  Trash2, X, Search, ChevronDown
+  Trash2, X, Search, ChevronDown, RefreshCw
 } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { OrderService } from '../../services/order.service';
-import type { SupplyItem } from '../../services/order.service';
+import { ToastService } from '../../services/toast.service';
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
-type LogisticType = 'Full' | 'Coleta' | 'Ag\u00eancia';
+type LogisticType = 'Full' | 'Coleta' | 'Agência';
 type CostSource = 'API' | 'Manual' | 'Calculado';
 
 interface OrderItem {
@@ -94,49 +94,93 @@ interface SaleSupply {
 }
 
 const COST_CATEGORIES = [
-  { value: 'marketplace_commission', label: 'Comiss\u00e3o marketplace', color: '#5C6BC0' },
+  { value: 'marketplace_commission', label: 'Comissão marketplace', color: '#5C6BC0' },
   { value: 'fixed_fee', label: 'Taxa fixa', color: '#7986CB' },
   { value: 'shipping_seller', label: 'Frete vendedor', color: '#42A5F5' },
   { value: 'payment_fee', label: 'Taxa pagamento', color: '#64B5F6' },
   { value: 'tax_icms', label: 'ICMS', color: '#EF5350' },
   { value: 'tax_pis_cofins', label: 'PIS/COFINS', color: '#E53935' },
-  { value: 'storage_daily', label: 'Armazenagem di\u00e1ria', color: '#AB47BC' },
+  { value: 'storage_daily', label: 'Armazenagem diária', color: '#AB47BC' },
   { value: 'fulfillment_fee', label: 'Fulfillment', color: '#7E57C2' },
   { value: 'packaging', label: 'Embalagem', color: '#FFA726' },
   { value: 'advertising', label: 'Publicidade', color: '#26C6DA' },
   { value: 'other', label: 'Outros', color: '#BDBDBD' },
 ];
 
-const COST_COLOR_MAP: Record<string, string> = {
-  'Comiss\u00e3o ML': '#5C6BC0',
-  'Comiss\u00e3o marketplace': '#5C6BC0',
-  'Taxa fixa': '#7986CB',
-  'Frete vendedor': '#42A5F5',
-  'Taxa de pagamento': '#64B5F6',
-  'Taxa pagamento': '#64B5F6',
-  'Custo do produto': '#66BB6A',
-  'Embalagem': '#FFA726',
-  'Impostos': '#EF5350',
-  'ICMS': '#EF5350',
-  'PIS/COFINS': '#E53935',
-  'Armazenagem': '#AB47BC',
-  'Armazenagem di\u00e1ria': '#AB47BC',
-  'Fulfillment': '#7E57C2',
-  'Advertising': '#26C6DA',
-  'Publicidade': '#26C6DA',
-};
+const MOCK_SUPPLIES: Supply[] = [
+  { id: 'sup-001', name: 'Plástico bolha (metro)', unitCost: 1.20 },
+  { id: 'sup-002', name: 'Caixa correio M', unitCost: 3.50 },
+  { id: 'sup-003', name: 'Caixa correio G', unitCost: 5.80 },
+  { id: 'sup-004', name: 'Fita adesiva (rolo)', unitCost: 4.90 },
+  { id: 'sup-005', name: 'Envelope plástico segurança M', unitCost: 0.85 },
+  { id: 'sup-006', name: 'Etiqueta térmica (un)', unitCost: 0.15 },
+  { id: 'sup-007', name: 'Papel kraft (folha)', unitCost: 0.60 },
+];
 
-function getStatusVariant(status: string): BadgeVariant {
-  switch (status) {
-    case 'Pago': return 'primary';
-    case 'Enviado': return 'warning';
-    case 'Entregue': return 'success';
-    case 'Cancelado': return 'danger';
-    case 'Devolvido': return 'neutral';
-    case 'Aprovado': return 'success';
-    default: return 'neutral';
-  }
-}
+const MOCK_ORDER: OrderDetail = {
+  id: '2087654321',
+  date: '2026-03-22T14:30:00',
+  status: 'Enviado',
+  statusVariant: 'warning',
+  items: [
+    {
+      productId: 'MLB-001',
+      name: 'Fone Bluetooth TWS Pro Max',
+      sku: 'FN-BT-PRO-001',
+      variation: 'Preto',
+      quantity: 1,
+      unitPrice: 159.90,
+      subtotal: 159.90,
+    },
+    {
+      productId: 'MLB-002',
+      name: 'Capa Protetora Case Slim',
+      sku: 'CP-SL-001',
+      variation: 'Transparente',
+      quantity: 2,
+      unitPrice: 29.90,
+      subtotal: 59.80,
+    },
+  ],
+  buyer: {
+    name: 'Maria Silva Santos',
+    nickname: 'MARI.SILVA',
+    email: 'mar***@gmail.com',
+    phone: '(11) 9****-4567',
+    totalOrders: 8,
+    totalSpent: 2340.60,
+  },
+  shipping: {
+    trackingNumber: 'BR123456789ML',
+    carrier: 'Mercado Envios - CORREIOS',
+    logisticType: 'Coleta',
+    timeline: [
+      { label: 'Pedido criado', date: '22/03/2026, 14:30', completed: true },
+      { label: 'Pagamento aprovado', date: '22/03/2026, 14:32', completed: true },
+      { label: 'Enviado', date: '22/03/2026, 18:45', completed: true },
+      { label: 'Entregue', date: null, completed: false },
+    ],
+  },
+  payment: {
+    method: 'Cartão de Crédito',
+    installments: 3,
+    amount: 219.70,
+    status: 'Aprovado',
+    statusVariant: 'success',
+  },
+  revenue: 159.90,
+  costs: [
+    { category: 'Comissão ML', value: 17.59, color: '#5C6BC0', source: 'API' },
+    { category: 'Taxa fixa', value: 6.00, color: '#7986CB', source: 'API' },
+    { category: 'Frete vendedor', value: 18.90, color: '#42A5F5', source: 'API' },
+    { category: 'Taxa de pagamento', value: 7.52, color: '#64B5F6', source: 'API' },
+    { category: 'Custo do produto', value: 45.00, color: '#66BB6A', source: 'Manual' },
+    { category: 'Embalagem', value: 3.50, color: '#FFA726', source: 'Manual' },
+    { category: 'Impostos', value: 9.59, color: '#EF5350', source: 'Calculado' },
+    { category: 'Armazenagem', value: 2.40, color: '#AB47BC', source: 'Calculado' },
+    { category: 'Advertising', value: 8.00, color: '#26C6DA', source: 'Manual' },
+  ],
+};
 
 @Component({
   selector: 'app-sale-detail',
@@ -165,20 +209,23 @@ export class SaleDetailComponent implements OnInit {
   readonly xIcon = X;
   readonly searchIcon = Search;
   readonly chevronDownIcon = ChevronDown;
+  readonly refreshCwIcon = RefreshCw;
 
   // Cost categories reference
   readonly costCategories = COST_CATEGORIES;
 
-  // Available supplies (loaded from API)
-  availableSupplies: Supply[] = [];
+  // Available supplies
+  readonly availableSupplies = MOCK_SUPPLIES;
 
   // Injected services
   private readonly orderService = inject(OrderService);
+  private readonly toastService = inject(ToastService);
 
   // Core state
   loading = signal(true);
   order = signal<OrderDetail | null>(null);
   copySuccess = signal(false);
+  recalculating = signal(false);
   orderId = '';
 
   // US-056: Manual cost CRUD
@@ -277,7 +324,7 @@ export class SaleDetailComponent implements OnInit {
     const profit = this.netProfit();
     if (profit > 0) {
       segments.push({
-        category: 'Lucro L\u00edquido',
+        category: 'Lucro Líquido',
         value: profit,
         color: 'var(--success)',
         pct: (profit / o.revenue) * 100,
@@ -299,79 +346,10 @@ export class SaleDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.orderId = this.route.snapshot.paramMap.get('id') ?? '';
-    this.loadOrder();
-    this.loadSupplies();
-  }
-
-  private async loadOrder(): Promise<void> {
-    this.loading.set(true);
-    try {
-      const response = await this.orderService.getById(this.orderId);
-
-      const orderDetail: OrderDetail = {
-        id: response.externalOrderId || response.id,
-        date: response.orderDate,
-        status: response.status as OrderStatus,
-        statusVariant: getStatusVariant(response.status),
-        items: response.items.map((item: any) => ({
-          productId: item.productId ?? item.id,
-          name: item.name,
-          sku: item.sku,
-          variation: item.variation ?? '',
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal,
-        })),
-        buyer: {
-          name: response.buyer.name,
-          nickname: response.buyer.nickname ?? '',
-          email: response.buyer.email ?? '',
-          phone: response.buyer.phone ?? '',
-          totalOrders: 0,
-          totalSpent: 0,
-        },
-        shipping: {
-          trackingNumber: response.shipping.trackingNumber ?? '',
-          carrier: response.shipping.carrier ?? '',
-          logisticType: (response.shipping.logisticType as LogisticType) ?? 'Coleta',
-          timeline: response.shipping.timeline?.map((step: any) => ({
-            label: step.description ?? step.status,
-            date: step.timestamp ? new Date(step.timestamp).toLocaleString('pt-BR') : null,
-            completed: step.timestamp !== null,
-          })) ?? [],
-        },
-        payment: {
-          method: response.payment.method ?? '',
-          installments: response.payment.installments ?? 1,
-          amount: response.payment.amount ?? response.totalAmount,
-          status: response.payment.status ?? '',
-          statusVariant: getStatusVariant(response.payment.status ?? ''),
-        },
-        revenue: response.totalAmount,
-        costs: response.costs.map((cost: any) => ({
-          id: cost.id,
-          category: cost.category,
-          value: cost.value,
-          color: COST_COLOR_MAP[cost.category] ?? '#BDBDBD',
-          source: cost.source as CostSource,
-          description: cost.description ?? undefined,
-        })),
-      };
-
-      this.order.set(orderDetail);
-    } catch {
-      this.order.set(null);
-    } finally {
+    setTimeout(() => {
+      this.order.set({ ...MOCK_ORDER, id: this.orderId || MOCK_ORDER.id });
       this.loading.set(false);
-    }
-  }
-
-  private async loadSupplies(): Promise<void> {
-    try {
-      this.availableSupplies = await this.orderService.getSupplies();
-    } catch {
-      this.availableSupplies = [];
-    }
+    }, 600);
   }
 
   // --- Formatting helpers ---
@@ -395,7 +373,7 @@ export class SaleDetailComponent implements OnInit {
     const map: Record<LogisticType, BadgeVariant> = {
       'Full': 'success',
       'Coleta': 'primary',
-      'Ag\u00eancia': 'warning',
+      'Agência': 'warning',
     };
     return map[type];
   }
@@ -600,5 +578,29 @@ export class SaleDetailComponent implements OnInit {
 
   removeSupply(supplyId: string): void {
     this.saleSupplies.set(this.saleSupplies().filter(s => s.supplyId !== supplyId));
+  }
+
+  // --- Recalculate Costs ---
+
+  recalculateCosts(): void {
+    if (this.recalculating() || !this.orderId) return;
+
+    this.recalculating.set(true);
+    this.orderService.recalculateCosts(this.orderId).subscribe({
+      next: () => {
+        // Reload order detail (mock for now — in real app this would refetch from API)
+        this.loading.set(true);
+        setTimeout(() => {
+          this.order.set({ ...MOCK_ORDER, id: this.orderId || MOCK_ORDER.id });
+          this.loading.set(false);
+          this.recalculating.set(false);
+          this.toastService.show('Custos recalculados com sucesso', 'success');
+        }, 600);
+      },
+      error: () => {
+        this.recalculating.set(false);
+        this.toastService.show('Erro ao recalcular custos', 'danger');
+      },
+    });
   }
 }

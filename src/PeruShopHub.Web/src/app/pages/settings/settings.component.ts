@@ -5,7 +5,8 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
-import { SettingsService, type UserRow, type Integration, type FixedCostsResponse } from '../../services/settings.service';
+import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule } from '../../services/settings.service';
+import { ToastService } from '../../services/toast.service';
 
 type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'alertas' | 'aparencia';
 
@@ -34,6 +35,7 @@ interface AlertConfig {
 export class SettingsComponent implements OnInit {
   private readonly themeService = inject(ThemeService);
   private readonly settingsService = inject(SettingsService);
+  private readonly toastService = inject(ToastService);
 
   activeTab = signal<SettingsTab>('empresa');
   showUserModal = signal(false);
@@ -55,6 +57,16 @@ export class SettingsComponent implements OnInit {
   embalagemPadrao = signal(0);
   aliquotaSimples = signal(0);
   fixedCosts = signal<FixedCost[]>([]);
+
+  // Commission rules
+  commissionRules = signal<CommissionRule[]>([]);
+  showCommissionRuleModal = signal(false);
+  editingCommissionRule = signal<CommissionRule | null>(null);
+  commissionRuleForm!: FormGroup;
+
+  // Tax rate
+  taxRate = signal(0);
+  taxRateForm!: FormGroup;
 
   // Alerts
   alerts = signal<AlertConfig[]>([
@@ -89,12 +101,24 @@ export class SettingsComponent implements OnInit {
       embalagemPadrao: [0, [Validators.required, Validators.min(0)]],
       aliquotaSimples: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     });
+
+    this.commissionRuleForm = this.fb.group({
+      marketplace: ['', Validators.required],
+      categoryPattern: ['', Validators.required],
+      listingType: ['', Validators.required],
+      rate: [null as number | null, [Validators.required, Validators.min(0), Validators.max(100)]],
+    });
+
+    this.taxRateForm = this.fb.group({
+      taxRate: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
+    });
   }
 
   ngOnInit(): void {
     this.loadUsers();
     this.loadIntegrations();
     this.loadCosts();
+    this.loadCommissionRules();
   }
 
   selectTab(tab: SettingsTab): void {
@@ -245,6 +269,94 @@ export class SettingsComponent implements OnInit {
     );
   }
 
+  // Commission Rules
+  openNewCommissionRuleModal(): void {
+    this.editingCommissionRule.set(null);
+    this.commissionRuleForm.reset({ marketplace: '', categoryPattern: '', listingType: '', rate: null });
+    this.showCommissionRuleModal.set(true);
+  }
+
+  openEditCommissionRuleModal(rule: CommissionRule): void {
+    this.editingCommissionRule.set(rule);
+    this.commissionRuleForm.patchValue({
+      marketplace: rule.marketplace,
+      categoryPattern: rule.categoryPattern,
+      listingType: rule.listingType,
+      rate: rule.rate,
+    });
+    this.showCommissionRuleModal.set(true);
+  }
+
+  closeCommissionRuleModal(): void {
+    this.showCommissionRuleModal.set(false);
+    this.editingCommissionRule.set(null);
+  }
+
+  onCommissionRuleModalBackdropClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal-backdrop')) {
+      this.closeCommissionRuleModal();
+    }
+  }
+
+  onCommissionRuleModalKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.closeCommissionRuleModal();
+    }
+  }
+
+  saveCommissionRule(): void {
+    if (!this.commissionRuleForm.valid) return;
+
+    const dto = this.commissionRuleForm.value;
+    const editing = this.editingCommissionRule();
+
+    if (editing) {
+      this.settingsService.updateCommissionRule(editing.id, dto).subscribe({
+        next: () => {
+          this.loadCommissionRules();
+          this.closeCommissionRuleModal();
+          this.toastService.show('Regra de comissão atualizada', 'success');
+        },
+        error: () => this.toastService.show('Erro ao atualizar regra', 'danger'),
+      });
+    } else {
+      this.settingsService.createCommissionRule(dto).subscribe({
+        next: () => {
+          this.loadCommissionRules();
+          this.closeCommissionRuleModal();
+          this.toastService.show('Regra de comissão criada', 'success');
+        },
+        error: () => this.toastService.show('Erro ao criar regra', 'danger'),
+      });
+    }
+  }
+
+  deleteCommissionRule(rule: CommissionRule): void {
+    if (rule.isDefault) return;
+    if (!confirm(`Deseja remover a regra de comissão para "${rule.categoryPattern}"?`)) return;
+
+    this.settingsService.deleteCommissionRule(rule.id).subscribe({
+      next: () => {
+        this.loadCommissionRules();
+        this.toastService.show('Regra de comissão removida', 'success');
+      },
+      error: () => this.toastService.show('Erro ao remover regra', 'danger'),
+    });
+  }
+
+  // Tax Rate
+  saveTaxRate(): void {
+    if (!this.taxRateForm.valid) return;
+    const { taxRate } = this.taxRateForm.value;
+    this.settingsService.updateCosts({ taxRate }).subscribe({
+      next: () => {
+        this.taxRate.set(taxRate);
+        this.toastService.show('Alíquota de imposto atualizada', 'success');
+      },
+      error: () => this.toastService.show('Erro ao atualizar alíquota', 'danger'),
+    });
+  }
+
   // Appearance
   selectTheme(theme: ThemePreference): void {
     this.themeService.setTheme(theme);
@@ -261,6 +373,13 @@ export class SettingsComponent implements OnInit {
     this.settingsService.getIntegrations().subscribe({
       next: (data) => this.integrations.set(data),
       error: (err) => console.error('Failed to load integrations:', err),
+    });
+  }
+
+  private loadCommissionRules(): void {
+    this.settingsService.getCommissionRules().subscribe({
+      next: (data) => this.commissionRules.set(data),
+      error: (err) => console.error('Failed to load commission rules:', err),
     });
   }
 

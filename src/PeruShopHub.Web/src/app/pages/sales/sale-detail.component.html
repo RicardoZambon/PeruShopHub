@@ -100,10 +100,20 @@
 
       <!-- Cost Breakdown Section -->
       <section class="detail-section cost-breakdown-section">
-        <h2 class="section-title">
-          <lucide-icon [img]="creditCardIcon" [size]="18"></lucide-icon>
-          Decomposição de Custos
-        </h2>
+        <div class="section-title-row">
+          <h2 class="section-title section-title--no-border">
+            <lucide-icon [img]="creditCardIcon" [size]="18"></lucide-icon>
+            Decomposição de Custos
+          </h2>
+          <button
+            class="btn-recalculate"
+            (click)="recalculateCosts()"
+            [disabled]="recalculating()"
+            title="Recalcular custos automaticamente">
+            <lucide-icon [img]="refreshCwIcon" [size]="14" [class.spin]="recalculating()"></lucide-icon>
+            {{ recalculating() ? 'Recalculando...' : 'Recalcular Custos' }}
+          </button>
+        </div>
 
         <!-- Stacked Horizontal Bar -->
         <div class="cost-bar-container">
@@ -152,11 +162,7 @@
                   <td class="col-value mono">{{ formatBrl(cost.value) }}</td>
                   <td class="col-pct mono">{{ costPct(cost.value).toFixed(1) }}%</td>
                   <td class="col-source">
-                    @if (isManualCost(cost)) {
-                      <span class="manual-badge">Manual</span>
-                    } @else {
-                      <app-badge [label]="cost.source" [variant]="getSourceVariant(cost.source)"></app-badge>
-                    }
+                    <app-badge [label]="cost.source" [variant]="getSourceVariant(cost.source)"></app-badge>
                   </td>
                   <td class="col-actions">
                     @if (isManualCost(cost) && !isLocked()) {
