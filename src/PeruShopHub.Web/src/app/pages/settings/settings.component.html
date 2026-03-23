@@ -352,7 +352,7 @@
                       <td class="commission-rules-table__td">{{ rule.marketplace }}</td>
                       <td class="commission-rules-table__td">{{ rule.categoryPattern }}</td>
                       <td class="commission-rules-table__td">{{ rule.listingType }}</td>
-                      <td class="commission-rules-table__td commission-rules-table__td--mono">{{ rule.rate }}%</td>
+                      <td class="commission-rules-table__td commission-rules-table__td--mono">{{ rule.rate * 100 }}%</td>
                       <td class="commission-rules-table__td">
                         @if (rule.isDefault) {
                           <app-badge label="Padrão" variant="primary" />

@@ -71,26 +71,24 @@
                 <th class="inv-table__th inv-table__th--right">Estoque Total</th>
                 <th class="inv-table__th inv-table__th--right">Reservado</th>
                 <th class="inv-table__th inv-table__th--right">Disponível</th>
-                <th class="inv-table__th">Sync Status</th>
-                <th class="inv-table__th">Última Sync</th>
+                <th class="inv-table__th inv-table__th--right">Custo Unit.</th>
+                <th class="inv-table__th inv-table__th--right">Valor Estoque</th>
               </tr>
             </thead>
             <tbody>
               @for (row of inventoryData(); track row.sku) {
                 <tr class="inv-table__row" [ngClass]="getRowClass(row)">
                   <td class="inv-table__td inv-table__td--mono">{{ row.sku }}</td>
-                  <td class="inv-table__td">{{ row.produto }}</td>
-                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.estoqueTotal }}</td>
-                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.reservado }}</td>
+                  <td class="inv-table__td">{{ row.productName }}</td>
+                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.totalStock }}</td>
+                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.reserved }}</td>
                   <td class="inv-table__td inv-table__td--mono inv-table__td--right"
-                    [class.inv-table__td--danger]="row.disponivel === 0"
-                    [class.inv-table__td--warning]="row.disponivel > 0 && row.disponivel <= 5">
-                    {{ row.disponivel }}
+                    [class.inv-table__td--danger]="row.available === 0"
+                    [class.inv-table__td--warning]="row.available > 0 && row.available <= 5">
+                    {{ row.available }}
                   </td>
-                  <td class="inv-table__td">
-                    <app-badge [label]="getSyncStatusLabel(row.syncStatus)" [variant]="getSyncStatusVariant(row.syncStatus)" />
-                  </td>
-                  <td class="inv-table__td inv-table__td--mono inv-table__td--muted">{{ row.ultimaSync }}</td>
+                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.unitCost | brlCurrency }}</td>
+                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.stockValue | brlCurrency }}</td>
                 </tr>
               }
             </tbody>

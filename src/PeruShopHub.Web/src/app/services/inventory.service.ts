@@ -5,12 +5,12 @@ import { environment } from '../../environments/environment';
 
 export interface InventoryItem {
   sku: string;
-  produto: string;
-  estoqueTotal: number;
-  reservado: number;
-  disponivel: number;
-  syncStatus: 'synced' | 'pending' | 'error';
-  ultimaSync: string;
+  productName: string;
+  totalStock: number;
+  reserved: number;
+  available: number;
+  unitCost: number;
+  stockValue: number;
 }
 
 export interface StockMovement {

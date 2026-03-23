@@ -282,7 +282,7 @@ export class SettingsComponent implements OnInit {
       marketplace: rule.marketplace,
       categoryPattern: rule.categoryPattern,
       listingType: rule.listingType,
-      rate: rule.rate,
+      rate: rule.rate * 100,
     });
     this.showCommissionRuleModal.set(true);
   }
@@ -307,7 +307,8 @@ export class SettingsComponent implements OnInit {
   saveCommissionRule(): void {
     if (!this.commissionRuleForm.valid) return;
 
-    const dto = this.commissionRuleForm.value;
+    const formValue = this.commissionRuleForm.value;
+    const dto = { ...formValue, rate: formValue.rate / 100 };
     const editing = this.editingCommissionRule();
 
     if (editing) {

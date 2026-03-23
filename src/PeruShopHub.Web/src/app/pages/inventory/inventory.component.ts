@@ -43,7 +43,7 @@ export class InventoryComponent implements OnInit {
 
   // Product options derived from real inventory data
   productOptions = computed<ProductOption[]>(() =>
-    this.inventoryData().map(r => ({ sku: r.sku, nome: r.produto }))
+    this.inventoryData().map(r => ({ sku: r.sku, nome: r.productName }))
   );
 
   filteredProducts = computed(() => {
@@ -64,9 +64,9 @@ export class InventoryComponent implements OnInit {
   kpis = computed(() => {
     const data = this.inventoryData();
     const totalSkus = data.length;
-    const totalUnits = data.reduce((s, r) => s + r.estoqueTotal, 0);
-    const critical = data.filter(r => r.disponivel <= 5).length;
-    const stockValue = data.reduce((s, r) => s + r.estoqueTotal * 55, 0);
+    const totalUnits = data.reduce((s, r) => s + r.totalStock, 0);
+    const critical = data.filter(r => r.available <= 5).length;
+    const stockValue = data.reduce((s, r) => s + r.stockValue, 0);
     return [
       { label: 'Total SKUs', value: `${totalSkus}`, change: 2.0, changeLabel: 'vs mês anterior' },
       { label: 'Unidades em Estoque', value: totalUnits.toLocaleString('pt-BR'), change: 8.5, changeLabel: 'vs mês anterior' },
@@ -221,24 +221,6 @@ export class InventoryComponent implements OnInit {
     });
   }
 
-  getSyncStatusLabel(status: string): string {
-    switch (status) {
-      case 'synced': return 'Sincronizado';
-      case 'pending': return 'Pendente';
-      case 'error': return 'Erro';
-      default: return status;
-    }
-  }
-
-  getSyncStatusVariant(status: string): BadgeVariant {
-    switch (status) {
-      case 'synced': return 'success';
-      case 'pending': return 'warning';
-      case 'error': return 'danger';
-      default: return 'neutral';
-    }
-  }
-
   getMovementTypeVariant(tipo: MovementType): BadgeVariant {
     switch (tipo) {
       case 'Entrada': return 'success';
@@ -248,8 +230,8 @@ export class InventoryComponent implements OnInit {
   }
 
   getRowClass(row: InventoryItem): string {
-    if (row.disponivel === 0) return 'inv-table__row--zero';
-    if (row.disponivel <= 5) return 'inv-table__row--low';
+    if (row.available === 0) return 'inv-table__row--zero';
+    if (row.available <= 5) return 'inv-table__row--low';
     return '';
   }
 

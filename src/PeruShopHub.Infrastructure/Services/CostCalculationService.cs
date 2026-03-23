@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PeruShopHub.Core.Entities;
 using PeruShopHub.Core.Interfaces;
@@ -13,16 +14,18 @@ public class CostCalculationService : ICostCalculationService
     private readonly ILogger<CostCalculationService> _logger;
 
     private const decimal HardcodedFallbackCommissionRate = 0.13m;
-    private const decimal TaxRate = 0.06m;
+    private readonly decimal _taxRate;
 
     public CostCalculationService(
         PeruShopHubDbContext db,
         INotificationDispatcher notifications,
-        ILogger<CostCalculationService> logger)
+        ILogger<CostCalculationService> logger,
+        IConfiguration config)
     {
         _db = db;
         _notifications = notifications;
         _logger = logger;
+        _taxRate = config.GetValue<decimal>("CostSettings:TaxRate", 0.06m);
     }
 
     public async Task<List<OrderCost>> CalculateOrderCostsAsync(Order order, CancellationToken ct = default)
@@ -122,8 +125,8 @@ public class CostCalculationService : ICostCalculationService
             Id = Guid.NewGuid(),
             OrderId = order.Id,
             Category = "tax",
-            Description = $"Impostos ({TaxRate:P0})",
-            Value = order.TotalAmount * TaxRate,
+            Description = $"Impostos ({_taxRate:P0})",
+            Value = order.TotalAmount * _taxRate,
             Source = "Calculated"
         });
 
@@ -295,6 +298,12 @@ public class CostCalculationService : ICostCalculationService
                 purchaseOrderId, po.Items.Count);
 
             await _notifications.BroadcastDataChangeAsync("PurchaseOrder", "received", purchaseOrderId.ToString(), ct);
+
+            // Broadcast per-product updates so frontend refreshes product data
+            foreach (var item in po.Items)
+            {
+                await _notifications.BroadcastDataChangeAsync("product", "updated", item.ProductId.ToString(), ct);
+            }
         }
         catch
         {
