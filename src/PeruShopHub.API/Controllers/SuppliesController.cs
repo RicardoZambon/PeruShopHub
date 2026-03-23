@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Supplies;
 using PeruShopHub.Core.Entities;
+using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
@@ -12,10 +13,12 @@ namespace PeruShopHub.API.Controllers;
 public class SuppliesController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly INotificationDispatcher _dispatcher;
 
-    public SuppliesController(PeruShopHubDbContext db)
+    public SuppliesController(PeruShopHubDbContext db, INotificationDispatcher dispatcher)
     {
         _db = db;
+        _dispatcher = dispatcher;
     }
 
     [HttpGet]
@@ -91,6 +94,8 @@ public class SuppliesController : ControllerBase
         _db.Supplies.Add(supply);
         await _db.SaveChangesAsync();
 
+        await _dispatcher.BroadcastDataChangeAsync("supply", "created", supply.Id.ToString(), default);
+
         var result = new SupplyListDto(
             supply.Id, supply.Name, supply.Sku, supply.Category,
             supply.UnitCost, supply.Stock, supply.MinimumStock,
@@ -117,6 +122,8 @@ public class SuppliesController : ControllerBase
         supply.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+
+        await _dispatcher.BroadcastDataChangeAsync("supply", "updated", supply.Id.ToString(), default);
 
         var result = new SupplyListDto(
             supply.Id, supply.Name, supply.Sku, supply.Category,

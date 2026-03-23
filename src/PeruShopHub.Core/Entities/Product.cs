@@ -21,5 +21,4 @@ public class Product
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
-    public ICollection<FileUpload> Photos { get; set; } = new List<FileUpload>();
 }

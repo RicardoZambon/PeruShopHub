@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Dashboard;
 using PeruShopHub.Application.DTOs.Finance;
+using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
@@ -11,10 +12,12 @@ namespace PeruShopHub.API.Controllers;
 public class DashboardController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly ICacheService _cache;
 
-    public DashboardController(PeruShopHubDbContext db)
+    public DashboardController(PeruShopHubDbContext db, ICacheService cache)
     {
         _db = db;
+        _cache = cache;
     }
 
     [HttpGet("summary")]
@@ -22,6 +25,10 @@ public class DashboardController : ControllerBase
         [FromQuery] string period = "30dias",
         CancellationToken ct = default)
     {
+        var cacheKey = $"dashboard:summary:{period}";
+        var cached = await _cache.GetAsync<DashboardSummaryDto>(cacheKey, ct);
+        if (cached is not null) return Ok(cached);
+
         var (start, end) = ParsePeriod(period);
         var periodLength = end - start;
         var prevStart = start - periodLength;
@@ -133,7 +140,9 @@ public class DashboardController : ControllerBase
         // Top 5 products
         var topProducts = await GetProductRankings(start, end, 5, descending: true, ct);
 
-        return Ok(new DashboardSummaryDto(kpis, topProducts, pendingActions, revenueChart, ordersChart));
+        var result = new DashboardSummaryDto(kpis, topProducts, pendingActions, revenueChart, ordersChart);
+        await _cache.SetAsync(cacheKey, result, TimeSpan.FromSeconds(60), ct);
+        return Ok(result);
     }
 
     [HttpGet("chart/revenue-profit")]
@@ -206,6 +215,36 @@ public class DashboardController : ControllerBase
         var (start, end) = ParsePeriod("30dias");
         var products = await GetProductRankings(start, end, limit, descending: false, ct);
         return Ok(products);
+    }
+
+    [HttpGet("pending-actions")]
+    public async Task<ActionResult<IReadOnlyList<PendingActionDto>>> GetPendingActions(
+        CancellationToken ct = default)
+    {
+        var pendingActions = new List<PendingActionDto>();
+
+        var questionCount = await _db.Notifications
+            .Where(n => !n.IsRead && n.Type == "question")
+            .CountAsync(ct);
+        if (questionCount > 0)
+            pendingActions.Add(new PendingActionDto("question", "Perguntas sem resposta",
+                $"{questionCount} pergunta(s) aguardando resposta", "/questions", questionCount));
+
+        var paidOrdersCount = await _db.Orders
+            .Where(o => o.Status == "Pago")
+            .CountAsync(ct);
+        if (paidOrdersCount > 0)
+            pendingActions.Add(new PendingActionDto("order", "Pedidos pagos",
+                $"{paidOrdersCount} pedido(s) aguardando envio", "/orders", paidOrdersCount));
+
+        var stockAlertCount = await _db.Notifications
+            .Where(n => !n.IsRead && n.Type == "stock_alert")
+            .CountAsync(ct);
+        if (stockAlertCount > 0)
+            pendingActions.Add(new PendingActionDto("stock_alert", "Alertas de estoque",
+                $"{stockAlertCount} produto(s) com estoque baixo", "/products", stockAlertCount));
+
+        return Ok(pendingActions);
     }
 
     private async Task<List<ProductRankingDto>> GetProductRankings(

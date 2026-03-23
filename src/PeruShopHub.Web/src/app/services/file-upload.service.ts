@@ -13,7 +13,7 @@ export class FileUploadService {
     formData.append('entityType', entityType);
     formData.append('entityId', entityId);
     formData.append('sortOrder', sortOrder.toString());
-    return this.http.post<FileUploadResponse>('/api/files', formData);
+    return this.http.post<FileUploadResponse>('/api/files/upload', formData);
   }
 
   getFiles(entityType: string, entityId: string): Observable<FileUploadResponse[]> {

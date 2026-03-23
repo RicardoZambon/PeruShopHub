@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Products;
 using PeruShopHub.Core.Entities;
+using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
@@ -12,10 +13,14 @@ namespace PeruShopHub.API.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly ICacheService _cache;
+    private readonly INotificationDispatcher _dispatcher;
 
-    public ProductsController(PeruShopHubDbContext db)
+    public ProductsController(PeruShopHubDbContext db, ICacheService cache, INotificationDispatcher dispatcher)
     {
         _db = db;
+        _cache = cache;
+        _dispatcher = dispatcher;
     }
 
     [HttpGet]
@@ -25,8 +30,13 @@ public class ProductsController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,
         [FromQuery] string sortBy = "name",
-        [FromQuery] string sortDir = "asc")
+        [FromQuery] string sortDir = "asc",
+        CancellationToken ct = default)
     {
+        var cacheKey = $"products:list:{page}:{pageSize}:{search}:{status}:{sortBy}:{sortDir}";
+        var cached = await _cache.GetAsync<PagedResult<ProductListDto>>(cacheKey, ct);
+        if (cached is not null) return Ok(cached);
+
         var query = _db.Products.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -85,13 +95,15 @@ public class ProductsController : ControllerBase
                 p.CreatedAt))
             .ToListAsync();
 
-        return Ok(new PagedResult<ProductListDto>
+        var result = new PagedResult<ProductListDto>
         {
             Items = products,
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize
-        });
+        };
+        await _cache.SetAsync(cacheKey, result, TimeSpan.FromSeconds(60), ct);
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
@@ -203,7 +215,9 @@ public class ProductsController : ControllerBase
         _db.Products.Add(product);
         await _db.SaveChangesAsync();
 
-        var result = new ProductDetailDto(
+        await _dispatcher.BroadcastDataChangeAsync("product", "created", product.Id.ToString(), default);
+
+        var createResult = new ProductDetailDto(
             product.Id,
             product.Sku,
             product.Name,
@@ -225,7 +239,7 @@ public class ProductsController : ControllerBase
             Array.Empty<ProductVariantDto>(),
             Array.Empty<string>());
 
-        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, result);
+        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, createResult);
     }
 
     [HttpPut("{id:guid}")]
@@ -255,6 +269,8 @@ public class ProductsController : ControllerBase
 
         product.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+
+        await _dispatcher.BroadcastDataChangeAsync("product", "updated", product.Id.ToString(), default);
 
         var photoUrls = await _db.FileUploads
             .AsNoTracking()

@@ -43,6 +43,6 @@ export class OrderService {
   }
 
   getSupplies(): Promise<SupplyItem[]> {
-    return firstValueFrom(this.http.get<SupplyItem[]>('/api/supplies/simple'));
+    return firstValueFrom(this.http.get<SupplyItem[]>('/api/supplies'));
   }
 }

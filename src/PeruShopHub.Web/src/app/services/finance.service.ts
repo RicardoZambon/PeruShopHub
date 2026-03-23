@@ -14,12 +14,12 @@ export class FinanceService {
 
   getRevenueProfit(days: number): Observable<ChartDataPoint[]> {
     const params = new HttpParams().set('days', days);
-    return this.http.get<ChartDataPoint[]>('/api/finance/revenue-profit', { params });
+    return this.http.get<ChartDataPoint[]>('/api/finance/chart/revenue-profit', { params });
   }
 
   getMarginChart(days: number): Observable<ChartDataPoint[]> {
     const params = new HttpParams().set('days', days);
-    return this.http.get<ChartDataPoint[]>('/api/finance/margin-chart', { params });
+    return this.http.get<ChartDataPoint[]>('/api/finance/chart/margin', { params });
   }
 
   getSkuProfitability(params: { period?: string; page?: number; pageSize?: number; search?: string; sortBy?: string; sortDir?: string } = {}): Observable<SkuProfitability[]> {

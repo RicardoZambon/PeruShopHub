@@ -14,12 +14,12 @@ export class DashboardService {
 
   getRevenueProfit(days: number): Observable<ChartDataPoint[]> {
     const params = new HttpParams().set('days', days);
-    return this.http.get<ChartDataPoint[]>('/api/dashboard/revenue-profit', { params });
+    return this.http.get<ChartDataPoint[]>('/api/dashboard/chart/revenue-profit', { params });
   }
 
   getCostBreakdown(period: string): Observable<CostBreakdownItem[]> {
     const params = new HttpParams().set('period', period);
-    return this.http.get<CostBreakdownItem[]>('/api/dashboard/cost-breakdown', { params });
+    return this.http.get<CostBreakdownItem[]>('/api/dashboard/chart/cost-breakdown', { params });
   }
 
   getTopProducts(limit: number): Observable<ProductRow[]> {
