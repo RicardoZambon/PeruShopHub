@@ -242,6 +242,48 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, createResult);
     }
 
+    [HttpGet("{id:guid}/cost-history")]
+    public async Task<ActionResult<PagedResult<ProductCostHistoryDto>>> GetCostHistory(
+        Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var productExists = await _db.Products.AsNoTracking().AnyAsync(p => p.Id == id);
+        if (!productExists)
+            return NotFound();
+
+        var query = _db.ProductCostHistories
+            .AsNoTracking()
+            .Where(h => h.ProductId == id);
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(h => h.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(h => new ProductCostHistoryDto(
+                h.Id,
+                h.CreatedAt,
+                h.PreviousCost,
+                h.NewCost,
+                h.Quantity,
+                h.UnitCostPaid,
+                h.PurchaseOrderId,
+                h.Reason))
+            .ToListAsync();
+
+        var result = new PagedResult<ProductCostHistoryDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+
+        return Ok(result);
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<ProductDetailDto>> UpdateProduct(Guid id, UpdateProductDto dto)
     {
