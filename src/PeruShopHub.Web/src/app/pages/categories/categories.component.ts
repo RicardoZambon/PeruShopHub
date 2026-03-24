@@ -108,12 +108,9 @@ export class CategoriesComponent implements OnInit, OnDestroy {
 
   // ── Detail events ──
 
-  async onCategoryUpdated(category: Category): Promise<void> {
+  onCategoryUpdated(category: Category): void {
     this.selectedCategoryId.set(category.id);
-    const detail = await this.categoryService.getById(category.id);
-    if (detail) {
-      this.selectedCategory.set(detail);
-    }
+    this.selectedCategory.set(category);
   }
 
   onCategoryDeleted(id: string): void {

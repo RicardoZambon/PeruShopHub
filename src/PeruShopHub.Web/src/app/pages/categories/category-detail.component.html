@@ -14,7 +14,12 @@
             }
           }
         </div>
-        <h2 class="detail-panel__title">{{ category.name }}</h2>
+        <div class="detail-panel__title-row">
+          @if (category.icon) {
+            <span class="detail-panel__icon material-symbols-outlined">{{ category.icon }}</span>
+          }
+          <h2 class="detail-panel__title">{{ category.name }}</h2>
+        </div>
       </div>
 
       <div class="detail-panel__actions">
@@ -132,12 +137,6 @@
           <div class="detail-panel__meta-row">
             <span class="detail-panel__meta-label">Slug</span>
             <span class="detail-panel__meta-value mono">{{ category.slug }}</span>
-          </div>
-        }
-        @if (category.icon) {
-          <div class="detail-panel__meta-row">
-            <span class="detail-panel__meta-label">Ícone</span>
-            <span class="detail-panel__meta-value">{{ category.icon }}</span>
           </div>
         }
         @if (category.createdAt) {

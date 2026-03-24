@@ -147,6 +147,18 @@
   color: var(--neutral-300);
 }
 
+.detail-panel__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.detail-panel__icon {
+  font-size: 24px;
+  color: var(--neutral-700);
+  flex-shrink: 0;
+}
+
 .detail-panel__title {
   font-size: var(--heading-2-size);
   font-weight: var(--heading-2-weight);

@@ -324,8 +324,10 @@ export class SettingsComponent implements OnInit {
 
     if (editing) {
       this.settingsService.updateCommissionRule(editing.id, dto).subscribe({
-        next: () => {
-          this.loadCommissionRules();
+        next: (updated) => {
+          this.commissionRules.update(rules =>
+            rules.map(r => r.id === editing.id ? updated : r)
+          );
           this.closeCommissionRuleModal();
           this.toastService.show('Regra de comissão atualizada', 'success');
         },
@@ -333,8 +335,8 @@ export class SettingsComponent implements OnInit {
       });
     } else {
       this.settingsService.createCommissionRule(dto).subscribe({
-        next: () => {
-          this.loadCommissionRules();
+        next: (created) => {
+          this.commissionRules.update(rules => [...rules, created]);
           this.closeCommissionRuleModal();
           this.toastService.show('Regra de comissão criada', 'success');
         },

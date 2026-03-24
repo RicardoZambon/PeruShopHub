@@ -59,12 +59,12 @@ export class SettingsService {
     return this.http.get<CommissionRule[]>(`${this.baseUrl}/commission-rules`);
   }
 
-  createCommissionRule(dto: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/commission-rules`, dto);
+  createCommissionRule(dto: any): Observable<CommissionRule> {
+    return this.http.post<CommissionRule>(`${this.baseUrl}/commission-rules`, dto);
   }
 
-  updateCommissionRule(id: string, dto: any): Observable<any> {
-    return this.http.put(`${this.baseUrl}/commission-rules/${id}`, dto);
+  updateCommissionRule(id: string, dto: any): Observable<CommissionRule> {
+    return this.http.put<CommissionRule>(`${this.baseUrl}/commission-rules/${id}`, dto);
   }
 
   deleteCommissionRule(id: string): Observable<any> {
