@@ -1,7 +1,7 @@
 <app-dialog [title]="dialogTitle" [open]="true" (closed)="close()">
-  <form body [formGroup]="form" (ngSubmit)="onSubmit()">
+  <form body class="form-layout" [formGroup]="form" (ngSubmit)="onSubmit()">
     <!-- Icon + Name row -->
-    <div class="field-row field-row--icon-name">
+    <div class="field-row--icon-name">
       <div class="field-row--icon-name__icon">
         <label>Ícone</label>
         <app-icon-picker
@@ -26,65 +26,59 @@
       </div>
     </div>
 
-    <div class="field-row">
-      <app-form-field
-        label="Slug"
-        hint="Identificador na URL. Gerado automaticamente a partir do nome."
-        [error]="form.get('slug')!.touched && form.get('slug')!.hasError('required') ? 'Slug é obrigatório' : ''"
-        [required]="true">
-        <input
-          id="category-slug"
-          type="text"
-          formControlName="slug"
-          placeholder="slug-da-categoria"
-          maxlength="120"
-          (input)="onSlugInput()"
-        />
-      </app-form-field>
-    </div>
+    <app-form-field
+      label="Slug"
+      hint="Identificador na URL. Gerado automaticamente a partir do nome."
+      [error]="form.get('slug')!.touched && form.get('slug')!.hasError('required') ? 'Slug é obrigatório' : ''"
+      [required]="true">
+      <input
+        id="category-slug"
+        type="text"
+        formControlName="slug"
+        placeholder="slug-da-categoria"
+        maxlength="120"
+        (input)="onSlugInput()"
+      />
+    </app-form-field>
 
-    <div class="field-row">
-      <app-form-field label="Categoria Pai">
-        <div class="parent-dropdown">
-          <button
-            type="button"
-            class="parent-dropdown__trigger"
-            (click)="toggleParentDropdown()"
-          >
-            <span>{{ selectedParentName() }}</span>
-            <span class="parent-dropdown__chevron">&#9662;</span>
-          </button>
+    <app-form-field label="Categoria Pai">
+      <div class="parent-dropdown">
+        <button
+          type="button"
+          class="parent-dropdown__trigger"
+          (click)="toggleParentDropdown()"
+        >
+          <span>{{ selectedParentName() }}</span>
+          <span class="parent-dropdown__chevron">&#9662;</span>
+        </button>
 
-          @if (parentDropdownOpen()) {
-            <div class="parent-dropdown__list">
+        @if (parentDropdownOpen()) {
+          <div class="parent-dropdown__list">
+            <button
+              type="button"
+              class="parent-dropdown__item"
+              [class.parent-dropdown__item--selected]="!form.get('parentId')!.value"
+              (click)="selectParent(null)"
+            >
+              Nenhuma (raiz)
+            </button>
+
+            @for (option of flatParentOptions(); track option.id) {
               <button
                 type="button"
                 class="parent-dropdown__item"
-                [class.parent-dropdown__item--selected]="!form.get('parentId')!.value"
-                (click)="selectParent(null)"
+                [class.parent-dropdown__item--selected]="form.get('parentId')!.value === option.id"
+                (click)="selectParent(option.id)"
               >
-                Nenhuma (raiz)
+                {{ getIndent(option.depth) }}{{ option.name }}
               </button>
+            }
+          </div>
+        }
+      </div>
+    </app-form-field>
 
-              @for (option of flatParentOptions(); track option.id) {
-                <button
-                  type="button"
-                  class="parent-dropdown__item"
-                  [class.parent-dropdown__item--selected]="form.get('parentId')!.value === option.id"
-                  (click)="selectParent(option.id)"
-                >
-                  {{ getIndent(option.depth) }}{{ option.name }}
-                </button>
-              }
-            </div>
-          }
-        </div>
-      </app-form-field>
-    </div>
-
-    <div class="field-row">
-      <app-toggle-switch label="Ativo" formControlName="isActive"></app-toggle-switch>
-    </div>
+    <app-toggle-switch label="Ativo" formControlName="isActive"></app-toggle-switch>
   </form>
 
   <ng-container footer>

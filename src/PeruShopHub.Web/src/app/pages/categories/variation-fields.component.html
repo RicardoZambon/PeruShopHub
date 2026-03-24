@@ -63,61 +63,53 @@
             @if (editingFieldId() === field.id && editForm) {
               <!-- Edit mode -->
               <div class="field-card field-card--editing">
-                <form [formGroup]="editForm" (ngSubmit)="saveEdit()">
-                  <div class="field-row">
-                    <app-form-field label="Nome" [required]="true"
-                      [error]="editForm.get('name')!.touched && editForm.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''">
-                      <input
-                        type="text"
-                        formControlName="name"
-                        placeholder="Nome do campo"
-                      />
-                    </app-form-field>
-                  </div>
+                <form class="form-layout" [formGroup]="editForm" (ngSubmit)="saveEdit()">
+                  <app-form-field label="Nome" [required]="true"
+                    [error]="editForm.get('name')!.touched && editForm.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''">
+                    <input
+                      type="text"
+                      formControlName="name"
+                      placeholder="Nome do campo"
+                    />
+                  </app-form-field>
 
-                  <div class="field-row">
-                    <app-form-field label="Tipo">
-                      <app-radio-group
-                        [options]="typeOptions"
-                        formControlName="type">
-                      </app-radio-group>
-                    </app-form-field>
-                  </div>
+                  <app-form-field label="Tipo">
+                    <app-radio-group
+                      [options]="typeOptions"
+                      formControlName="type">
+                    </app-radio-group>
+                  </app-form-field>
 
                   @if (editForm.get('type')!.value === 'select') {
-                    <div class="field-row">
-                      <app-form-field label="Opções">
-                        <div class="chip-input">
-                          <div class="chip-input__chips">
-                            @for (opt of editFormOptions; track opt; let i = $index) {
-                              <span class="chip">
-                                {{ opt }}
-                                <button
-                                  type="button"
-                                  class="chip__remove"
-                                  (click)="removeEditOption(i)"
-                                >
-                                  <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
-                                </button>
-                              </span>
-                            }
-                          </div>
-                          <input
-                            type="text"
-                            class="chip-input__input"
-                            placeholder="Digite e pressione Enter..."
-                            [value]="editChipInput()"
-                            (input)="editChipInput.set($any($event.target).value)"
-                            (keydown)="onEditChipKeydown($event)"
-                          />
+                    <app-form-field label="Opções">
+                      <div class="chip-input">
+                        <div class="chip-input__chips">
+                          @for (opt of editFormOptions; track opt; let i = $index) {
+                            <span class="chip">
+                              {{ opt }}
+                              <button
+                                type="button"
+                                class="chip__remove"
+                                (click)="removeEditOption(i)"
+                              >
+                                <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
+                              </button>
+                            </span>
+                          }
                         </div>
-                      </app-form-field>
-                    </div>
+                        <input
+                          type="text"
+                          class="chip-input__input"
+                          placeholder="Digite e pressione Enter..."
+                          [value]="editChipInput()"
+                          (input)="editChipInput.set($any($event.target).value)"
+                          (keydown)="onEditChipKeydown($event)"
+                        />
+                      </div>
+                    </app-form-field>
                   }
 
-                  <div class="field-row">
-                    <app-toggle-switch label="Obrigatório" formControlName="required"></app-toggle-switch>
-                  </div>
+                  <app-toggle-switch label="Obrigatório" formControlName="required"></app-toggle-switch>
 
                   <app-form-actions
                     (cancel)="cancelEdit()"
@@ -181,61 +173,53 @@
   <!-- Add form -->
   @if (showAddForm() && addForm) {
     <div class="field-card field-card--adding">
-      <form [formGroup]="addForm" (ngSubmit)="saveAdd()">
-        <div class="field-row">
-          <app-form-field label="Nome" [required]="true"
-            [error]="addForm.get('name')!.touched && addForm.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''">
-            <input
-              type="text"
-              formControlName="name"
-              placeholder="Ex: Cor, Tamanho, Voltagem..."
-            />
-          </app-form-field>
-        </div>
+      <form class="form-layout" [formGroup]="addForm" (ngSubmit)="saveAdd()">
+        <app-form-field label="Nome" [required]="true"
+          [error]="addForm.get('name')!.touched && addForm.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''">
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Ex: Cor, Tamanho, Voltagem..."
+          />
+        </app-form-field>
 
-        <div class="field-row">
-          <app-form-field label="Tipo">
-            <app-radio-group
-              [options]="typeOptions"
-              formControlName="type">
-            </app-radio-group>
-          </app-form-field>
-        </div>
+        <app-form-field label="Tipo">
+          <app-radio-group
+            [options]="typeOptions"
+            formControlName="type">
+          </app-radio-group>
+        </app-form-field>
 
         @if (addForm.get('type')!.value === 'select') {
-          <div class="field-row">
-            <app-form-field label="Opções">
-              <div class="chip-input">
-                <div class="chip-input__chips">
-                  @for (opt of addFormOptions; track opt; let i = $index) {
-                    <span class="chip">
-                      {{ opt }}
-                      <button
-                        type="button"
-                        class="chip__remove"
-                        (click)="removeAddOption(i)"
-                      >
-                        <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
-                      </button>
-                    </span>
-                  }
-                </div>
-                <input
-                  type="text"
-                  class="chip-input__input"
-                  placeholder="Digite e pressione Enter..."
-                  [value]="chipInput()"
-                  (input)="chipInput.set($any($event.target).value)"
-                  (keydown)="onAddChipKeydown($event)"
-                />
+          <app-form-field label="Opções">
+            <div class="chip-input">
+              <div class="chip-input__chips">
+                @for (opt of addFormOptions; track opt; let i = $index) {
+                  <span class="chip">
+                    {{ opt }}
+                    <button
+                      type="button"
+                      class="chip__remove"
+                      (click)="removeAddOption(i)"
+                    >
+                      <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
+                    </button>
+                  </span>
+                }
               </div>
-            </app-form-field>
-          </div>
+              <input
+                type="text"
+                class="chip-input__input"
+                placeholder="Digite e pressione Enter..."
+                [value]="chipInput()"
+                (input)="chipInput.set($any($event.target).value)"
+                (keydown)="onAddChipKeydown($event)"
+              />
+            </div>
+          </app-form-field>
         }
 
-        <div class="field-row">
-          <app-toggle-switch label="Obrigatório" formControlName="required"></app-toggle-switch>
-        </div>
+        <app-toggle-switch label="Obrigatório" formControlName="required"></app-toggle-switch>
 
         <app-form-actions
           (cancel)="cancelAdd()"

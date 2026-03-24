@@ -194,7 +194,7 @@ These are hard-won patterns established during development. Follow them when bui
 ### Forms & Dialogs
 
 - **All fields the backend requires must be in the frontend form.** Before building a create/edit form, read the backend DTO and verify every required property is covered. Auto-generate derived fields (e.g., `slug` from `name`) where sensible, but let users override.
-- **Every form element must be wrapped in `<div class="field-row">`** for consistent vertical spacing. The only exception is `<app-form-actions>` which handles its own spacing. Side-by-side field layouts (e.g., cost + stock) use their own row containers.
+- **Form containers must use `class="form-layout"`** which applies `display: flex; flex-direction: column; gap: var(--space-3)`. This automatically spaces all direct children (form fields, toggles, actions) with no wrapper divs needed. For side-by-side fields (e.g., cost + stock), use `class="form-layout--row"` on the containing div.
 - **Every validation error must show a clear message.** If a field is marked as required or has any validation rule, the `[error]` binding on `<app-form-field>` MUST display a human-readable message explaining why the field is invalid (e.g., "Nome é obrigatório"). Never leave a field visually invalid without an explanation. On submit, call `form.markAllAsTouched()` before returning so error messages become visible.
 - **Icon pickers, color pickers, and other visual selectors** should always be inline components (dropdown from a trigger button), not modal dialogs. Keep the user in context.
 - **Modals must close on Escape and backdrop click.** Use `@HostListener('document:keydown.escape')` and a backdrop click handler.

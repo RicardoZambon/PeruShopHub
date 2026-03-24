@@ -1,6 +1,15 @@
-// Single form row — consistent vertical spacing between form elements
-.field-row {
-  margin-bottom: var(--space-3);
+// Form layout — vertical stacking with consistent gap
+.form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+// Horizontal row within a form (side-by-side fields)
+.form-layout--row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
 }
 
 .form-field {
