@@ -171,7 +171,7 @@ These are hard-won patterns established during development. Follow them when bui
 ### Loading States & Async Data
 
 - **Never show empty states while data is loading.** "No items" must only appear when data has loaded and is genuinely empty. Use a `loading` signal and show skeleton placeholders until the request completes.
-- **Skeleton placeholders must match the real layout dimensions** (e.g., breadcrumb + title + info rows), not a generic spinner. This prevents layout shifts.
+- **Skeleton placeholders must mirror the actual rendered layout** — not just generic gray blocks. Replicate the same structural elements the real content uses: bordered cards, divider lines, row spacing, and section groupings. For example, if the detail view has a bordered info card with label-value rows separated by dividers, the skeleton must show the same card with the same border, the same row structure, and the same dividers — just with animated placeholder blocks instead of text. This makes the transition from loading to loaded feel seamless with zero layout shift.
 - **When switching between items** (e.g., selecting a different category in a list-detail view), immediately clear the previous item and show skeletons — never leave stale data visible while the new request is in-flight.
 - **Cancel in-flight requests when the user changes selection.** Use `AbortController` or RxJS `switchMap` to prevent stale responses from overwriting the current state. If the user clicks A then B, A's response must be discarded.
 

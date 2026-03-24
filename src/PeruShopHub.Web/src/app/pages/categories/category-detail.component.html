@@ -165,29 +165,48 @@
 } @else if (loading) {
   <div class="detail-panel">
     <div class="detail-panel__skeleton">
-      <div class="skeleton-row">
-        <div class="skeleton-block" style="width: 60%; height: 20px;"></div>
-      </div>
-      <div class="skeleton-row">
-        <div class="skeleton-block" style="width: 40%; height: 28px;"></div>
-      </div>
-      <div class="skeleton-divider"></div>
-      <div class="skeleton-row">
-        <div class="skeleton-block" style="width: 30%; height: 14px;"></div>
-        <div class="skeleton-block" style="width: 20%; height: 14px; margin-left: auto;"></div>
-      </div>
-      <div class="skeleton-row">
-        <div class="skeleton-block" style="width: 30%; height: 14px;"></div>
-        <div class="skeleton-block" style="width: 15%; height: 14px; margin-left: auto;"></div>
-      </div>
-      <div class="skeleton-divider"></div>
-      <div class="skeleton-row">
-        <div class="skeleton-block" style="width: 25%; height: 12px;"></div>
+      <!-- Header: breadcrumb + title -->
+      <div class="skeleton-header">
         <div class="skeleton-block" style="width: 50%; height: 12px;"></div>
+        <div class="skeleton-block" style="width: 35%; height: 24px; margin-top: 6px;"></div>
       </div>
-      <div class="skeleton-row">
-        <div class="skeleton-block" style="width: 25%; height: 12px;"></div>
-        <div class="skeleton-block" style="width: 35%; height: 12px;"></div>
+
+      <!-- Info card (matches detail-panel__info) -->
+      <div class="skeleton-info-card">
+        <div class="skeleton-info-row">
+          <div class="skeleton-block" style="width: 60px; height: 12px;"></div>
+          <div class="skeleton-block" style="width: 80px; height: 14px; margin-left: auto;"></div>
+        </div>
+        <div class="skeleton-info-row">
+          <div class="skeleton-block" style="width: 70px; height: 12px;"></div>
+          <div class="skeleton-block" style="width: 30px; height: 14px; margin-left: auto;"></div>
+        </div>
+        <div class="skeleton-info-row skeleton-info-row--last">
+          <div class="skeleton-block" style="width: 90px; height: 12px;"></div>
+          <div class="skeleton-block" style="width: 20px; height: 14px; margin-left: auto;"></div>
+        </div>
+      </div>
+
+      <!-- Meta rows (matches detail-panel__meta) -->
+      <div class="skeleton-meta">
+        <div class="skeleton-meta-row">
+          <div class="skeleton-block" style="width: 80px; height: 12px;"></div>
+          <div class="skeleton-block" style="width: 140px; height: 12px;"></div>
+        </div>
+        <div class="skeleton-meta-row">
+          <div class="skeleton-block" style="width: 80px; height: 12px;"></div>
+          <div class="skeleton-block" style="width: 100px; height: 12px;"></div>
+        </div>
+        <div class="skeleton-meta-row">
+          <div class="skeleton-block" style="width: 80px; height: 12px;"></div>
+          <div class="skeleton-block" style="width: 120px; height: 12px;"></div>
+        </div>
+      </div>
+
+      <!-- Variation fields section -->
+      <div class="skeleton-divider"></div>
+      <div class="skeleton-section-header">
+        <div class="skeleton-block" style="width: 140px; height: 16px;"></div>
       </div>
     </div>
   </div>

@@ -1,5 +1,11 @@
 @use '../../../styles/mixins' as m;
 
+:host {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
 .detail-panel {
   flex: 1;
   background: var(--surface);
@@ -19,14 +25,7 @@
 
 // Loading skeleton
 .detail-panel__skeleton {
-  padding: var(--space-6);
-}
-
-.skeleton-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  padding: 0;
 }
 
 .skeleton-block {
@@ -35,10 +34,53 @@
   animation: skeletonPulse 1.5s ease-in-out infinite;
 }
 
+// Header (breadcrumb + title)
+.skeleton-header {
+  margin-bottom: var(--space-6);
+}
+
+// Info card — matches .detail-panel__info
+.skeleton-info-card {
+  padding: var(--space-4);
+  background: var(--neutral-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--neutral-200);
+  margin-bottom: var(--space-6);
+}
+
+.skeleton-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--neutral-200);
+
+  &--last {
+    border-bottom: none;
+  }
+}
+
+// Meta rows — matches .detail-panel__meta
+.skeleton-meta {
+  margin-bottom: var(--space-6);
+}
+
+.skeleton-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+// Section divider and header
 .skeleton-divider {
   height: 1px;
   background: var(--neutral-200);
-  margin: var(--space-5) 0;
+  margin: var(--space-6) 0;
+}
+
+.skeleton-section-header {
+  margin-top: var(--space-3);
 }
 
 @keyframes skeletonPulse {
