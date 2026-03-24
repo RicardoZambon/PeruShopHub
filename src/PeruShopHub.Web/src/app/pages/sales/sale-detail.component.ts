@@ -11,6 +11,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
 import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
+import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { OrderService } from '../../services/order.service';
 import { ToastService } from '../../services/toast.service';
@@ -223,6 +224,7 @@ export class SaleDetailComponent implements OnInit {
   // Injected services
   private readonly orderService = inject(OrderService);
   private readonly toastService = inject(ToastService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   // Core state
   loading = signal(true);
@@ -579,7 +581,15 @@ export class SaleDetailComponent implements OnInit {
     this.cancelSupplyForm();
   }
 
-  removeSupply(supplyId: string): void {
+  async removeSupply(supplyId: string): Promise<void> {
+    const supply = this.saleSupplies().find(s => s.supplyId === supplyId);
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Remover suprimento',
+      message: `Deseja remover o suprimento "${supply?.name || ''}"?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     this.saleSupplies.set(this.saleSupplies().filter(s => s.supplyId !== supplyId));
   }
 

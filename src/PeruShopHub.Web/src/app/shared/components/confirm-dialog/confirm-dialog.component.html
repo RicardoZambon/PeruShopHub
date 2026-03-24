@@ -1,0 +1,27 @@
+@if (confirmService.open()) {
+  <div class="confirm-overlay" (click)="onBackdropClick($event)">
+    <div class="confirm-dialog" role="alertdialog" aria-modal="true">
+      <div class="confirm-dialog__body">
+        <h3 class="confirm-dialog__title">{{ confirmService.options().title }}</h3>
+        <p class="confirm-dialog__message">{{ confirmService.options().message }}</p>
+      </div>
+      <div class="confirm-dialog__actions">
+        <button
+          type="button"
+          class="confirm-dialog__btn confirm-dialog__btn--cancel"
+          (click)="confirmService.cancel()">
+          {{ confirmService.options().cancelLabel }}
+        </button>
+        <button
+          type="button"
+          class="confirm-dialog__btn confirm-dialog__btn--confirm"
+          [class.confirm-dialog__btn--danger]="confirmService.options().variant === 'danger'"
+          [class.confirm-dialog__btn--warning]="confirmService.options().variant === 'warning'"
+          [class.confirm-dialog__btn--primary]="confirmService.options().variant === 'primary'"
+          (click)="confirmService.accept()">
+          {{ confirmService.options().confirmLabel }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

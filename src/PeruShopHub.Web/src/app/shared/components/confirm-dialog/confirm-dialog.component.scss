@@ -1,0 +1,102 @@
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  animation: confirmFadeIn 150ms ease;
+}
+
+.confirm-dialog {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  width: 400px;
+  max-width: calc(100vw - var(--space-8));
+  animation: confirmSlideUp 150ms ease;
+}
+
+.confirm-dialog__body {
+  padding: var(--space-6);
+}
+
+.confirm-dialog__title {
+  font-size: var(--heading-3-size);
+  font-weight: var(--heading-3-weight);
+  color: var(--neutral-900);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.confirm-dialog__message {
+  font-size: var(--body-size);
+  color: var(--neutral-600);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--neutral-200);
+}
+
+.confirm-dialog__btn {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: var(--body-size);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+  border: none;
+
+  &--cancel {
+    background: none;
+    color: var(--neutral-700);
+
+    &:hover {
+      background: var(--neutral-100);
+    }
+  }
+
+  &--danger {
+    background: var(--danger);
+    color: var(--text-on-primary);
+
+    &:hover {
+      background: #b71c1c;
+    }
+  }
+
+  &--warning {
+    background: var(--warning);
+    color: var(--text-on-primary);
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  &--primary {
+    background: var(--primary);
+    color: var(--text-on-primary);
+
+    &:hover {
+      background: var(--primary-hover);
+    }
+  }
+}
+
+@keyframes confirmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes confirmSlideUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

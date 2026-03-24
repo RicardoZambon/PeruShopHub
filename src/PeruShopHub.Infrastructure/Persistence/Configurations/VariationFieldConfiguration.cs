@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PeruShopHub.Core.Entities;
 
@@ -12,7 +14,16 @@ public class VariationFieldConfiguration : IEntityTypeConfiguration<VariationFie
 
         builder.Property(v => v.Name).HasMaxLength(100).IsRequired();
         builder.Property(v => v.Type).HasMaxLength(20).IsRequired();
-        builder.Property(v => v.Options).HasColumnType("jsonb");
+
+        builder.Property(v => v.Options)
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<string[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<string>(),
+                new ValueComparer<string[]>(
+                    (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
+                    v => v.ToArray()));
 
         builder.HasOne(v => v.Category)
             .WithMany()

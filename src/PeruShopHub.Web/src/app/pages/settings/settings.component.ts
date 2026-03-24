@@ -15,6 +15,7 @@ import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
 import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule } from '../../services/settings.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmDialogService } from '../../shared/components';
 
 type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'alertas' | 'aparencia';
 
@@ -44,6 +45,7 @@ export class SettingsComponent implements OnInit {
   private readonly themeService = inject(ThemeService);
   private readonly settingsService = inject(SettingsService);
   private readonly toastService = inject(ToastService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly pencilIcon = Pencil;
   readonly trashIcon = Trash2;
@@ -219,8 +221,14 @@ export class SettingsComponent implements OnInit {
     this.closeUserModal();
   }
 
-  deleteUser(user: UserRow): void {
-    if (confirm(`Deseja remover o usuário "${user.nome}"?`)) {
+  async deleteUser(user: UserRow): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Remover usuário',
+      message: `Deseja remover o usuário "${user.nome}"?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (confirmed) {
       this.users.update(users => users.filter(u => u.id !== user.id));
     }
   }
@@ -262,7 +270,15 @@ export class SettingsComponent implements OnInit {
     this.fixedCosts.update(list => list.map(c => c.id === id ? { ...c, valor: value } : c));
   }
 
-  removeFixedCost(id: number): void {
+  async removeFixedCost(id: number): Promise<void> {
+    const cost = this.fixedCosts().find(c => c.id === id);
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Remover custo fixo',
+      message: `Deseja remover o custo fixo "${cost?.nome || ''}"?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     this.fixedCosts.update(list => list.filter(c => c.id !== id));
   }
 
@@ -345,13 +361,19 @@ export class SettingsComponent implements OnInit {
     }
   }
 
-  deleteCommissionRule(rule: CommissionRule): void {
+  async deleteCommissionRule(rule: CommissionRule): Promise<void> {
     if (rule.isDefault) return;
-    if (!confirm(`Deseja remover a regra de comissão para "${rule.categoryPattern}"?`)) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Remover regra',
+      message: `Deseja remover a regra de comissão para "${rule.categoryPattern}"?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
 
     this.settingsService.deleteCommissionRule(rule.id).subscribe({
       next: () => {
-        this.loadCommissionRules();
+        this.commissionRules.update(rules => rules.filter(r => r.id !== rule.id));
         this.toastService.show('Regra de comissão removida', 'success');
       },
       error: () => this.toastService.show('Erro ao remover regra', 'danger'),

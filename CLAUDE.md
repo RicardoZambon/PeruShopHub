@@ -198,12 +198,21 @@ These are hard-won patterns established during development. Follow them when bui
 - **Every validation error must show a clear message.** If a field is marked as required or has any validation rule, the `[error]` binding on `<app-form-field>` MUST display a human-readable message explaining why the field is invalid (e.g., "Nome é obrigatório"). Never leave a field visually invalid without an explanation. On submit, call `form.markAllAsTouched()` before returning so error messages become visible.
 - **Icon pickers, color pickers, and other visual selectors** should always be inline components (dropdown from a trigger button), not modal dialogs. Keep the user in context.
 - **Modals must close on Escape and backdrop click.** Use `@HostListener('document:keydown.escape')` and a backdrop click handler.
+- **Every delete action MUST show a confirmation dialog before executing.** No exceptions — whether it's deleting a category, a variation field, a fixed cost, a supply, or any other record. Use `confirm()` with a message that names the item being deleted (e.g., `Deseja remover o campo "Cor"?`). This applies to both backend-persisted deletes and local state removals.
 
 ### Backend ↔ Frontend Alignment
 
 - **Frontend DTOs must match backend DTOs.** When the backend `CreateCategoryDto` requires `Name, Slug, ParentId, Icon, Order`, the frontend must send all five — not a subset. Mismatches cause silent 400 errors.
 - **List endpoints vs detail endpoints return different shapes.** List DTOs are lightweight (no timestamps, no children). Detail DTOs include everything. When displaying detailed information (dates, metadata), fetch the detail endpoint — don't rely on list data.
 - **If a feature is shown in the UI, it must be persisted in the backend.** No in-memory-only data stores for user-facing features. If the user creates something, it must survive a page refresh.
+
+### Avoid Redundant API Calls
+
+- **Never re-fetch after a mutation when the response already contains the data.** POST/PUT endpoints return the created/updated entity — use that response directly to update local state. Don't follow a PUT with a GET for the same resource.
+- **For create**: append the returned entity to the local signal/array.
+- **For update**: replace the matching item in the local signal/array with the returned entity.
+- **For delete**: remove the item from the local signal/array — no GET needed.
+- **Only re-fetch** when the mutation affects data you don't have locally (e.g., a stock adjustment that changes counts across multiple views).
 
 ### API Design Conventions
 

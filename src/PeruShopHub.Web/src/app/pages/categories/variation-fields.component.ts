@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder } from '@angular/cdk/drag-drop';
 import { LucideAngularModule, Plus, GripVertical, Trash2, Pencil, Link, Type, ListChecks, X } from 'lucide-angular';
-import { ButtonComponent, FormFieldComponent, RadioGroupComponent, ToggleSwitchComponent, FormActionsComponent } from '../../shared/components';
+import { ButtonComponent, FormFieldComponent, RadioGroupComponent, ToggleSwitchComponent, FormActionsComponent, ConfirmDialogService } from '../../shared/components';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import type { VariationField, InheritedVariationField, CreateVariationFieldDto } from '../../models/category.model';
@@ -33,6 +33,7 @@ export class VariationFieldsComponent implements OnChanges {
 
   private readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmDialogService);
   private readonly fb = inject(FormBuilder);
 
   readonly plusIcon = Plus;
@@ -140,11 +141,11 @@ export class VariationFieldsComponent implements OnChanges {
     };
 
     try {
-      await this.categoryService.addVariationField(this.categoryId, dto);
+      const created = await this.categoryService.addVariationField(this.categoryId, dto);
+      this.ownFields.update(fields => [...fields, created]);
       this.toast.show('Campo de variação adicionado', 'success');
       this.cancelAdd();
       this._addFormOptions = [];
-      await this.loadFields();
     } catch {
       this.toast.show('Erro ao adicionar campo', 'danger');
     }
@@ -204,15 +205,18 @@ export class VariationFieldsComponent implements OnChanges {
     }
 
     try {
-      await this.categoryService.updateVariationField(this.categoryId, this.editingFieldId()!, {
+      const fieldId = this.editingFieldId()!;
+      const updated = await this.categoryService.updateVariationField(this.categoryId, fieldId, {
         name,
         type,
         options: type === 'select' ? [...this._editFormOptions] : [],
         required,
       });
+      this.ownFields.update(fields =>
+        fields.map(f => f.id === fieldId ? updated : f)
+      );
       this.toast.show('Campo de variação atualizado', 'success');
       this.cancelEdit();
-      await this.loadFields();
     } catch {
       this.toast.show('Erro ao atualizar campo', 'danger');
     }
@@ -221,11 +225,19 @@ export class VariationFieldsComponent implements OnChanges {
   // ── Delete field ──
 
   async deleteField(field: VariationField): Promise<void> {
+    const confirmed = await this.confirm.confirm({
+      title: 'Remover campo',
+      message: `Deseja remover o campo "${field.name}"?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
     try {
       const success = await this.categoryService.deleteVariationField(this.categoryId, field.id);
       if (success) {
+        this.ownFields.update(fields => fields.filter(f => f.id !== field.id));
         this.toast.show('Campo de variação removido', 'success');
-        await this.loadFields();
       }
     } catch {
       this.toast.show('Erro ao remover campo', 'danger');

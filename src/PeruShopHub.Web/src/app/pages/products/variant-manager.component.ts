@@ -21,6 +21,7 @@ import {
 } from '../../models/product-variant.model';
 import { ProductVariantService } from '../../services/product-variant.service';
 import { CategoryService } from '../../services/category.service';
+import { ConfirmDialogService } from '../../shared/components';
 import type { InheritedVariationField } from '../../models/category.model';
 
 @Component({
@@ -33,6 +34,7 @@ import type { InheritedVariationField } from '../../models/category.model';
 export class VariantManagerComponent implements OnChanges, OnInit {
   private variantService = inject(ProductVariantService);
   private categoryService = inject(CategoryService);
+  private confirmDialog = inject(ConfirmDialogService);
 
   readonly chevronDownIcon = ChevronDown;
   readonly chevronUpIcon = ChevronUp;
@@ -363,7 +365,13 @@ export class VariantManagerComponent implements OnChanges, OnInit {
   }
 
   async deleteVariant(variantId: string): Promise<void> {
-    if (!confirm('Tem certeza que deseja excluir esta variante?')) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Excluir variante',
+      message: 'Tem certeza que deseja excluir esta variante?',
+      confirmLabel: 'Excluir',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     await this.variantService.delete(variantId);
     this.variantsSignal.update(list => list.filter(v => v.id !== variantId));
   }
