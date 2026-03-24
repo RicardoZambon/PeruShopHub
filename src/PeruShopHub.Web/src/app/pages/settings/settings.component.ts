@@ -51,6 +51,7 @@ export class SettingsComponent implements OnInit {
   readonly trashIcon = Trash2;
 
   activeTab = signal<SettingsTab>('empresa');
+  readonly saving = signal(false);
   showUserModal = signal(false);
   editingUser = signal<UserRow | null>(null);
 
@@ -144,8 +145,10 @@ export class SettingsComponent implements OnInit {
   // Company form
   saveCompany(): void {
     if (this.companyForm.valid) {
+      this.saving.set(true);
       // Mock save - would call API
       alert('Dados da empresa salvos com sucesso!');
+      this.saving.set(false);
     }
   }
 
@@ -206,6 +209,7 @@ export class SettingsComponent implements OnInit {
   saveUser(): void {
     if (!this.userForm.valid) return;
 
+    this.saving.set(true);
     const formValue = this.userForm.value;
     const editing = this.editingUser();
 
@@ -218,6 +222,7 @@ export class SettingsComponent implements OnInit {
       this.users.update(users => [...users, { id: newId, ...formValue }]);
     }
 
+    this.saving.set(false);
     this.closeUserModal();
   }
 
@@ -228,9 +233,9 @@ export class SettingsComponent implements OnInit {
       confirmLabel: 'Remover',
       variant: 'danger',
     });
-    if (confirmed) {
-      this.users.update(users => users.filter(u => u.id !== user.id));
-    }
+    if (!confirmed) return;
+    this.users.update(users => users.filter(u => u.id !== user.id));
+    this.confirmDialog.done();
   }
 
   onModalBackdropClick(event: MouseEvent): void {
@@ -248,9 +253,11 @@ export class SettingsComponent implements OnInit {
   // Fixed Costs
   saveFixedCosts(): void {
     if (this.fixedCostsForm.valid) {
+      this.saving.set(true);
       this.embalagemPadrao.set(this.fixedCostsForm.value.embalagemPadrao);
       this.aliquotaSimples.set(this.fixedCostsForm.value.aliquotaSimples);
       alert('Custos fixos salvos com sucesso!');
+      this.saving.set(false);
     }
   }
 
@@ -280,6 +287,7 @@ export class SettingsComponent implements OnInit {
     });
     if (!confirmed) return;
     this.fixedCosts.update(list => list.filter(c => c.id !== id));
+    this.confirmDialog.done();
   }
 
   // Alerts
@@ -334,6 +342,7 @@ export class SettingsComponent implements OnInit {
   saveCommissionRule(): void {
     if (!this.commissionRuleForm.valid) return;
 
+    this.saving.set(true);
     const formValue = this.commissionRuleForm.value;
     const dto = { ...formValue, rate: formValue.rate / 100 };
     const editing = this.editingCommissionRule();
@@ -341,22 +350,30 @@ export class SettingsComponent implements OnInit {
     if (editing) {
       this.settingsService.updateCommissionRule(editing.id, dto).subscribe({
         next: (updated) => {
+          this.saving.set(false);
           this.commissionRules.update(rules =>
             rules.map(r => r.id === editing.id ? updated : r)
           );
           this.closeCommissionRuleModal();
           this.toastService.show('Regra de comissão atualizada', 'success');
         },
-        error: () => this.toastService.show('Erro ao atualizar regra', 'danger'),
+        error: () => {
+          this.saving.set(false);
+          this.toastService.show('Erro ao atualizar regra', 'danger');
+        },
       });
     } else {
       this.settingsService.createCommissionRule(dto).subscribe({
         next: (created) => {
+          this.saving.set(false);
           this.commissionRules.update(rules => [...rules, created]);
           this.closeCommissionRuleModal();
           this.toastService.show('Regra de comissão criada', 'success');
         },
-        error: () => this.toastService.show('Erro ao criar regra', 'danger'),
+        error: () => {
+          this.saving.set(false);
+          this.toastService.show('Erro ao criar regra', 'danger');
+        },
       });
     }
   }
@@ -373,10 +390,14 @@ export class SettingsComponent implements OnInit {
 
     this.settingsService.deleteCommissionRule(rule.id).subscribe({
       next: () => {
+        this.confirmDialog.done();
         this.commissionRules.update(rules => rules.filter(r => r.id !== rule.id));
         this.toastService.show('Regra de comissão removida', 'success');
       },
-      error: () => this.toastService.show('Erro ao remover regra', 'danger'),
+      error: () => {
+        this.confirmDialog.done();
+        this.toastService.show('Erro ao remover regra', 'danger');
+      },
     });
   }
 
@@ -384,12 +405,17 @@ export class SettingsComponent implements OnInit {
   saveTaxRate(): void {
     if (!this.taxRateForm.valid) return;
     const { taxRate } = this.taxRateForm.value;
+    this.saving.set(true);
     this.settingsService.updateCosts({ taxRate }).subscribe({
       next: () => {
+        this.saving.set(false);
         this.taxRate.set(taxRate);
         this.toastService.show('Alíquota de imposto atualizada', 'success');
       },
-      error: () => this.toastService.show('Erro ao atualizar alíquota', 'danger'),
+      error: () => {
+        this.saving.set(false);
+        this.toastService.show('Erro ao atualizar alíquota', 'danger');
+      },
     });
   }
 

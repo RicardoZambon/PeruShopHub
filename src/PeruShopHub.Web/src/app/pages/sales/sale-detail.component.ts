@@ -238,7 +238,6 @@ export class SaleDetailComponent implements OnInit {
   showCostForm = signal(false);
   editingCostId = signal<string | null>(null);
   costForm!: FormGroup;
-  deleteConfirmCostId = signal<string | null>(null);
 
   // US-057: Lock after "Enviado"
   isLocked = computed(() => {
@@ -468,17 +467,17 @@ export class SaleDetailComponent implements OnInit {
     this.cancelCostForm();
   }
 
-  confirmDeleteCost(costId: string): void {
-    this.deleteConfirmCostId.set(costId);
-  }
-
-  cancelDeleteCost(): void {
-    this.deleteConfirmCostId.set(null);
-  }
-
-  deleteCost(costId: string): void {
+  async deleteCost(costId: string): Promise<void> {
+    const cost = this.manualCosts().find(c => c.id === costId);
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Excluir custo',
+      message: `Deseja remover o custo "${cost?.description || cost?.category || ''}"?`,
+      confirmLabel: 'Excluir',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     this.manualCosts.set(this.manualCosts().filter(c => c.id !== costId));
-    this.deleteConfirmCostId.set(null);
+    this.confirmDialog.done();
   }
 
   isManualCost(cost: CostItem): boolean {
@@ -591,6 +590,7 @@ export class SaleDetailComponent implements OnInit {
     });
     if (!confirmed) return;
     this.saleSupplies.set(this.saleSupplies().filter(s => s.supplyId !== supplyId));
+    this.confirmDialog.done();
   }
 
   // --- Recalculate Costs ---

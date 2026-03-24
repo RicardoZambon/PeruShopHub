@@ -166,26 +166,14 @@
                   </td>
                   <td class="col-actions">
                     @if (isManualCost(cost) && !isLocked()) {
-                      @if (deleteConfirmCostId() === cost.id) {
-                        <div class="delete-confirm-inline">
-                          <span>Excluir?</span>
-                          <button class="btn-icon btn-icon-danger" (click)="deleteCost(cost.id!)" title="Confirmar exclusão">
-                            <lucide-icon [img]="checkIcon" [size]="14"></lucide-icon>
-                          </button>
-                          <button class="btn-icon" (click)="cancelDeleteCost()" title="Cancelar">
-                            <lucide-icon [img]="xIcon" [size]="14"></lucide-icon>
-                          </button>
-                        </div>
-                      } @else {
-                        <div class="row-actions">
-                          <button class="btn-icon" (click)="editManualCost(cost)" title="Editar custo">
-                            <lucide-icon [img]="pencilIcon" [size]="14"></lucide-icon>
-                          </button>
-                          <button class="btn-icon btn-icon-danger" (click)="confirmDeleteCost(cost.id!)" title="Excluir custo">
-                            <lucide-icon [img]="trashIcon" [size]="14"></lucide-icon>
-                          </button>
-                        </div>
-                      }
+                      <div class="row-actions">
+                        <button class="btn-icon" (click)="editManualCost(cost)" title="Editar custo">
+                          <lucide-icon [img]="pencilIcon" [size]="14"></lucide-icon>
+                        </button>
+                        <button class="btn-icon btn-icon-danger" (click)="deleteCost(cost.id!)" title="Excluir custo">
+                          <lucide-icon [img]="trashIcon" [size]="14"></lucide-icon>
+                        </button>
+                      </div>
                     }
                   </td>
                 </tr>

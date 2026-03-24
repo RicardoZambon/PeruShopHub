@@ -83,6 +83,27 @@ public class VariationFieldsController : ControllerBase
         if (!categoryExists)
             return NotFound(new { message = "Category not found" });
 
+        var errors = new Dictionary<string, string[]>();
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            errors["Name"] = ["Nome é obrigatório"];
+
+        if (dto.Type is not "text" and not "select")
+            errors["Type"] = ["Tipo deve ser 'text' ou 'select'"];
+
+        if (dto.Type == "select" && (dto.Options is null || dto.Options.Length < 2))
+            errors["Options"] = ["Campos de seleção precisam de pelo menos 2 opções"];
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+        {
+            var allFieldNames = await GetAllFieldNamesForCategory(categoryId);
+            if (allFieldNames.Any(n => n.Equals(dto.Name.Trim(), StringComparison.OrdinalIgnoreCase)))
+                errors["Name"] = [$"Já existe um campo com o nome \"{dto.Name.Trim()}\""];
+        }
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
         var maxOrder = await _db.VariationFields
             .Where(f => f.CategoryId == categoryId)
             .MaxAsync(f => (int?)f.Order) ?? -1;
@@ -91,9 +112,9 @@ public class VariationFieldsController : ControllerBase
         {
             Id = Guid.NewGuid(),
             CategoryId = categoryId,
-            Name = dto.Name,
+            Name = dto.Name.Trim(),
             Type = dto.Type,
-            Options = dto.Options,
+            Options = dto.Options ?? Array.Empty<string>(),
             Required = dto.Required,
             Order = maxOrder + 1,
             CreatedAt = DateTime.UtcNow,
@@ -120,7 +141,29 @@ public class VariationFieldsController : ControllerBase
         if (field is null)
             return NotFound();
 
-        if (dto.Name is not null) field.Name = dto.Name;
+        var errors = new Dictionary<string, string[]>();
+
+        if (dto.Name is not null && string.IsNullOrWhiteSpace(dto.Name))
+            errors["Name"] = ["Nome é obrigatório"];
+
+        if (dto.Type is not null and not "text" and not "select")
+            errors["Type"] = ["Tipo deve ser 'text' ou 'select'"];
+
+        var effectiveType = dto.Type ?? field.Type;
+        if (effectiveType == "select" && dto.Options is not null && dto.Options.Length < 2)
+            errors["Options"] = ["Campos de seleção precisam de pelo menos 2 opções"];
+
+        if (dto.Name is not null && !string.IsNullOrWhiteSpace(dto.Name))
+        {
+            var allFieldNames = await GetAllFieldNamesForCategory(categoryId, excludeFieldId: id);
+            if (allFieldNames.Any(n => n.Equals(dto.Name.Trim(), StringComparison.OrdinalIgnoreCase)))
+                errors["Name"] = [$"Já existe um campo com o nome \"{dto.Name.Trim()}\""];
+        }
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        if (dto.Name is not null) field.Name = dto.Name.Trim();
         if (dto.Type is not null) field.Type = dto.Type;
         if (dto.Options is not null) field.Options = dto.Options;
         if (dto.Required.HasValue) field.Required = dto.Required.Value;
@@ -132,6 +175,39 @@ public class VariationFieldsController : ControllerBase
         return Ok(new VariationFieldDto(
             field.Id, field.CategoryId, field.Name, field.Type,
             field.Options, field.Required, field.Order));
+    }
+
+    private async Task<List<string>> GetAllFieldNamesForCategory(Guid categoryId, Guid? excludeFieldId = null)
+    {
+        // Own fields
+        var query = _db.VariationFields.AsNoTracking().Where(f => f.CategoryId == categoryId);
+        if (excludeFieldId.HasValue)
+            query = query.Where(f => f.Id != excludeFieldId.Value);
+
+        var names = await query.Select(f => f.Name).ToListAsync();
+
+        // Walk up parent chain for inherited fields
+        var currentId = categoryId;
+        while (true)
+        {
+            var parentId = await _db.Categories.AsNoTracking()
+                .Where(c => c.Id == currentId)
+                .Select(c => c.ParentId)
+                .FirstOrDefaultAsync();
+
+            if (parentId is null)
+                break;
+
+            currentId = parentId.Value;
+            var parentFieldNames = await _db.VariationFields.AsNoTracking()
+                .Where(f => f.CategoryId == currentId)
+                .Select(f => f.Name)
+                .ToListAsync();
+
+            names.AddRange(parentFieldNames);
+        }
+
+        return names;
     }
 
     [HttpDelete("{id:guid}")]

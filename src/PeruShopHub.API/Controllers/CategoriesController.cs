@@ -127,6 +127,23 @@ public class CategoriesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CategoryDetailDto>> CreateCategory(CreateCategoryDto dto)
     {
+        var errors = new Dictionary<string, string[]>();
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            errors["Name"] = ["Nome é obrigatório"];
+
+        if (string.IsNullOrWhiteSpace(dto.Slug))
+            errors["Slug"] = ["Slug é obrigatório"];
+
+        if (!string.IsNullOrWhiteSpace(dto.Slug) && await _db.Categories.AnyAsync(c => c.Slug == dto.Slug))
+            errors["Slug"] = [$"Já existe uma categoria com o slug \"{dto.Slug}\""];
+
+        if (!string.IsNullOrWhiteSpace(dto.Name) && await _db.Categories.AnyAsync(c => c.Name == dto.Name))
+            errors["Name"] = [$"Já existe uma categoria com o nome \"{dto.Name}\""];
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
         var category = new Category
         {
             Id = Guid.NewGuid(),
@@ -175,6 +192,25 @@ public class CategoriesController : ControllerBase
 
         if (category is null)
             return NotFound();
+
+        var errors = new Dictionary<string, string[]>();
+
+        if (dto.Name is not null && string.IsNullOrWhiteSpace(dto.Name))
+            errors["Name"] = ["Nome é obrigatório"];
+
+        if (dto.Slug is not null && string.IsNullOrWhiteSpace(dto.Slug))
+            errors["Slug"] = ["Slug é obrigatório"];
+
+        if (dto.Slug is not null && !string.IsNullOrWhiteSpace(dto.Slug)
+            && await _db.Categories.AnyAsync(c => c.Slug == dto.Slug && c.Id != id))
+            errors["Slug"] = [$"Já existe uma categoria com o slug \"{dto.Slug}\""];
+
+        if (dto.Name is not null && !string.IsNullOrWhiteSpace(dto.Name)
+            && await _db.Categories.AnyAsync(c => c.Name == dto.Name && c.Id != id))
+            errors["Name"] = [$"Já existe uma categoria com o nome \"{dto.Name}\""];
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
 
         if (dto.Name is not null) category.Name = dto.Name;
         if (dto.Slug is not null) category.Slug = dto.Slug;

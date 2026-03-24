@@ -151,7 +151,26 @@ a:hover {
   }
 }
 
-/* Form field system — now handled by shared FormFieldComponent */
+/* ═══════════════════════════════════════════════════════════════
+   FORM LAYOUT UTILITIES
+   ═══════════════════════════════════════════════════════════════ */
+
+.form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.form-layout--row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.form-layout--saving {
+  pointer-events: none;
+  opacity: 0.6;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL FOCUS STATES

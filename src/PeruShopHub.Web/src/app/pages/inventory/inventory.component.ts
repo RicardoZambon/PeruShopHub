@@ -44,6 +44,7 @@ export class InventoryComponent implements OnInit {
 
   // Modal state
   entryModalOpen = signal(false);
+  readonly saving = signal(false);
   entryForm: FormGroup;
   productSearch = signal('');
   showProductDropdown = signal(false);
@@ -206,6 +207,7 @@ export class InventoryComponent implements OnInit {
 
     const reason = notaFiscal ? `Reposição NF ${notaFiscal}` : (observacao || 'Entrada manual');
 
+    this.saving.set(true);
     this.inventoryService.adjust({
       productId: sku,
       variantId: sku,
@@ -213,12 +215,14 @@ export class InventoryComponent implements OnInit {
       reason,
     }).subscribe({
       next: () => {
+        this.saving.set(false);
         this.closeEntryModal();
         // Reload data from server
         this.loadInventory();
         this.loadMovements();
       },
       error: () => {
+        this.saving.set(false);
         // Keep modal open on error so user can retry
       },
     });

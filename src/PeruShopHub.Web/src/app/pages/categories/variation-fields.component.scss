@@ -6,6 +6,31 @@
   padding-top: var(--space-6);
 }
 
+// Loading skeleton
+.variation-fields__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.variation-fields__skeleton-card {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+}
+
+.variation-fields__skeleton-card .skeleton-block {
+  border-radius: var(--radius-sm);
+  background: var(--neutral-200);
+  animation: vfSkeletonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes vfSkeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .variation-fields__header {
   display: flex;
   align-items: center;

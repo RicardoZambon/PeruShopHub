@@ -372,8 +372,13 @@ export class VariantManagerComponent implements OnChanges, OnInit {
       variant: 'danger',
     });
     if (!confirmed) return;
-    await this.variantService.delete(variantId);
-    this.variantsSignal.update(list => list.filter(v => v.id !== variantId));
+    try {
+      await this.variantService.delete(variantId);
+      this.confirmDialog.done();
+      this.variantsSignal.update(list => list.filter(v => v.id !== variantId));
+    } catch {
+      this.confirmDialog.done();
+    }
   }
 
   updateBulkPrice(value: string): void {

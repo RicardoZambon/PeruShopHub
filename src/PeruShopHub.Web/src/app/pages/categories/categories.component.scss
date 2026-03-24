@@ -3,8 +3,8 @@
 .categorias-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  height: calc(100vh - var(--header-height, 56px) - 48px); // 48px = 24px padding top + bottom
+  overflow: hidden;
 }
 
 .categorias-page__search-wrap {
@@ -31,9 +31,10 @@
 .categorias-page__tree-panel {
   display: flex;
   flex-shrink: 0;
+  overflow-y: auto;
 
   @include m.mobile {
-    width: 100%;
+    width: 100% !important; // override inline style on mobile
 
     &--hidden-mobile {
       display: none;
@@ -41,7 +42,40 @@
   }
 
   @include m.tablet {
-    width: 280px;
+    width: 280px !important; // override inline style on tablet
+  }
+}
+
+.categorias-page__resize-handle {
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+  z-index: 1;
+  transition: background 150ms ease;
+
+  &:hover,
+  &--active {
+    background: var(--primary);
+  }
+
+  // Larger invisible hit area
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -4px;
+    right: -4px;
+  }
+
+  @include m.mobile {
+    display: none;
+  }
+
+  @include m.tablet {
+    display: none;
   }
 }
 
@@ -49,6 +83,7 @@
   display: flex;
   flex: 1;
   min-width: 0;
+  overflow-y: auto;
   border-left: 1px solid var(--neutral-200);
 
   @include m.mobile {

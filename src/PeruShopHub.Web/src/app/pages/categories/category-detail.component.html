@@ -43,24 +43,8 @@
       </div>
     </div>
 
-    @if (confirmingDelete()) {
-      <div class="detail-panel__confirm-delete">
-        <p class="confirm-delete__message">
-          @if (category.productCount > 0) {
-            Esta categoria possui {{ category.productCount }} produtos. Deseja realmente excluir?
-          } @else {
-            Deseja realmente excluir esta categoria?
-          }
-        </p>
-        <div class="confirm-delete__actions">
-          <app-button variant="ghost" size="sm" (click)="cancelDelete()">Cancelar</app-button>
-          <app-button variant="danger" size="sm" (click)="confirmDelete()">Excluir</app-button>
-        </div>
-      </div>
-    }
-
     @if (editing() && form) {
-      <form class="detail-panel__form form-layout" [formGroup]="form" (ngSubmit)="saveEditing()">
+      <form class="detail-panel__form form-layout" [class.form-layout--saving]="saving()" [formGroup]="form" (ngSubmit)="saveEditing()">
         <div class="field-row--icon-name">
           <div class="field-row--icon-name__icon">
             <label>Ícone</label>

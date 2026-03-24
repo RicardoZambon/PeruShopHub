@@ -11,37 +11,16 @@
     </app-button>
   </div>
 
-  <!-- Inherited fields (read-only) -->
-  @if (inheritedFields().length > 0) {
-    <div class="variation-fields__section">
-      <span class="variation-fields__section-label">Herdados</span>
-      @for (field of inheritedFields(); track field.id) {
-        <div class="field-card field-card--inherited">
-          <div class="field-card__row">
-            <lucide-icon [img]="linkIcon" [size]="14" class="field-card__inherited-icon"></lucide-icon>
-            <span class="field-card__name">{{ field.name }}</span>
-            <span class="field-card__type-badge">
-              <lucide-icon [img]="field.type === 'text' ? typeIcon : listChecksIcon" [size]="12"></lucide-icon>
-              {{ field.type === 'text' ? 'Texto' : 'Opções' }}
-            </span>
-            @if (field.required) {
-              <span class="field-card__required">Obrigatório</span>
-            }
-          </div>
-          <div class="field-card__inherited-label">
-            Herdado de {{ field.inheritedFrom }}
-          </div>
-          @if (field.type === 'select' && field.options.length > 0) {
-            <div class="field-card__options">
-              @for (opt of field.options; track opt) {
-                <span class="chip chip--readonly">{{ opt }}</span>
-              }
-            </div>
-          }
+  @if (loading()) {
+    <div class="variation-fields__skeleton">
+      @for (i of [1, 2]; track i) {
+        <div class="variation-fields__skeleton-card">
+          <div class="skeleton-block" style="width: 40%; height: 14px;"></div>
+          <div class="skeleton-block" style="width: 25%; height: 12px; margin-top: 6px;"></div>
         </div>
       }
     </div>
-  }
+  } @else {
 
   <!-- Own fields (editable) -->
   <div class="variation-fields__section">
@@ -53,23 +32,25 @@
       <div
         cdkDropList
         [cdkDropListData]="ownFields()"
+        [cdkDropListDisabled]="editingFieldId() !== null || showAddForm()"
         (cdkDropListDropped)="onFieldDrop($event)"
         class="variation-fields__list"
       >
         @for (field of ownFields(); track field.id) {
-          <div cdkDrag [cdkDragData]="field">
+          <div cdkDrag [cdkDragData]="field" [cdkDragDisabled]="editingFieldId() !== null || showAddForm()">
             <div class="field-card__drag-placeholder" *cdkDragPlaceholder></div>
 
             @if (editingFieldId() === field.id && editForm) {
               <!-- Edit mode -->
               <div class="field-card field-card--editing">
-                <form class="form-layout" [formGroup]="editForm" (ngSubmit)="saveEdit()">
+                <form class="form-layout" [class.form-layout--saving]="saving()" [formGroup]="editForm" (ngSubmit)="saveEdit()">
                   <app-form-field label="Nome" [required]="true"
-                    [error]="editForm.get('name')!.touched && editForm.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''">
+                    [error]="serverErrors()['name'] || (editForm.get('name')!.touched && editForm.get('name')!.hasError('required') ? 'Nome é obrigatório' : '')">
                     <input
                       type="text"
                       formControlName="name"
                       placeholder="Nome do campo"
+                      (input)="serverErrors.set({})"
                     />
                   </app-form-field>
 
@@ -173,13 +154,14 @@
   <!-- Add form -->
   @if (showAddForm() && addForm) {
     <div class="field-card field-card--adding">
-      <form class="form-layout" [formGroup]="addForm" (ngSubmit)="saveAdd()">
+      <form class="form-layout" [class.form-layout--saving]="saving()" [formGroup]="addForm" (ngSubmit)="saveAdd()">
         <app-form-field label="Nome" [required]="true"
-          [error]="addForm.get('name')!.touched && addForm.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''">
+          [error]="serverErrors()['name'] || (addForm.get('name')!.touched && addForm.get('name')!.hasError('required') ? 'Nome é obrigatório' : '')">
           <input
             type="text"
             formControlName="name"
             placeholder="Ex: Cor, Tamanho, Voltagem..."
+            (input)="serverErrors.set({})"
           />
         </app-form-field>
 
@@ -230,4 +212,38 @@
       </form>
     </div>
   }
+
+  <!-- Inherited fields (read-only) -->
+  @if (inheritedFields().length > 0) {
+    <div class="variation-fields__section">
+      <span class="variation-fields__section-label">Herdados</span>
+      @for (field of inheritedFields(); track field.id) {
+        <div class="field-card field-card--inherited">
+          <div class="field-card__row">
+            <lucide-icon [img]="linkIcon" [size]="14" class="field-card__inherited-icon"></lucide-icon>
+            <span class="field-card__name">{{ field.name }}</span>
+            <span class="field-card__type-badge">
+              <lucide-icon [img]="field.type === 'text' ? typeIcon : listChecksIcon" [size]="12"></lucide-icon>
+              {{ field.type === 'text' ? 'Texto' : 'Opções' }}
+            </span>
+            @if (field.required) {
+              <span class="field-card__required">Obrigatório</span>
+            }
+          </div>
+          <div class="field-card__inherited-label">
+            Herdado de {{ field.inheritedFrom }}
+          </div>
+          @if (field.type === 'select' && field.options.length > 0) {
+            <div class="field-card__options">
+              @for (opt of field.options; track opt) {
+                <span class="chip chip--readonly">{{ opt }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  } <!-- end @else loading -->
 </div>

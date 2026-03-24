@@ -52,11 +52,14 @@ export class VariationFieldsComponent implements OnChanges {
 
   inheritedFields = signal<InheritedVariationField[]>([]);
   ownFields = signal<VariationField[]>([]);
+  loading = signal(true);
+  saving = signal(false);
   showAddForm = signal(false);
   editingFieldId = signal<string | null>(null);
   addForm: FormGroup | null = null;
   editForm: FormGroup | null = null;
   chipInput = signal('');
+  serverErrors = signal<Record<string, string>>({});
   editChipInput = signal('');
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -68,6 +71,9 @@ export class VariationFieldsComponent implements OnChanges {
   }
 
   private async loadFields(): Promise<void> {
+    this.loading.set(true);
+    this.ownFields.set([]);
+    this.inheritedFields.set([]);
     try {
       const [own, inherited] = await Promise.all([
         this.categoryService.getVariationFields(this.categoryId),
@@ -77,12 +83,15 @@ export class VariationFieldsComponent implements OnChanges {
       this.inheritedFields.set(inherited);
     } catch {
       // Silently fail — empty lists shown
+    } finally {
+      this.loading.set(false);
     }
   }
 
   // ── Add field ──
 
   openAddForm(): void {
+    this.serverErrors.set({});
     this.addForm = this.fb.group({
       name: ['', [Validators.required]],
       type: ['text' as 'text' | 'select'],
@@ -127,6 +136,14 @@ export class VariationFieldsComponent implements OnChanges {
     }
 
     const { name, type, required } = this.addForm.value;
+    const trimmedName = name.trim();
+
+    const duplicate = this.ownFields().some(f => f.name.toLowerCase() === trimmedName.toLowerCase())
+      || this.inheritedFields().some(f => f.name.toLowerCase() === trimmedName.toLowerCase());
+    if (duplicate) {
+      this.toast.show(`Já existe um campo com o nome "${trimmedName}"`, 'warning');
+      return;
+    }
 
     if (type === 'select' && this._addFormOptions.length < 2) {
       this.toast.show('Adicione pelo menos 2 opções para campos de seleção', 'warning');
@@ -140,20 +157,34 @@ export class VariationFieldsComponent implements OnChanges {
       required,
     };
 
+    this.saving.set(true);
     try {
+      this.serverErrors.set({});
       const created = await this.categoryService.addVariationField(this.categoryId, dto);
       this.ownFields.update(fields => [...fields, created]);
       this.toast.show('Campo de variação adicionado', 'success');
       this.cancelAdd();
       this._addFormOptions = [];
-    } catch {
-      this.toast.show('Erro ao adicionar campo', 'danger');
+    } catch (err: any) {
+      const errors = err?.error?.errors;
+      if (errors) {
+        const mapped: Record<string, string> = {};
+        for (const [key, msgs] of Object.entries(errors)) {
+          mapped[key.toLowerCase()] = (msgs as string[])[0];
+        }
+        this.serverErrors.set(mapped);
+      } else {
+        this.toast.show('Erro ao adicionar campo', 'danger');
+      }
+    } finally {
+      this.saving.set(false);
     }
   }
 
   // ── Edit field ──
 
   startEdit(field: VariationField): void {
+    this.serverErrors.set({});
     this.editForm = this.fb.group({
       name: [field.name, [Validators.required]],
       type: [field.type],
@@ -198,14 +229,24 @@ export class VariationFieldsComponent implements OnChanges {
     }
 
     const { name, type, required } = this.editForm.value;
+    const trimmedName = name.trim();
+    const fieldId = this.editingFieldId()!;
+
+    const duplicate = this.ownFields().some(f => f.id !== fieldId && f.name.toLowerCase() === trimmedName.toLowerCase())
+      || this.inheritedFields().some(f => f.name.toLowerCase() === trimmedName.toLowerCase());
+    if (duplicate) {
+      this.toast.show(`Já existe um campo com o nome "${trimmedName}"`, 'warning');
+      return;
+    }
 
     if (type === 'select' && this._editFormOptions.length < 2) {
       this.toast.show('Adicione pelo menos 2 opções para campos de seleção', 'warning');
       return;
     }
 
+    this.saving.set(true);
     try {
-      const fieldId = this.editingFieldId()!;
+      this.serverErrors.set({});
       const updated = await this.categoryService.updateVariationField(this.categoryId, fieldId, {
         name,
         type,
@@ -217,8 +258,19 @@ export class VariationFieldsComponent implements OnChanges {
       );
       this.toast.show('Campo de variação atualizado', 'success');
       this.cancelEdit();
-    } catch {
-      this.toast.show('Erro ao atualizar campo', 'danger');
+    } catch (err: any) {
+      const errors = err?.error?.errors;
+      if (errors) {
+        const mapped: Record<string, string> = {};
+        for (const [key, msgs] of Object.entries(errors)) {
+          mapped[key.toLowerCase()] = (msgs as string[])[0];
+        }
+        this.serverErrors.set(mapped);
+      } else {
+        this.toast.show('Erro ao atualizar campo', 'danger');
+      }
+    } finally {
+      this.saving.set(false);
     }
   }
 
@@ -235,11 +287,13 @@ export class VariationFieldsComponent implements OnChanges {
 
     try {
       const success = await this.categoryService.deleteVariationField(this.categoryId, field.id);
+      this.confirm.done();
       if (success) {
         this.ownFields.update(fields => fields.filter(f => f.id !== field.id));
         this.toast.show('Campo de variação removido', 'success');
       }
     } catch {
+      this.confirm.done();
       this.toast.show('Erro ao remover campo', 'danger');
     }
   }
@@ -252,14 +306,15 @@ export class VariationFieldsComponent implements OnChanges {
       const [moved] = fields.splice(event.previousIndex, 1);
       fields.splice(event.currentIndex, 0, moved);
 
-      // Update order on each field
-      for (let i = 0; i < fields.length; i++) {
-        await this.categoryService.updateVariationField(
-          this.categoryId, fields[i].id, { order: i }
-        );
-      }
+      // Update local state immediately
+      this.ownFields.set(fields.map((f, i) => ({ ...f, order: i })));
 
-      await this.loadFields();
+      // Persist order to backend in background (no reload needed)
+      for (let i = 0; i < fields.length; i++) {
+        this.categoryService.updateVariationField(
+          this.categoryId, fields[i].id, { order: i }
+        ).catch(() => {}); // silently fail — order is cosmetic
+      }
     }
   }
 }

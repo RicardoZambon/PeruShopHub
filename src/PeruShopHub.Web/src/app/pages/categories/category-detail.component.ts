@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, signal, computed, inject, Simpl
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LucideAngularModule, Pencil, Trash2, ArrowLeft } from 'lucide-angular';
-import { IconPickerComponent, ButtonComponent, FormFieldComponent, ToggleSwitchComponent, FormActionsComponent } from '../../shared/components';
+import { IconPickerComponent, ButtonComponent, FormFieldComponent, ToggleSwitchComponent, FormActionsComponent, ConfirmDialogService } from '../../shared/components';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { VariationFieldsComponent } from './variation-fields.component';
@@ -27,6 +27,7 @@ export class CategoryDetailComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly pencilIcon = Pencil;
   readonly trashIcon = Trash2;
@@ -35,7 +36,6 @@ export class CategoryDetailComponent implements OnChanges {
   form: FormGroup | null = null;
   editing = signal(false);
   saving = signal(false);
-  confirmingDelete = signal(false);
   editIcon = signal<string | null>(null);
 
   readonly breadcrumb = computed(() => {
@@ -56,7 +56,6 @@ export class CategoryDetailComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['category'] && this.category) {
       this.editing.set(false);
-      this.confirmingDelete.set(false);
       this.initForm();
     }
   }
@@ -109,22 +108,24 @@ export class CategoryDetailComponent implements OnChanges {
     }
   }
 
-  onDeleteClick(): void {
-    if (this.hasChildren()) {
-      return;
-    }
-    this.confirmingDelete.set(true);
-  }
+  async onDeleteClick(): Promise<void> {
+    if (this.hasChildren() || !this.category) return;
 
-  cancelDelete(): void {
-    this.confirmingDelete.set(false);
-  }
+    const message = this.category.productCount > 0
+      ? `Esta categoria possui ${this.category.productCount} produtos. Deseja realmente excluir?`
+      : `Deseja realmente excluir a categoria "${this.category.name}"?`;
 
-  async confirmDelete(): Promise<void> {
-    if (!this.category) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Excluir categoria',
+      message,
+      confirmLabel: 'Excluir',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
 
     try {
       const success = await this.categoryService.delete(this.category.id);
+      this.confirmDialog.done();
       if (success) {
         this.deleted.emit(this.category.id);
         this.toast.show('Categoria excluída com sucesso', 'success');
@@ -132,9 +133,9 @@ export class CategoryDetailComponent implements OnChanges {
         this.toast.show('Não foi possível excluir a categoria', 'danger');
       }
     } catch {
+      this.confirmDialog.done();
       this.toast.show('Erro ao excluir categoria', 'danger');
     }
-    this.confirmingDelete.set(false);
   }
 
   onBack(): void {

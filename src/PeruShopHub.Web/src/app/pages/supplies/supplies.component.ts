@@ -57,6 +57,7 @@ export class SuppliesComponent implements OnInit {
 
   // Modal state
   readonly modalOpen = signal(false);
+  readonly saving = signal(false);
   supplyForm: FormGroup;
 
   readonly filteredSupplies = computed(() => {
@@ -172,12 +173,15 @@ export class SuppliesComponent implements OnInit {
       observacao: val.observacao || '',
     };
 
+    this.saving.set(true);
     this.supplyService.create(dto).subscribe({
       next: (created) => {
+        this.saving.set(false);
         this.supplies.update(list => [...list, created as Supply]);
         this.closeModal();
       },
       error: (err) => {
+        this.saving.set(false);
         console.error('Failed to create supply:', err);
       },
     });

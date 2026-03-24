@@ -188,7 +188,7 @@
   [open]="entryModalOpen()"
   size="md"
   (closed)="closeEntryModal()">
-  <form body [formGroup]="entryForm" (ngSubmit)="saveEntry()" class="entry-form-grid form-layout">
+  <form body [formGroup]="entryForm" (ngSubmit)="saveEntry()" class="entry-form-grid form-layout" [class.form-layout--saving]="saving()">
     <!-- Produto (full width) -->
     <div class="entry-form-grid__full">
       <app-form-field

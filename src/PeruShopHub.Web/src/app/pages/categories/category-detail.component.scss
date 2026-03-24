@@ -4,10 +4,12 @@
   display: flex;
   flex: 1;
   min-width: 0;
+  height: 100%;
 }
 
 .detail-panel {
   flex: 1;
+  height: 100%;
   background: var(--surface);
   padding: var(--space-6);
   overflow-y: auto;
@@ -176,26 +178,7 @@
   flex-shrink: 0;
 }
 
-// Confirm delete
-.detail-panel__confirm-delete {
-  padding: var(--space-4);
-  background: var(--danger-light);
-  border: 1px solid var(--danger);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-4);
-}
 
-.confirm-delete__message {
-  font-size: var(--body-size);
-  color: var(--danger);
-  margin: 0 0 var(--space-3) 0;
-}
-
-.confirm-delete__actions {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: flex-end;
-}
 
 // Form fields
 .detail-panel__form {

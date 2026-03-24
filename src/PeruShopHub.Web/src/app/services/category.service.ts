@@ -110,18 +110,14 @@ export class CategoryService {
     return created;
   }
 
-  async update(id: string, dto: UpdateCategoryDto): Promise<Category | undefined> {
-    try {
-      const updated = await firstValueFrom(
-        this.http.put<Category>(`${this.baseUrl}/${id}`, dto),
-      );
-      this.categoriesData.update((cats) =>
-        cats.map((c) => (c.id === id ? { ...updated, children: [] } : c))
-      );
-      return updated;
-    } catch {
-      return undefined;
-    }
+  async update(id: string, dto: UpdateCategoryDto): Promise<Category> {
+    const updated = await firstValueFrom(
+      this.http.put<Category>(`${this.baseUrl}/${id}`, dto),
+    );
+    this.categoriesData.update((cats) =>
+      cats.map((c) => (c.id === id ? { ...updated, children: [] } : c))
+    );
+    return updated;
   }
 
   async delete(id: string): Promise<boolean> {

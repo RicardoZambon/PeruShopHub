@@ -20,6 +20,7 @@
     <div
       class="categorias-page__tree-panel"
       [class.categorias-page__tree-panel--hidden-mobile]="mobileView() === 'detail'"
+      [style.width.px]="treeWidth()"
     >
       <app-category-tree
         [categories]="categoryTree()"
@@ -29,6 +30,12 @@
         (selectCategory)="onSelectCategory($event)"
       ></app-category-tree>
     </div>
+
+    <div
+      class="categorias-page__resize-handle"
+      [class.categorias-page__resize-handle--active]="resizing()"
+      (mousedown)="onResizeStart($event)"
+    ></div>
 
     <div
       class="categorias-page__detail-panel"

@@ -25,7 +25,7 @@
       @if (activeTab() === 'empresa') {
         <div class="settings__section">
           <h2 class="settings__section-title">Dados da Empresa</h2>
-          <form [formGroup]="companyForm" (ngSubmit)="saveCompany()" class="settings__form form-layout">
+          <form [formGroup]="companyForm" (ngSubmit)="saveCompany()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
             <app-form-field label="Nome da Empresa"
               [error]="companyForm.get('nome')?.invalid && companyForm.get('nome')?.touched ? 'Nome é obrigatório' : ''">
               <input
@@ -168,7 +168,7 @@
         <div class="settings__section">
           <h2 class="settings__section-title">Custos Fixos</h2>
 
-          <form [formGroup]="fixedCostsForm" (ngSubmit)="saveFixedCosts()" class="settings__form form-layout">
+          <form [formGroup]="fixedCostsForm" (ngSubmit)="saveFixedCosts()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
             <app-form-field label="Embalagem padrão">
               <div class="form-field__prefix-group">
                 <span class="form-field__prefix">R$</span>
@@ -260,7 +260,7 @@
           <!-- Tax Rate Section -->
           <div class="settings__subsection">
             <h3 class="settings__subsection-title">Alíquota de Impostos</h3>
-            <form [formGroup]="taxRateForm" (ngSubmit)="saveTaxRate()" class="settings__form form-layout">
+            <form [formGroup]="taxRateForm" (ngSubmit)="saveTaxRate()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
               <app-form-field label="Taxa de imposto padrão">
                 <div class="form-field__prefix-group">
                   <input
@@ -441,7 +441,7 @@
   [title]="editingUser() ? 'Editar Usuário' : 'Novo Usuário'"
   [open]="showUserModal()"
   (closed)="closeUserModal()">
-  <form body [formGroup]="userForm" (ngSubmit)="saveUser()" class="settings-modal-form form-layout">
+  <form body [formGroup]="userForm" (ngSubmit)="saveUser()" class="settings-modal-form form-layout" [class.form-layout--saving]="saving()">
     <app-form-field label="Nome"
       [error]="userForm.get('nome')?.invalid && userForm.get('nome')?.touched ? 'Nome é obrigatório' : ''">
       <input
@@ -487,7 +487,7 @@
   [title]="editingCommissionRule() ? 'Editar Regra' : 'Nova Regra de Comissão'"
   [open]="showCommissionRuleModal()"
   (closed)="closeCommissionRuleModal()">
-  <form body [formGroup]="commissionRuleForm" (ngSubmit)="saveCommissionRule()" class="settings-modal-form form-layout">
+  <form body [formGroup]="commissionRuleForm" (ngSubmit)="saveCommissionRule()" class="settings-modal-form form-layout" [class.form-layout--saving]="saving()">
     <app-form-field label="Marketplace">
       <select class="form-field__select" formControlName="marketplace">
         <option value="" disabled>Selecione</option>

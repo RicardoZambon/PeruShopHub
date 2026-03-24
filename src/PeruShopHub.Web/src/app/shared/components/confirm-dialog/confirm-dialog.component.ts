@@ -14,12 +14,13 @@ export class ConfirmDialogComponent {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.confirmService.open()) {
+    if (this.confirmService.open() && !this.confirmService.processing()) {
       this.confirmService.cancel();
     }
   }
 
   onBackdropClick(event: MouseEvent): void {
+    if (this.confirmService.processing()) return;
     if ((event.target as HTMLElement).classList.contains('confirm-overlay')) {
       this.confirmService.cancel();
     }

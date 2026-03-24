@@ -195,16 +195,19 @@ These are hard-won patterns established during development. Follow them when bui
 
 - **All fields the backend requires must be in the frontend form.** Before building a create/edit form, read the backend DTO and verify every required property is covered. Auto-generate derived fields (e.g., `slug` from `name`) where sensible, but let users override.
 - **Form containers must use `class="form-layout"`** which applies `display: flex; flex-direction: column; gap: var(--space-3)`. This automatically spaces all direct children (form fields, toggles, actions) with no wrapper divs needed. For side-by-side fields (e.g., cost + stock), use `class="form-layout--row"` on the containing div.
+- **Disable the form while saving** by adding `[class.form-layout--saving]="saving()"` to the form element. This applies `pointer-events: none; opacity: 0.6` which prevents all user interaction during the save request. Every form that submits to a backend must have a `saving` signal and use this pattern.
 - **Every validation error must show a clear message.** If a field is marked as required or has any validation rule, the `[error]` binding on `<app-form-field>` MUST display a human-readable message explaining why the field is invalid (e.g., "Nome é obrigatório"). Never leave a field visually invalid without an explanation. On submit, call `form.markAllAsTouched()` before returning so error messages become visible.
 - **Icon pickers, color pickers, and other visual selectors** should always be inline components (dropdown from a trigger button), not modal dialogs. Keep the user in context.
 - **Modals must close on Escape and backdrop click.** Use `@HostListener('document:keydown.escape')` and a backdrop click handler.
-- **Every delete action MUST show a confirmation dialog before executing.** No exceptions — whether it's deleting a category, a variation field, a fixed cost, a supply, or any other record. Use `confirm()` with a message that names the item being deleted (e.g., `Deseja remover o campo "Cor"?`). This applies to both backend-persisted deletes and local state removals.
+- **Every delete action MUST show a confirmation dialog before executing.** Use `ConfirmDialogService.confirm()` (never browser `confirm()`). The message must name the item being deleted. For backend deletes, call `startProcessing()` after confirm to show a spinner and disable buttons, then `done()` when the request completes. During processing, the dialog blocks escape, backdrop click, and cancel. This prevents the user from editing the record while it's being deleted.
 
 ### Backend ↔ Frontend Alignment
 
 - **Frontend DTOs must match backend DTOs.** When the backend `CreateCategoryDto` requires `Name, Slug, ParentId, Icon, Order`, the frontend must send all five — not a subset. Mismatches cause silent 400 errors.
 - **List endpoints vs detail endpoints return different shapes.** List DTOs are lightweight (no timestamps, no children). Detail DTOs include everything. When displaying detailed information (dates, metadata), fetch the detail endpoint — don't rely on list data.
 - **If a feature is shown in the UI, it must be persisted in the backend.** No in-memory-only data stores for user-facing features. If the user creates something, it must survive a page refresh.
+- **All frontend validations must also exist in the backend.** The backend is the last line of defense — it must reject invalid data even if the frontend misses it. Return errors in `{ errors: { FieldName: ["message"] } }` format. The frontend must catch these and display them on the appropriate form field via `serverErrors` signal, not just a generic toast.
+- **Backend validation must return ALL errors at once**, not fail on the first one. Collect all validation errors into a `Dictionary<string, string[]>` and return them together. The user should never have to submit multiple times to discover all issues.
 
 ### Avoid Redundant API Calls
 

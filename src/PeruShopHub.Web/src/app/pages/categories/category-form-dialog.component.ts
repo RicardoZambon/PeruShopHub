@@ -26,6 +26,7 @@ export class CategoryFormDialogComponent implements OnInit {
 
   readonly closeIcon = X;
   readonly saving = signal(false);
+  readonly serverErrors = signal<Record<string, string>>({});
 
   form!: FormGroup;
   parentDropdownOpen = signal(false);
@@ -139,6 +140,7 @@ export class CategoryFormDialogComponent implements OnInit {
     }
 
     this.saving.set(true);
+    this.serverErrors.set({});
 
     try {
       const { name, slug, parentId, isActive } = this.form.value;
@@ -162,6 +164,15 @@ export class CategoryFormDialogComponent implements OnInit {
         };
         const created = await this.categoryService.create(dto);
         this.saved.emit(created);
+      }
+    } catch (err: any) {
+      const errors = err?.error?.errors;
+      if (errors) {
+        const mapped: Record<string, string> = {};
+        for (const [key, msgs] of Object.entries(errors)) {
+          mapped[key.toLowerCase()] = (msgs as string[])[0];
+        }
+        this.serverErrors.set(mapped);
       }
     } finally {
       this.saving.set(false);

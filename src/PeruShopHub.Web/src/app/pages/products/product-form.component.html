@@ -16,7 +16,7 @@
   <!-- Two-panel layout -->
   <div class="two-panel-layout">
     <!-- Left panel: Form -->
-    <div class="form-panel">
+    <div class="form-panel" [class.form-layout--saving]="loading()">
       <!-- Desktop Tabs -->
       <div class="tabs-nav">
         <app-tab-bar

@@ -9,6 +9,7 @@
         <button
           type="button"
           class="confirm-dialog__btn confirm-dialog__btn--cancel"
+          [disabled]="confirmService.processing()"
           (click)="confirmService.cancel()">
           {{ confirmService.options().cancelLabel }}
         </button>
@@ -18,7 +19,11 @@
           [class.confirm-dialog__btn--danger]="confirmService.options().variant === 'danger'"
           [class.confirm-dialog__btn--warning]="confirmService.options().variant === 'warning'"
           [class.confirm-dialog__btn--primary]="confirmService.options().variant === 'primary'"
+          [disabled]="confirmService.processing()"
           (click)="confirmService.accept()">
+          @if (confirmService.processing()) {
+            <span class="confirm-dialog__spinner"></span>
+          }
           {{ confirmService.options().confirmLabel }}
         </button>
       </div>

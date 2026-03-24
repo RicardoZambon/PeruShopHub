@@ -1,5 +1,5 @@
 <app-dialog [title]="dialogTitle" [open]="true" (closed)="close()">
-  <form body class="form-layout" [formGroup]="form" (ngSubmit)="onSubmit()">
+  <form body class="form-layout" [class.form-layout--saving]="saving()" [formGroup]="form" (ngSubmit)="onSubmit()">
     <!-- Icon + Name row -->
     <div class="field-row--icon-name">
       <div class="field-row--icon-name__icon">
@@ -12,7 +12,7 @@
       <div class="field-row--icon-name__name">
         <app-form-field
           label="Nome"
-          [error]="form.get('name')!.touched && form.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''"
+          [error]="serverErrors()['name'] || (form.get('name')!.touched && form.get('name')!.hasError('required') ? 'Nome é obrigatório' : '')"
           [required]="true">
           <input
             id="category-name"
@@ -20,7 +20,7 @@
             formControlName="name"
             placeholder="Nome da categoria"
             maxlength="100"
-            (input)="onNameInput()"
+            (input)="onNameInput(); serverErrors.set({})"
           />
         </app-form-field>
       </div>
@@ -29,7 +29,7 @@
     <app-form-field
       label="Slug"
       hint="Identificador na URL. Gerado automaticamente a partir do nome."
-      [error]="form.get('slug')!.touched && form.get('slug')!.hasError('required') ? 'Slug é obrigatório' : ''"
+      [error]="serverErrors()['slug'] || (form.get('slug')!.touched && form.get('slug')!.hasError('required') ? 'Slug é obrigatório' : '')"
       [required]="true">
       <input
         id="category-slug"
@@ -37,7 +37,7 @@
         formControlName="slug"
         placeholder="slug-da-categoria"
         maxlength="120"
-        (input)="onSlugInput()"
+        (input)="onSlugInput(); serverErrors.set({})"
       />
     </app-form-field>
 

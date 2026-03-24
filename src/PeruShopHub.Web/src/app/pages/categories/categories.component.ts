@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule, FolderTree, FolderPlus, Search } from 'lucide-angular';
 import { PageHeaderComponent, SearchInputComponent } from '../../shared/components';
@@ -27,6 +27,7 @@ import type { Category } from '../../models/category.model';
 export class CategoriesComponent implements OnInit, OnDestroy {
   readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
+  private readonly el = inject(ElementRef);
 
   readonly folderTreeIcon = FolderTree;
   readonly folderPlusIcon = FolderPlus;
@@ -40,6 +41,12 @@ export class CategoriesComponent implements OnInit, OnDestroy {
   readonly dialogCategory = signal<Category | null>(null);
   readonly loading = signal(true);
   readonly detailLoading = signal(false);
+
+  // Resize handle state
+  readonly treeWidth = signal<number>(
+    parseInt(localStorage.getItem('categories-tree-width') ?? '300', 10)
+  );
+  readonly resizing = signal(false);
 
   // Request cancellation
   private detailAbort: AbortController | null = null;
@@ -128,6 +135,36 @@ export class CategoriesComponent implements OnInit, OnDestroy {
 
   onBackToTree(): void {
     this.mobileView.set('tree');
+  }
+
+  // ── Resize handle ──
+
+  onResizeStart(event: MouseEvent): void {
+    event.preventDefault();
+    this.resizing.set(true);
+
+    const contentEl = this.el.nativeElement.querySelector('.categorias-page__content') as HTMLElement;
+    const contentLeft = contentEl.getBoundingClientRect().left;
+
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    const onMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.min(450, Math.max(200, e.clientX - contentLeft));
+      this.treeWidth.set(newWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      this.resizing.set(false);
+      localStorage.setItem('categories-tree-width', String(this.treeWidth()));
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
 
   // ── Dialog events ──
