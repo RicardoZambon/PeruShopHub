@@ -28,13 +28,6 @@
     gap: var(--space-3);
   }
 
-  &__title {
-    font-size: var(--h2-size);
-    font-weight: var(--h2-weight);
-    color: var(--neutral-900);
-    margin: 0;
-  }
-
   &__kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -48,24 +41,6 @@
     @include m.mobile {
       grid-template-columns: 1fr;
       gap: var(--card-gap-mobile);
-    }
-  }
-
-  &__kpi-skeleton {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--card-padding-desktop);
-    background: var(--surface);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-
-    @include m.tablet {
-      padding: var(--card-padding-tablet);
-    }
-
-    @include m.mobile {
-      padding: var(--card-padding-mobile);
     }
   }
 
@@ -254,30 +229,6 @@
     &--loss {
       color: var(--danger);
     }
-  }
-}
-
-.margin-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  font-size: var(--label-size);
-  font-weight: 600;
-  font-family: var(--font-mono);
-
-  &.margin--green {
-    background: var(--success-light);
-    color: var(--success);
-  }
-
-  &.margin--yellow {
-    background: var(--warning-light);
-    color: var(--warning);
-  }
-
-  &.margin--red {
-    background: var(--danger-light);
-    color: var(--danger);
   }
 }
 

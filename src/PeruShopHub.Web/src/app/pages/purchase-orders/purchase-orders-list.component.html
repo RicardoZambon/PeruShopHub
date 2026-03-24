@@ -1,48 +1,30 @@
 <div class="po-list">
   <!-- Header -->
-  <div class="po-list__header">
-    <h1 class="po-list__title">Compras</h1>
-    <button class="po-list__new-btn" (click)="onNewOrder()">
-      <lucide-icon [img]="plusIcon" [size]="18"></lucide-icon>
-      Nova Compra
-    </button>
-  </div>
+  <app-page-header
+    title="Compras"
+    actionLabel="Nova Compra"
+    [actionIcon]="plusIcon"
+    (action)="onNewOrder()">
+  </app-page-header>
 
   <!-- Action Bar -->
   <div class="po-list__action-bar">
-    <div class="po-list__search">
-      <lucide-icon [img]="searchIcon" [size]="16" class="po-list__search-icon"></lucide-icon>
-      <input
-        type="text"
-        class="po-list__search-input"
-        placeholder="Buscar por fornecedor..."
-        [value]="searchQuery()"
-        (input)="onSearchChange($any($event.target).value)"
-      />
-    </div>
-    <select class="po-list__status-filter" (change)="onStatusChange($event)">
-      <option value="Todos">Todos os status</option>
-      <option value="Rascunho">Rascunho</option>
-      <option value="Recebido">Recebido</option>
-      <option value="Cancelado">Cancelado</option>
-    </select>
+    <app-search-input
+      placeholder="Buscar por fornecedor..."
+      [value]="searchQuery()"
+      (valueChange)="onSearchChange($event)">
+    </app-search-input>
+    <app-select-dropdown
+      [options]="statusOptions"
+      [value]="statusFilter()"
+      (valueChange)="onStatusFilterChange($event)">
+    </app-select-dropdown>
   </div>
 
   <!-- Loading State -->
   @if (loading()) {
     <div class="po-table">
-      <div class="po-table__skeleton">
-        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
-          <div class="po-table__skeleton-row">
-            <div class="skeleton skeleton--text" style="width: 180px; height: 16px;"></div>
-            <div class="skeleton skeleton--text" style="width: 80px; height: 24px;"></div>
-            <div class="skeleton skeleton--text" style="width: 40px; height: 16px;"></div>
-            <div class="skeleton skeleton--text" style="width: 100px; height: 16px;"></div>
-            <div class="skeleton skeleton--text" style="width: 90px; height: 16px;"></div>
-            <div class="skeleton skeleton--text" style="width: 90px; height: 16px;"></div>
-          </div>
-        }
-      </div>
+      <app-page-skeleton type="list" [rows]="6" />
     </div>
   } @else if (orders().length === 0) {
     <div class="po-empty">

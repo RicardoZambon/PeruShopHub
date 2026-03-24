@@ -1,15 +1,15 @@
-import { Component, Input, Output, EventEmitter, signal, computed, inject, HostListener, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LucideAngularModule, X } from 'lucide-angular';
-import { IconPickerComponent } from '../../shared/components';
+import { IconPickerComponent, DialogComponent, FormFieldComponent, ToggleSwitchComponent, FormActionsComponent } from '../../shared/components';
 import { CategoryService } from '../../services/category.service';
 import type { Category, CreateCategoryDto, UpdateCategoryDto } from '../../models/category.model';
 
 @Component({
   selector: 'app-category-form-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, IconPickerComponent],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, IconPickerComponent, DialogComponent, FormFieldComponent, ToggleSwitchComponent, FormActionsComponent],
   templateUrl: './category-form-dialog.component.html',
   styleUrl: './category-form-dialog.component.scss',
 })
@@ -126,17 +126,6 @@ export class CategoryFormDialogComponent implements OnInit {
   selectParent(parentId: string | null): void {
     this.form.patchValue({ parentId });
     this.parentDropdownOpen.set(false);
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.close();
-  }
-
-  onBackdropClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('dialog-overlay')) {
-      this.close();
-    }
   }
 
   close(): void {

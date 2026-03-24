@@ -1,23 +1,18 @@
 <div class="financeiro">
   <div class="financeiro__header">
-    <h1 class="financeiro__title">Financeiro</h1>
+    <app-page-header title="Financeiro"></app-page-header>
     <div class="financeiro__actions">
-      <button class="btn btn--outline" (click)="onExport('pdf')">Exportar PDF</button>
-      <button class="btn btn--outline" (click)="onExport('excel')">Exportar Excel</button>
+      <app-button variant="outline" (click)="onExport('pdf')">Exportar PDF</app-button>
+      <app-button variant="outline" (click)="onExport('excel')">Exportar Excel</app-button>
     </div>
   </div>
 
   <!-- Sub-navigation tabs -->
-  <div class="financeiro__tabs">
-    @for (tab of tabs; track tab.key) {
-      <button
-        class="financeiro__tab"
-        [class.financeiro__tab--active]="activeTab() === tab.key"
-        (click)="selectTab(tab.key)">
-        {{ tab.label }}
-      </button>
-    }
-  </div>
+  <app-tab-bar
+    [tabs]="tabItems"
+    [activeTab]="activeTab()"
+    (tabChange)="selectTab($any($event))"
+  ></app-tab-bar>
 
   <!-- Resumo Tab -->
   @if (activeTab() === 'resumo') {
@@ -169,23 +164,7 @@
                   {{ formatBrl(row.lucro) }}
                 </td>
                 <td class="sku-table__td sku-table__td--margin">
-                  <div class="margin-cell">
-                    <div class="margin-bar">
-                      <div
-                        class="margin-bar__fill"
-                        [class.margin-bar__fill--green]="row.margem >= 20"
-                        [class.margin-bar__fill--yellow]="row.margem >= 10 && row.margem < 20"
-                        [class.margin-bar__fill--red]="row.margem < 10"
-                        [style.width.%]="getMarginBarWidth(row.margem)">
-                      </div>
-                    </div>
-                    <span class="margin-cell__value"
-                      [class.margin-cell__value--green]="row.margem >= 20"
-                      [class.margin-cell__value--yellow]="row.margem >= 10 && row.margem < 20"
-                      [class.margin-cell__value--red]="row.margem < 10">
-                      {{ row.margem.toFixed(1) }}%
-                    </span>
-                  </div>
+                  <app-margin-badge [margin]="row.margem"></app-margin-badge>
                 </td>
               </tr>
             }

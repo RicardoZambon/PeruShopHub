@@ -8,39 +8,6 @@
 }
 
 .produtos {
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-6);
-  }
-
-  &__title {
-    font-size: var(--text-2xl);
-    font-weight: 600;
-    color: var(--neutral-900);
-    margin: 0;
-  }
-
-  &__new-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
-    background: var(--accent);
-    color: var(--text-on-primary);
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 150ms;
-
-    &:hover {
-      background: var(--accent-hover);
-    }
-  }
-
   &__action-bar {
     display: flex;
     align-items: center;
@@ -50,61 +17,6 @@
     @include m.mobile {
       flex-direction: column;
       align-items: stretch;
-    }
-  }
-
-  &__search {
-    position: relative;
-    flex: 1;
-    max-width: 400px;
-
-    @include m.mobile {
-      max-width: 100%;
-    }
-  }
-
-  &__search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--neutral-500);
-    pointer-events: none;
-  }
-
-  &__search-input {
-    width: 100%;
-    padding: var(--space-2) var(--space-3) var(--space-2) 36px;
-    border: 1px solid var(--neutral-300);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    background: var(--surface);
-    color: var(--neutral-900);
-    outline: none;
-    transition: border-color 150ms;
-
-    &::placeholder {
-      color: var(--neutral-500);
-    }
-
-    &:focus {
-      border-color: var(--primary);
-    }
-  }
-
-  &__status-filter {
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--neutral-300);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    background: var(--surface);
-    color: var(--neutral-900);
-    outline: none;
-    cursor: pointer;
-    min-width: 140px;
-
-    &:focus {
-      border-color: var(--primary);
     }
   }
 }
@@ -313,31 +225,6 @@
     font-size: var(--text-xs);
     color: var(--neutral-500);
   }
-}
-
-// Margin badge
-.margin-badge {
-  display: inline-block;
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  font-family: var(--font-mono);
-}
-
-.margin--success {
-  background: var(--success-light);
-  color: var(--success);
-}
-
-.margin--warning {
-  background: var(--warning-light);
-  color: var(--warning);
-}
-
-.margin--danger {
-  background: var(--danger-light);
-  color: var(--danger);
 }
 
 // Variant badge

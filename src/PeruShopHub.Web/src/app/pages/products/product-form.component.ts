@@ -5,6 +5,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Save, X, ChevronDown, ChevronUp } from 'lucide-angular';
 import { MediaGalleryComponent, GalleryImage } from './media-gallery.component';
 import { VariantManagerComponent } from './variant-manager.component';
+import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
+import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import { ProductService } from '../../services/product.service';
 
 type TabId = 'basicas' | 'preco' | 'dimensoes' | 'variacoes';
@@ -30,7 +33,7 @@ const CATEGORIAS = [
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, MediaGalleryComponent, VariantManagerComponent],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, MediaGalleryComponent, VariantManagerComponent, TabBarComponent, FormFieldComponent, ButtonComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })
@@ -45,6 +48,8 @@ export class ProductFormComponent {
 
   readonly tabs = TABS;
   readonly categorias = CATEGORIAS;
+
+  readonly tabItems: TabItem[] = TABS.map(t => ({ key: t.id, label: t.label }));
 
   activeTab = signal<TabId>('basicas');
   isEditMode = signal(false);
@@ -137,8 +142,8 @@ export class ProductFormComponent {
     }
   }
 
-  setActiveTab(tabId: TabId): void {
-    this.activeTab.set(tabId);
+  setActiveTab(tabId: TabId | string): void {
+    this.activeTab.set(tabId as TabId);
   }
 
   toggleAccordion(tabId: TabId): void {

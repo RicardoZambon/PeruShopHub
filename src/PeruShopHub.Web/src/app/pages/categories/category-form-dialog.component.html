@@ -1,24 +1,19 @@
-<div class="dialog-overlay" (click)="onBackdropClick($event)">
-  <div class="dialog" role="dialog" aria-modal="true" [attr.aria-label]="dialogTitle">
-    <div class="dialog__header">
-      <h2 class="dialog__title">{{ dialogTitle }}</h2>
-      <button class="dialog__close" (click)="close()" aria-label="Fechar">
-        <lucide-icon [img]="closeIcon" [size]="20"></lucide-icon>
-      </button>
-    </div>
-
-    <form class="dialog__body" [formGroup]="form" (ngSubmit)="onSubmit()">
-      <!-- Icon + Name row -->
-      <div class="field-row">
-        <div class="field-row__icon">
-          <label>Ícone</label>
-          <app-icon-picker
-            [value]="selectedIcon()"
-            (valueChange)="onIconChange($event)"
-          ></app-icon-picker>
-        </div>
-        <div class="field-row__name">
-          <label for="category-name">Nome</label>
+<app-dialog [title]="dialogTitle" [open]="true" (closed)="close()">
+  <form body [formGroup]="form" (ngSubmit)="onSubmit()">
+    <!-- Icon + Name row -->
+    <div class="field-row">
+      <div class="field-row__icon">
+        <label>Ícone</label>
+        <app-icon-picker
+          [value]="selectedIcon()"
+          (valueChange)="onIconChange($event)"
+        ></app-icon-picker>
+      </div>
+      <div class="field-row__name">
+        <app-form-field
+          label="Nome"
+          [error]="form.get('name')!.touched && form.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''"
+          [required]="true">
           <input
             id="category-name"
             type="text"
@@ -26,95 +21,74 @@
             placeholder="Nome da categoria"
             maxlength="100"
             (input)="onNameInput()"
-            [class.invalid]="form.get('name')!.touched && form.get('name')!.invalid"
           />
-          @if (form.get('name')!.touched && form.get('name')!.hasError('required')) {
-            <span class="field-error">Nome é obrigatório</span>
-          }
-        </div>
+        </app-form-field>
       </div>
+    </div>
 
-      <div class="field">
-        <label for="category-slug">Slug</label>
-        <input
-          id="category-slug"
-          type="text"
-          formControlName="slug"
-          placeholder="slug-da-categoria"
-          maxlength="120"
-          (input)="onSlugInput()"
-          [class.invalid]="form.get('slug')!.touched && form.get('slug')!.invalid"
-        />
-        <span class="field-hint">Identificador na URL. Gerado automaticamente a partir do nome.</span>
-        @if (form.get('slug')!.touched && form.get('slug')!.hasError('required')) {
-          <span class="field-error">Slug é obrigatório</span>
-        }
-      </div>
+    <app-form-field
+      label="Slug"
+      hint="Identificador na URL. Gerado automaticamente a partir do nome."
+      [error]="form.get('slug')!.touched && form.get('slug')!.hasError('required') ? 'Slug é obrigatório' : ''"
+      [required]="true">
+      <input
+        id="category-slug"
+        type="text"
+        formControlName="slug"
+        placeholder="slug-da-categoria"
+        maxlength="120"
+        (input)="onSlugInput()"
+      />
+    </app-form-field>
 
-      <div class="field">
-        <label>Categoria Pai</label>
-        <div class="parent-dropdown">
-          <button
-            type="button"
-            class="parent-dropdown__trigger"
-            (click)="toggleParentDropdown()"
-          >
-            <span>{{ selectedParentName() }}</span>
-            <span class="parent-dropdown__chevron">&#9662;</span>
-          </button>
+    <app-form-field label="Categoria Pai">
+      <div class="parent-dropdown">
+        <button
+          type="button"
+          class="parent-dropdown__trigger"
+          (click)="toggleParentDropdown()"
+        >
+          <span>{{ selectedParentName() }}</span>
+          <span class="parent-dropdown__chevron">&#9662;</span>
+        </button>
 
-          @if (parentDropdownOpen()) {
-            <div class="parent-dropdown__list">
+        @if (parentDropdownOpen()) {
+          <div class="parent-dropdown__list">
+            <button
+              type="button"
+              class="parent-dropdown__item"
+              [class.parent-dropdown__item--selected]="!form.get('parentId')!.value"
+              (click)="selectParent(null)"
+            >
+              Nenhuma (raiz)
+            </button>
+
+            @for (option of flatParentOptions(); track option.id) {
               <button
                 type="button"
                 class="parent-dropdown__item"
-                [class.parent-dropdown__item--selected]="!form.get('parentId')!.value"
-                (click)="selectParent(null)"
+                [class.parent-dropdown__item--selected]="form.get('parentId')!.value === option.id"
+                (click)="selectParent(option.id)"
               >
-                Nenhuma (raiz)
+                {{ getIndent(option.depth) }}{{ option.name }}
               </button>
-
-              @for (option of flatParentOptions(); track option.id) {
-                <button
-                  type="button"
-                  class="parent-dropdown__item"
-                  [class.parent-dropdown__item--selected]="form.get('parentId')!.value === option.id"
-                  (click)="selectParent(option.id)"
-                >
-                  {{ getIndent(option.depth) }}{{ option.name }}
-                </button>
-              }
-            </div>
-          }
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="toggle-label">
-          <span class="toggle-switch">
-            <input type="checkbox" formControlName="isActive" />
-            <span class="toggle-slider"></span>
-          </span>
-          <span>Ativo</span>
-        </label>
-      </div>
-    </form>
-
-    <div class="dialog__footer">
-      <button type="button" class="btn btn-ghost" (click)="close()">
-        Cancelar
-      </button>
-      <button
-        type="button"
-        class="btn btn-accent"
-        (click)="onSubmit()"
-        [disabled]="saving()"
-      >
-        @if (saving()) {
-          <span class="spinner"></span>
+            }
+          </div>
         }
-        Salvar
-      </button>
+      </div>
+    </app-form-field>
+
+    <div class="field-toggle">
+      <app-toggle-switch label="Ativo" formControlName="isActive"></app-toggle-switch>
     </div>
-  </div>
-</div>
+  </form>
+
+  <ng-container footer>
+    <app-form-actions
+      (cancel)="close()"
+      (save)="onSubmit()"
+      [saving]="saving()"
+      [disabled]="form.invalid">
+    </app-form-actions>
+  </ng-container>
+</app-dialog>

@@ -1,35 +1,12 @@
 <div class="perguntas-page">
-  <div class="page-header">
-    <h1 class="page-title">Perguntas</h1>
-  </div>
+  <app-page-header title="Perguntas"></app-page-header>
 
   <!-- Tab filters -->
-  <div class="tab-filters">
-    <button
-      class="tab-btn"
-      [class.active]="activeTab() === 'unanswered'"
-      (click)="setTab('unanswered')"
-    >
-      Sem Resposta
-      @if (unansweredCount() > 0) {
-        <span class="tab-count">{{ unansweredCount() }}</span>
-      }
-    </button>
-    <button
-      class="tab-btn"
-      [class.active]="activeTab() === 'answered'"
-      (click)="setTab('answered')"
-    >
-      Respondidas
-    </button>
-    <button
-      class="tab-btn"
-      [class.active]="activeTab() === 'all'"
-      (click)="setTab('all')"
-    >
-      Todas
-    </button>
-  </div>
+  <app-tab-bar
+    [tabs]="tabItems"
+    [activeTab]="activeTab()"
+    (tabChange)="setTab($any($event))">
+  </app-tab-bar>
 
   <!-- Loading state -->
   @if (loading()) {
@@ -108,10 +85,9 @@
           <!-- Reply button for unanswered questions -->
           @if (question.status === 'unanswered' && replyingTo() !== question.id) {
             <div class="question-actions">
-              <button class="btn-reply" (click)="startReply(question.id)">
-                <lucide-angular [img]="messageCircleIcon" [size]="16"></lucide-angular>
+              <app-button variant="outline" [icon]="messageCircleIcon" (click)="startReply(question.id)">
                 Responder
-              </button>
+              </app-button>
             </div>
           }
 
@@ -126,15 +102,14 @@
                 rows="3"
               ></textarea>
               <div class="reply-actions">
-                <button class="btn-cancel" (click)="cancelReply()">Cancelar</button>
-                <button
-                  class="btn-send"
+                <app-button variant="ghost" (click)="cancelReply()">Cancelar</app-button>
+                <app-button
+                  variant="accent"
+                  [icon]="sendIcon"
                   [disabled]="!replyText().trim()"
-                  (click)="submitReply(question)"
-                >
-                  <lucide-angular [img]="sendIcon" [size]="16"></lucide-angular>
+                  (click)="submitReply(question)">
                   Enviar
-                </button>
+                </app-button>
               </div>
             </div>
           }

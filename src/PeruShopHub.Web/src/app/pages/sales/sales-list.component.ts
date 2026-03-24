@@ -6,6 +6,9 @@ import { LucideAngularModule, Search, ShoppingCart, Eye } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
+import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { OrderService, type OrderListItem } from '../../services/order.service';
 import { firstValueFrom } from 'rxjs';
@@ -15,7 +18,7 @@ type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
 @Component({
   selector: 'app-sales-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, DataTableComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, DataTableComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent],
   templateUrl: './sales-list.component.html',
   styleUrl: './sales-list.component.scss',
 })
@@ -23,6 +26,15 @@ export class SalesListComponent {
   readonly searchIcon = Search;
   readonly cartIcon = ShoppingCart;
   readonly eyeIcon = Eye;
+
+  readonly statusOptions: SelectOption[] = [
+    { value: 'Todos', label: 'Todos' },
+    { value: 'Pago', label: 'Pago' },
+    { value: 'Enviado', label: 'Enviado' },
+    { value: 'Entregue', label: 'Entregue' },
+    { value: 'Cancelado', label: 'Cancelado' },
+    { value: 'Devolvido', label: 'Devolvido' },
+  ];
 
   readonly searchQuery = signal('');
   readonly statusFilter = signal<'Todos' | OrderStatus>('Todos');
@@ -90,6 +102,10 @@ export class SalesListComponent {
 
   onStatusChange(event: Event): void {
     this.statusFilter.set((event.target as HTMLSelectElement).value as 'Todos' | OrderStatus);
+  }
+
+  onStatusFilterChange(value: string): void {
+    this.statusFilter.set(value as 'Todos' | OrderStatus);
   }
 
   onDateFromChange(event: Event): void {

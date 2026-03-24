@@ -10,7 +10,7 @@
 } @else {
   <div class="dashboard">
     <div class="dashboard__header">
-      <h1 class="dashboard__title">Dashboard</h1>
+      <app-page-header title="Dashboard"></app-page-header>
 
       <div class="period-selector">
         <div class="period-selector__buttons">
@@ -36,13 +36,7 @@
 
     <div class="dashboard__kpis">
       @if (loading()) {
-        @for (i of [1, 2, 3, 4]; track i) {
-          <div class="dashboard__kpi-skeleton">
-            <app-skeleton type="text" width="60%" height="14px" />
-            <app-skeleton type="text" width="80%" height="32px" />
-            <app-skeleton type="text" width="40%" height="14px" />
-          </div>
-        }
+        <app-page-skeleton type="kpi-grid"></app-page-skeleton>
       } @else {
         @for (kpi of kpis(); track kpi.label) {
           <app-kpi-card
@@ -109,7 +103,7 @@
                   <td class="product-table__td product-table__td--mono product-table__td--right">{{ formatBrl(product.revenue) }}</td>
                   <td class="product-table__td product-table__td--mono product-table__td--right" [class.product-table__td--profit]="product.profit >= 0" [class.product-table__td--loss]="product.profit < 0">{{ formatBrl(product.profit) }}</td>
                   <td class="product-table__td product-table__td--mono product-table__td--right">
-                    <span class="margin-badge" [ngClass]="getMarginClass(product.margin)">{{ product.margin.toFixed(1) }}%</span>
+                    <app-margin-badge [margin]="product.margin"></app-margin-badge>
                   </td>
                 </tr>
               }
@@ -139,7 +133,7 @@
                   <td class="product-table__td product-table__td--mono product-table__td--right">{{ formatBrl(product.revenue) }}</td>
                   <td class="product-table__td product-table__td--mono product-table__td--right" [class.product-table__td--profit]="product.profit >= 0" [class.product-table__td--loss]="product.profit < 0">{{ formatBrl(product.profit) }}</td>
                   <td class="product-table__td product-table__td--mono product-table__td--right">
-                    <span class="margin-badge" [ngClass]="getMarginClass(product.margin)">{{ product.margin.toFixed(1) }}%</span>
+                    <app-margin-badge [margin]="product.margin"></app-margin-badge>
                   </td>
                 </tr>
               }

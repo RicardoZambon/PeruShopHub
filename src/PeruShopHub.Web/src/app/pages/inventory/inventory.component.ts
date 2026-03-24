@@ -1,10 +1,17 @@
-import { Component, signal, computed, HostListener, OnInit, inject } from '@angular/core';
+import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
+import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
+import { DialogComponent } from '../../shared/components/dialog/dialog.component';
+import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
+import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
+import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { InventoryService } from '../../services/inventory.service';
 import type { InventoryItem, StockMovement } from '../../services/inventory.service';
@@ -20,7 +27,7 @@ interface ProductOption {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabBarComponent, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, PageSkeletonComponent],
   templateUrl: './inventory.component.html',
   styleUrl: './inventory.component.scss',
 })
@@ -55,10 +62,17 @@ export class InventoryComponent implements OnInit {
     );
   });
 
-  tabs: { key: InventoryTab; label: string; disabled?: boolean }[] = [
+  tabs: TabItem[] = [
     { key: 'visao-geral', label: 'Visão Geral' },
     { key: 'movimentacoes', label: 'Movimentações' },
     { key: 'estoque-full', label: 'Estoque Full', disabled: true },
+  ];
+
+  movementTypeOptions: SelectOption[] = [
+    { value: 'all', label: 'Todos' },
+    { value: 'Entrada', label: 'Entrada' },
+    { value: 'Saída', label: 'Saída' },
+    { value: 'Ajuste', label: 'Ajuste' },
   ];
 
   kpis = computed(() => {
@@ -124,13 +138,6 @@ export class InventoryComponent implements OnInit {
     });
   }
 
-  @HostListener('document:keydown.escape')
-  onEscKey(): void {
-    if (this.entryModalOpen()) {
-      this.closeEntryModal();
-    }
-  }
-
   selectTab(tab: InventoryTab): void {
     const tabDef = this.tabs.find(t => t.key === tab);
     if (tabDef?.disabled) return;
@@ -163,10 +170,6 @@ export class InventoryComponent implements OnInit {
 
   closeEntryModal(): void {
     this.entryModalOpen.set(false);
-  }
-
-  onModalBackdropClick(): void {
-    this.closeEntryModal();
   }
 
   onProductSearchInput(value: string): void {

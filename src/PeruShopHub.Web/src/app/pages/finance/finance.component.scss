@@ -13,52 +13,9 @@
     gap: var(--space-3);
   }
 
-  &__title {
-    font-size: var(--h2-size);
-    font-weight: var(--h2-weight);
-    color: var(--neutral-900);
-    margin: 0;
-  }
-
   &__actions {
     display: flex;
     gap: var(--space-2);
-  }
-
-  &__tabs {
-    display: flex;
-    border-bottom: 2px solid var(--neutral-200);
-    gap: 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-  }
-
-  &__tab {
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--body-size);
-    font-weight: 500;
-    font-family: inherit;
-    color: var(--neutral-500);
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: color 150ms ease, border-color 150ms ease;
-
-    &:hover {
-      color: var(--neutral-700);
-    }
-
-    &--active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
   }
 
   &__content {
@@ -153,27 +110,6 @@
   }
 }
 
-.btn {
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--body-small-size);
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease;
-  white-space: nowrap;
-
-  &--outline {
-    background: var(--surface);
-    color: var(--neutral-700);
-    border: 1px solid var(--neutral-300);
-
-    &:hover {
-      background: var(--neutral-50);
-      border-color: var(--neutral-400);
-    }
-  }
-}
 
 .period-selector {
   display: flex;
@@ -392,56 +328,6 @@
   }
 }
 
-.margin-cell {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.margin-bar {
-  width: 60px;
-  height: 8px;
-  background: var(--neutral-100);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-
-  &__fill {
-    height: 100%;
-    border-radius: var(--radius-sm);
-    transition: width 200ms ease;
-
-    &--green {
-      background: var(--success);
-    }
-
-    &--yellow {
-      background: var(--warning);
-    }
-
-    &--red {
-      background: var(--danger);
-    }
-  }
-}
-
-.margin-cell__value {
-  font-family: var(--font-mono);
-  font-size: var(--label-size);
-  font-weight: 500;
-  white-space: nowrap;
-
-  &--green {
-    color: var(--success);
-  }
-
-  &--yellow {
-    color: var(--warning-dark, #E65100);
-  }
-
-  &--red {
-    color: var(--danger);
-  }
-}
 
 // Conciliação table
 .conciliacao-wrapper {

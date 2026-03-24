@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, signal, computed, inject, Simpl
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LucideAngularModule, Pencil, Trash2, ArrowLeft } from 'lucide-angular';
-import { IconPickerComponent } from '../../shared/components';
+import { IconPickerComponent, ButtonComponent, FormFieldComponent, ToggleSwitchComponent, FormActionsComponent } from '../../shared/components';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { VariationFieldsComponent } from './variation-fields.component';
@@ -11,7 +11,7 @@ import type { Category, UpdateCategoryDto } from '../../models/category.model';
 @Component({
   selector: 'app-category-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, IconPickerComponent, VariationFieldsComponent],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, IconPickerComponent, ButtonComponent, FormFieldComponent, ToggleSwitchComponent, FormActionsComponent, VariationFieldsComponent],
   templateUrl: './category-detail.component.html',
   styleUrl: './category-detail.component.scss',
 })

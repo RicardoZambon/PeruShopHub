@@ -14,28 +14,24 @@
       <!-- Supplier Section -->
       <section class="po-form__section">
         <h2 class="po-form__section-title">Informacoes gerais</h2>
-        <div class="form-field">
-          <label class="form-field__label" for="po-supplier">Fornecedor</label>
+        <app-form-field label="Fornecedor">
           <input
-            id="po-supplier"
             type="text"
             class="form-field__input"
             placeholder="Nome do fornecedor"
             [value]="supplier()"
             (input)="onSupplierChange($event)"
           />
-        </div>
-        <div class="form-field">
-          <label class="form-field__label" for="po-notes">Notas</label>
+        </app-form-field>
+        <app-form-field label="Notas">
           <textarea
-            id="po-notes"
             class="form-field__textarea"
             placeholder="Observacoes opcionais..."
             rows="2"
             [value]="notes()"
             (input)="onNotesChange($event)"
           ></textarea>
-        </div>
+        </app-form-field>
       </section>
 
       <!-- Products Section -->
@@ -122,9 +118,7 @@
                 </span>
                 <span class="items-col items-col--total mono">{{ item.quantity * item.unitCost | brlCurrency }}</span>
                 <span class="items-col items-col--actions">
-                  <button class="btn-icon btn-icon-danger" (click)="removeItem(i)" title="Remover produto">
-                    <lucide-icon [img]="trashIcon" [size]="14"></lucide-icon>
-                  </button>
+                  <app-button variant="icon" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Remover produto" size="sm" (click)="removeItem(i)"></app-button>
                 </span>
               </div>
             }
@@ -152,9 +146,7 @@
                 <span class="costs-col costs-col--value mono">{{ cost.value | brlCurrency }}</span>
                 <span class="costs-col costs-col--method">{{ getMethodLabel(cost.distributionMethod) }}</span>
                 <span class="costs-col costs-col--actions">
-                  <button class="btn-icon btn-icon-danger" (click)="removeCost(i)" title="Remover custo">
-                    <lucide-icon [img]="trashIcon" [size]="14"></lucide-icon>
-                  </button>
+                  <app-button variant="icon" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Remover custo" size="sm" (click)="removeCost(i)"></app-button>
                 </span>
               </div>
             }
@@ -163,24 +155,20 @@
 
         @if (showCostForm()) {
           <div class="po-form__cost-form">
-            <div class="form-field">
-              <label class="form-field__label" for="cost-desc">Descricao</label>
+            <app-form-field label="Descricao">
               <input
-                id="cost-desc"
                 type="text"
                 class="form-field__input"
                 placeholder="Ex: Frete, Imposto..."
                 [value]="costDescription()"
                 (input)="onCostDescriptionChange($event)"
               />
-            </div>
+            </app-form-field>
             <div class="form-field__row">
-              <div class="form-field">
-                <label class="form-field__label" for="cost-value">Valor</label>
+              <app-form-field label="Valor">
                 <div class="form-field__prefix-wrap">
                   <span class="form-field__prefix">R$</span>
                   <input
-                    id="cost-value"
                     type="number"
                     class="form-field__input form-field__input--prefixed"
                     placeholder="0,00"
@@ -190,24 +178,18 @@
                     (input)="onCostValueChange($event)"
                   />
                 </div>
-              </div>
-              <div class="form-field">
-                <label class="form-field__label" for="cost-method">Metodo de distribuicao</label>
-                <select
-                  id="cost-method"
-                  class="form-field__select"
+              </app-form-field>
+              <app-form-field label="Metodo de distribuicao">
+                <app-select-dropdown
+                  [options]="costMethodOptions"
                   [value]="costMethod()"
-                  (change)="onCostMethodChange($event)"
-                >
-                  <option value="Por Valor">Por Valor</option>
-                  <option value="Por Quantidade">Por Quantidade</option>
-                  <option value="Manual">Manual</option>
-                </select>
-              </div>
+                  (valueChange)="costMethod.set($event)">
+                </app-select-dropdown>
+              </app-form-field>
             </div>
             <div class="form-actions">
-              <button type="button" class="btn-outline btn-sm" (click)="cancelCostForm()">Cancelar</button>
-              <button type="button" class="btn-primary btn-sm" (click)="addCost()">Adicionar</button>
+              <app-button variant="ghost" size="sm" (click)="cancelCostForm()">Cancelar</app-button>
+              <app-button variant="accent" size="sm" (click)="addCost()">Adicionar</app-button>
             </div>
           </div>
         } @else {
@@ -235,17 +217,14 @@
         <span>Total</span>
         <span class="mono">{{ total() | brlCurrency }}</span>
       </div>
-      <button
-        class="po-form__save-btn"
-        (click)="save()"
+      <app-button
+        variant="accent"
+        [loading]="saving()"
         [disabled]="saving() || selectedItems().length === 0"
-      >
-        @if (saving()) {
-          Salvando...
-        } @else {
-          Salvar Ordem de Compra
-        }
-      </button>
+        (click)="save()"
+        class="po-form__save-btn-wrapper">
+        Salvar Ordem de Compra
+      </app-button>
     </aside>
   </div>
 </div>

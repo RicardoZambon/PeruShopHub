@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   X,
 } from 'lucide-angular';
+import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/toggle-switch.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import {
   ProductVariant,
   DEFAULT_VARIANT_COSTS,
@@ -24,7 +26,7 @@ import type { InheritedVariationField } from '../../models/category.model';
 @Component({
   selector: 'app-variant-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule, ToggleSwitchComponent, ButtonComponent],
   templateUrl: './variant-manager.component.html',
   styleUrl: './variant-manager.component.scss',
 })

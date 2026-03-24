@@ -10,33 +10,25 @@
 } @else {
   <div class="produtos">
     <!-- Header -->
-    <div class="produtos__header">
-      <h1 class="produtos__title">Produtos</h1>
-      <button class="produtos__new-btn" (click)="onNewProduct()">
-        <lucide-icon [img]="plusIcon" [size]="18"></lucide-icon>
-        Novo Produto
-      </button>
-    </div>
+    <app-page-header
+      title="Produtos"
+      actionLabel="Novo Produto"
+      [actionIcon]="plusIcon"
+      (action)="onNewProduct()">
+    </app-page-header>
 
     <!-- Action Bar -->
     <div class="produtos__action-bar">
-      <div class="produtos__search">
-        <lucide-icon [img]="searchIcon" [size]="16" class="produtos__search-icon"></lucide-icon>
-        <input
-          type="text"
-          class="produtos__search-input"
-          placeholder="Buscar por nome ou SKU..."
-          [value]="searchQuery()"
-          (input)="onSearchChange($any($event.target).value)"
-        />
-      </div>
-      <select class="produtos__status-filter" (change)="onStatusChange($event)">
-        <option value="Todos">Todos</option>
-        <option value="Ativo">Ativo</option>
-        <option value="Pausado">Pausado</option>
-        <option value="Encerrado">Encerrado</option>
-        <option value="Revisão">Precisa revisão</option>
-      </select>
+      <app-search-input
+        placeholder="Buscar por nome ou SKU..."
+        [value]="searchQuery()"
+        (valueChange)="onSearchChange($event)"
+      ></app-search-input>
+      <app-select-dropdown
+        [options]="statusOptions"
+        [value]="statusFilter()"
+        (valueChange)="onStatusChange($event)"
+      ></app-select-dropdown>
     </div>
 
     <!-- Loading State -->
@@ -107,9 +99,7 @@
                     <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
                   </td>
                   <td class="produtos-table__td" style="text-align: right">
-                    <span class="margin-badge" [ngClass]="getMarginClass(product.margin ?? 0)">
-                      {{ (product.margin ?? 0).toFixed(1) }}%
-                    </span>
+                    <app-margin-badge [margin]="product.margin"></app-margin-badge>
                   </td>
                   <td class="produtos-table__td" style="text-align: center">
                     <button class="produtos-table__edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', product.id, 'editar'])">
@@ -159,9 +149,7 @@
                 </div>
                 <div class="produtos-table__card-field">
                   <span class="produtos-table__card-label">Margem</span>
-                  <span class="margin-badge" [ngClass]="getMarginClass(product.margin ?? 0)">
-                    {{ (product.margin ?? 0).toFixed(1) }}%
-                  </span>
+                  <app-margin-badge [margin]="product.margin"></app-margin-badge>
                 </div>
               </div>
             </div>

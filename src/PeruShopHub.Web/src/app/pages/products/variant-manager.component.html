@@ -59,15 +59,13 @@
                       (input)="updateTextInput(field.name, $any($event.target).value)"
                       (keydown)="onTextKeydown($event, field.name)"
                     />
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-primary"
-                      (click)="addTextChip(field.name)"
+                    <app-button
+                      variant="accent"
+                      size="sm"
+                      [icon]="plusIcon"
                       [disabled]="!getTextInputValue(field.name).trim()"
-                    >
-                      <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
-                      Adicionar
-                    </button>
+                      (click)="addTextChip(field.name)"
+                    >Adicionar</app-button>
                   </div>
                 </div>
               }
@@ -82,12 +80,12 @@
           <div class="vf-warning">
             <lucide-icon [img]="alertIcon" [size]="16"></lucide-icon>
             <span>Atencao: isso ira gerar {{ combinationCount() }} combinacoes. Deseja continuar?</span>
-            <button type="button" class="btn btn-sm btn-primary" (click)="forceGenerateCombinations()">
+            <app-button variant="accent" size="sm" (click)="forceGenerateCombinations()">
               Sim, gerar
-            </button>
-            <button type="button" class="btn btn-sm btn-ghost" (click)="combinationWarning.set(false)">
+            </app-button>
+            <app-button variant="ghost" size="sm" (click)="combinationWarning.set(false)">
               Cancelar
-            </button>
+            </app-button>
           </div>
         }
 
@@ -95,20 +93,14 @@
           @if (combinationCount() > 0) {
             <span class="vf-combo-count">{{ combinationCount() }} combinacoes</span>
           }
-          <button
-            type="button"
-            class="btn btn-sm btn-accent"
+          <app-button
+            variant="accent"
+            size="sm"
+            [icon]="shuffleIcon"
             [disabled]="combinationCount() === 0 || generating()"
+            [loading]="generating()"
             (click)="generateCombinations()"
-          >
-            @if (generating()) {
-              <span class="spinner-sm"></span>
-              Gerando...
-            } @else {
-              <lucide-icon [img]="shuffleIcon" [size]="14"></lucide-icon>
-              Gerar Combinacoes
-            }
-          </button>
+          >{{ generating() ? 'Gerando...' : 'Gerar Combinacoes' }}</app-button>
         </div>
       </div>
     </div>
@@ -131,15 +123,13 @@
               (input)="updateBulkPrice($any($event.target).value)"
             />
           </div>
-          <button
-            type="button"
-            class="btn btn-sm btn-primary"
+          <app-button
+            variant="accent"
+            size="sm"
+            [icon]="dollarIcon"
             [disabled]="bulkPrice() === null"
             (click)="applyBulkPrice()"
-          >
-            <lucide-icon [img]="dollarIcon" [size]="14"></lucide-icon>
-            Aplicar
-          </button>
+          >Aplicar</app-button>
         </div>
       </div>
     </div>
@@ -198,24 +188,18 @@
               />
             </td>
             <td class="col-active">
-              <label class="toggle-switch-sm">
-                <input
-                  type="checkbox"
-                  [checked]="variant.isActive"
-                  (change)="updateVariantActive(variant.id, $any($event.target).checked)"
-                />
-                <span class="toggle-slider-sm"></span>
-              </label>
+              <app-toggle-switch
+                [checked]="variant.isActive"
+                (checkedChange)="updateVariantActive(variant.id, $event)"
+              ></app-toggle-switch>
             </td>
             <td class="col-actions">
-              <button
-                type="button"
-                class="btn-icon btn-danger-icon"
+              <app-button
+                variant="icon"
+                [icon]="trashIcon"
+                ariaLabel="Excluir variante"
                 (click)="deleteVariant(variant.id)"
-                aria-label="Excluir variante"
-              >
-                <lucide-icon [img]="trashIcon" [size]="16"></lucide-icon>
-              </button>
+              ></app-button>
             </td>
           </tr>
 
@@ -422,23 +406,17 @@
 
             <!-- Actions -->
             <div class="card-actions">
-              <label class="toggle-switch-sm">
-                <input
-                  type="checkbox"
-                  [checked]="variant.isActive"
-                  (change)="updateVariantActive(variant.id, $any($event.target).checked)"
-                />
-                <span class="toggle-slider-sm"></span>
-              </label>
-              <span class="card-active-label">{{ variant.isActive ? 'Ativo' : 'Inativo' }}</span>
-              <button
-                type="button"
-                class="btn-icon btn-danger-icon"
+              <app-toggle-switch
+                [checked]="variant.isActive"
+                [label]="variant.isActive ? 'Ativo' : 'Inativo'"
+                (checkedChange)="updateVariantActive(variant.id, $event)"
+              ></app-toggle-switch>
+              <app-button
+                variant="icon"
+                [icon]="trashIcon"
+                ariaLabel="Excluir variante"
                 (click)="deleteVariant(variant.id)"
-                aria-label="Excluir variante"
-              >
-                <lucide-icon [img]="trashIcon" [size]="16"></lucide-icon>
-              </button>
+              ></app-button>
             </div>
           </div>
         }

@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Search } from 'lucide-angular';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { RelativeDatePipe } from '../../shared/pipes/relative-date.pipe';
 import { CustomerService, type CustomerListItem } from '../../services/customer.service';
 import { firstValueFrom } from 'rxjs';
@@ -12,7 +14,7 @@ import { firstValueFrom } from 'rxjs';
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, EmptyStateComponent, DataTableComponent, RelativeDatePipe],
+  imports: [CommonModule, FormsModule, LucideAngularModule, EmptyStateComponent, DataTableComponent, PageHeaderComponent, SearchInputComponent, RelativeDatePipe],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.scss',
 })

@@ -2,10 +2,14 @@ import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Plus, Search, Edit, Package } from 'lucide-angular';
+import { LucideAngularModule, Plus, Edit, Package } from 'lucide-angular';
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
+import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
+import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
 import { ProductService, Product } from '../../services/product.service';
 import type { DataTableColumn, SortEvent, PageEvent } from '../../shared/components/data-table/data-table.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
@@ -16,7 +20,7 @@ type FilterStatus = 'Todos' | ProductStatus | 'Revisão';
 @Component({
   selector: 'app-products-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, DataTableComponent, BadgeComponent, EmptyStateComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DataTableComponent, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, MarginBadgeComponent],
   templateUrl: './products-list.component.html',
   styleUrl: './products-list.component.scss',
 })
@@ -24,9 +28,16 @@ export class ProductsListComponent implements OnInit {
   private readonly productService = inject(ProductService);
 
   readonly plusIcon = Plus;
-  readonly searchIcon = Search;
   readonly editIcon = Edit;
   readonly packageIcon = Package;
+
+  readonly statusOptions: SelectOption[] = [
+    { value: 'Todos', label: 'Todos' },
+    { value: 'Ativo', label: 'Ativo' },
+    { value: 'Pausado', label: 'Pausado' },
+    { value: 'Encerrado', label: 'Encerrado' },
+    { value: 'Revisão', label: 'Precisa revisão' },
+  ];
 
   readonly searchQuery = signal('');
   readonly statusFilter = signal<FilterStatus>('Todos');
@@ -106,13 +117,6 @@ export class ProductsListComponent implements OnInit {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  getMarginClass(margin: number | null): string {
-    if (margin == null) return 'margin--danger';
-    if (margin >= 20) return 'margin--success';
-    if (margin >= 10) return 'margin--warning';
-    return 'margin--danger';
-  }
-
   getStatusVariant(status: string): BadgeVariant {
     switch (status) {
       case 'Ativo': return 'success';
@@ -128,8 +132,8 @@ export class ProductsListComponent implements OnInit {
     this.loadProducts();
   }
 
-  onStatusChange(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value as FilterStatus);
+  onStatusChange(value: string): void {
+    this.statusFilter.set(value as FilterStatus);
     this.currentPage.set(1);
     this.loadProducts();
   }

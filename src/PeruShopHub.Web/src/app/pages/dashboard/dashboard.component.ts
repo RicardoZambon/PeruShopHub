@@ -4,8 +4,8 @@ import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, Plugin } from 'chart.js';
 import { forkJoin } from 'rxjs';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
-import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent } from '../../shared/components';
 import { DashboardService } from '../../services/dashboard.service';
 import type { KpiCard, ProductRow, PendingAction, ChartDataPoint, CostBreakdownItem } from '../../models/api.models';
 
@@ -33,7 +33,7 @@ const COST_COLORS = [
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BaseChartDirective, EmptyStateComponent],
+  imports: [CommonModule, KpiCardComponent, BaseChartDirective, EmptyStateComponent, PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -334,12 +334,6 @@ export class DashboardComponent implements OnInit {
 
   formatBrl(value: number): string {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
-
-  getMarginClass(margin: number): string {
-    if (margin >= 20) return 'margin--green';
-    if (margin >= 10) return 'margin--yellow';
-    return 'margin--red';
   }
 
   onProductClick(id: number): void {

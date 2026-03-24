@@ -1,25 +1,16 @@
 <div class="estoque">
-  <div class="estoque__header">
-    <h1 class="estoque__title">Estoque</h1>
-    <button class="btn btn--accent" (click)="openEntryModal()">Registrar Entrada</button>
-  </div>
+  <app-page-header
+    title="Estoque"
+    actionLabel="Registrar Entrada"
+    (action)="openEntryModal()">
+  </app-page-header>
 
   <!-- Sub-navigation tabs -->
-  <div class="estoque__tabs">
-    @for (tab of tabs; track tab.key) {
-      <button
-        class="estoque__tab"
-        [class.estoque__tab--active]="activeTab() === tab.key"
-        [class.estoque__tab--disabled]="tab.disabled"
-        [attr.title]="tab.disabled ? 'Em breve' : null"
-        (click)="selectTab(tab.key)">
-        {{ tab.label }}
-        @if (tab.disabled) {
-          <span class="estoque__tab-badge">Em breve</span>
-        }
-      </button>
-    }
-  </div>
+  <app-tab-bar
+    [tabs]="tabs"
+    [activeTab]="activeTab()"
+    (tabChange)="selectTab($any($event))">
+  </app-tab-bar>
 
   <!-- Visão Geral Tab -->
   @if (activeTab() === 'visao-geral') {
@@ -48,19 +39,7 @@
 
       <!-- Inventory Table -->
       @if (loading()) {
-        <div class="table-skeleton">
-          @for (i of [1, 2, 3, 4, 5, 6]; track i) {
-            <div class="table-skeleton__row">
-              <app-skeleton type="text" width="70px" height="16px" />
-              <app-skeleton type="text" width="200px" height="16px" />
-              <app-skeleton type="text" width="60px" height="16px" />
-              <app-skeleton type="text" width="60px" height="16px" />
-              <app-skeleton type="text" width="60px" height="16px" />
-              <app-skeleton type="text" width="90px" height="24px" />
-              <app-skeleton type="text" width="120px" height="16px" />
-            </div>
-          }
-        </div>
+        <app-page-skeleton type="list" [rows]="6" />
       } @else {
         <div class="inv-table-wrapper">
           <table class="inv-table">
@@ -148,12 +127,11 @@
       <div class="mov-filters">
         <div class="mov-filters__group">
           <label class="mov-filters__label">Tipo</label>
-          <select class="mov-filters__select" (change)="setMovementFilter($any($event.target).value)">
-            <option value="all">Todos</option>
-            <option value="Entrada">Entrada</option>
-            <option value="Saída">Saída</option>
-            <option value="Ajuste">Ajuste</option>
-          </select>
+          <app-select-dropdown
+            [options]="movementTypeOptions"
+            [value]="movementTypeFilter()"
+            (valueChange)="setMovementFilter($any($event))">
+          </app-select-dropdown>
         </div>
         <div class="mov-filters__group">
           <label class="mov-filters__label">Período</label>
@@ -205,19 +183,20 @@
 </div>
 
 <!-- Entry Modal -->
-@if (entryModalOpen()) {
-  <div class="modal-backdrop" (click)="onModalBackdropClick()"></div>
-  <div class="modal" role="dialog" aria-labelledby="entry-modal-title">
-    <div class="modal__header">
-      <h2 id="entry-modal-title" class="modal__title">Registrar Entrada</h2>
-    </div>
-    <form [formGroup]="entryForm" (ngSubmit)="saveEntry()" class="modal__body modal__body--grid">
-      <!-- Produto (full width) -->
-      <div class="form-field form-field--full">
-        <label class="form-field__label" for="entry-produto">Produto *</label>
+<app-dialog
+  title="Registrar Entrada"
+  [open]="entryModalOpen()"
+  size="md"
+  (closed)="closeEntryModal()">
+  <form body [formGroup]="entryForm" (ngSubmit)="saveEntry()" class="entry-form-grid">
+    <!-- Produto (full width) -->
+    <div class="entry-form-grid__full">
+      <app-form-field
+        label="Produto"
+        [required]="true"
+        [error]="entryForm.get('produto')?.touched && entryForm.get('produto')?.hasError('required') ? 'Selecione um produto' : ''">
         <div class="form-field__autocomplete">
           <input
-            id="entry-produto"
             type="text"
             class="form-field__input"
             placeholder="Buscar produto por nome ou SKU..."
@@ -238,76 +217,66 @@
             </div>
           }
         </div>
-        @if (entryForm.get('produto')?.touched && entryForm.get('produto')?.hasError('required')) {
-          <span class="form-field__error">Selecione um produto</span>
-        }
-      </div>
+      </app-form-field>
+    </div>
 
-      <!-- Quantidade -->
-      <div class="form-field">
-        <label class="form-field__label" for="entry-quantidade">Quantidade *</label>
+    <!-- Quantidade -->
+    <app-form-field
+      label="Quantidade"
+      [required]="true"
+      [error]="entryForm.get('quantidade')?.touched && entryForm.get('quantidade')?.hasError('required') ? 'Quantidade é obrigatória' : entryForm.get('quantidade')?.touched && entryForm.get('quantidade')?.hasError('min') ? 'Mínimo: 1 unidade' : ''">
+      <input
+        type="number"
+        class="form-field__input"
+        formControlName="quantidade"
+        placeholder="Ex: 50"
+        min="1"
+      />
+    </app-form-field>
+
+    <!-- Custo unitário -->
+    <app-form-field label="Custo unitário">
+      <div class="form-field__prefix-wrap">
+        <span class="form-field__prefix">R$</span>
         <input
-          id="entry-quantidade"
           type="number"
-          class="form-field__input"
-          formControlName="quantidade"
-          placeholder="Ex: 50"
-          min="1"
+          class="form-field__input form-field__input--prefixed"
+          formControlName="custoUnitario"
+          placeholder="0,00"
+          step="0.01"
+          min="0"
         />
-        @if (entryForm.get('quantidade')?.touched && entryForm.get('quantidade')?.hasError('required')) {
-          <span class="form-field__error">Quantidade é obrigatória</span>
-        }
-        @if (entryForm.get('quantidade')?.touched && entryForm.get('quantidade')?.hasError('min')) {
-          <span class="form-field__error">Mínimo: 1 unidade</span>
-        }
       </div>
+    </app-form-field>
 
-      <!-- Custo unitário -->
-      <div class="form-field">
-        <label class="form-field__label" for="entry-custo">Custo unitário</label>
-        <div class="form-field__prefix-wrap">
-          <span class="form-field__prefix">R$</span>
-          <input
-            id="entry-custo"
-            type="number"
-            class="form-field__input form-field__input--prefixed"
-            formControlName="custoUnitario"
-            placeholder="0,00"
-            step="0.01"
-            min="0"
-          />
-        </div>
-      </div>
-
-      <!-- Nota fiscal -->
-      <div class="form-field form-field--full">
-        <label class="form-field__label" for="entry-nf">Nota fiscal</label>
+    <!-- Nota fiscal -->
+    <div class="entry-form-grid__full">
+      <app-form-field label="Nota fiscal">
         <input
-          id="entry-nf"
           type="text"
           class="form-field__input"
           formControlName="notaFiscal"
           placeholder="Ex: NF 4522"
         />
-      </div>
+      </app-form-field>
+    </div>
 
-      <!-- Observação -->
-      <div class="form-field form-field--full">
-        <label class="form-field__label" for="entry-obs">Observação</label>
+    <!-- Observação -->
+    <div class="entry-form-grid__full">
+      <app-form-field label="Observação">
         <textarea
-          id="entry-obs"
           class="form-field__textarea"
           formControlName="observacao"
           placeholder="Observação opcional..."
           rows="3"
         ></textarea>
-      </div>
-
-      <!-- Actions -->
-      <div class="modal__actions form-field--full">
-        <button type="button" class="modal__btn modal__btn--cancel" (click)="closeEntryModal()">Cancelar</button>
-        <button type="submit" class="modal__btn modal__btn--save">Salvar</button>
-      </div>
-    </form>
-  </div>
-}
+      </app-form-field>
+    </div>
+  </form>
+  <ng-container footer>
+    <app-form-actions
+      (cancel)="closeEntryModal()"
+      (save)="saveEntry()">
+    </app-form-actions>
+  </ng-container>
+</app-dialog>

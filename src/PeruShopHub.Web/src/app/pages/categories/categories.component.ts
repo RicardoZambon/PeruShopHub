@@ -1,6 +1,7 @@
 import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule, FolderTree, FolderPlus, Search } from 'lucide-angular';
+import { PageHeaderComponent, SearchInputComponent } from '../../shared/components';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { CategoryTreeComponent } from './category-tree.component';
@@ -14,6 +15,8 @@ import type { Category } from '../../models/category.model';
   imports: [
     CommonModule,
     LucideAngularModule,
+    PageHeaderComponent,
+    SearchInputComponent,
     CategoryTreeComponent,
     CategoryDetailComponent,
     CategoryFormDialogComponent,

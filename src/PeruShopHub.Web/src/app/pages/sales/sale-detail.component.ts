@@ -8,6 +8,9 @@ import {
   Trash2, X, Search, ChevronDown, RefreshCw
 } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
+import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
+import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { OrderService } from '../../services/order.service';
 import { ToastService } from '../../services/toast.service';
@@ -185,7 +188,7 @@ const MOCK_ORDER: OrderDetail = {
 @Component({
   selector: 'app-sale-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, BadgeComponent, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, LucideAngularModule, BadgeComponent, ButtonComponent, FormFieldComponent, FormActionsComponent, FormsModule, ReactiveFormsModule],
   templateUrl: './sale-detail.component.html',
   styleUrl: './sale-detail.component.scss',
 })

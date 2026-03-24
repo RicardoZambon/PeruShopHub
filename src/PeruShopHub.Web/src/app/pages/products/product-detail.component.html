@@ -44,9 +44,8 @@
           <app-badge [label]="product()!.status" [variant]="statusVariant()"></app-badge>
         </div>
       </div>
-      <a class="detail-page__edit-btn" [routerLink]="'/produtos/' + product()!.id + '/editar'">
-        <lucide-icon [img]="EditIcon" [size]="16"></lucide-icon>
-        Editar
+      <a [routerLink]="'/produtos/' + product()!.id + '/editar'" class="detail-page__edit-link">
+        <app-button variant="outline" [icon]="EditIcon">Editar</app-button>
       </a>
     </div>
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder } from '@angular/cdk/drag-drop';
 import { LucideAngularModule, Plus, GripVertical, Trash2, Pencil, Link, Type, ListChecks, X } from 'lucide-angular';
+import { ButtonComponent, FormFieldComponent, RadioGroupComponent, ToggleSwitchComponent, FormActionsComponent } from '../../shared/components';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import type { VariationField, InheritedVariationField, CreateVariationFieldDto } from '../../models/category.model';
@@ -18,6 +19,11 @@ import type { VariationField, InheritedVariationField, CreateVariationFieldDto }
     CdkDrag,
     CdkDragHandle,
     CdkDragPlaceholder,
+    ButtonComponent,
+    FormFieldComponent,
+    RadioGroupComponent,
+    ToggleSwitchComponent,
+    FormActionsComponent,
   ],
   templateUrl: './variation-fields.component.html',
   styleUrl: './variation-fields.component.scss',
@@ -37,6 +43,11 @@ export class VariationFieldsComponent implements OnChanges {
   readonly typeIcon = Type;
   readonly listChecksIcon = ListChecks;
   readonly closeIcon = X;
+
+  readonly typeOptions = [
+    { value: 'text', label: 'Texto livre' },
+    { value: 'select', label: 'Opções predefinidas' },
+  ];
 
   inheritedFields = signal<InheritedVariationField[]>([]);
   ownFields = signal<VariationField[]>([]);

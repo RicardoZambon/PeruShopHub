@@ -1,10 +1,17 @@
-import { Component, signal, computed, HostListener, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LucideAngularModule, Search, Plus } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
+import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
+import { DialogComponent } from '../../shared/components/dialog/dialog.component';
+import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
+import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
+import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { SupplyService, type CreateSupplyDto } from '../../services/supply.service';
 
@@ -27,7 +34,7 @@ const CATEGORIES: SupplyCategory[] = ['Embalagem', 'Etiqueta', 'Caixa', 'Fita', 
 @Component({
   selector: 'app-supplies',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, BrlCurrencyPipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, BrlCurrencyPipe, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, PageSkeletonComponent],
   templateUrl: './supplies.component.html',
   styleUrl: './supplies.component.scss',
 })
@@ -37,6 +44,11 @@ export class SuppliesComponent implements OnInit {
   readonly searchIcon = Search;
   readonly plusIcon = Plus;
   readonly categories = CATEGORIES;
+
+  readonly categoryOptions: SelectOption[] = [
+    { value: 'Todas', label: 'Todas as categorias' },
+    ...CATEGORIES.map(cat => ({ value: cat, label: cat })),
+  ];
 
   readonly searchQuery = signal('');
   readonly categoryFilter = signal<SupplyCategory | 'Todas'>('Todas');
@@ -82,13 +94,6 @@ export class SuppliesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSupplies();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscKey(): void {
-    if (this.modalOpen()) {
-      this.closeModal();
-    }
   }
 
   formatBrl(value: number): string {
@@ -145,8 +150,8 @@ export class SuppliesComponent implements OnInit {
     this.modalOpen.set(false);
   }
 
-  onModalBackdropClick(): void {
-    this.closeModal();
+  onCategoryFilterChange(value: string): void {
+    this.categoryFilter.set(value as SupplyCategory | 'Todas');
   }
 
   saveSupply(): void {

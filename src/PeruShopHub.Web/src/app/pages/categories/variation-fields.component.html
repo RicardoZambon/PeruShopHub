@@ -1,15 +1,14 @@
 <div class="variation-fields">
   <div class="variation-fields__header">
     <h3 class="variation-fields__title">Campos de Variação</h3>
-    <button
-      class="btn-icon"
-      (click)="openAddForm()"
+    <app-button
+      variant="icon"
+      [icon]="plusIcon"
+      [iconOnly]="true"
+      ariaLabel="Adicionar campo"
       [disabled]="showAddForm()"
-      title="Adicionar campo de variação"
-      aria-label="Adicionar campo"
-    >
-      <lucide-icon [img]="plusIcon" [size]="16"></lucide-icon>
-    </button>
+      (click)="openAddForm()">
+    </app-button>
   </div>
 
   <!-- Inherited fields (read-only) -->
@@ -65,34 +64,23 @@
               <!-- Edit mode -->
               <div class="field-card field-card--editing">
                 <form [formGroup]="editForm" (ngSubmit)="saveEdit()">
-                  <div class="field-form__field">
-                    <label>Nome</label>
+                  <app-form-field label="Nome">
                     <input
                       type="text"
                       formControlName="name"
                       placeholder="Nome do campo"
                     />
-                  </div>
+                  </app-form-field>
 
-                  <div class="field-form__field">
-                    <label>Tipo</label>
-                    <div class="radio-group">
-                      <label class="radio-label">
-                        <input type="radio" formControlName="type" value="text" />
-                        <span class="radio-custom"></span>
-                        Texto livre
-                      </label>
-                      <label class="radio-label">
-                        <input type="radio" formControlName="type" value="select" />
-                        <span class="radio-custom"></span>
-                        Opções predefinidas
-                      </label>
-                    </div>
-                  </div>
+                  <app-form-field label="Tipo">
+                    <app-radio-group
+                      [options]="typeOptions"
+                      formControlName="type">
+                    </app-radio-group>
+                  </app-form-field>
 
                   @if (editForm.get('type')!.value === 'select') {
-                    <div class="field-form__field">
-                      <label>Opções</label>
+                    <app-form-field label="Opções">
                       <div class="chip-input">
                         <div class="chip-input__chips">
                           @for (opt of editFormOptions; track opt; let i = $index) {
@@ -117,27 +105,19 @@
                           (keydown)="onEditChipKeydown($event)"
                         />
                       </div>
-                    </div>
+                    </app-form-field>
                   }
 
-                  <div class="field-form__field">
-                    <label class="toggle-label">
-                      <span class="toggle-switch">
-                        <input type="checkbox" formControlName="required" />
-                        <span class="toggle-slider"></span>
-                      </span>
-                      <span>Obrigatório</span>
-                    </label>
+                  <div class="field-form__toggle">
+                    <app-toggle-switch label="Obrigatório" formControlName="required"></app-toggle-switch>
                   </div>
 
-                  <div class="field-form__actions">
-                    <button type="button" class="btn btn-sm btn-ghost" (click)="cancelEdit()">
-                      Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-sm btn-accent">
-                      Salvar
-                    </button>
-                  </div>
+                  <app-form-actions
+                    (cancel)="cancelEdit()"
+                    (save)="saveEdit()"
+                    saveLabel="Salvar"
+                    cancelLabel="Cancelar">
+                  </app-form-actions>
                 </form>
               </div>
             } @else {
@@ -195,34 +175,23 @@
   @if (showAddForm() && addForm) {
     <div class="field-card field-card--adding">
       <form [formGroup]="addForm" (ngSubmit)="saveAdd()">
-        <div class="field-form__field">
-          <label>Nome</label>
+        <app-form-field label="Nome">
           <input
             type="text"
             formControlName="name"
             placeholder="Ex: Cor, Tamanho, Voltagem..."
           />
-        </div>
+        </app-form-field>
 
-        <div class="field-form__field">
-          <label>Tipo</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input type="radio" formControlName="type" value="text" />
-              <span class="radio-custom"></span>
-              Texto livre
-            </label>
-            <label class="radio-label">
-              <input type="radio" formControlName="type" value="select" />
-              <span class="radio-custom"></span>
-              Opções predefinidas
-            </label>
-          </div>
-        </div>
+        <app-form-field label="Tipo">
+          <app-radio-group
+            [options]="typeOptions"
+            formControlName="type">
+          </app-radio-group>
+        </app-form-field>
 
         @if (addForm.get('type')!.value === 'select') {
-          <div class="field-form__field">
-            <label>Opções</label>
+          <app-form-field label="Opções">
             <div class="chip-input">
               <div class="chip-input__chips">
                 @for (opt of addFormOptions; track opt; let i = $index) {
@@ -247,27 +216,19 @@
                 (keydown)="onAddChipKeydown($event)"
               />
             </div>
-          </div>
+          </app-form-field>
         }
 
-        <div class="field-form__field">
-          <label class="toggle-label">
-            <span class="toggle-switch">
-              <input type="checkbox" formControlName="required" />
-              <span class="toggle-slider"></span>
-            </span>
-            <span>Obrigatório</span>
-          </label>
+        <div class="field-form__toggle">
+          <app-toggle-switch label="Obrigatório" formControlName="required"></app-toggle-switch>
         </div>
 
-        <div class="field-form__actions">
-          <button type="button" class="btn btn-sm btn-ghost" (click)="cancelAdd()">
-            Cancelar
-          </button>
-          <button type="submit" class="btn btn-sm btn-accent">
-            Salvar
-          </button>
-        </div>
+        <app-form-actions
+          (cancel)="cancelAdd()"
+          (save)="saveAdd()"
+          saveLabel="Salvar"
+          cancelLabel="Cancelar">
+        </app-form-actions>
       </form>
     </div>
   }

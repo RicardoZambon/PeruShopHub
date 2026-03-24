@@ -1,20 +1,5 @@
 @use '../../../styles/mixins' as m;
 
-.po-detail-skeleton {
-  .skeleton-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .skeleton-block {
-    background: linear-gradient(90deg, var(--neutral-100) 25%, var(--neutral-200) 50%, var(--neutral-100) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: var(--radius-md);
-  }
-}
-
 .po-detail {
   &__header {
     display: flex;
@@ -73,31 +58,6 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-  }
-
-  &__receive-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
-    background: var(--accent);
-    color: var(--text-on-primary);
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: background 150ms, opacity 150ms;
-
-    &:hover:not(:disabled) {
-      background: var(--accent-hover, #E65100);
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
   }
 
   &__notes {
@@ -287,7 +247,3 @@
   color: var(--primary);
 }
 
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}

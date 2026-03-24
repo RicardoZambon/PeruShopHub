@@ -6,6 +6,10 @@ import { LucideAngularModule, Search, Plus, ShoppingCart } from 'lucide-angular'
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
+import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
+import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { PurchaseOrderService, type PurchaseOrderListItem } from '../../services/purchase-order.service';
 import { firstValueFrom } from 'rxjs';
@@ -15,7 +19,7 @@ type POStatus = 'Rascunho' | 'Recebido' | 'Cancelado';
 @Component({
   selector: 'app-purchase-orders-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, BrlCurrencyPipe],
+  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, BrlCurrencyPipe, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, PageSkeletonComponent],
   templateUrl: './purchase-orders-list.component.html',
   styleUrl: './purchase-orders-list.component.scss',
 })
@@ -23,6 +27,13 @@ export class PurchaseOrdersListComponent {
   readonly searchIcon = Search;
   readonly plusIcon = Plus;
   readonly cartIcon = ShoppingCart;
+
+  readonly statusOptions: SelectOption[] = [
+    { value: 'Todos', label: 'Todos os status' },
+    { value: 'Rascunho', label: 'Rascunho' },
+    { value: 'Recebido', label: 'Recebido' },
+    { value: 'Cancelado', label: 'Cancelado' },
+  ];
 
   readonly searchQuery = signal('');
   readonly statusFilter = signal<'Todos' | POStatus>('Todos');
@@ -86,6 +97,11 @@ export class PurchaseOrdersListComponent {
   onStatusChange(event: Event): void {
     this.currentPage.set(1);
     this.statusFilter.set((event.target as HTMLSelectElement).value as 'Todos' | POStatus);
+  }
+
+  onStatusFilterChange(value: string): void {
+    this.currentPage.set(1);
+    this.statusFilter.set(value as 'Todos' | POStatus);
   }
 
   onRowClick(order: PurchaseOrderListItem): void {

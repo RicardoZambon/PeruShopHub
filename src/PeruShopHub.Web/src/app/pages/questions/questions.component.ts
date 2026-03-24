@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, MessageCircle, Clock, Package, Send, X } from 'lucide-angular';
 import { BadgeComponent, type BadgeVariant } from '../../shared/components';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import { RelativeDatePipe } from '../../shared/pipes';
 import { ToastService } from '../../services/toast.service';
 
@@ -24,7 +27,7 @@ interface Question {
 @Component({
   selector: 'app-questions',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, RelativeDatePipe],
+  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, RelativeDatePipe, PageHeaderComponent, TabBarComponent, ButtonComponent],
   templateUrl: './questions.component.html',
   styleUrl: './questions.component.scss',
 })
@@ -34,6 +37,12 @@ export class QuestionsComponent {
   readonly packageIcon = Package;
   readonly sendIcon = Send;
   readonly xIcon = X;
+
+  readonly tabItems: TabItem[] = [
+    { key: 'unanswered', label: 'Sem Resposta' },
+    { key: 'answered', label: 'Respondidas' },
+    { key: 'all', label: 'Todas' },
+  ];
 
   readonly activeTab = signal<TabFilter>('unanswered');
   readonly loading = signal(true);

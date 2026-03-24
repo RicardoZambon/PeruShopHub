@@ -8,22 +8,15 @@
 } @else {
   <div class="clientes">
     <!-- Header -->
-    <div class="clientes__header">
-      <h1 class="clientes__title">Clientes</h1>
-    </div>
+    <app-page-header title="Clientes"></app-page-header>
 
     <!-- Action Bar -->
     <div class="clientes__action-bar">
-      <div class="clientes__search">
-        <lucide-icon [img]="searchIcon" [size]="16" class="clientes__search-icon"></lucide-icon>
-        <input
-          type="text"
-          class="clientes__search-input"
-          placeholder="Buscar por nome, nickname ou email..."
-          [value]="searchQuery()"
-          (input)="onSearchChange($any($event.target).value)"
-        />
-      </div>
+      <app-search-input
+        placeholder="Buscar por nome, nickname ou email..."
+        [value]="searchQuery()"
+        (valueChange)="onSearchChange($event)"
+      ></app-search-input>
     </div>
 
     <!-- Loading State -->

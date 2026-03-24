@@ -1,28 +1,18 @@
 <div class="categorias-page">
-  <!-- Page header: title left, add button right (matching products list) -->
-  <div class="categorias-page__header">
-    <div class="categorias-page__header-left">
-      <h1 class="categorias-page__title">Categorias</h1>
-      <span class="categorias-page__subtitle">
-        {{ totalCategories() }} categorias &middot; {{ totalProducts() }} produtos
-      </span>
-    </div>
-    <button class="categorias-page__add-btn" type="button" (click)="onAddCategory()">
-      <lucide-icon [img]="folderPlusIcon" [size]="18"></lucide-icon>
-      Adicionar Categoria
-    </button>
-  </div>
+  <app-page-header
+    title="Categorias"
+    [subtitle]="totalCategories() + ' categorias \u00B7 ' + totalProducts() + ' produtos'"
+    actionLabel="Adicionar Categoria"
+    [actionIcon]="folderPlusIcon"
+    (action)="onAddCategory()">
+  </app-page-header>
 
-  <!-- Search bar below header, full-width -->
-  <div class="categorias-page__search">
-    <lucide-icon [img]="searchIcon" [size]="16" class="categorias-page__search-icon"></lucide-icon>
-    <input
-      type="text"
-      class="categorias-page__search-input"
+  <div class="categorias-page__search-wrap">
+    <app-search-input
       placeholder="Buscar categorias..."
       [value]="searchQuery()"
-      (input)="onSearchChange($any($event.target).value)"
-    />
+      (valueChange)="onSearchChange($event)">
+    </app-search-input>
   </div>
 
   <!-- Split panel layout -->

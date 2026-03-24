@@ -1,13 +1,5 @@
 @if (loading()) {
-  <div class="po-detail-skeleton">
-    <div class="skeleton-header">
-      <div class="skeleton-block" style="width: 200px; height: 32px;"></div>
-      <div class="skeleton-block" style="width: 100px; height: 28px;"></div>
-    </div>
-    <div class="skeleton-block" style="width: 100%; height: 200px; margin-top: 24px;"></div>
-    <div class="skeleton-block" style="width: 100%; height: 150px; margin-top: 16px;"></div>
-    <div class="skeleton-block" style="width: 100%; height: 100px; margin-top: 16px;"></div>
-  </div>
+  <app-page-skeleton type="detail" />
 } @else if (order(); as o) {
   <!-- Header -->
   <div class="po-detail__header">
@@ -23,14 +15,14 @@
     <div class="po-detail__header-right">
       <app-badge [label]="o.status" [variant]="getStatusVariant(o.status)" />
       @if (o.status === 'Rascunho') {
-        <button class="po-detail__receive-btn" (click)="receiveStock()" [disabled]="receiving()">
-          <lucide-icon [img]="checkCircleIcon" [size]="16"></lucide-icon>
-          @if (receiving()) {
-            Recebendo...
-          } @else {
-            Receber Estoque
-          }
-        </button>
+        <app-button
+          variant="accent"
+          [icon]="checkCircleIcon"
+          [loading]="receiving()"
+          [disabled]="receiving()"
+          (click)="receiveStock()">
+          Receber Estoque
+        </app-button>
       }
     </div>
   </div>

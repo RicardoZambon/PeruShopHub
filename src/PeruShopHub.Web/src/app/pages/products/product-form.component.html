@@ -19,15 +19,11 @@
     <div class="form-panel">
       <!-- Desktop Tabs -->
       <div class="tabs-nav">
-        @for (tab of tabs; track tab.id) {
-          <button
-            class="tab-btn"
-            [class.active]="activeTab() === tab.id"
-            (click)="setActiveTab(tab.id)"
-          >
-            {{ tab.label }}
-          </button>
-        }
+        <app-tab-bar
+          [tabs]="tabItems"
+          [activeTab]="activeTab()"
+          (tabChange)="setActiveTab($event)"
+        ></app-tab-bar>
       </div>
 
       <form [formGroup]="form" class="form-content">
@@ -44,18 +40,19 @@
           [class.active]="activeTab() === 'basicas'"
           [class.accordion-open]="isAccordionOpen('basicas')"
         >
-          <div class="field">
-            <label for="sku">SKU</label>
+          <app-form-field label="SKU">
             <input
               id="sku"
               type="text"
               formControlName="sku"
               placeholder="Ex: TWS-PRO-001"
             />
-          </div>
+          </app-form-field>
 
-          <div class="field">
-            <label for="titulo">Título do anúncio</label>
+          <app-form-field
+            label="Título do anúncio"
+            [required]="true"
+            [error]="titulo.touched && titulo.hasError('required') ? 'Título é obrigatório' : ''">
             <input
               id="titulo"
               type="text"
@@ -65,14 +62,11 @@
               [class.invalid]="titulo.touched && titulo.invalid"
             />
             <div class="field-footer">
-              @if (titulo.touched && titulo.hasError('required')) {
-                <span class="field-error">Título é obrigatório</span>
-              }
               <span class="char-counter" [class.limit]="tituloLength() >= 55">
                 {{ tituloLength() }}/60
               </span>
             </div>
-          </div>
+          </app-form-field>
 
           <div class="field">
             <label>Categoria</label>
@@ -111,25 +105,23 @@
             }
           </div>
 
-          <div class="field">
-            <label for="descricao">Descrição</label>
+          <app-form-field label="Descrição">
             <textarea
               id="descricao"
               formControlName="descricao"
               placeholder="Descreva seu produto em detalhes..."
               rows="8"
             ></textarea>
-          </div>
+          </app-form-field>
 
-          <div class="field">
-            <label for="fornecedor">Fornecedor</label>
+          <app-form-field label="Fornecedor">
             <input
               id="fornecedor"
               type="text"
               formControlName="fornecedor"
               placeholder="Nome do fornecedor"
             />
-          </div>
+          </app-form-field>
         </div>
 
         <!-- TAB: Preço e Custos -->
@@ -144,8 +136,10 @@
           [class.accordion-open]="isAccordionOpen('preco')"
         >
           <div class="fields-row">
-            <div class="field">
-              <label for="precoVenda">Preço de venda</label>
+            <app-form-field
+              label="Preço de venda"
+              [required]="true"
+              [error]="precoVenda.touched && precoVenda.hasError('required') ? 'Preço é obrigatório' : precoVenda.touched && precoVenda.hasError('min') ? 'Preço deve ser maior que zero' : ''">
               <div class="input-prefix">
                 <span class="prefix">R$</span>
                 <input
@@ -158,16 +152,9 @@
                   [class.invalid]="precoVenda.touched && precoVenda.invalid"
                 />
               </div>
-              @if (precoVenda.touched && precoVenda.hasError('required')) {
-                <span class="field-error">Preço é obrigatório</span>
-              }
-              @if (precoVenda.touched && precoVenda.hasError('min')) {
-                <span class="field-error">Preço deve ser maior que zero</span>
-              }
-            </div>
+            </app-form-field>
 
-            <div class="field">
-              <label for="custoAquisicao">Custo de aquisição</label>
+            <app-form-field label="Custo de aquisição">
               <div class="input-prefix">
                 <span class="prefix">R$</span>
                 <input
@@ -179,7 +166,7 @@
                   min="0"
                 />
               </div>
-            </div>
+            </app-form-field>
           </div>
 
           <!-- Margin Calculator -->
@@ -205,8 +192,7 @@
           [class.accordion-open]="isAccordionOpen('dimensoes')"
         >
           <div class="fields-row fields-row--4">
-            <div class="field">
-              <label for="peso">Peso (kg)</label>
+            <app-form-field label="Peso (kg)">
               <input
                 id="peso"
                 type="number"
@@ -215,9 +201,8 @@
                 step="0.01"
                 min="0"
               />
-            </div>
-            <div class="field">
-              <label for="altura">Altura (cm)</label>
+            </app-form-field>
+            <app-form-field label="Altura (cm)">
               <input
                 id="altura"
                 type="number"
@@ -225,9 +210,8 @@
                 placeholder="0"
                 min="1"
               />
-            </div>
-            <div class="field">
-              <label for="largura">Largura (cm)</label>
+            </app-form-field>
+            <app-form-field label="Largura (cm)">
               <input
                 id="largura"
                 type="number"
@@ -235,9 +219,8 @@
                 placeholder="0"
                 min="1"
               />
-            </div>
-            <div class="field">
-              <label for="comprimento">Comprimento (cm)</label>
+            </app-form-field>
+            <app-form-field label="Comprimento (cm)">
               <input
                 id="comprimento"
                 type="number"
@@ -245,7 +228,7 @@
                 placeholder="0"
                 min="1"
               />
-            </div>
+            </app-form-field>
           </div>
         </div>
 
@@ -277,19 +260,13 @@
 
   <!-- Sticky Bottom Bar -->
   <div class="bottom-bar">
-    <button type="button" class="btn btn-ghost" (click)="onCancel()" [disabled]="loading()">
+    <app-button variant="ghost" [disabled]="loading()" (click)="onCancel()">
       Cancelar
-    </button>
+    </app-button>
     <div class="bottom-bar-actions">
-      <button type="button" class="btn btn-accent" (click)="onSave()" [disabled]="loading()">
-        @if (loading()) {
-          <span class="spinner"></span>
-          Salvando...
-        } @else {
-          <lucide-icon [img]="saveIcon" [size]="16"></lucide-icon>
-          Salvar
-        }
-      </button>
+      <app-button variant="accent" [icon]="saveIcon" [loading]="loading()" [disabled]="loading()" (click)="onSave()">
+        {{ loading() ? 'Salvando...' : 'Salvar' }}
+      </app-button>
     </div>
   </div>
 </div>

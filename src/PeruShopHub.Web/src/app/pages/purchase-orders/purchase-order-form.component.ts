@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { LucideAngularModule, Search, Plus, Trash2, ArrowLeft, Package } from 'lucide-angular';
+import { ButtonComponent } from '../../shared/components/button/button.component';
+import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
+import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { PurchaseOrderService, type CreatePurchaseOrderDto } from '../../services/purchase-order.service';
 import { ProductService, type Product } from '../../services/product.service';
@@ -26,11 +29,17 @@ interface AdditionalCost {
 @Component({
   selector: 'app-purchase-order-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, BrlCurrencyPipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, BrlCurrencyPipe, ButtonComponent, FormFieldComponent, SelectDropdownComponent],
   templateUrl: './purchase-order-form.component.html',
   styleUrl: './purchase-order-form.component.scss',
 })
 export class PurchaseOrderFormComponent {
+  readonly costMethodOptions: SelectOption[] = [
+    { value: 'Por Valor', label: 'Por Valor' },
+    { value: 'Por Quantidade', label: 'Por Quantidade' },
+    { value: 'Manual', label: 'Manual' },
+  ];
+
   readonly searchIcon = Search;
   readonly plusIcon = Plus;
   readonly trashIcon = Trash2;

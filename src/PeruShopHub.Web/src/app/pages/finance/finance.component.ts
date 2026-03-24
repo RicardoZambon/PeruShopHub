@@ -6,6 +6,10 @@ import { forkJoin } from 'rxjs';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
+import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
+import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ToastService } from '../../services/toast.service';
 import { FinanceService } from '../../services/finance.service';
@@ -34,7 +38,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-finance',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BaseChartDirective],
+  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BadgeComponent, PageHeaderComponent, ButtonComponent, TabBarComponent, MarginBadgeComponent, BaseChartDirective],
   templateUrl: './finance.component.html',
   styleUrl: './finance.component.scss',
 })
@@ -60,6 +64,8 @@ export class FinanceComponent implements OnInit {
     { key: 'conciliacao', label: 'Conciliação' },
     { key: 'curva-abc', label: 'Curva ABC' },
   ];
+
+  tabItems: TabItem[] = this.tabs.map(t => ({ key: t.key, label: t.label }));
 
   kpis = signal<KpiData[]>([]);
 

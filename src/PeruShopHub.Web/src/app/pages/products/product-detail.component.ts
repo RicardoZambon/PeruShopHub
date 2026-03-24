@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Package, Edit } from 'lucide-angular';
 import { KpiCardComponent, BadgeComponent } from '../../shared/components';
 import type { BadgeVariant } from '../../shared/components';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { ProductVariantService } from '../../services/product-variant.service';
 import { ProductService } from '../../services/product.service';
@@ -36,7 +37,7 @@ interface RecentOrder {
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, KpiCardComponent, BadgeComponent, BrlCurrencyPipe],
+  imports: [CommonModule, RouterLink, LucideAngularModule, KpiCardComponent, BadgeComponent, ButtonComponent, BrlCurrencyPipe],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })

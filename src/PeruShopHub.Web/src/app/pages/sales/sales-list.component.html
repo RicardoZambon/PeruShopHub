@@ -8,22 +8,15 @@
 } @else {
   <div class="vendas">
     <!-- Header -->
-    <div class="vendas__header">
-      <h1 class="vendas__title">Vendas</h1>
-    </div>
+    <app-page-header title="Vendas"></app-page-header>
 
     <!-- Action Bar -->
     <div class="vendas__action-bar">
-      <div class="vendas__search">
-        <lucide-icon [img]="searchIcon" [size]="16" class="vendas__search-icon"></lucide-icon>
-        <input
-          type="text"
-          class="vendas__search-input"
-          placeholder="Buscar por ID ou comprador..."
-          [value]="searchQuery()"
-          (input)="onSearchChange($any($event.target).value)"
-        />
-      </div>
+      <app-search-input
+        placeholder="Buscar por ID ou comprador..."
+        [value]="searchQuery()"
+        (valueChange)="onSearchChange($event)"
+      ></app-search-input>
       <div class="vendas__date-range">
         <input
           type="date"
@@ -41,14 +34,11 @@
           placeholder="Data fim"
         />
       </div>
-      <select class="vendas__status-filter" (change)="onStatusChange($event)">
-        <option value="Todos">Todos</option>
-        <option value="Pago">Pago</option>
-        <option value="Enviado">Enviado</option>
-        <option value="Entregue">Entregue</option>
-        <option value="Cancelado">Cancelado</option>
-        <option value="Devolvido">Devolvido</option>
-      </select>
+      <app-select-dropdown
+        [options]="statusOptions"
+        [value]="statusFilter()"
+        (valueChange)="onStatusFilterChange($event)"
+      ></app-select-dropdown>
     </div>
 
     <!-- Loading State -->

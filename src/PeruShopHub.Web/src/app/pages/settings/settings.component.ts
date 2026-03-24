@@ -1,8 +1,16 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
+import { LucideAngularModule, Pencil, Trash2 } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import type { TabItem } from '../../shared/components/tab-bar/tab-bar.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
+import { DialogComponent } from '../../shared/components/dialog/dialog.component';
+import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
+import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
+import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/toggle-switch.component';
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
 import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule } from '../../services/settings.service';
@@ -28,7 +36,7 @@ interface AlertConfig {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, BadgeComponent],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, BadgeComponent, PageHeaderComponent, ButtonComponent, DialogComponent, FormFieldComponent, FormActionsComponent, ToggleSwitchComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -37,11 +45,14 @@ export class SettingsComponent implements OnInit {
   private readonly settingsService = inject(SettingsService);
   private readonly toastService = inject(ToastService);
 
+  readonly pencilIcon = Pencil;
+  readonly trashIcon = Trash2;
+
   activeTab = signal<SettingsTab>('empresa');
   showUserModal = signal(false);
   editingUser = signal<UserRow | null>(null);
 
-  tabs: { key: SettingsTab; label: string; disabled?: boolean }[] = [
+  tabs: TabItem[] = [
     { key: 'empresa', label: 'Empresa' },
     { key: 'usuarios', label: 'Usuários' },
     { key: 'integracoes', label: 'Integrações' },

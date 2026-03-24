@@ -4,6 +4,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Package, CheckCircle } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
+import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { PurchaseOrderService, type PurchaseOrderDetail } from '../../services/purchase-order.service';
 import { ToastService } from '../../services/toast.service';
@@ -11,7 +13,7 @@ import { ToastService } from '../../services/toast.service';
 @Component({
   selector: 'app-purchase-order-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, BadgeComponent, BrlCurrencyPipe],
+  imports: [CommonModule, RouterLink, LucideAngularModule, BadgeComponent, BrlCurrencyPipe, ButtonComponent, PageSkeletonComponent],
   templateUrl: './purchase-order-detail.component.html',
   styleUrl: './purchase-order-detail.component.scss',
 })
