@@ -1,0 +1,13 @@
+<div class="form-actions">
+  <button type="button" class="form-actions__cancel" (click)="cancel.emit()">
+    {{ cancelLabel }}
+  </button>
+  <button
+    type="button"
+    class="form-actions__save"
+    [disabled]="saving || disabled"
+    (click)="save.emit()">
+    @if (saving) { <span class="form-actions__spinner"></span> }
+    {{ saveLabel }}
+  </button>
+</div>

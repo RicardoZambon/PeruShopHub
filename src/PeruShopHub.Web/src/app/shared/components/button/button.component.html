@@ -1,0 +1,20 @@
+<button
+  [type]="type"
+  [disabled]="isDisabled"
+  [attr.aria-label]="ariaLabel || null"
+  class="btn"
+  [ngClass]="[
+    'btn--' + variant,
+    'btn--' + size,
+    iconOnly ? 'btn--icon-only' : '',
+    loading ? 'btn--loading' : ''
+  ]"
+>
+  <span *ngIf="loading" class="btn__spinner"></span>
+  <lucide-icon
+    *ngIf="icon && !loading"
+    [img]="icon"
+    [size]="variant === 'icon' || size === 'sm' ? 16 : 18"
+  ></lucide-icon>
+  <ng-content *ngIf="!iconOnly"></ng-content>
+</button>

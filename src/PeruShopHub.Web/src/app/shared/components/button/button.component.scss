@@ -1,0 +1,130 @@
+@use '../../../../styles/mixins' as *;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+  white-space: nowrap;
+  line-height: 1;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  // ── Sizes ──
+  &--sm {
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--body-small-size);
+    height: var(--button-height-sm);
+  }
+
+  &--md {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--body-size);
+    height: var(--button-height-md);
+  }
+
+  // ── Variants ──
+  &--accent {
+    background: var(--accent);
+    color: var(--text-on-primary);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+  }
+
+  &--ghost {
+    background: none;
+    color: var(--neutral-700);
+
+    &:hover:not(:disabled) {
+      background: var(--neutral-100);
+    }
+  }
+
+  &--outline {
+    background: var(--surface);
+    border: 1px solid var(--neutral-300);
+    color: var(--neutral-700);
+
+    &:hover:not(:disabled) {
+      background: var(--neutral-100);
+    }
+  }
+
+  &--danger {
+    background: var(--danger);
+    color: var(--text-on-primary);
+
+    &:hover:not(:disabled) {
+      background: #B71C1C;
+    }
+  }
+
+  &--icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--neutral-500);
+    border-radius: var(--radius-sm);
+
+    &:hover:not(:disabled) {
+      background: var(--neutral-100);
+      color: var(--neutral-900);
+    }
+
+    // Danger variant combined with icon
+    &.btn--danger {
+      background: none;
+      color: var(--neutral-500);
+
+      &:hover:not(:disabled) {
+        background: var(--danger-light);
+        color: var(--danger);
+      }
+    }
+  }
+
+  // ── Icon Only ──
+  &--icon-only {
+    gap: 0;
+  }
+
+  // ── Loading ──
+  &--loading {
+    pointer-events: none;
+  }
+
+  // ── Spinner ──
+  &__spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: btn-spin 600ms linear infinite;
+  }
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

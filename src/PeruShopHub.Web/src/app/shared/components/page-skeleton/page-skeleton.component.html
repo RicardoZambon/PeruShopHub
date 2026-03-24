@@ -1,0 +1,60 @@
+@if (type === 'list') {
+  <div class="page-skeleton page-skeleton--list">
+    @for (row of rowArray; track row) {
+      <div class="page-skeleton__row">
+        <div class="page-skeleton__block page-skeleton__block--sm"></div>
+        <div class="page-skeleton__block page-skeleton__block--lg"></div>
+        <div class="page-skeleton__block page-skeleton__block--md"></div>
+        <div class="page-skeleton__block page-skeleton__block--sm"></div>
+      </div>
+    }
+  </div>
+}
+
+@if (type === 'detail') {
+  <div class="page-skeleton page-skeleton--detail">
+    <div class="page-skeleton__header-block"></div>
+    <div class="page-skeleton__row">
+      <div class="page-skeleton__block page-skeleton__block--md"></div>
+      <div class="page-skeleton__block page-skeleton__block--lg"></div>
+    </div>
+    <div class="page-skeleton__row">
+      <div class="page-skeleton__block page-skeleton__block--lg"></div>
+      <div class="page-skeleton__block page-skeleton__block--sm"></div>
+    </div>
+    <div class="page-skeleton__divider"></div>
+    <div class="page-skeleton__row">
+      <div class="page-skeleton__block page-skeleton__block--md"></div>
+      <div class="page-skeleton__block page-skeleton__block--md"></div>
+    </div>
+    <div class="page-skeleton__row">
+      <div class="page-skeleton__block page-skeleton__block--sm"></div>
+      <div class="page-skeleton__block page-skeleton__block--lg"></div>
+    </div>
+  </div>
+}
+
+@if (type === 'kpi-grid') {
+  <div class="page-skeleton page-skeleton--kpi-grid">
+    <div class="page-skeleton__card">
+      <div class="page-skeleton__block page-skeleton__block--label"></div>
+      <div class="page-skeleton__block page-skeleton__block--metric"></div>
+      <div class="page-skeleton__block page-skeleton__block--change"></div>
+    </div>
+    <div class="page-skeleton__card">
+      <div class="page-skeleton__block page-skeleton__block--label"></div>
+      <div class="page-skeleton__block page-skeleton__block--metric"></div>
+      <div class="page-skeleton__block page-skeleton__block--change"></div>
+    </div>
+    <div class="page-skeleton__card">
+      <div class="page-skeleton__block page-skeleton__block--label"></div>
+      <div class="page-skeleton__block page-skeleton__block--metric"></div>
+      <div class="page-skeleton__block page-skeleton__block--change"></div>
+    </div>
+    <div class="page-skeleton__card">
+      <div class="page-skeleton__block page-skeleton__block--label"></div>
+      <div class="page-skeleton__block page-skeleton__block--metric"></div>
+      <div class="page-skeleton__block page-skeleton__block--change"></div>
+    </div>
+  </div>
+}

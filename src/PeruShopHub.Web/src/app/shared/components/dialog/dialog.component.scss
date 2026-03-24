@@ -1,0 +1,109 @@
+@use '../../../../styles/mixins' as m;
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 200ms ease;
+}
+
+.dialog {
+  background: var(--surface);
+  border-radius: var(--modal-border-radius);
+  box-shadow: var(--modal-shadow);
+  max-width: calc(100vw - var(--space-8));
+  max-height: calc(100vh - var(--space-8));
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 200ms ease;
+
+  &--sm {
+    width: var(--modal-sm-width);
+  }
+
+  &--md {
+    width: var(--modal-md-width);
+  }
+
+  &--lg {
+    width: var(--modal-lg-width);
+  }
+
+  @include m.mobile {
+    width: 100%;
+    max-width: calc(100vw - var(--space-6));
+  }
+}
+
+.dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--neutral-200);
+
+  @include m.mobile {
+    padding: var(--space-4);
+  }
+}
+
+.dialog__title {
+  font-size: var(--heading-3-size);
+  font-weight: var(--heading-3-weight);
+  color: var(--neutral-900);
+  margin: 0;
+}
+
+.dialog__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--neutral-500);
+  cursor: pointer;
+  transition: all 150ms ease;
+
+  &:hover {
+    background: var(--neutral-100);
+    color: var(--neutral-700);
+  }
+}
+
+.dialog__body {
+  padding: var(--space-6);
+  overflow-y: auto;
+
+  @include m.mobile {
+    padding: var(--space-4);
+  }
+}
+
+.dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--neutral-200);
+
+  @include m.mobile {
+    padding: var(--space-4);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

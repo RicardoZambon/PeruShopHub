@@ -1,0 +1,47 @@
+@use '../../../../styles/mixins' as *;
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  &__title {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: var(--heading-1-size);
+    font-weight: var(--heading-1-weight);
+    line-height: var(--heading-1-height);
+    color: var(--neutral-900);
+  }
+
+  &__subtitle {
+    font-family: var(--font-ui);
+    font-size: var(--body-small-size);
+    line-height: var(--body-small-height);
+    color: var(--neutral-500);
+  }
+
+  @include mobile {
+    flex-direction: column;
+
+    &__action {
+      width: 100%;
+
+      app-button {
+        display: block;
+        width: 100%;
+
+        ::ng-deep .btn {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

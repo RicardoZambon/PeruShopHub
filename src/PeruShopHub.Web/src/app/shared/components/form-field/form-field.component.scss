@@ -1,0 +1,30 @@
+.form-field {
+  margin-bottom: var(--space-5);
+}
+
+.form-field__label {
+  display: block;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--neutral-700);
+  margin-bottom: var(--space-1);
+}
+
+.form-field__required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.form-field__hint {
+  display: block;
+  font-size: var(--body-small-size);
+  color: var(--neutral-500);
+  margin-top: var(--space-1);
+}
+
+.form-field__error {
+  display: block;
+  font-size: var(--body-small-size);
+  color: var(--danger);
+  margin-top: var(--space-1);
+}

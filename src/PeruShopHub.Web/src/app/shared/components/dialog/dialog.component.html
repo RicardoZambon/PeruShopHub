@@ -1,0 +1,14 @@
+@if (open) {
+  <div class="dialog-overlay" (click)="onBackdropClick($event)">
+    <div class="dialog" [class]="'dialog dialog--' + size" role="dialog" aria-modal="true" [attr.aria-label]="title">
+      <div class="dialog__header">
+        <h2 class="dialog__title">{{ title }}</h2>
+        <button class="dialog__close" (click)="close()" aria-label="Fechar">
+          <lucide-icon [img]="closeIcon" [size]="20"></lucide-icon>
+        </button>
+      </div>
+      <div class="dialog__body"><ng-content select="[body]" /></div>
+      <div class="dialog__footer"><ng-content select="[footer]" /></div>
+    </div>
+  </div>
+}

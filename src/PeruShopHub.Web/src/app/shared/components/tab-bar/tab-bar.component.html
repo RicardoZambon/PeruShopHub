@@ -1,0 +1,15 @@
+<div class="tab-bar">
+  @for (tab of tabs; track tab.key) {
+    <button
+      class="tab-bar__tab"
+      [class.tab-bar__tab--active]="activeTab === tab.key"
+      [class.tab-bar__tab--disabled]="tab.disabled"
+      [disabled]="tab.disabled"
+      (click)="onTabClick(tab.key)">
+      {{ tab.label }}
+      @if (tab.count !== undefined) {
+        <span class="tab-bar__count">{{ tab.count }}</span>
+      }
+    </button>
+  }
+</div>

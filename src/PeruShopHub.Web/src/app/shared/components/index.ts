@@ -14,3 +14,18 @@ export { LayoutComponent } from './layout/layout.component';
 export { NotificationPanelComponent } from './notification-panel/notification-panel.component';
 export { SearchPaletteComponent } from './search-palette/search-palette.component';
 export { IconPickerComponent } from './icon-picker/icon-picker.component';
+
+// Shared UI components
+export { ButtonComponent } from './button/button.component';
+export { PageHeaderComponent } from './page-header/page-header.component';
+export { SearchInputComponent } from './search-input/search-input.component';
+export { SelectDropdownComponent } from './select-dropdown/select-dropdown.component';
+export { FormFieldComponent } from './form-field/form-field.component';
+export { ToggleSwitchComponent } from './toggle-switch/toggle-switch.component';
+export { RadioGroupComponent } from './radio-group/radio-group.component';
+export { TabBarComponent } from './tab-bar/tab-bar.component';
+export type { TabItem } from './tab-bar/tab-bar.component';
+export { DialogComponent } from './dialog/dialog.component';
+export { FormActionsComponent } from './form-actions/form-actions.component';
+export { MarginBadgeComponent } from './margin-badge/margin-badge.component';
+export { PageSkeletonComponent } from './page-skeleton/page-skeleton.component';

@@ -1,0 +1,60 @@
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+
+  &__cancel,
+  &__save {
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-family: var(--font-ui);
+    font-size: var(--body-size);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    white-space: nowrap;
+  }
+
+  &__cancel {
+    background: none;
+    color: var(--neutral-700);
+    border: 1px solid transparent;
+
+    &:hover {
+      background: var(--neutral-100);
+    }
+  }
+
+  &__save {
+    background: var(--accent);
+    color: var(--text-on-primary);
+    border: 1px solid var(--accent);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &__spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--text-on-primary);
+    border-radius: 50%;
+    animation: spin 600ms linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

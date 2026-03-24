@@ -1,0 +1,122 @@
+@use '../../../../styles/mixins' as m;
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.page-skeleton {
+  &--list {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  &--detail {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    @include m.mobile {
+      padding: var(--space-4);
+    }
+  }
+
+  &--kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--card-gap-desktop);
+
+    @include m.tablet {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--card-gap-tablet);
+    }
+
+    @include m.mobile {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--card-gap-mobile);
+    }
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-2) 0;
+  }
+
+  &__block {
+    height: 16px;
+    background: var(--neutral-200);
+    border-radius: var(--radius-sm);
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+
+    &--sm {
+      width: 60px;
+    }
+
+    &--md {
+      width: 120px;
+    }
+
+    &--lg {
+      flex: 1;
+      min-width: 80px;
+    }
+
+    &--label {
+      width: 60%;
+      height: 14px;
+    }
+
+    &--metric {
+      width: 80%;
+      height: 32px;
+    }
+
+    &--change {
+      width: 40%;
+      height: 14px;
+    }
+  }
+
+  &__header-block {
+    width: 50%;
+    height: 28px;
+    background: var(--neutral-200);
+    border-radius: var(--radius-sm);
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+  }
+
+  &__divider {
+    height: 1px;
+    background: var(--neutral-200);
+    margin: var(--space-2) 0;
+  }
+
+  &__card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--card-padding-desktop);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    @include m.tablet {
+      padding: var(--card-padding-tablet);
+    }
+
+    @include m.mobile {
+      padding: var(--card-padding-mobile);
+    }
+  }
+}
