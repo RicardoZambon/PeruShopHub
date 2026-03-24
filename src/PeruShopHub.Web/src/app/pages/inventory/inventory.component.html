@@ -190,7 +190,7 @@
   (closed)="closeEntryModal()">
   <form body [formGroup]="entryForm" (ngSubmit)="saveEntry()" class="entry-form-grid">
     <!-- Produto (full width) -->
-    <div class="entry-form-grid__full">
+    <div class="entry-form-grid__full field-row">
       <app-form-field
         label="Produto"
         [required]="true"
@@ -221,36 +221,40 @@
     </div>
 
     <!-- Quantidade -->
-    <app-form-field
-      label="Quantidade"
-      [required]="true"
-      [error]="entryForm.get('quantidade')?.touched && entryForm.get('quantidade')?.hasError('required') ? 'Quantidade é obrigatória' : entryForm.get('quantidade')?.touched && entryForm.get('quantidade')?.hasError('min') ? 'Mínimo: 1 unidade' : ''">
-      <input
-        type="number"
-        class="form-field__input"
-        formControlName="quantidade"
-        placeholder="Ex: 50"
-        min="1"
-      />
-    </app-form-field>
-
-    <!-- Custo unitário -->
-    <app-form-field label="Custo unitário">
-      <div class="form-field__prefix-wrap">
-        <span class="form-field__prefix">R$</span>
+    <div class="field-row">
+      <app-form-field
+        label="Quantidade"
+        [required]="true"
+        [error]="entryForm.get('quantidade')?.touched && entryForm.get('quantidade')?.hasError('required') ? 'Quantidade é obrigatória' : entryForm.get('quantidade')?.touched && entryForm.get('quantidade')?.hasError('min') ? 'Mínimo: 1 unidade' : ''">
         <input
           type="number"
-          class="form-field__input form-field__input--prefixed"
-          formControlName="custoUnitario"
-          placeholder="0,00"
-          step="0.01"
-          min="0"
+          class="form-field__input"
+          formControlName="quantidade"
+          placeholder="Ex: 50"
+          min="1"
         />
-      </div>
-    </app-form-field>
+      </app-form-field>
+    </div>
+
+    <!-- Custo unitário -->
+    <div class="field-row">
+      <app-form-field label="Custo unitário">
+        <div class="form-field__prefix-wrap">
+          <span class="form-field__prefix">R$</span>
+          <input
+            type="number"
+            class="form-field__input form-field__input--prefixed"
+            formControlName="custoUnitario"
+            placeholder="0,00"
+            step="0.01"
+            min="0"
+          />
+        </div>
+      </app-form-field>
+    </div>
 
     <!-- Nota fiscal -->
-    <div class="entry-form-grid__full">
+    <div class="entry-form-grid__full field-row">
       <app-form-field label="Nota fiscal">
         <input
           type="text"
@@ -262,7 +266,7 @@
     </div>
 
     <!-- Observação -->
-    <div class="entry-form-grid__full">
+    <div class="entry-form-grid__full field-row">
       <app-form-field label="Observação">
         <textarea
           class="form-field__textarea"

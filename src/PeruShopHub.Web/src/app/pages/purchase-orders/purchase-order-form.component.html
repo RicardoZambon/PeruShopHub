@@ -14,24 +14,28 @@
       <!-- Supplier Section -->
       <section class="po-form__section">
         <h2 class="po-form__section-title">Informacoes gerais</h2>
-        <app-form-field label="Fornecedor">
-          <input
-            type="text"
-            class="form-field__input"
-            placeholder="Nome do fornecedor"
-            [value]="supplier()"
-            (input)="onSupplierChange($event)"
-          />
-        </app-form-field>
-        <app-form-field label="Notas">
-          <textarea
-            class="form-field__textarea"
-            placeholder="Observacoes opcionais..."
-            rows="2"
-            [value]="notes()"
-            (input)="onNotesChange($event)"
-          ></textarea>
-        </app-form-field>
+        <div class="field-row">
+          <app-form-field label="Fornecedor">
+            <input
+              type="text"
+              class="form-field__input"
+              placeholder="Nome do fornecedor"
+              [value]="supplier()"
+              (input)="onSupplierChange($event)"
+            />
+          </app-form-field>
+        </div>
+        <div class="field-row">
+          <app-form-field label="Notas">
+            <textarea
+              class="form-field__textarea"
+              placeholder="Observacoes opcionais..."
+              rows="2"
+              [value]="notes()"
+              (input)="onNotesChange($event)"
+            ></textarea>
+          </app-form-field>
+        </div>
       </section>
 
       <!-- Products Section -->
@@ -155,15 +159,17 @@
 
         @if (showCostForm()) {
           <div class="po-form__cost-form">
-            <app-form-field label="Descricao">
-              <input
-                type="text"
-                class="form-field__input"
-                placeholder="Ex: Frete, Imposto..."
-                [value]="costDescription()"
-                (input)="onCostDescriptionChange($event)"
-              />
-            </app-form-field>
+            <div class="field-row">
+              <app-form-field label="Descricao">
+                <input
+                  type="text"
+                  class="form-field__input"
+                  placeholder="Ex: Frete, Imposto..."
+                  [value]="costDescription()"
+                  (input)="onCostDescriptionChange($event)"
+                />
+              </app-form-field>
+            </div>
             <div class="form-field__row">
               <app-form-field label="Valor">
                 <div class="form-field__prefix-wrap">

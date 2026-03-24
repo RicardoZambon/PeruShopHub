@@ -1,5 +1,10 @@
+// Single form row — consistent vertical spacing between form elements
+.field-row {
+  margin-bottom: var(--space-3);
+}
+
 .form-field {
-  margin-bottom: var(--space-5);
+  margin-bottom: 0;
 }
 
 .form-field__label {
@@ -27,4 +32,65 @@
   font-size: var(--body-small-size);
   color: var(--danger);
   margin-top: var(--space-1);
+}
+
+// Style projected form controls
+.form-field__control {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  input[type="date"],
+  textarea {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    font-family: var(--font-ui);
+    font-size: var(--body-size);
+    color: var(--neutral-900);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 200ms ease;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: var(--neutral-500);
+    }
+
+    &:focus {
+      border-color: var(--primary);
+      box-shadow: var(--focus-ring);
+    }
+
+    &.invalid,
+    &.ng-invalid.ng-touched {
+      border-color: var(--danger);
+    }
+  }
+
+  textarea {
+    min-height: 72px;
+    resize: vertical;
+  }
+
+  select {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    font-family: var(--font-ui);
+    font-size: var(--body-size);
+    color: var(--neutral-900);
+    background: var(--surface);
+    outline: none;
+    cursor: pointer;
+    box-sizing: border-box;
+
+    &:focus {
+      border-color: var(--primary);
+      box-shadow: var(--focus-ring);
+    }
+  }
 }

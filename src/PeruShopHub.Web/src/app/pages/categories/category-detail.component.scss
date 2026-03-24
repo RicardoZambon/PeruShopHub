@@ -148,12 +148,11 @@
   margin-bottom: var(--space-6);
 }
 
-// Icon + Name row
-.field-row {
+// Icon + Name row (special flex layout)
+.field-row--icon-name {
   display: flex;
   gap: var(--space-3);
   align-items: flex-start;
-  margin-bottom: var(--space-3);
 
   label {
     display: block;
@@ -164,11 +163,11 @@
   }
 }
 
-.field-row__icon {
+.field-row--icon-name__icon {
   flex-shrink: 0;
 }
 
-.field-row__name {
+.field-row--icon-name__name {
   flex: 1;
   min-width: 0;
 }

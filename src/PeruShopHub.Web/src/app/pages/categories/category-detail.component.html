@@ -56,15 +56,15 @@
 
     @if (editing() && form) {
       <form class="detail-panel__form" [formGroup]="form" (ngSubmit)="saveEditing()">
-        <div class="field-row">
-          <div class="field-row__icon">
+        <div class="field-row field-row--icon-name">
+          <div class="field-row--icon-name__icon">
             <label>Ícone</label>
             <app-icon-picker
               [value]="editIcon()"
               (valueChange)="onEditIconChange($event)"
             ></app-icon-picker>
           </div>
-          <div class="field-row__name">
+          <div class="field-row--icon-name__name">
             <app-form-field
               label="Nome"
               [error]="form.get('name')!.touched && form.get('name')!.hasError('required') ? 'Nome é obrigatório' : ''"
@@ -79,19 +79,21 @@
           </div>
         </div>
 
-        <app-form-field
-          label="Slug"
-          [error]="form.get('slug')!.touched && form.get('slug')!.hasError('required') ? 'Slug é obrigatório' : ''"
-          [required]="true">
-          <input
-            id="edit-slug"
-            type="text"
-            formControlName="slug"
-            maxlength="120"
-          />
-        </app-form-field>
+        <div class="field-row">
+          <app-form-field
+            label="Slug"
+            [error]="form.get('slug')!.touched && form.get('slug')!.hasError('required') ? 'Slug é obrigatório' : ''"
+            [required]="true">
+            <input
+              id="edit-slug"
+              type="text"
+              formControlName="slug"
+              maxlength="120"
+            />
+          </app-form-field>
+        </div>
 
-        <div class="field-toggle">
+        <div class="field-row">
           <app-toggle-switch label="Ativo" formControlName="isActive"></app-toggle-switch>
         </div>
 

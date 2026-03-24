@@ -84,7 +84,7 @@ export class VariationFieldsComponent implements OnChanges {
   openAddForm(): void {
     this.addForm = this.fb.group({
       name: ['', [Validators.required]],
-      type: ['select' as 'text' | 'select'],
+      type: ['text' as 'text' | 'select'],
       required: [false],
     });
     this.chipInput.set('');
@@ -119,7 +119,11 @@ export class VariationFieldsComponent implements OnChanges {
   }
 
   async saveAdd(): Promise<void> {
-    if (!this.addForm || this.addForm.invalid) return;
+    if (!this.addForm) return;
+    if (this.addForm.invalid) {
+      this.addForm.markAllAsTouched();
+      return;
+    }
 
     const { name, type, required } = this.addForm.value;
 
@@ -186,7 +190,11 @@ export class VariationFieldsComponent implements OnChanges {
   }
 
   async saveEdit(): Promise<void> {
-    if (!this.editForm || this.editForm.invalid || !this.editingFieldId()) return;
+    if (!this.editForm || !this.editingFieldId()) return;
+    if (this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
 
     const { name, type, required } = this.editForm.value;
 

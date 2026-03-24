@@ -40,33 +40,37 @@
           [class.active]="activeTab() === 'basicas'"
           [class.accordion-open]="isAccordionOpen('basicas')"
         >
-          <app-form-field label="SKU">
-            <input
-              id="sku"
-              type="text"
-              formControlName="sku"
-              placeholder="Ex: TWS-PRO-001"
-            />
-          </app-form-field>
+          <div class="field-row">
+            <app-form-field label="SKU">
+              <input
+                id="sku"
+                type="text"
+                formControlName="sku"
+                placeholder="Ex: TWS-PRO-001"
+              />
+            </app-form-field>
+          </div>
 
-          <app-form-field
-            label="Título do anúncio"
-            [required]="true"
-            [error]="titulo.touched && titulo.hasError('required') ? 'Título é obrigatório' : ''">
-            <input
-              id="titulo"
-              type="text"
-              formControlName="titulo"
-              placeholder="Ex: Fone Bluetooth TWS Pro Max"
-              maxlength="60"
-              [class.invalid]="titulo.touched && titulo.invalid"
-            />
-            <div class="field-footer">
-              <span class="char-counter" [class.limit]="tituloLength() >= 55">
-                {{ tituloLength() }}/60
-              </span>
-            </div>
-          </app-form-field>
+          <div class="field-row">
+            <app-form-field
+              label="Título do anúncio"
+              [required]="true"
+              [error]="titulo.touched && titulo.hasError('required') ? 'Título é obrigatório' : ''">
+              <input
+                id="titulo"
+                type="text"
+                formControlName="titulo"
+                placeholder="Ex: Fone Bluetooth TWS Pro Max"
+                maxlength="60"
+                [class.invalid]="titulo.touched && titulo.invalid"
+              />
+              <div class="field-footer">
+                <span class="char-counter" [class.limit]="tituloLength() >= 55">
+                  {{ tituloLength() }}/60
+                </span>
+              </div>
+            </app-form-field>
+          </div>
 
           <div class="field">
             <label>Categoria</label>
@@ -105,23 +109,27 @@
             }
           </div>
 
-          <app-form-field label="Descrição">
-            <textarea
-              id="descricao"
-              formControlName="descricao"
-              placeholder="Descreva seu produto em detalhes..."
-              rows="8"
-            ></textarea>
-          </app-form-field>
+          <div class="field-row">
+            <app-form-field label="Descrição">
+              <textarea
+                id="descricao"
+                formControlName="descricao"
+                placeholder="Descreva seu produto em detalhes..."
+                rows="8"
+              ></textarea>
+            </app-form-field>
+          </div>
 
-          <app-form-field label="Fornecedor">
-            <input
-              id="fornecedor"
-              type="text"
-              formControlName="fornecedor"
-              placeholder="Nome do fornecedor"
-            />
-          </app-form-field>
+          <div class="field-row">
+            <app-form-field label="Fornecedor">
+              <input
+                id="fornecedor"
+                type="text"
+                formControlName="fornecedor"
+                placeholder="Nome do fornecedor"
+              />
+            </app-form-field>
+          </div>
         </div>
 
         <!-- TAB: Preço e Custos -->
