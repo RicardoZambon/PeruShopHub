@@ -164,9 +164,58 @@ The full design spec is in `Docs/PeruShopHub-Design-System.md`. Key rules for fr
 - Route guards: `AuthGuard` on all routes, `RoleGuard` for admin settings
 - Sidebar and theme state managed via Angular services + `localStorage`
 
+## UI/UX Development Best Practices
+
+These are hard-won patterns established during development. Follow them when building or modifying any frontend component.
+
+### Loading States & Async Data
+
+- **Never show empty states while data is loading.** "No items" must only appear when data has loaded and is genuinely empty. Use a `loading` signal and show skeleton placeholders until the request completes.
+- **Skeleton placeholders must match the real layout dimensions** (e.g., breadcrumb + title + info rows), not a generic spinner. This prevents layout shifts.
+- **When switching between items** (e.g., selecting a different category in a list-detail view), immediately clear the previous item and show skeletons — never leave stale data visible while the new request is in-flight.
+- **Cancel in-flight requests when the user changes selection.** Use `AbortController` or RxJS `switchMap` to prevent stale responses from overwriting the current state. If the user clicks A then B, A's response must be discarded.
+
+### Null Safety in Templates
+
+- **API responses may omit fields** even if the TypeScript interface types them as required. Always guard against `null`/`undefined` in templates before calling methods like `.toFixed()`, `.toUpperCase()`, etc.
+- **Make types truthful.** If a field can be null from the API (e.g., `margin` on a product without cost data), type it as `number | null` — don't type it as `number` and then patch templates with `?? 0`. Fix the type first, then the template follows naturally.
+
+### Angular Signals & Reactivity
+
+- **Do not use plain `@Input()` properties inside `computed()` signals.** A `computed` captures the value at creation time; plain inputs are not reactive. Either use `signal()` + `ngOnChanges` to bridge inputs into signals, or use Angular's `input()` signal inputs.
+- **When a component receives async data via `@Input()`**, always account for the initial empty/null state. The first render happens before the parent's API call resolves.
+
+### Button & Icon Consistency
+
+- **Use ghost-style icon buttons** (no border, hover reveals background) for toolbar/action buttons throughout the app. This matches modern patterns (Notion, Linear, Figma) and reduces visual clutter.
+- **All icon buttons must use the same dimensions** (32×32px), border-radius (`--radius-sm`), and hover behavior (`--neutral-100` background).
+- **Never mix bordered and borderless icon buttons** in the same view. If one button in a section is ghost-style, all must be.
+
+### Forms & Dialogs
+
+- **All fields the backend requires must be in the frontend form.** Before building a create/edit form, read the backend DTO and verify every required property is covered. Auto-generate derived fields (e.g., `slug` from `name`) where sensible, but let users override.
+- **Icon pickers, color pickers, and other visual selectors** should always be inline components (dropdown from a trigger button), not modal dialogs. Keep the user in context.
+- **Modals must close on Escape and backdrop click.** Use `@HostListener('document:keydown.escape')` and a backdrop click handler.
+
+### Backend ↔ Frontend Alignment
+
+- **Frontend DTOs must match backend DTOs.** When the backend `CreateCategoryDto` requires `Name, Slug, ParentId, Icon, Order`, the frontend must send all five — not a subset. Mismatches cause silent 400 errors.
+- **List endpoints vs detail endpoints return different shapes.** List DTOs are lightweight (no timestamps, no children). Detail DTOs include everything. When displaying detailed information (dates, metadata), fetch the detail endpoint — don't rely on list data.
+- **If a feature is shown in the UI, it must be persisted in the backend.** No in-memory-only data stores for user-facing features. If the user creates something, it must survive a page refresh.
+
+### API Design Conventions
+
+- **Prefer semantic query parameters over boolean flags.** Instead of `?all=true`, use the absence of a filter parameter to mean "return all" (e.g., no `parentId` = all categories, with `parentId` = filtered).
+- **Nested resources use nested routes.** Variation fields belong to categories: `GET /api/categories/{id}/variation-fields`, not `GET /api/variation-fields?categoryId=...`.
+- **Always sort alphabetically by name** unless the user has explicit ordering controls. Don't add `Order` columns unless the UI exposes drag-to-reorder.
+
+### Redis Connection Strings
+
+- **Use the explicit StackExchange.Redis format:** `host:port,password=xxx,user=xxx,abortConnect=false`. The shorthand `user:password@host` format is ambiguous and can fail with special characters or when parsed by different libraries (cache vs SignalR backplane).
+
 ## Current Status
 
-**Pre-project phase** — design and documentation only. No code has been written yet. The `Docs/` folder contains complete requirements, architecture, data models, API references, and roadmap. The immediate next step is Phase 0 (project scaffolding, Docker setup, initial migrations).
+The project has foundational infrastructure in place: database schema with seed data, API controllers for all major entities, Angular frontend with pages for dashboard, products, categories, sales, customers, inventory, supplies, settings, and a design system with light/dark theming.
 
 ## Documentation Reference
 

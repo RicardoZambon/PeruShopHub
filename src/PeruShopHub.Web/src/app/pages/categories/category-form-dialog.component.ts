@@ -1,18 +1,19 @@
-import { Component, Input, Output, EventEmitter, signal, computed, inject, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, inject, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LucideAngularModule, X } from 'lucide-angular';
+import { IconPickerComponent } from '../../shared/components';
 import { CategoryService } from '../../services/category.service';
 import type { Category, CreateCategoryDto, UpdateCategoryDto } from '../../models/category.model';
 
 @Component({
   selector: 'app-category-form-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, IconPickerComponent],
   templateUrl: './category-form-dialog.component.html',
   styleUrl: './category-form-dialog.component.scss',
 })
-export class CategoryFormDialogComponent {
+export class CategoryFormDialogComponent implements OnInit {
   @Input() category: Category | null = null; // null = create mode
   @Input() allCategories: Category[] = [];
   @Input() preselectedParentId: string | null = null;
@@ -28,6 +29,8 @@ export class CategoryFormDialogComponent {
 
   form!: FormGroup;
   parentDropdownOpen = signal(false);
+  selectedIcon = signal<string | null>(null);
+  private slugManuallyEdited = false;
 
   get isEditMode(): boolean {
     return this.category !== null;
@@ -37,7 +40,6 @@ export class CategoryFormDialogComponent {
     return this.isEditMode ? 'Editar Categoria' : 'Nova Categoria';
   }
 
-  // Flatten the tree for parent selection, excluding self and descendants
   readonly flatParentOptions = computed(() => {
     const result: { id: string; name: string; depth: number }[] = [];
     const excludeIds = new Set<string>();
@@ -71,14 +73,46 @@ export class CategoryFormDialogComponent {
   });
 
   ngOnInit(): void {
+    this.selectedIcon.set(this.category?.icon || null);
+
     this.form = this.fb.group({
       name: [
         this.category?.name || '',
         [Validators.required, Validators.maxLength(100)],
       ],
+      slug: [
+        this.category?.slug || '',
+        [Validators.required, Validators.maxLength(120)],
+      ],
       parentId: [this.category?.parentId || this.preselectedParentId || null],
       isActive: [this.category?.isActive ?? true],
     });
+
+    if (this.isEditMode) {
+      this.slugManuallyEdited = true;
+    }
+  }
+
+  onIconChange(icon: string | null): void {
+    this.selectedIcon.set(icon);
+  }
+
+  onNameInput(): void {
+    if (!this.slugManuallyEdited) {
+      const name = this.form.get('name')!.value;
+      this.form.patchValue({ slug: this.generateSlug(name) });
+    }
+  }
+
+  onSlugInput(): void {
+    this.slugManuallyEdited = true;
+  }
+
+  private generateSlug(name: string): string {
+    return name.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   getIndent(depth: number): string {
@@ -118,16 +152,25 @@ export class CategoryFormDialogComponent {
     this.saving.set(true);
 
     try {
-      const { name, parentId, isActive } = this.form.value;
+      const { name, slug, parentId, isActive } = this.form.value;
+      const iconValue = this.selectedIcon() || null;
 
       if (this.isEditMode && this.category) {
-        const dto: UpdateCategoryDto = { name, parentId, isActive };
+        const dto: UpdateCategoryDto = { name, slug, parentId, icon: iconValue, isActive };
         const updated = await this.categoryService.update(this.category.id, dto);
         if (updated) {
           this.saved.emit(updated);
         }
       } else {
-        const dto: CreateCategoryDto = { name, parentId, isActive };
+        const siblings = this.categoryService.allCategories()
+          .filter(c => c.parentId === parentId);
+        const dto: CreateCategoryDto = {
+          name,
+          slug,
+          parentId,
+          icon: iconValue,
+          order: siblings.length + 1,
+        };
         const created = await this.categoryService.create(dto);
         this.saved.emit(created);
       }

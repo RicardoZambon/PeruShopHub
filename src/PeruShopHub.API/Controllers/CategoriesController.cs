@@ -21,21 +21,21 @@ public class CategoriesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<CategoryListDto>>> GetCategories(
         [FromQuery] Guid? parentId = null)
     {
-        var query = _db.Categories
-            .AsNoTracking()
-            .Where(c => c.ParentId == parentId);
+        IQueryable<Category> query = _db.Categories.AsNoTracking();
 
-        var childCategoryIds = await query.Select(c => c.Id).ToListAsync();
+        if (parentId.HasValue)
+            query = query.Where(c => c.ParentId == parentId);
+
+        var categoryIds = await query.Select(c => c.Id).ToListAsync();
         var childrenLookup = await _db.Categories
             .AsNoTracking()
-            .Where(c => c.ParentId != null && childCategoryIds.Contains(c.ParentId.Value))
+            .Where(c => c.ParentId != null && categoryIds.Contains(c.ParentId.Value))
             .Select(c => c.ParentId!.Value)
             .Distinct()
             .ToListAsync();
 
         var categories = await query
-            .OrderBy(c => c.Order)
-            .ThenBy(c => c.Name)
+            .OrderBy(c => c.Name)
             .Select(c => new CategoryListDto(
                 c.Id,
                 c.Name,
@@ -89,8 +89,7 @@ public class CategoriesController : ControllerBase
         var children = await _db.Categories
             .AsNoTracking()
             .Where(c => c.ParentId == id)
-            .OrderBy(c => c.Order)
-            .ThenBy(c => c.Name)
+            .OrderBy(c => c.Name)
             .Select(c => new CategoryListDto(
                 c.Id,
                 c.Name,
@@ -199,8 +198,7 @@ public class CategoriesController : ControllerBase
         var children = await _db.Categories
             .AsNoTracking()
             .Where(c => c.ParentId == id)
-            .OrderBy(c => c.Order)
-            .ThenBy(c => c.Name)
+            .OrderBy(c => c.Name)
             .Select(c => new CategoryListDto(
                 c.Id,
                 c.Name,

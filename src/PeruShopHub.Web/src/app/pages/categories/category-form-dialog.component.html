@@ -8,21 +8,46 @@
     </div>
 
     <form class="dialog__body" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <!-- Icon + Name row -->
+      <div class="field-row">
+        <div class="field-row__icon">
+          <label>Ícone</label>
+          <app-icon-picker
+            [value]="selectedIcon()"
+            (valueChange)="onIconChange($event)"
+          ></app-icon-picker>
+        </div>
+        <div class="field-row__name">
+          <label for="category-name">Nome</label>
+          <input
+            id="category-name"
+            type="text"
+            formControlName="name"
+            placeholder="Nome da categoria"
+            maxlength="100"
+            (input)="onNameInput()"
+            [class.invalid]="form.get('name')!.touched && form.get('name')!.invalid"
+          />
+          @if (form.get('name')!.touched && form.get('name')!.hasError('required')) {
+            <span class="field-error">Nome é obrigatório</span>
+          }
+        </div>
+      </div>
+
       <div class="field">
-        <label for="category-name">Nome</label>
+        <label for="category-slug">Slug</label>
         <input
-          id="category-name"
+          id="category-slug"
           type="text"
-          formControlName="name"
-          placeholder="Nome da categoria"
-          maxlength="100"
-          [class.invalid]="form.get('name')!.touched && form.get('name')!.invalid"
+          formControlName="slug"
+          placeholder="slug-da-categoria"
+          maxlength="120"
+          (input)="onSlugInput()"
+          [class.invalid]="form.get('slug')!.touched && form.get('slug')!.invalid"
         />
-        @if (form.get('name')!.touched && form.get('name')!.hasError('required')) {
-          <span class="field-error">Nome é obrigatório</span>
-        }
-        @if (form.get('name')!.hasError('maxlength')) {
-          <span class="field-error">Máximo de 100 caracteres</span>
+        <span class="field-hint">Identificador na URL. Gerado automaticamente a partir do nome.</span>
+        @if (form.get('slug')!.touched && form.get('slug')!.hasError('required')) {
+          <span class="field-error">Slug é obrigatório</span>
         }
       </div>
 

@@ -107,8 +107,8 @@
                     <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
                   </td>
                   <td class="produtos-table__td" style="text-align: right">
-                    <span class="margin-badge" [ngClass]="getMarginClass(product.margin)">
-                      {{ product.margin.toFixed(1) }}%
+                    <span class="margin-badge" [ngClass]="getMarginClass(product.margin ?? 0)">
+                      {{ (product.margin ?? 0).toFixed(1) }}%
                     </span>
                   </td>
                   <td class="produtos-table__td" style="text-align: center">
@@ -159,8 +159,8 @@
                 </div>
                 <div class="produtos-table__card-field">
                   <span class="produtos-table__card-label">Margem</span>
-                  <span class="margin-badge" [ngClass]="getMarginClass(product.margin)">
-                    {{ product.margin.toFixed(1) }}%
+                  <span class="margin-badge" [ngClass]="getMarginClass(product.margin ?? 0)">
+                    {{ (product.margin ?? 0).toFixed(1) }}%
                   </span>
                 </div>
               </div>

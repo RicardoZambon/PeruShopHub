@@ -1,0 +1,172 @@
+.icon-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.icon-picker__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px dashed var(--neutral-300);
+  border-radius: var(--radius-md);
+  background: var(--neutral-50);
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+
+  &:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+
+  &--active {
+    border-color: var(--primary);
+    border-style: solid;
+    box-shadow: var(--focus-ring);
+  }
+
+  &--has-value {
+    border-style: solid;
+    border-color: var(--neutral-300);
+    background: var(--surface);
+  }
+}
+
+.icon-picker__preview {
+  font-size: 24px;
+  color: var(--neutral-900);
+}
+
+.icon-picker__placeholder {
+  font-size: 20px;
+  color: var(--neutral-400);
+}
+
+.icon-picker__clear {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--neutral-300);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--neutral-500);
+  cursor: pointer;
+  padding: 0;
+  transition: all 150ms ease;
+  z-index: 1;
+
+  &:hover {
+    background: var(--danger-light);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+}
+
+.icon-picker__dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  width: 320px;
+  max-height: 360px;
+  background: var(--surface);
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  animation: iconPickerFadeIn 150ms ease;
+}
+
+.icon-picker__search {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--neutral-200);
+
+  input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-ui);
+    font-size: var(--body-small-size);
+    color: var(--neutral-900);
+    background: var(--surface);
+    outline: none;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: var(--neutral-500);
+    }
+
+    &:focus {
+      border-color: var(--primary);
+    }
+  }
+}
+
+.icon-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: var(--space-2);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.icon-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  transition: all 100ms ease;
+  padding: 0;
+
+  .material-symbols-outlined {
+    font-size: 22px;
+    color: var(--neutral-700);
+  }
+
+  &:hover {
+    background: var(--neutral-100);
+    border-color: var(--neutral-300);
+
+    .material-symbols-outlined {
+      color: var(--neutral-900);
+    }
+  }
+
+  &--selected {
+    background: var(--primary-light);
+    border-color: var(--primary);
+
+    .material-symbols-outlined {
+      color: var(--primary);
+    }
+  }
+}
+
+.icon-picker__empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--neutral-500);
+  font-size: var(--body-small-size);
+}
+
+@keyframes iconPickerFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

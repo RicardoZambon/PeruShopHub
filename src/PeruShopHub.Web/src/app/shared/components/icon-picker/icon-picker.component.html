@@ -1,0 +1,57 @@
+<div class="icon-picker">
+  <button
+    type="button"
+    class="icon-picker__trigger"
+    [class.icon-picker__trigger--active]="open()"
+    [class.icon-picker__trigger--has-value]="value"
+    (click)="toggle()"
+    [title]="value || 'Escolher ícone'"
+  >
+    @if (value) {
+      <span class="material-symbols-outlined icon-picker__preview">{{ value }}</span>
+    } @else {
+      <span class="material-symbols-outlined icon-picker__placeholder">add</span>
+    }
+  </button>
+
+  @if (value) {
+    <button
+      type="button"
+      class="icon-picker__clear"
+      (click)="clearIcon($event)"
+      title="Remover ícone"
+    >
+      <lucide-icon [img]="closeIcon" [size]="12"></lucide-icon>
+    </button>
+  }
+
+  @if (open()) {
+    <div class="icon-picker__dropdown">
+      <div class="icon-picker__search">
+        <input
+          type="text"
+          placeholder="Buscar ícone..."
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+          autofocus
+        />
+      </div>
+      <div class="icon-picker__grid">
+        @for (icon of filteredIcons(); track icon) {
+          <button
+            type="button"
+            class="icon-picker__item"
+            [class.icon-picker__item--selected]="value === icon"
+            [title]="icon"
+            (click)="selectIcon(icon)"
+          >
+            <span class="material-symbols-outlined">{{ icon }}</span>
+          </button>
+        }
+        @if (filteredIcons().length === 0) {
+          <div class="icon-picker__empty">Nenhum ícone encontrado</div>
+        }
+      </div>
+    </div>
+  }
+</div>

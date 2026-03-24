@@ -1,10 +1,9 @@
-import { Component, Input, inject, signal, computed, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, inject, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPlaceholder } from '@angular/cdk/drag-drop';
 import { LucideAngularModule, Plus, GripVertical, Trash2, Pencil, Link, Type, ListChecks, X } from 'lucide-angular';
 import { CategoryService } from '../../services/category.service';
-import { ProductVariantService } from '../../services/product-variant.service';
 import { ToastService } from '../../services/toast.service';
 import type { VariationField, InheritedVariationField, CreateVariationFieldDto } from '../../models/category.model';
 
@@ -27,7 +26,6 @@ export class VariationFieldsComponent implements OnChanges {
   @Input({ required: true }) categoryId!: string;
 
   private readonly categoryService = inject(CategoryService);
-  private readonly productVariantService = inject(ProductVariantService);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
 
@@ -49,10 +47,6 @@ export class VariationFieldsComponent implements OnChanges {
   chipInput = signal('');
   editChipInput = signal('');
 
-  // Undo state
-  private undoTimer: ReturnType<typeof setTimeout> | null = null;
-  private undoField: VariationField | null = null;
-
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['categoryId'] && this.categoryId) {
       this.loadFields();
@@ -61,13 +55,17 @@ export class VariationFieldsComponent implements OnChanges {
     }
   }
 
-  private loadFields(): void {
-    this.inheritedFields.set(
-      this.categoryService.getInheritedVariationFields(this.categoryId)
-    );
-    this.ownFields.set(
-      this.categoryService.getVariationFields(this.categoryId)
-    );
+  private async loadFields(): Promise<void> {
+    try {
+      const [own, inherited] = await Promise.all([
+        this.categoryService.getVariationFields(this.categoryId),
+        this.categoryService.getInheritedVariationFields(this.categoryId),
+      ]);
+      this.ownFields.set(own);
+      this.inheritedFields.set(inherited);
+    } catch {
+      // Silently fail — empty lists shown
+    }
   }
 
   // ── Add field ──
@@ -79,6 +77,7 @@ export class VariationFieldsComponent implements OnChanges {
       required: [false],
     });
     this.chipInput.set('');
+    this._addFormOptions = [];
     this.showAddForm.set(true);
     this.editingFieldId.set(null);
   }
@@ -88,11 +87,10 @@ export class VariationFieldsComponent implements OnChanges {
     this.addForm = null;
   }
 
+  private _addFormOptions: string[] = [];
   get addFormOptions(): string[] {
-    // Track options for the add form separately
     return this._addFormOptions;
   }
-  private _addFormOptions: string[] = [];
 
   onAddChipKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
@@ -126,11 +124,15 @@ export class VariationFieldsComponent implements OnChanges {
       required,
     };
 
-    await this.categoryService.addVariationField(this.categoryId, dto);
-    this.toast.show('Campo de variação adicionado', 'success');
-    this.cancelAdd();
-    this._addFormOptions = [];
-    this.loadFields();
+    try {
+      await this.categoryService.addVariationField(this.categoryId, dto);
+      this.toast.show('Campo de variação adicionado', 'success');
+      this.cancelAdd();
+      this._addFormOptions = [];
+      await this.loadFields();
+    } catch {
+      this.toast.show('Erro ao adicionar campo', 'danger');
+    }
   }
 
   // ── Edit field ──
@@ -141,7 +143,7 @@ export class VariationFieldsComponent implements OnChanges {
       type: [field.type],
       required: [field.required],
     });
-    this._editFormOptions = [...field.options];
+    this._editFormOptions = [...(field.options || [])];
     this.editChipInput.set('');
     this.editingFieldId.set(field.id);
     this.showAddForm.set(false);
@@ -153,7 +155,6 @@ export class VariationFieldsComponent implements OnChanges {
   }
 
   private _editFormOptions: string[] = [];
-
   get editFormOptions(): string[] {
     return this._editFormOptions;
   }
@@ -183,103 +184,51 @@ export class VariationFieldsComponent implements OnChanges {
       return;
     }
 
-    // Show affected count
-    const affectedCount = this.productVariantService.getAffectedProductCount(this.categoryId);
-
-    await this.categoryService.updateVariationField(this.editingFieldId()!, {
-      name,
-      type,
-      options: type === 'select' ? [...this._editFormOptions] : [],
-      required,
-    });
-
-    if (affectedCount > 0) {
-      await this.productVariantService.flagForReview(this.categoryId);
-      this.toast.show(
-        `Campo atualizado. ${affectedCount} produtos marcados para revisão`,
-        'warning'
-      );
-    } else {
+    try {
+      await this.categoryService.updateVariationField(this.categoryId, this.editingFieldId()!, {
+        name,
+        type,
+        options: type === 'select' ? [...this._editFormOptions] : [],
+        required,
+      });
       this.toast.show('Campo de variação atualizado', 'success');
+      this.cancelEdit();
+      await this.loadFields();
+    } catch {
+      this.toast.show('Erro ao atualizar campo', 'danger');
     }
-
-    this.cancelEdit();
-    this.loadFields();
   }
 
   // ── Delete field ──
 
   async deleteField(field: VariationField): Promise<void> {
-    const affectedCount = this.productVariantService.getAffectedProductCount(this.categoryId);
-
-    const deleted = await this.categoryService.deleteVariationField(field.id);
-    if (!deleted) return;
-
-    if (affectedCount > 0) {
-      await this.productVariantService.flagForReview(this.categoryId);
+    try {
+      const success = await this.categoryService.deleteVariationField(this.categoryId, field.id);
+      if (success) {
+        this.toast.show('Campo de variação removido', 'success');
+        await this.loadFields();
+      }
+    } catch {
+      this.toast.show('Erro ao remover campo', 'danger');
     }
-
-    this.loadFields();
-
-    // Store for undo
-    this.undoField = deleted;
-
-    // Clear any previous undo timer
-    if (this.undoTimer) {
-      clearTimeout(this.undoTimer);
-    }
-
-    const message = affectedCount > 0
-      ? `Campo removido. ${affectedCount} produtos marcados para revisão`
-      : 'Campo de variação removido';
-
-    this.toast.show(message, 'info', 5000, 'Clique para desfazer');
-
-    // Auto-clear undo after 5s
-    this.undoTimer = setTimeout(() => {
-      this.undoField = null;
-      this.undoTimer = null;
-    }, 5000);
-  }
-
-  undoDelete(): void {
-    if (!this.undoField) return;
-
-    this.categoryService.restoreVariationField(this.undoField);
-
-    // If products were flagged, we'd clear those flags here
-    // For now, the undo just restores the field
-
-    this.undoField = null;
-    if (this.undoTimer) {
-      clearTimeout(this.undoTimer);
-      this.undoTimer = null;
-    }
-
-    this.toast.show('Campo de variação restaurado', 'success');
-    this.loadFields();
   }
 
   // ── Reorder ──
 
-  onFieldDrop(event: CdkDragDrop<VariationField[]>): void {
+  async onFieldDrop(event: CdkDragDrop<VariationField[]>): Promise<void> {
     if (event.previousIndex !== event.currentIndex) {
       const fields = [...this.ownFields()];
       const [moved] = fields.splice(event.previousIndex, 1);
       fields.splice(event.currentIndex, 0, moved);
 
       // Update order on each field
-      fields.forEach((f, i) => {
-        this.categoryService.updateVariationField(f.id, { order: i });
-      });
+      for (let i = 0; i < fields.length; i++) {
+        await this.categoryService.updateVariationField(
+          this.categoryId, fields[i].id, { order: i }
+        );
+      }
 
-      this.loadFields();
+      await this.loadFields();
     }
-  }
-
-  // ── Helpers ──
-
-  isInherited(field: VariationField | InheritedVariationField): field is InheritedVariationField {
-    return 'inheritedFrom' in field;
   }
 }

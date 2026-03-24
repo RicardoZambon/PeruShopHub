@@ -27,7 +27,20 @@ export interface InheritedVariationField extends VariationField {
   inheritedFromId: string;     // category id
 }
 
-export type CreateCategoryDto = Pick<Category, 'name' | 'parentId' | 'isActive'>;
-export type UpdateCategoryDto = Partial<Pick<Category, 'name' | 'parentId' | 'isActive' | 'order'>>;
+export interface CreateCategoryDto {
+  name: string;
+  slug: string;
+  parentId: string | null;
+  icon: string | null;
+  order: number;
+}
+export interface UpdateCategoryDto {
+  name?: string;
+  slug?: string;
+  parentId?: string | null;
+  icon?: string | null;
+  isActive?: boolean;
+  order?: number;
+}
 export type CreateVariationFieldDto = Pick<VariationField, 'name' | 'type' | 'options' | 'required'>;
 export type UpdateVariationFieldDto = Partial<CreateVariationFieldDto & { order: number }>;

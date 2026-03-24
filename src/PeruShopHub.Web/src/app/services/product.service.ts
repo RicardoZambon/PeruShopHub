@@ -19,7 +19,7 @@ export interface Product {
   imageUrl: string | null;
   stock: number;
   status: string;
-  margin: number;
+  margin: number | null;
   variantCount: number;
   needsReview: boolean;
 }

@@ -29,6 +29,7 @@ export class CategoryTreeComponent implements OnChanges {
   @Input({ required: true }) categories!: Category[];
   @Input() selectedId: string | null = null;
   @Input() externalSearchQuery = '';
+  @Input() loading = false;
 
   @Output() selectCategory = new EventEmitter<string>();
   @Output() addCategory = new EventEmitter<void>();
@@ -40,21 +41,27 @@ export class CategoryTreeComponent implements OnChanges {
   readonly folderPlusIcon = FolderPlus;
 
   readonly searchQuery = signal('');
+  private readonly categoriesSignal = signal<Category[]>([]);
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['externalSearchQuery']) {
       this.searchQuery.set(changes['externalSearchQuery'].currentValue ?? '');
     }
+    if (changes['categories']) {
+      this.categoriesSignal.set(changes['categories'].currentValue ?? []);
+    }
   }
 
   readonly filteredTree = computed(() => {
+    const cats = this.categoriesSignal();
     const query = this.searchQuery().toLowerCase().trim();
-    if (!query) return this.categories;
-    return this.filterTree(this.categories, query);
+    if (!query) return cats;
+    return this.filterTree(cats, query);
   });
 
   readonly hasCategories = computed(() => {
-    return this.categories && this.categories.length > 0;
+    const cats = this.categoriesSignal();
+    return cats && cats.length > 0;
   });
 
   readonly isDragDisabled = computed(() => {
@@ -74,32 +81,12 @@ export class CategoryTreeComponent implements OnChanges {
     this.addCategory.emit();
   }
 
-  async onRootDrop(event: CdkDragDrop<Category[]>): Promise<void> {
-    if (event.previousIndex !== event.currentIndex) {
-      const items = [...this.filteredTree()];
-      const [moved] = items.splice(event.previousIndex, 1);
-      items.splice(event.currentIndex, 0, moved);
-      const orderedIds = items.map((c) => c.id);
-      await this.categoryService.reorderCategories(null, orderedIds);
-      this.toast.show('Categorias reordenadas', 'success');
-    }
+  onRootDrop(_event: CdkDragDrop<Category[]>): void {
+    // Categories are sorted alphabetically — drag reordering disabled
   }
 
-  async onChildReorder(event: { categoryId: string; newParentId: string | null; newIndex: number }): Promise<void> {
-    // Re-order within a parent
-    const siblings = this.categoryService.allCategories()
-      .filter((c) => c.parentId === event.newParentId)
-      .sort((a, b) => a.order - b.order);
-
-    const currentIndex = siblings.findIndex((c) => c.id === event.categoryId);
-    if (currentIndex === -1) return;
-
-    const items = [...siblings];
-    const [moved] = items.splice(currentIndex, 1);
-    items.splice(event.newIndex, 0, moved);
-    const orderedIds = items.map((c) => c.id);
-    await this.categoryService.reorderCategories(event.newParentId, orderedIds);
-    this.toast.show('Categorias reordenadas', 'success');
+  onChildReorder(_event: { categoryId: string; newParentId: string | null; newIndex: number }): void {
+    // Categories are sorted alphabetically — drag reordering disabled
   }
 
   private filterTree(categories: Category[], query: string): Category[] {

@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, signal, computed, inject, Simpl
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LucideAngularModule, Pencil, Trash2, ArrowLeft } from 'lucide-angular';
+import { IconPickerComponent } from '../../shared/components';
 import { CategoryService } from '../../services/category.service';
 import { ToastService } from '../../services/toast.service';
 import { VariationFieldsComponent } from './variation-fields.component';
@@ -10,13 +11,14 @@ import type { Category, UpdateCategoryDto } from '../../models/category.model';
 @Component({
   selector: 'app-category-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, VariationFieldsComponent],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, IconPickerComponent, VariationFieldsComponent],
   templateUrl: './category-detail.component.html',
   styleUrl: './category-detail.component.scss',
 })
 export class CategoryDetailComponent implements OnChanges {
   @Input() category: Category | null = null;
   @Input() allCategories: Category[] = [];
+  @Input() loading = false;
 
   @Output() deleted = new EventEmitter<string>();
   @Output() updated = new EventEmitter<Category>();
@@ -34,6 +36,7 @@ export class CategoryDetailComponent implements OnChanges {
   editing = signal(false);
   saving = signal(false);
   confirmingDelete = signal(false);
+  editIcon = signal<string | null>(null);
 
   readonly breadcrumb = computed(() => {
     if (!this.category) return [];
@@ -60,10 +63,16 @@ export class CategoryDetailComponent implements OnChanges {
 
   private initForm(): void {
     if (!this.category) return;
+    this.editIcon.set(this.category.icon || null);
     this.form = this.fb.group({
       name: [this.category.name, [Validators.required, Validators.maxLength(100)]],
+      slug: [this.category.slug, [Validators.required, Validators.maxLength(120)]],
       isActive: [this.category.isActive],
     });
+  }
+
+  onEditIconChange(icon: string | null): void {
+    this.editIcon.set(icon);
   }
 
   startEditing(): void {
@@ -83,6 +92,8 @@ export class CategoryDetailComponent implements OnChanges {
     try {
       const dto: UpdateCategoryDto = {
         name: this.form.value.name,
+        slug: this.form.value.slug,
+        icon: this.editIcon(),
         isActive: this.form.value.isActive,
       };
       const updated = await this.categoryService.update(this.category.id, dto);

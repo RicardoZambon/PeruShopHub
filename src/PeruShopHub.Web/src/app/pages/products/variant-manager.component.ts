@@ -111,7 +111,7 @@ export class VariantManagerComponent implements OnChanges, OnInit {
     return null;
   }
 
-  private loadVariationFields(): void {
+  private async loadVariationFields(): Promise<void> {
     const resolvedId = this.resolveCategoryId(this.categoryId);
     if (!resolvedId) {
       this.variationFields.set([]);
@@ -120,16 +120,30 @@ export class VariantManagerComponent implements OnChanges, OnInit {
       return;
     }
 
-    const fields = this.categoryService.getAllVariationFieldsForCategory(resolvedId);
-    this.variationFields.set(fields);
+    try {
+      const [own, inherited] = await Promise.all([
+        this.categoryService.getVariationFields(resolvedId),
+        this.categoryService.getInheritedVariationFields(resolvedId),
+      ]);
+      // Map own fields to InheritedVariationField shape for uniform handling
+      const ownAsInherited: InheritedVariationField[] = own.map(f => ({
+        ...f,
+        inheritedFrom: '',
+        inheritedFromId: resolvedId,
+      }));
+      const fields = [...inherited, ...ownAsInherited];
+      this.variationFields.set(fields);
 
-    // Initialize selected values map
-    const selected: Record<string, string[]> = {};
-    for (const field of fields) {
-      selected[field.name] = [];
+      // Initialize selected values map
+      const selected: Record<string, string[]> = {};
+      for (const field of fields) {
+        selected[field.name] = [];
+      }
+      this.selectedValues.set(selected);
+      this.textInputValues.set({});
+    } catch {
+      this.variationFields.set([]);
     }
-    this.selectedValues.set(selected);
-    this.textInputValues.set({});
   }
 
   // --- Field selection methods ---

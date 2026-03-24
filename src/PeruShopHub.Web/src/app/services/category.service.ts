@@ -11,10 +11,6 @@ import type {
   UpdateVariationFieldDto,
 } from '../models/category.model';
 
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 11);
-}
-
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
   private readonly http = inject(HttpClient);
@@ -22,9 +18,6 @@ export class CategoryService {
 
   // Local cache of loaded categories (flat)
   private readonly categoriesData = signal<Category[]>([]);
-
-  // Variation fields remain frontend-only
-  private readonly variationFieldsData = signal<VariationField[]>([]);
 
   // Computed tree structure built from cached flat list
   readonly categoryTree = computed<Category[]>(() => {
@@ -57,9 +50,9 @@ export class CategoryService {
       }
     }
 
-    // Sort children by order
+    // Sort children alphabetically
     const sortChildren = (cats: Category[]): void => {
-      cats.sort((a, b) => a.order - b.order);
+      cats.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
       for (const cat of cats) {
         sortChildren(cat.children);
       }
@@ -69,7 +62,7 @@ export class CategoryService {
     return roots;
   }
 
-  // ── HTTP methods ──
+  // ── Category HTTP methods ──
 
   async getAll(): Promise<Category[]> {
     const categories = await firstValueFrom(
@@ -137,9 +130,57 @@ export class CategoryService {
         this.http.delete<void>(`${this.baseUrl}/${id}`),
       );
       this.categoriesData.update((cats) => cats.filter((c) => c.id !== id));
-      // Also remove associated variation fields
-      this.variationFieldsData.update((fields) =>
-        fields.filter((f) => f.categoryId !== id)
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ── Variation Fields (backend-persisted) ──
+
+  async getVariationFields(categoryId: string): Promise<VariationField[]> {
+    return firstValueFrom(
+      this.http.get<VariationField[]>(`${this.baseUrl}/${categoryId}/variation-fields`),
+    );
+  }
+
+  async getInheritedVariationFields(categoryId: string): Promise<InheritedVariationField[]> {
+    return firstValueFrom(
+      this.http.get<InheritedVariationField[]>(
+        `${this.baseUrl}/${categoryId}/variation-fields/inherited`
+      ),
+    );
+  }
+
+  async addVariationField(
+    categoryId: string,
+    dto: CreateVariationFieldDto
+  ): Promise<VariationField> {
+    return firstValueFrom(
+      this.http.post<VariationField>(
+        `${this.baseUrl}/${categoryId}/variation-fields`, dto
+      ),
+    );
+  }
+
+  async updateVariationField(
+    categoryId: string,
+    fieldId: string,
+    dto: UpdateVariationFieldDto
+  ): Promise<VariationField> {
+    return firstValueFrom(
+      this.http.put<VariationField>(
+        `${this.baseUrl}/${categoryId}/variation-fields/${fieldId}`, dto
+      ),
+    );
+  }
+
+  async deleteVariationField(categoryId: string, fieldId: string): Promise<boolean> {
+    try {
+      await firstValueFrom(
+        this.http.delete<void>(
+          `${this.baseUrl}/${categoryId}/variation-fields/${fieldId}`
+        ),
       );
       return true;
     } catch {
@@ -147,43 +188,7 @@ export class CategoryService {
     }
   }
 
-  // ── Variation fields (frontend-only) ──
-
-  getVariationFields(categoryId: string): VariationField[] {
-    return this.variationFieldsData().filter((f) => f.categoryId === categoryId);
-  }
-
-  getInheritedVariationFields(categoryId: string): InheritedVariationField[] {
-    const result: InheritedVariationField[] = [];
-    const ancestors = this.getAncestors(categoryId);
-
-    for (const ancestor of ancestors) {
-      const fields = this.variationFieldsData().filter(
-        (f) => f.categoryId === ancestor.id
-      );
-      for (const field of fields) {
-        result.push({
-          ...field,
-          inheritedFrom: ancestor.name,
-          inheritedFromId: ancestor.id,
-        });
-      }
-    }
-
-    return result;
-  }
-
-  getAllVariationFieldsForCategory(categoryId: string): InheritedVariationField[] {
-    const inherited = this.getInheritedVariationFields(categoryId);
-    const own = this.getVariationFields(categoryId);
-    const category = this.categoriesData().find(c => c.id === categoryId);
-    const ownAsInherited: InheritedVariationField[] = own.map(f => ({
-      ...f,
-      inheritedFrom: category?.name ?? '',
-      inheritedFromId: categoryId,
-    }));
-    return [...inherited, ...ownAsInherited];
-  }
+  // ── Helpers ──
 
   getBreadcrumb(categoryId: string): string[] {
     const ancestors = this.getAncestors(categoryId);
@@ -191,23 +196,6 @@ export class CategoryService {
     const names = ancestors.map((a) => a.name);
     if (current) names.push(current.name);
     return names;
-  }
-
-  private getAncestors(categoryId: string): Category[] {
-    const ancestors: Category[] = [];
-    let current = this.categoriesData().find((c) => c.id === categoryId);
-
-    while (current?.parentId) {
-      const parent = this.categoriesData().find((c) => c.id === current!.parentId);
-      if (parent) {
-        ancestors.unshift(parent);
-        current = parent;
-      } else {
-        break;
-      }
-    }
-
-    return ancestors;
   }
 
   getDescendantIds(categoryId: string): string[] {
@@ -228,97 +216,22 @@ export class CategoryService {
     return this.categoriesData().filter((c) => c.parentId === categoryId).length;
   }
 
-  async addVariationField(
-    categoryId: string,
-    dto: CreateVariationFieldDto
-  ): Promise<VariationField> {
-    const existing = this.variationFieldsData().filter(
-      (f) => f.categoryId === categoryId
-    );
-    const newField: VariationField = {
-      id: generateId(),
-      categoryId,
-      name: dto.name,
-      type: dto.type,
-      options: dto.options,
-      required: dto.required,
-      order: existing.length,
-    };
+  private getAncestors(categoryId: string): Category[] {
+    const ancestors: Category[] = [];
+    let current = this.categoriesData().find((c) => c.id === categoryId);
 
-    this.variationFieldsData.update((fields) => [...fields, newField]);
-    return newField;
-  }
-
-  async updateVariationField(
-    fieldId: string,
-    dto: UpdateVariationFieldDto
-  ): Promise<VariationField | undefined> {
-    let updated: VariationField | undefined;
-    this.variationFieldsData.update((fields) =>
-      fields.map((f) => {
-        if (f.id === fieldId) {
-          updated = { ...f, ...dto };
-          return updated;
-        }
-        return f;
-      })
-    );
-    return updated;
-  }
-
-  async deleteVariationField(fieldId: string): Promise<VariationField | undefined> {
-    const field = this.variationFieldsData().find((f) => f.id === fieldId);
-    if (!field) return undefined;
-
-    this.variationFieldsData.update((fields) =>
-      fields.filter((f) => f.id !== fieldId)
-    );
-    return field;
-  }
-
-  restoreVariationField(field: VariationField): void {
-    this.variationFieldsData.update((fields) => [...fields, field]);
-  }
-
-  async reorderCategories(parentId: string | null, orderedIds: string[]): Promise<void> {
-    this.categoriesData.update((cats) =>
-      cats.map((c) => {
-        if (c.parentId === parentId) {
-          const idx = orderedIds.indexOf(c.id);
-          if (idx >= 0) {
-            return { ...c, order: idx, updatedAt: new Date().toISOString() };
-          }
-        }
-        return c;
-      })
-    );
-  }
-
-  async moveCategory(categoryId: string, newParentId: string | null): Promise<boolean> {
-    // Prevent circular reference
-    if (newParentId) {
-      const descendants = this.getDescendantIds(categoryId);
-      if (descendants.includes(newParentId) || newParentId === categoryId) {
-        return false;
+    while (current?.parentId) {
+      const parent = this.categoriesData().find((c) => c.id === current!.parentId);
+      if (parent) {
+        ancestors.unshift(parent);
+        current = parent;
+      } else {
+        break;
       }
     }
 
-    this.categoriesData.update((cats) =>
-      cats.map((c) => {
-        if (c.id === categoryId) {
-          return {
-            ...c,
-            parentId: newParentId,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return c;
-      })
-    );
-    return true;
+    return ancestors;
   }
-
-  // ── Private helpers ──
 
   private mergeIntoCache(categories: Category[]): void {
     this.categoriesData.update((existing) => {

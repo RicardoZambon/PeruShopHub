@@ -2,12 +2,13 @@
   <div class="variation-fields__header">
     <h3 class="variation-fields__title">Campos de Variação</h3>
     <button
-      class="btn btn-sm btn-outline"
+      class="btn-icon"
       (click)="openAddForm()"
       [disabled]="showAddForm()"
+      title="Adicionar campo de variação"
+      aria-label="Adicionar campo"
     >
-      <lucide-icon [img]="plusIcon" [size]="14"></lucide-icon>
-      <span>Adicionar Campo</span>
+      <lucide-icon [img]="plusIcon" [size]="16"></lucide-icon>
     </button>
   </div>
 

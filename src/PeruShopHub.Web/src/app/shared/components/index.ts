@@ -13,3 +13,4 @@ export { HeaderComponent } from './header/header.component';
 export { LayoutComponent } from './layout/layout.component';
 export { NotificationPanelComponent } from './notification-panel/notification-panel.component';
 export { SearchPaletteComponent } from './search-palette/search-palette.component';
+export { IconPickerComponent } from './icon-picker/icon-picker.component';

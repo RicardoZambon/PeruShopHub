@@ -35,6 +35,7 @@
         [categories]="categoryTree()"
         [selectedId]="selectedCategoryId()"
         [externalSearchQuery]="searchQuery()"
+        [loading]="loading()"
         (selectCategory)="onSelectCategory($event)"
       ></app-category-tree>
     </div>
@@ -46,6 +47,7 @@
       <app-category-detail
         [category]="selectedCategory()"
         [allCategories]="categoryTree()"
+        [loading]="detailLoading()"
         (updated)="onCategoryUpdated($event)"
         (deleted)="onCategoryDeleted($event)"
         (back)="onBackToTree()"

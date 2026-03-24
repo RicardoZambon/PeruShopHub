@@ -87,6 +87,58 @@
   }
 }
 
+// Icon + Name row
+.field-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  margin-bottom: var(--space-5);
+
+  label {
+    display: block;
+    font-size: var(--label-size);
+    font-weight: var(--label-weight);
+    color: var(--neutral-700);
+    margin-bottom: var(--space-1);
+  }
+}
+
+.field-row__icon {
+  flex-shrink: 0;
+}
+
+.field-row__name {
+  flex: 1;
+  min-width: 0;
+
+  input[type="text"] {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    font-family: var(--font-ui);
+    font-size: var(--body-size);
+    color: var(--neutral-900);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 200ms ease;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: var(--neutral-500);
+    }
+
+    &:focus {
+      border-color: var(--primary);
+      box-shadow: var(--focus-ring);
+    }
+
+    &.invalid {
+      border-color: var(--danger);
+    }
+  }
+}
+
 // Form fields
 .field {
   margin-bottom: var(--space-5);
@@ -131,6 +183,13 @@
   display: block;
   font-size: var(--body-small-size);
   color: var(--danger);
+  margin-top: var(--space-1);
+}
+
+.field-hint {
+  display: block;
+  font-size: var(--body-small-size);
+  color: var(--neutral-500);
   margin-top: var(--space-1);
 }
 

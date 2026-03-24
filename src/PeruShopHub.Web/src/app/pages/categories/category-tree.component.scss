@@ -98,6 +98,39 @@
   transition: transform 200ms ease;
 }
 
+// Loading skeleton
+.tree-panel__loading {
+  padding: var(--space-2) var(--space-4);
+}
+
+.tree-panel__skeleton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.tree-panel__skeleton-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: var(--neutral-200);
+  flex-shrink: 0;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.tree-panel__skeleton-text {
+  height: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--neutral-200);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .tree-panel__no-results {
   padding: var(--space-6) var(--space-4);
   text-align: center;

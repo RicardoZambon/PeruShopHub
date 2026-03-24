@@ -69,7 +69,7 @@ export class ProductsListComponent implements OnInit {
       variantCount: p.variantCount,
       needsReview: p.needsReview,
       precoFormatted: this.formatBrl(p.price),
-      margemFormatted: `${p.margin.toFixed(1)}%`,
+      margemFormatted: `${(p.margin ?? 0).toFixed(1)}%`,
     }));
   });
 
@@ -106,7 +106,8 @@ export class ProductsListComponent implements OnInit {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  getMarginClass(margin: number): string {
+  getMarginClass(margin: number | null): string {
+    if (margin == null) return 'margin--danger';
     if (margin >= 20) return 'margin--success';
     if (margin >= 10) return 'margin--warning';
     return 'margin--danger';

@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule, FolderTree, FolderPlus, Search } from 'lucide-angular';
 import { CategoryService } from '../../services/category.service';
@@ -21,7 +21,7 @@ import type { Category } from '../../models/category.model';
   templateUrl: './categories.component.html',
   styleUrl: './categories.component.scss',
 })
-export class CategoriesComponent implements OnInit {
+export class CategoriesComponent implements OnInit, OnDestroy {
   readonly categoryService = inject(CategoryService);
   private readonly toast = inject(ToastService);
 
@@ -36,15 +36,14 @@ export class CategoriesComponent implements OnInit {
   readonly showCreateDialog = signal(false);
   readonly dialogCategory = signal<Category | null>(null);
   readonly loading = signal(true);
+  readonly detailLoading = signal(false);
+
+  // Request cancellation
+  private detailAbort: AbortController | null = null;
 
   // Computed
   readonly categoryTree = this.categoryService.categoryTree;
-
-  readonly selectedCategory = computed<Category | null>(() => {
-    const id = this.selectedCategoryId();
-    if (!id) return null;
-    return this.findCategoryById(this.categoryTree(), id) ?? null;
-  });
+  readonly selectedCategory = signal<Category | null>(null);
 
   readonly totalCategories = computed(() => {
     return this.categoryService.allCategories().length;
@@ -65,11 +64,34 @@ export class CategoriesComponent implements OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+    this.detailAbort?.abort();
+  }
+
   // ── Tree events ──
 
-  onSelectCategory(id: string): void {
+  async onSelectCategory(id: string): Promise<void> {
+    // Cancel any in-flight detail request
+    this.detailAbort?.abort();
+    this.detailAbort = new AbortController();
+    const signal = this.detailAbort.signal;
+
     this.selectedCategoryId.set(id);
+    this.selectedCategory.set(null);
+    this.detailLoading.set(true);
     this.mobileView.set('detail');
+
+    try {
+      const detail = await this.categoryService.getById(id);
+      if (signal.aborted) return;
+      if (detail) {
+        this.selectedCategory.set(detail);
+      }
+    } finally {
+      if (!signal.aborted) {
+        this.detailLoading.set(false);
+      }
+    }
   }
 
   onSearchChange(value: string): void {
@@ -83,18 +105,23 @@ export class CategoriesComponent implements OnInit {
 
   // ── Detail events ──
 
-  onCategoryUpdated(category: Category): void {
-    // Tree auto-updates via signals
+  async onCategoryUpdated(category: Category): Promise<void> {
     this.selectedCategoryId.set(category.id);
+    const detail = await this.categoryService.getById(category.id);
+    if (detail) {
+      this.selectedCategory.set(detail);
+    }
   }
 
   onCategoryDeleted(id: string): void {
-    // Select parent or null
     const deleted = this.categoryService.allCategories().find((c) => c.id === id);
     if (deleted?.parentId) {
       this.selectedCategoryId.set(deleted.parentId);
+      this.onSelectCategory(deleted.parentId);
     } else {
       this.selectedCategoryId.set(null);
+      this.selectedCategory.set(null);
+      this.detailLoading.set(false);
     }
     this.mobileView.set('tree');
   }
@@ -108,6 +135,7 @@ export class CategoriesComponent implements OnInit {
   onDialogSaved(category: Category): void {
     this.showCreateDialog.set(false);
     this.selectedCategoryId.set(category.id);
+    this.onSelectCategory(category.id);
     this.mobileView.set('detail');
     this.toast.show(
       this.dialogCategory() ? 'Categoria atualizada com sucesso' : 'Categoria criada com sucesso',
@@ -118,18 +146,5 @@ export class CategoriesComponent implements OnInit {
   onDialogClosed(): void {
     this.showCreateDialog.set(false);
     this.dialogCategory.set(null);
-  }
-
-  // ── Helpers ──
-
-  private findCategoryById(tree: Category[], id: string): Category | undefined {
-    for (const cat of tree) {
-      if (cat.id === id) return cat;
-      if (cat.children.length > 0) {
-        const found = this.findCategoryById(cat.children, id);
-        if (found) return found;
-      }
-    }
-    return undefined;
   }
 }

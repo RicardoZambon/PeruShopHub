@@ -25,6 +25,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<ProductCostHistory> ProductCostHistories => Set<ProductCostHistory>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<CommissionRule> CommissionRules => Set<CommissionRule>();
+    public DbSet<VariationField> VariationFields => Set<VariationField>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
