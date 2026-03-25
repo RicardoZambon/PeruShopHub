@@ -1,4 +1,12 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  Input,
+  ChangeDetectionStrategy,
+  ContentChildren,
+  QueryList,
+  Directive,
+  TemplateRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface GridColumn {
@@ -12,6 +20,21 @@ export interface GridColumn {
   cellClass?: string;
 }
 
+export interface GridCellContext {
+  $implicit: Record<string, any>;
+  value: any;
+}
+
+@Directive({
+  selector: '[appGridCell]',
+  standalone: true,
+})
+export class GridCellDirective {
+  @Input({ required: true }) appGridCell!: string;
+
+  constructor(public templateRef: TemplateRef<GridCellContext>) {}
+}
+
 @Component({
   selector: 'app-data-grid',
   standalone: true,
@@ -23,4 +46,11 @@ export interface GridColumn {
 export class DataGridComponent {
   @Input({ required: true }) columns: GridColumn[] = [];
   @Input({ required: true }) data: Record<string, any>[] = [];
+
+  @ContentChildren(GridCellDirective) cellTemplates!: QueryList<GridCellDirective>;
+
+  getCellTemplate(columnKey: string): TemplateRef<GridCellContext> | null {
+    const directive = this.cellTemplates?.find(d => d.appGridCell === columnKey);
+    return directive ? directive.templateRef : null;
+  }
 }

@@ -20,7 +20,10 @@
             [style.text-align]="col.align || 'left'"
             [class]="col.cellClass || ''"
           >
-            {{ row[col.key] }}
+            <ng-container *ngIf="getCellTemplate(col.key) as tmpl; else defaultCell">
+              <ng-container *ngTemplateOutlet="tmpl; context: { $implicit: row, value: row[col.key] }"></ng-container>
+            </ng-container>
+            <ng-template #defaultCell>{{ row[col.key] }}</ng-template>
           </td>
         </tr>
       </tbody>
