@@ -8,6 +8,11 @@ import {
   QueryList,
   Directive,
   TemplateRef,
+  ElementRef,
+  ViewChild,
+  AfterViewInit,
+  OnDestroy,
+  NgZone,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -62,16 +67,58 @@ export class GridHeaderDirective {
   styleUrl: './data-grid.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DataGridComponent {
+export class DataGridComponent implements AfterViewInit, OnDestroy {
   @Input({ required: true }) columns: GridColumn[] = [];
   @Input({ required: true }) data: Record<string, any>[] = [];
+  @Input() loading = false;
+  @Input() hasMore = false;
+  @Input() pageSize = 20;
 
   @Output() sortChange = new EventEmitter<GridSortEvent>();
+  @Output() loadMore = new EventEmitter<void>();
 
   @ContentChildren(GridCellDirective) cellTemplates!: QueryList<GridCellDirective>;
   @ContentChildren(GridHeaderDirective) headerTemplates!: QueryList<GridHeaderDirective>;
 
+  @ViewChild('sentinel', { static: false }) sentinelRef!: ElementRef<HTMLDivElement>;
+
   activeSort: GridSortEvent = { column: '', direction: null };
+
+  private observer: IntersectionObserver | null = null;
+
+  constructor(private ngZone: NgZone) {}
+
+  ngAfterViewInit(): void {
+    this.setupObserver();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyObserver();
+  }
+
+  private setupObserver(): void {
+    if (!this.sentinelRef) return;
+
+    this.ngZone.runOutsideAngular(() => {
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry.isIntersecting && this.hasMore && !this.loading) {
+            this.ngZone.run(() => this.loadMore.emit());
+          }
+        },
+        { root: this.sentinelRef.nativeElement.closest('.data-grid__scroll-wrapper'), threshold: 0 }
+      );
+      this.observer.observe(this.sentinelRef.nativeElement);
+    });
+  }
+
+  private destroyObserver(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+  }
 
   getCellTemplate(columnKey: string): TemplateRef<GridCellContext> | null {
     const directive = this.cellTemplates?.find(d => d.appGridCell === columnKey);

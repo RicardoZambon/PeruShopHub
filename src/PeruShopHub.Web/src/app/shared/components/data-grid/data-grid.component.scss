@@ -70,4 +70,31 @@
       border-bottom: 1px solid var(--neutral-100);
     }
   }
+
+  &__sentinel {
+    height: 1px;
+    width: 100%;
+  }
+
+  &__loading-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4) 0;
+  }
+
+  &__spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--neutral-200);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: data-grid-spin 0.7s linear infinite;
+  }
+}
+
+@keyframes data-grid-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
