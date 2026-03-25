@@ -108,6 +108,7 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
   @ContentChildren(GridCardDirective) cardTemplates!: QueryList<GridCardDirective>;
 
   @ViewChild('sentinel', { static: false }) sentinelRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('scrollWrapper', { static: false }) scrollWrapperRef!: ElementRef<HTMLDivElement>;
 
   activeSort: GridSortEvent = { column: '', direction: null };
 
@@ -221,5 +222,9 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
 
   get hasRowClick(): boolean {
     return this.rowClick.observed;
+  }
+
+  scrollToTop(): void {
+    this.scrollWrapperRef?.nativeElement?.scrollTo({ top: 0 });
   }
 }

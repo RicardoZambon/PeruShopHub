@@ -16,6 +16,7 @@
     min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
 
     // Custom scrollbar matching app design
     scrollbar-width: thin;
