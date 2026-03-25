@@ -274,3 +274,16 @@
     transform: rotate(360deg);
   }
 }
+
+@keyframes data-grid-highlight-pulse {
+  0% {
+    background-color: var(--primary-light, rgba(26, 35, 126, 0.12));
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.data-grid__highlight {
+  animation: data-grid-highlight-pulse 1.5s ease-out forwards;
+}

@@ -227,4 +227,38 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
   scrollToTop(): void {
     this.scrollWrapperRef?.nativeElement?.scrollTo({ top: 0 });
   }
+
+  scrollToRow(predicate: (row: any) => boolean): boolean {
+    const index = this.data.findIndex(predicate);
+    if (index === -1) return false;
+
+    const wrapper = this.scrollWrapperRef?.nativeElement;
+    if (!wrapper) return false;
+
+    // Find the matching element in both desktop and mobile layouts
+    const tableRows = wrapper.querySelectorAll<HTMLElement>('.data-grid__table tbody tr:not(.data-grid__skeleton-row)');
+    const cards = wrapper.querySelectorAll<HTMLElement>('.data-grid__cards .data-grid__card:not(.data-grid__card--skeleton)');
+
+    const targetRow = tableRows?.[index];
+    const targetCard = cards?.[index];
+
+    if (targetRow) {
+      targetRow.scrollIntoView({ block: 'center' });
+      this.applyHighlight(targetRow);
+    }
+
+    if (targetCard) {
+      targetCard.scrollIntoView({ block: 'center' });
+      this.applyHighlight(targetCard);
+    }
+
+    return true;
+  }
+
+  private applyHighlight(element: HTMLElement): void {
+    element.classList.add('data-grid__highlight');
+    setTimeout(() => {
+      element.classList.remove('data-grid__highlight');
+    }, 1500);
+  }
 }
