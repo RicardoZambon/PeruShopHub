@@ -60,6 +60,14 @@ export class GridHeaderDirective {
   constructor(public templateRef: TemplateRef<void>) {}
 }
 
+@Directive({
+  selector: '[appGridEmpty]',
+  standalone: true,
+})
+export class GridEmptyDirective {
+  constructor(public templateRef: TemplateRef<void>) {}
+}
+
 @Component({
   selector: 'app-data-grid',
   standalone: true,
@@ -75,12 +83,15 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
   @Input() hasMore = false;
   @Input() pageSize = 20;
   @Input() skeletonRows = 8;
+  @Input() emptyTitle = 'Nenhum item encontrado';
+  @Input() emptyDescription = '';
 
   @Output() sortChange = new EventEmitter<GridSortEvent>();
   @Output() loadMore = new EventEmitter<void>();
 
   @ContentChildren(GridCellDirective) cellTemplates!: QueryList<GridCellDirective>;
   @ContentChildren(GridHeaderDirective) headerTemplates!: QueryList<GridHeaderDirective>;
+  @ContentChildren(GridEmptyDirective) emptyTemplates!: QueryList<GridEmptyDirective>;
 
   @ViewChild('sentinel', { static: false }) sentinelRef!: ElementRef<HTMLDivElement>;
 
@@ -167,6 +178,14 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
 
   get showSkeleton(): boolean {
     return this.loading && this.data.length === 0;
+  }
+
+  get showEmpty(): boolean {
+    return !this.loading && this.data.length === 0;
+  }
+
+  get emptyTemplate(): TemplateRef<void> | null {
+    return this.emptyTemplates?.first?.templateRef ?? null;
   }
 
   getSortDirection(columnKey: string): SortDirection {
