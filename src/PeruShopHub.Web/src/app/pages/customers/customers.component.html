@@ -19,96 +19,65 @@
       ></app-search-input>
     </div>
 
-    <!-- Loading State -->
-    @if (loading()) {
-      <app-data-table
-        [columns]="[]"
-        [data]="[]"
-        [loading]="true"
-        [totalItems]="0"
-      ></app-data-table>
-    } @else if (filteredCustomers().length === 0) {
-      <app-data-table
-        [columns]="[]"
-        [data]="[]"
-        [loading]="false"
-        emptyTitle="Nenhum cliente encontrado"
-        emptyDescription="Tente ajustar os filtros de busca."
-        [totalItems]="0"
-      ></app-data-table>
-    } @else {
-      <!-- Custom Table -->
-      <div class="clientes-table">
-        <!-- Desktop/Tablet Table -->
-        <div class="clientes-table__scroll-wrapper">
-          <table class="clientes-table__table">
-            <thead>
-              <tr>
-                <th class="clientes-table__th">Nome</th>
-                <th class="clientes-table__th clientes-table__th--mono">Nickname</th>
-                <th class="clientes-table__th">Email</th>
-                <th class="clientes-table__th clientes-table__th--sortable" style="text-align: right" (click)="onSort('totalPedidos')">
-                  Total Pedidos{{ getSortIndicator('totalPedidos') }}
-                </th>
-                <th class="clientes-table__th clientes-table__th--sortable" style="text-align: right" (click)="onSort('totalGasto')">
-                  Total Gasto{{ getSortIndicator('totalGasto') }}
-                </th>
-                <th class="clientes-table__th clientes-table__th--sortable" (click)="onSort('ultimaCompra')">
-                  Última Compra{{ getSortIndicator('ultimaCompra') }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (customer of filteredCustomers(); track customer.id) {
-                <tr class="clientes-table__row" (click)="onRowClick(customer)">
-                  <td class="clientes-table__td clientes-table__td--name">{{ customer.nome }}</td>
-                  <td class="clientes-table__td clientes-table__td--mono">{{ customer.nickname }}</td>
-                  <td class="clientes-table__td">{{ customer.email }}</td>
-                  <td class="clientes-table__td" style="text-align: right">{{ customer.totalPedidos }}</td>
-                  <td class="clientes-table__td clientes-table__td--mono" style="text-align: right">{{ formatBrl(customer.totalGasto) }}</td>
-                  <td class="clientes-table__td">{{ customer.ultimaCompra | relativeDate }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+    <!-- Data Grid -->
+    <app-data-grid
+      #grid
+      [columns]="gridColumns"
+      [data]="gridData()"
+      [loading]="loading()"
+      [hasMore]="hasMore()"
+      [pageSize]="pageSize()"
+      emptyTitle="Nenhum cliente encontrado"
+      emptyDescription="Tente ajustar os filtros de busca."
+      ariaLabel="Lista de clientes"
+      (sortChange)="onSort($event)"
+      (loadMore)="onLoadMore()"
+      (rowClick)="onRowClick($event)"
+    >
+      <!-- Name cell -->
+      <ng-template appGridCell="nome" let-row let-value="value">
+        <span class="clientes__name">{{ value }}</span>
+      </ng-template>
 
-        <!-- Mobile Card List -->
-        <div class="clientes-table__cards">
-          @for (customer of filteredCustomers(); track customer.id) {
-            <div class="clientes-table__card" (click)="onRowClick(customer)">
-              <div class="clientes-table__card-header">
-                <div class="clientes-table__card-info">
-                  <span class="clientes-table__card-name">{{ customer.nome }}</span>
-                  <span class="clientes-table__card-nickname">{{ customer.nickname }}</span>
-                </div>
-              </div>
-              <div class="clientes-table__card-email">{{ customer.email }}</div>
-              <div class="clientes-table__card-body">
-                <div class="clientes-table__card-field">
-                  <span class="clientes-table__card-label">Pedidos</span>
-                  <span class="clientes-table__card-value">{{ customer.totalPedidos }}</span>
-                </div>
-                <div class="clientes-table__card-field">
-                  <span class="clientes-table__card-label">Total Gasto</span>
-                  <span class="clientes-table__card-value clientes-table__td--mono">{{ formatBrl(customer.totalGasto) }}</span>
-                </div>
-                <div class="clientes-table__card-field">
-                  <span class="clientes-table__card-label">Última Compra</span>
-                  <span class="clientes-table__card-value">{{ customer.ultimaCompra | relativeDate }}</span>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
+      <!-- Nickname cell (mono) -->
+      <ng-template appGridCell="nickname" let-row let-value="value">
+        <span class="clientes__mono">{{ value }}</span>
+      </ng-template>
 
-        <!-- Pagination -->
-        <div class="clientes-table__pagination">
-          <span class="clientes-table__pagination-info">
-            Mostrando 1-{{ filteredCustomers().length }} de {{ filteredCustomers().length }}
-          </span>
+      <!-- Total Spent cell (currency mono) -->
+      <ng-template appGridCell="totalGasto" let-row let-value="value">
+        <span class="clientes__mono">{{ formatBrl(value) }}</span>
+      </ng-template>
+
+      <!-- Last Purchase cell (relative date) -->
+      <ng-template appGridCell="ultimaCompra" let-row let-value="value">
+        {{ value | relativeDate }}
+      </ng-template>
+
+      <!-- Mobile card template -->
+      <ng-template appGridCard let-row>
+        <div class="clientes__card-header">
+          <div class="clientes__card-info">
+            <span class="clientes__card-name">{{ row.nome }}</span>
+            <span class="clientes__card-nickname">{{ row.nickname }}</span>
+          </div>
         </div>
-      </div>
-    }
+        <div class="clientes__card-email">{{ row.email }}</div>
+        <div class="clientes__card-body">
+          <div class="clientes__card-field">
+            <span class="clientes__card-label">Pedidos</span>
+            <span class="clientes__card-value">{{ row.totalPedidos }}</span>
+          </div>
+          <div class="clientes__card-field">
+            <span class="clientes__card-label">Total Gasto</span>
+            <span class="clientes__card-value clientes__mono">{{ formatBrl(row.totalGasto) }}</span>
+          </div>
+          <div class="clientes__card-field">
+            <span class="clientes__card-label">Última Compra</span>
+            <span class="clientes__card-value">{{ row.ultimaCompra | relativeDate }}</span>
+          </div>
+        </div>
+      </ng-template>
+    </app-data-grid>
   </div>
 }

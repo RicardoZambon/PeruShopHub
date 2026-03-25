@@ -1,10 +1,16 @@
-import { Component, signal, inject, effect } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Search } from 'lucide-angular';
+import {
+  DataGridComponent,
+  GridCellDirective,
+  GridCardDirective,
+  GridColumn,
+  GridSortEvent,
+} from '../../shared/components/data-grid/data-grid.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { RelativeDatePipe } from '../../shared/pipes/relative-date.pipe';
@@ -14,43 +20,80 @@ import { firstValueFrom } from 'rxjs';
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, EmptyStateComponent, DataTableComponent, PageHeaderComponent, SearchInputComponent, RelativeDatePipe],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, RelativeDatePipe],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.scss',
 })
-export class CustomersComponent {
+export class CustomersComponent implements OnInit {
   readonly searchIcon = Search;
+
+  @ViewChild('grid') gridRef!: DataGridComponent;
 
   readonly searchQuery = signal('');
   readonly loading = signal(true);
   readonly hasData = signal(true);
-  readonly sortColumn = signal<'totalGasto' | 'totalPedidos' | 'ultimaCompra'>('totalGasto');
+  readonly hasMore = signal(true);
+
+  readonly customers = signal<CustomerListItem[]>([]);
+  readonly currentPage = signal(1);
+  readonly pageSize = signal(20);
+  readonly sortBy = signal<string | null>('totalGasto');
   readonly sortDirection = signal<'asc' | 'desc'>('desc');
-  readonly filteredCustomers = signal<CustomerListItem[]>([]);
 
   private readonly customerService = inject(CustomerService);
 
-  constructor(private router: Router) {
-    effect(() => {
-      const search = this.searchQuery();
-      const sortCol = this.sortColumn();
-      const sortDir = this.sortDirection();
-      this.loadCustomers(search, sortCol, sortDir);
-    });
+  readonly gridColumns: GridColumn[] = [
+    { key: 'nome', label: 'Nome', sortable: true },
+    { key: 'nickname', label: 'Nickname' },
+    { key: 'email', label: 'Email' },
+    { key: 'totalPedidos', label: 'Total Pedidos', align: 'right', sortable: true },
+    { key: 'totalGasto', label: 'Total Gasto', align: 'right', sortable: true },
+    { key: 'ultimaCompra', label: 'Última Compra', sortable: true },
+  ];
+
+  readonly gridData = computed(() => {
+    return this.customers().map(c => ({
+      ...c,
+    }));
+  });
+
+  constructor(public router: Router) {}
+
+  ngOnInit(): void {
+    this.loadCustomers(true);
   }
 
-  private async loadCustomers(search: string, sortBy: string, sortDirection: 'asc' | 'desc'): Promise<void> {
+  async loadCustomers(reset = false): Promise<void> {
+    if (reset) {
+      this.currentPage.set(1);
+      this.customers.set([]);
+      this.hasMore.set(true);
+    }
+
     this.loading.set(true);
     try {
       const response = await firstValueFrom(this.customerService.list({
-        search: search || undefined,
-        sortBy,
-        sortDir: sortDirection,
+        search: this.searchQuery() || undefined,
+        sortBy: this.sortBy() ?? undefined,
+        sortDir: this.sortDirection(),
+        page: this.currentPage(),
+        pageSize: this.pageSize(),
       }));
-      this.filteredCustomers.set(response.items as CustomerListItem[]);
-      this.hasData.set(response.totalCount > 0 || !!search);
+
+      if (reset) {
+        this.customers.set(response.items as CustomerListItem[]);
+      } else {
+        this.customers.update(prev => [...prev, ...response.items as CustomerListItem[]]);
+      }
+
+      const totalLoaded = this.customers().length;
+      this.hasMore.set(totalLoaded < response.totalCount);
+      this.hasData.set(totalLoaded > 0 || this.searchQuery().length > 0);
     } catch {
-      this.filteredCustomers.set([]);
+      if (reset) {
+        this.customers.set([]);
+      }
+      this.hasMore.set(false);
       this.hasData.set(false);
     } finally {
       this.loading.set(false);
@@ -63,23 +106,23 @@ export class CustomersComponent {
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
+    this.loadCustomers(true);
+    this.gridRef?.scrollToTop();
   }
 
-  onSort(column: 'totalGasto' | 'totalPedidos' | 'ultimaCompra'): void {
-    if (this.sortColumn() === column) {
-      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.sortColumn.set(column);
-      this.sortDirection.set('desc');
-    }
+  onSort(event: GridSortEvent): void {
+    this.sortBy.set(event.direction ? event.column : null);
+    this.sortDirection.set(event.direction ?? 'asc');
+    this.loadCustomers(true);
+    this.gridRef?.scrollToTop();
   }
 
-  getSortIndicator(column: string): string {
-    if (this.sortColumn() !== column) return '';
-    return this.sortDirection() === 'asc' ? ' \u2191' : ' \u2193';
+  onLoadMore(): void {
+    this.currentPage.update(p => p + 1);
+    this.loadCustomers(false);
   }
 
-  onRowClick(customer: CustomerListItem): void {
-    this.router.navigate(['/clientes', customer.id]);
+  onRowClick(row: Record<string, any>): void {
+    this.router.navigate(['/clientes', row['id']]);
   }
 }
