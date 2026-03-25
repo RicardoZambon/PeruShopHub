@@ -97,6 +97,7 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
   @Input() skeletonRows = 8;
   @Input() emptyTitle = 'Nenhum item encontrado';
   @Input() emptyDescription = '';
+  @Input() ariaLabel = 'Data grid';
 
   @Output() sortChange = new EventEmitter<GridSortEvent>();
   @Output() loadMore = new EventEmitter<void>();

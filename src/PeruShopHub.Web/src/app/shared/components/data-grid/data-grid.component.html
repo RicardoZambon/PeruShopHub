@@ -1,17 +1,19 @@
 <div class="data-grid">
   <div #scrollWrapper class="data-grid__scroll-wrapper">
     <!-- Desktop table view -->
-    <table class="data-grid__table data-grid__desktop-only">
+    <table class="data-grid__table data-grid__desktop-only" role="grid" [attr.aria-label]="ariaLabel">
       <thead>
         <tr>
           <th
             *ngFor="let col of columns"
+            role="columnheader"
             [style.text-align]="col.align || 'left'"
             [style.width]="col.width || null"
             [class]="col.headerClass || ''"
             [class.data-grid__th--sortable]="col.sortable"
             [class.data-grid__th--active]="col.sortable && getSortDirection(col.key)"
             [class.data-grid__cell--sticky]="col.sticky"
+            [attr.aria-sort]="col.sortable ? (getSortDirection(col.key) === 'asc' ? 'ascending' : getSortDirection(col.key) === 'desc' ? 'descending' : 'none') : null"
             (click)="onSortClick(col)"
           >
             <span class="data-grid__header-content">
@@ -44,6 +46,7 @@
           <tr *ngFor="let i of skeletonRowsArray" class="data-grid__skeleton-row">
             <td
               *ngFor="let col of columns"
+              role="gridcell"
               [style.text-align]="col.align || 'left'"
               [style.width]="col.width || null"
               [class.data-grid__cell--sticky]="col.sticky"
@@ -67,6 +70,7 @@
           >
             <td
               *ngFor="let col of columns"
+              role="gridcell"
               [style.text-align]="col.align || 'left'"
               [class]="col.cellClass || ''"
               [class.data-grid__cell--sticky]="col.sticky"
@@ -120,8 +124,13 @@
       </ng-container>
     </div>
 
+    <!-- Loading state announcement -->
+    <div aria-live="polite" class="data-grid__sr-only">
+      <span *ngIf="showSkeleton">Carregando dados</span>
+    </div>
+
     <!-- Empty state -->
-    <div *ngIf="showEmpty" class="data-grid__empty">
+    <div *ngIf="showEmpty" class="data-grid__empty" aria-live="polite">
       <ng-container *ngIf="emptyTemplate as customEmpty; else defaultEmpty">
         <ng-container *ngTemplateOutlet="customEmpty"></ng-container>
       </ng-container>
@@ -139,7 +148,7 @@
     </div>
 
     <!-- Loading spinner for infinite scroll -->
-    <div *ngIf="loading && data.length > 0" class="data-grid__loading-more">
+    <div *ngIf="loading && data.length > 0" class="data-grid__loading-more" aria-label="Carregando mais itens" role="status">
       <div class="data-grid__spinner"></div>
     </div>
 
