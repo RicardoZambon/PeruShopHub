@@ -279,6 +279,34 @@
     border-radius: 50%;
     animation: data-grid-spin 0.7s linear infinite;
   }
+
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    border-top: 1px solid var(--neutral-100);
+    background: var(--surface);
+    font-size: var(--text-body-small);
+    color: var(--neutral-500);
+    flex-shrink: 0;
+
+    strong {
+      color: var(--neutral-700);
+      font-weight: 600;
+    }
+  }
+
+  &__footer-count {
+    white-space: nowrap;
+  }
+
+  &__footer-custom {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--neutral-600);
+  }
 }
 
 @keyframes data-grid-spin {

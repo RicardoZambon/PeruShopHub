@@ -80,6 +80,14 @@ export class GridCardDirective {
   constructor(public templateRef: TemplateRef<GridCardContext>) {}
 }
 
+@Directive({
+  selector: '[appGridFooter]',
+  standalone: true,
+})
+export class GridFooterDirective {
+  constructor(public templateRef: TemplateRef<void>) {}
+}
+
 @Component({
   selector: 'app-data-grid',
   standalone: true,
@@ -98,6 +106,8 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
   @Input() emptyTitle = 'Nenhum item encontrado';
   @Input() emptyDescription = '';
   @Input() ariaLabel = 'Data grid';
+  @Input() totalCount = 0;
+  @Input() entityName = 'registros';
 
   @Output() sortChange = new EventEmitter<GridSortEvent>();
   @Output() loadMore = new EventEmitter<void>();
@@ -107,6 +117,7 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
   @ContentChildren(GridHeaderDirective) headerTemplates!: QueryList<GridHeaderDirective>;
   @ContentChildren(GridEmptyDirective) emptyTemplates!: QueryList<GridEmptyDirective>;
   @ContentChildren(GridCardDirective) cardTemplates!: QueryList<GridCardDirective>;
+  @ContentChildren(GridFooterDirective) footerTemplates!: QueryList<GridFooterDirective>;
 
   @ViewChild('sentinel', { static: false }) sentinelRef!: ElementRef<HTMLDivElement>;
   @ViewChild('scrollWrapper', { static: false }) scrollWrapperRef!: ElementRef<HTMLDivElement>;
@@ -206,6 +217,18 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
 
   get cardTemplate(): TemplateRef<GridCardContext> | null {
     return this.cardTemplates?.first?.templateRef ?? null;
+  }
+
+  get footerTemplate(): TemplateRef<void> | null {
+    return this.footerTemplates?.first?.templateRef ?? null;
+  }
+
+  get showFooter(): boolean {
+    return this.totalCount > 0 && !this.showSkeleton;
+  }
+
+  get allLoaded(): boolean {
+    return this.data.length >= this.totalCount;
   }
 
   getSortDirection(columnKey: string): SortDirection {

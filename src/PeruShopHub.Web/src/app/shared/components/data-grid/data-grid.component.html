@@ -155,4 +155,21 @@
     <!-- Sentinel element for IntersectionObserver -->
     <div #sentinel class="data-grid__sentinel"></div>
   </div>
+
+  <!-- Footer with count and optional custom content -->
+  <div *ngIf="showFooter" class="data-grid__footer">
+    <span class="data-grid__footer-count">
+      <ng-container *ngIf="allLoaded; else partialCount">
+        Mostrando todos os <strong>{{ totalCount | number:'1.0-0':'pt-BR' }}</strong> {{ entityName }}
+      </ng-container>
+      <ng-template #partialCount>
+        Mostrando <strong>{{ data.length | number:'1.0-0':'pt-BR' }}</strong> de <strong>{{ totalCount | number:'1.0-0':'pt-BR' }}</strong> {{ entityName }}
+      </ng-template>
+    </span>
+    <ng-container *ngIf="footerTemplate as customFooter">
+      <div class="data-grid__footer-custom">
+        <ng-container *ngTemplateOutlet="customFooter"></ng-container>
+      </div>
+    </ng-container>
+  </div>
 </div>
