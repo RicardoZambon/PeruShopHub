@@ -11,7 +11,6 @@ import { SelectDropdownComponent, type SelectOption } from '../../shared/compone
 import { DialogComponent } from '../../shared/components/dialog/dialog.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
 import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
-import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
 import {
   DataGridComponent,
   GridCellDirective,
@@ -21,7 +20,7 @@ import {
 } from '../../shared/components/data-grid/data-grid.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { InventoryService } from '../../services/inventory.service';
-import type { InventoryItem, StockMovement } from '../../services/inventory.service';
+import type { InventoryItem, StockMovement, InventoryQueryParams } from '../../services/inventory.service';
 import { firstValueFrom } from 'rxjs';
 
 type InventoryTab = 'visao-geral' | 'movimentacoes' | 'estoque-full';
@@ -35,7 +34,7 @@ interface ProductOption {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabBarComponent, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, PageSkeletonComponent, DataGridComponent, GridCellDirective, GridCardDirective],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabBarComponent, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, DataGridComponent, GridCellDirective, GridCardDirective],
   templateUrl: './inventory.component.html',
   styleUrl: './inventory.component.scss',
 })
@@ -43,6 +42,7 @@ export class InventoryComponent implements OnInit {
   private readonly inventoryService = inject(InventoryService);
 
   @ViewChild('movGrid') movGridRef!: DataGridComponent;
+  @ViewChild('invGrid') invGridRef!: DataGridComponent;
 
   activeTab = signal<InventoryTab>('visao-geral');
   loading = signal(true);
@@ -51,6 +51,31 @@ export class InventoryComponent implements OnInit {
   // Mutable inventory and movements data
   inventoryData = signal<InventoryItem[]>([]);
   movements = signal<StockMovement[]>([]);
+
+  // Inventory grid state (for infinite scroll in overview tab)
+  invLoading = signal(false);
+  invHasMore = signal(true);
+  invCurrentPage = signal(1);
+  readonly invPageSize = signal(20);
+  invSortBy = signal('productName');
+  invSortDir = signal<'asc' | 'desc'>('asc');
+  invSearch = signal('');
+
+  readonly invGridColumns: GridColumn[] = [
+    { key: 'sku', label: 'SKU', sortable: true },
+    { key: 'productName', label: 'Produto', sortable: true },
+    { key: 'totalStock', label: 'Estoque Total', align: 'right', sortable: true },
+    { key: 'reserved', label: 'Reservado', align: 'right', sortable: true },
+    { key: 'available', label: 'Disponível', align: 'right', sortable: true },
+    { key: 'unitCost', label: 'Custo Unit.', align: 'right', sortable: true },
+    { key: 'stockValue', label: 'Valor Estoque', align: 'right', sortable: true },
+  ];
+
+  readonly invGridData = computed(() => {
+    return this.inventoryData().map(item => ({
+      ...item,
+    }));
+  });
 
   // Movements grid state (for infinite scroll in movimentações tab)
   movLoading = signal(false);
@@ -152,21 +177,62 @@ export class InventoryComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadInventory();
+    this.loadInventoryGrid(true);
     this.loadMovements();
   }
 
-  private loadInventory(): void {
-    this.loading.set(true);
-    this.inventoryService.getInventory().subscribe({
-      next: (data) => {
-        this.inventoryData.set(data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-      },
-    });
+  async loadInventoryGrid(reset = false): Promise<void> {
+    if (reset) {
+      this.invCurrentPage.set(1);
+      this.inventoryData.set([]);
+      this.invHasMore.set(true);
+    }
+
+    this.invLoading.set(true);
+    if (reset) this.loading.set(true);
+    try {
+      const result = await firstValueFrom(this.inventoryService.getInventory({
+        page: this.invCurrentPage(),
+        pageSize: this.invPageSize(),
+        search: this.invSearch() || undefined,
+        sortBy: this.invSortBy(),
+        sortDir: this.invSortDir(),
+      }));
+
+      if (reset) {
+        this.inventoryData.set(result.items);
+      } else {
+        this.inventoryData.update(prev => [...prev, ...result.items]);
+      }
+
+      const totalLoaded = this.inventoryData().length;
+      this.invHasMore.set(totalLoaded < result.totalCount);
+    } catch {
+      if (reset) {
+        this.inventoryData.set([]);
+      }
+      this.invHasMore.set(false);
+    } finally {
+      this.invLoading.set(false);
+      this.loading.set(false);
+    }
+  }
+
+  onInvLoadMore(): void {
+    this.invCurrentPage.update(p => p + 1);
+    this.loadInventoryGrid(false);
+  }
+
+  onInvSort(event: GridSortEvent): void {
+    if (event.direction) {
+      this.invSortBy.set(event.column);
+      this.invSortDir.set(event.direction);
+    } else {
+      this.invSortBy.set('productName');
+      this.invSortDir.set('asc');
+    }
+    this.loadInventoryGrid(true);
+    this.invGridRef?.scrollToTop();
   }
 
   private loadMovements(): void {
@@ -287,7 +353,7 @@ export class InventoryComponent implements OnInit {
         this.saving.set(false);
         this.closeEntryModal();
         // Reload data from server
-        this.loadInventory();
+        this.loadInventoryGrid(true);
         this.loadMovements();
       },
       error: () => {
@@ -303,12 +369,6 @@ export class InventoryComponent implements OnInit {
       case 'Saída': return 'danger';
       case 'Ajuste': return 'primary';
     }
-  }
-
-  getRowClass(row: InventoryItem): string {
-    if (row.available === 0) return 'inv-table__row--zero';
-    if (row.available <= 5) return 'inv-table__row--low';
-    return '';
   }
 
   formatBrl(value: number): string {

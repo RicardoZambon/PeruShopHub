@@ -37,44 +37,91 @@
         }
       </div>
 
-      <!-- Inventory Table -->
-      @if (loading()) {
-        <app-page-skeleton type="list" [rows]="6" />
-      } @else {
-        <div class="inv-table-wrapper">
-          <table class="inv-table">
-            <thead>
-              <tr>
-                <th class="inv-table__th">SKU</th>
-                <th class="inv-table__th">Produto</th>
-                <th class="inv-table__th inv-table__th--right">Estoque Total</th>
-                <th class="inv-table__th inv-table__th--right">Reservado</th>
-                <th class="inv-table__th inv-table__th--right">Disponível</th>
-                <th class="inv-table__th inv-table__th--right">Custo Unit.</th>
-                <th class="inv-table__th inv-table__th--right">Valor Estoque</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of inventoryData(); track row.sku) {
-                <tr class="inv-table__row" [ngClass]="getRowClass(row)">
-                  <td class="inv-table__td inv-table__td--mono">{{ row.sku }}</td>
-                  <td class="inv-table__td">{{ row.productName }}</td>
-                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.totalStock }}</td>
-                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.reserved }}</td>
-                  <td class="inv-table__td inv-table__td--mono inv-table__td--right"
-                    [class.inv-table__td--danger]="row.available === 0"
-                    [class.inv-table__td--warning]="row.available > 0 && row.available <= 5">
-                    {{ row.available }}
-                  </td>
-                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.unitCost | brlCurrency }}</td>
-                  <td class="inv-table__td inv-table__td--mono inv-table__td--right">{{ row.stockValue | brlCurrency }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+      <!-- Inventory Data Grid -->
+      <app-data-grid
+        #invGrid
+        [columns]="invGridColumns"
+        [data]="invGridData()"
+        [loading]="invLoading()"
+        [hasMore]="invHasMore()"
+        [pageSize]="invPageSize()"
+        emptyTitle="Nenhum item em estoque"
+        emptyDescription="Cadastre produtos para começar a gerenciar seu estoque."
+        ariaLabel="Lista de itens em estoque"
+        (sortChange)="onInvSort($event)"
+        (loadMore)="onInvLoadMore()"
+      >
+        <!-- SKU cell (mono) -->
+        <ng-template appGridCell="sku" let-row let-value="value">
+          <span class="inv__mono">{{ value }}</span>
+        </ng-template>
 
-        <!-- Recent Movements Section -->
+        <!-- Total Stock cell (mono) -->
+        <ng-template appGridCell="totalStock" let-row let-value="value">
+          <span class="inv__mono">{{ value }}</span>
+        </ng-template>
+
+        <!-- Reserved cell (mono) -->
+        <ng-template appGridCell="reserved" let-row let-value="value">
+          <span class="inv__mono">{{ value }}</span>
+        </ng-template>
+
+        <!-- Available cell (conditional coloring) -->
+        <ng-template appGridCell="available" let-row let-value="value">
+          <span class="inv__mono"
+            [class.inv__available--danger]="value === 0"
+            [class.inv__available--warning]="value > 0 && value <= 5">
+            {{ value }}
+          </span>
+        </ng-template>
+
+        <!-- Unit Cost cell (mono currency) -->
+        <ng-template appGridCell="unitCost" let-row let-value="value">
+          <span class="inv__mono">{{ value | brlCurrency }}</span>
+        </ng-template>
+
+        <!-- Stock Value cell (mono currency) -->
+        <ng-template appGridCell="stockValue" let-row let-value="value">
+          <span class="inv__mono">{{ value | brlCurrency }}</span>
+        </ng-template>
+
+        <!-- Mobile card template -->
+        <ng-template appGridCard let-row>
+          <div class="inv__card-header">
+            <span class="inv__card-name">{{ row.productName }}</span>
+            <span class="inv__card-sku">{{ row.sku }}</span>
+          </div>
+          <div class="inv__card-body">
+            <div class="inv__card-field">
+              <span class="inv__card-label">Estoque Total</span>
+              <span class="inv__card-value inv__mono">{{ row.totalStock }}</span>
+            </div>
+            <div class="inv__card-field">
+              <span class="inv__card-label">Reservado</span>
+              <span class="inv__card-value inv__mono">{{ row.reserved }}</span>
+            </div>
+            <div class="inv__card-field">
+              <span class="inv__card-label">Disponível</span>
+              <span class="inv__card-value inv__mono"
+                [class.inv__available--danger]="row.available === 0"
+                [class.inv__available--warning]="row.available > 0 && row.available <= 5">
+                {{ row.available }}
+              </span>
+            </div>
+            <div class="inv__card-field">
+              <span class="inv__card-label">Custo Unit.</span>
+              <span class="inv__card-value inv__mono">{{ row.unitCost | brlCurrency }}</span>
+            </div>
+            <div class="inv__card-field">
+              <span class="inv__card-label">Valor Estoque</span>
+              <span class="inv__card-value inv__mono">{{ row.stockValue | brlCurrency }}</span>
+            </div>
+          </div>
+        </ng-template>
+      </app-data-grid>
+
+      <!-- Recent Movements Section -->
+      @if (!loading()) {
         <div class="recent-movements">
           <h2 class="recent-movements__title">Movimentações Recentes</h2>
           <div class="recent-movements__table-wrap">

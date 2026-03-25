@@ -19,22 +19,58 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<InventoryItemDto>>> GetAll()
+    public async Task<ActionResult<PagedResult<InventoryItemDto>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] string sortBy = "productName",
+        [FromQuery] string sortDir = "asc")
     {
-        var items = await _db.Products.AsNoTracking()
+        var query = _db.Products.AsNoTracking()
             .Include(p => p.Variants)
-            .Where(p => p.IsActive)
-            .Select(p => new InventoryItemDto(
-                p.Sku,
-                p.Name,
-                p.Variants.Sum(v => v.Stock),
-                0, // Reserved (placeholder for now)
-                p.Variants.Sum(v => v.Stock), // Available = TotalStock - Reserved
-                p.PurchaseCost,
-                p.Variants.Sum(v => v.Stock) * p.PurchaseCost))
+            .Where(p => p.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLower();
+            query = query.Where(p => p.Name.ToLower().Contains(s) || p.Sku.ToLower().Contains(s));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var projected = query.Select(p => new InventoryItemDto(
+            p.Sku,
+            p.Name,
+            p.Variants.Sum(v => v.Stock),
+            0,
+            p.Variants.Sum(v => v.Stock),
+            p.PurchaseCost,
+            p.Variants.Sum(v => v.Stock) * p.PurchaseCost));
+
+        var desc = sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase);
+        projected = sortBy.ToLower() switch
+        {
+            "sku" => desc ? projected.OrderByDescending(i => i.Sku) : projected.OrderBy(i => i.Sku),
+            "totalstock" => desc ? projected.OrderByDescending(i => i.TotalStock) : projected.OrderBy(i => i.TotalStock),
+            "reserved" => desc ? projected.OrderByDescending(i => i.Reserved) : projected.OrderBy(i => i.Reserved),
+            "available" => desc ? projected.OrderByDescending(i => i.Available) : projected.OrderBy(i => i.Available),
+            "unitcost" => desc ? projected.OrderByDescending(i => i.UnitCost) : projected.OrderBy(i => i.UnitCost),
+            "stockvalue" => desc ? projected.OrderByDescending(i => i.StockValue) : projected.OrderBy(i => i.StockValue),
+            _ => desc ? projected.OrderByDescending(i => i.ProductName) : projected.OrderBy(i => i.ProductName),
+        };
+
+        var items = await projected
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return Ok(items);
+        return Ok(new PagedResult<InventoryItemDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        });
     }
 
     [HttpGet("movements")]
