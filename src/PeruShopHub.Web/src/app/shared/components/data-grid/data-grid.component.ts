@@ -231,6 +231,10 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
     return this.data.length >= this.totalCount;
   }
 
+  formatCount(value: number): string {
+    return value.toLocaleString('pt-BR');
+  }
+
   getSortDirection(columnKey: string): SortDirection {
     return this.activeSort.column === columnKey ? this.activeSort.direction : null;
   }

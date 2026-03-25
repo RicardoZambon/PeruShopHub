@@ -159,12 +159,7 @@
   <!-- Footer with count and optional custom content -->
   <div *ngIf="showFooter" class="data-grid__footer">
     <span class="data-grid__footer-count">
-      <ng-container *ngIf="allLoaded; else partialCount">
-        Mostrando todos os <strong>{{ totalCount | number:'1.0-0':'pt-BR' }}</strong> {{ entityName }}
-      </ng-container>
-      <ng-template #partialCount>
-        Mostrando <strong>{{ data.length | number:'1.0-0':'pt-BR' }}</strong> de <strong>{{ totalCount | number:'1.0-0':'pt-BR' }}</strong> {{ entityName }}
-      </ng-template>
+      Mostrando <strong>{{ formatCount(data.length) }}</strong> de <strong>{{ formatCount(totalCount) }}</strong> {{ entityName }}
     </span>
     <ng-container *ngIf="footerTemplate as customFooter">
       <div class="data-grid__footer-custom">
