@@ -222,8 +222,9 @@ a:hover {
   overflow-y: auto;
 }
 
-// DataTable component auto-fills remaining space when inside a page
-app-data-table {
+// DataTable/DataGrid components auto-fill remaining space when inside a page
+app-data-table,
+app-data-grid {
   flex: 1;
   min-height: 0;
   display: flex;

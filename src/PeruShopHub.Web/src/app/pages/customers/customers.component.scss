@@ -8,6 +8,11 @@
 }
 
 .clientes {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+
   &__action-bar {
     display: flex;
     align-items: center;

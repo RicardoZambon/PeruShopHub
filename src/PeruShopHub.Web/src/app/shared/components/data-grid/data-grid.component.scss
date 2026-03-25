@@ -1,5 +1,12 @@
 @use '../../../../styles/mixins' as m;
 
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .data-grid {
   width: 100%;
   background: var(--surface);
