@@ -1,564 +1,244 @@
-# Ralph Progress - PeruShopHub UI/UX Design System
-# Branch: ralph/ui-ux-design-system
-# Created: 2026-03-21
+# Ralph Progress Log
+Started: Wed Mar 25 04:14:54 AM UTC 2026
+---
 
 ## Codebase Patterns
-- Angular CLI v21 with standalone components (no NgModules)
-- All page components use `loadComponent` for lazy loading in app.routes.ts
-- Working directory for Angular commands: `src/PeruShopHub.Web/`
-- Build: `npx ng build`, Typecheck: `npx tsc --noEmit -p tsconfig.app.json`
-- Proxy config in `proxy.conf.json` targets `http://localhost:5000` for `/api` routes
-- Design tokens in `src/styles/tokens.css`, SCSS mixins in `src/styles/mixins.scss`
-- Use `@use '../styles/mixins' as m;` then `@include m.mobile { ... }` in component SCSS
-- Injectable root services go in `src/app/services/` with `{ providedIn: 'root' }`
-- Shared pipes/components go in `src/app/shared/pipes/` and `src/app/shared/components/` with barrel exports via `index.ts`
-- SCSS `@use` path from `src/app/shared/components/{name}/` to `src/styles/` is `../../../../styles/mixins`
-- SCSS `@use` path from `src/app/pages/{name}/` to `src/styles/` is `../../../styles/mixins`
-- Type re-exports need `export type { ... }` due to `isolatedModules` in tsconfig
-- Lucide icon data type for `[img]` binding is `LucideIconData` from `lucide-angular` (not `object`)
-- Toast container goes in app root (app.html), inject `ToastService` to show toasts from any component
-- ng2-charts v10: `provideCharts(withDefaultRegisterables())` in app.config.ts, `BaseChartDirective` in component imports, Chart.js colors must be hardcoded hex (no CSS vars)
-- For custom cell rendering (badges, icons, colored values), build a custom table instead of DataTableComponent
-- Badge variant methods must return `BadgeVariant` type, not `string` — Angular strict template checking enforces this
-- Route order: specific paths like `/produtos/novo` must come BEFORE parameterized `/produtos/:id`
+- All components are **standalone** (no NgModules) with `standalone: true`
+- Use `CommonModule` import for `*ngFor`, `*ngIf` directives
+- Barrel exports in `shared/components/index.ts` — export both component and types
+- SCSS uses `@use '../../../../styles/mixins' as m;` for responsive breakpoint mixins
+- CSS custom properties from `tokens.css` for all design tokens (e.g., `var(--surface)`, `var(--neutral-200)`)
+- Existing data-table uses BEM naming: `.data-table__scroll-wrapper`, `.data-table__table`, etc.
+- IntersectionObserver for infinite scroll: run outside NgZone, use scroll container as root, re-enter zone only to emit events
+- Angular build via `npx ng build --configuration=development` — takes ~95 seconds
+- Use `EventEmitter.observed` to conditionally apply behavior only when an output has subscribers
+- Migration pattern for list pages: use `loadProducts(reset: boolean)` — reset=true clears data + resets page, reset=false appends for infinite scroll
+- GridColumn keys should match property names on the data objects (no rename mapping needed)
+- Template file convention: separate `.html` file with `templateUrl`
+- Style file convention: separate `.scss` file with `styleUrl` (singular, not `styleUrls`)
 
-## 2026-03-22 - US-001
-- Scaffolded Angular 17+ project at src/PeruShopHub.Web/ using standalone components
-- Installed ng2-charts, chart.js, lucide-angular
-- Configured lazy-loaded routes for: dashboard, produtos, vendas, perguntas, clientes, financeiro, estoque, configuracoes, login
-- Set up Google Fonts (Inter 400-700, Roboto Mono 400-500), lang="pt-BR", viewport meta
-- Created proxy.conf.json targeting localhost:5000 and wired into angular.json serve config
-- Simplified app.html to just `<router-outlet />`
-- Files changed: all new under src/PeruShopHub.Web/
-- **Learnings for future iterations:**
-  - Angular CLI v21 generates `.ts` component files (not `.component.ts` by default) but we use `.component.ts` naming for clarity
-  - Build and typecheck commands must run from `src/PeruShopHub.Web/` directory (or use `--project` flag)
-  - The `npx ng build` output shows lazy chunk files confirming routes are properly configured
 ---
 
-## 2026-03-22 - US-002
-- Created `src/styles/tokens.css` with all CSS custom properties: colors (primary, accent, success, warning, danger, neutrals, surface, page-bg), typography sizes, spacing scale, elevation shadows, border radii, breakpoints, component tokens, chart colors
-- Light theme tokens in `:root`, dark theme in `:root[data-theme="dark"]` with inverted neutrals and adjusted semantic colors
-- Created `src/styles/mixins.scss` with responsive breakpoint mixins: `@mixin mobile`, `@mixin tablet`, `@mixin desktop`, `@mixin desktop-lg`
-- Updated `styles.scss` to import tokens.css and set base body styles (font-family Inter, background var(--page-bg), color var(--neutral-900))
-- Files changed: `src/styles/tokens.css` (new), `src/styles/mixins.scss` (new), `src/styles.scss` (updated)
+## 2026-03-25 04:20 UTC - US-001
+- Created `DataGridComponent` in `shared/components/data-grid/`
+- GridColumn interface with: key, label, align, width, sortable, sticky, headerClass, cellClass
+- Renders `<table>` with `<thead>` and `<tbody>` from column definitions
+- Default cell rendering: `row[column.key]` as text
+- Columns with `align` apply to both `<th>` and `<td>`
+- Columns with `width` set apply via `[style.width]`
+- OnPush change detection strategy
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`, `shared/components/index.ts`
 - **Learnings for future iterations:**
-  - CSS custom properties in tokens.css are imported via `@import "styles/tokens.css"` in styles.scss
-  - SCSS mixins are in a separate file and must be `@use`d in component SCSS files that need them
-  - Dark theme shadows need higher opacity since dark backgrounds need stronger shadows for visibility
-  - Component-specific tokens (sidebar widths, header height, etc.) are also in tokens.css for consistency
+  - The existing `data-table` component uses inline template; new `data-grid` uses separate `.html` file for maintainability as it will grow
+  - `styleUrl` (singular) is the correct property name in Angular 21, not `styleUrls`
+  - Build typecheck confirms correctness; `ng build` is the reliable check
 ---
 
-## 2026-03-22 - US-003
-- Created `ThemeService` as injectable root service at `src/app/services/theme.service.ts`
-- Implements `currentTheme` signal with type `'light' | 'dark' | 'system'`
-- `resolvedTheme` computed signal resolves 'system' to actual 'light'/'dark' based on `prefers-color-scheme`
-- Loads preference from `localStorage('theme-preference')`, defaults to 'system'
-- `setTheme()` updates signal, persists to localStorage, applies `data-theme` attribute
-- `toggleTheme()` cycles: light → dark → system
-- Listens to `matchMedia` change events for real-time OS theme changes
-- Uses Angular `effect()` to apply theme whenever `resolvedTheme` changes
-- Files changed: `src/app/services/theme.service.ts` (new)
+## 2026-03-25 04:26 UTC - US-002
+- Created `GridCellDirective` with `appGridCell` selector keyed by column name
+- Grid uses `@ContentChildren(GridCellDirective)` to collect custom templates
+- `getCellTemplate(columnKey)` method looks up the matching directive's templateRef
+- Template context provides `$implicit` (full row) and `value` (cell value) — usage: `<ng-template appGridCell="colKey" let-row let-value="value">`
+- When no custom template registered, falls back to default text rendering
+- Exported `GridCellDirective` and `GridCellContext` from barrel index
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `shared/components/index.ts`
 - **Learnings for future iterations:**
-  - Services go in `src/app/services/` directory
-  - Angular 21 signals + `effect()` work well for reactive theme management
-  - Theme applies by setting/removing `data-theme="dark"` on `document.documentElement` (matching tokens.css selectors)
+  - `@ContentChildren` requires the directive to be `standalone: true` to work with standalone host components
+  - Template context uses `$implicit` for `let-row` (no assignment) and named keys for `let-value="value"`
+  - `getCellTemplate()` is called per cell per render — acceptable for OnPush since it only runs on change detection
 ---
 
-## 2026-03-22 - US-004
-- Created `BrlCurrencyPipe` with full (`R$ 1.234,56`) and compact (`R$ 18,4k` / `R$ 1,2M`) modes using `toLocaleString('pt-BR')`
-- Created `RelativeDatePipe` with relative format for <7 days (`ha 2h`, `ha 1d`, `ha 3sem`) and absolute `toLocaleDateString` for older dates
-- Both pipes are standalone, exported from `src/app/shared/pipes/index.ts`
-- Files changed: `src/app/shared/pipes/brl-currency.pipe.ts` (new), `src/app/shared/pipes/relative-date.pipe.ts` (new), `src/app/shared/pipes/index.ts` (new)
+## 2026-03-25 04:28 UTC - US-003
+- Created `GridHeaderDirective` with `appGridHeader` selector keyed by column name
+- Grid uses `@ContentChildren(GridHeaderDirective)` to collect header templates
+- `getHeaderTemplate(columnKey)` looks up matching directive's templateRef
+- Template replaces default `{{ col.label }}` text when registered; falls back to label otherwise
+- Exported `GridHeaderDirective` from barrel index
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `shared/components/index.ts`
 - **Learnings for future iterations:**
-  - Shared pipes live in `src/app/shared/pipes/` with barrel export via `index.ts`
-  - `toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })` handles BRL formatting natively
-  - Import pipes from `@shared/pipes` if path alias is configured, otherwise relative paths
+  - Pattern identical to GridCellDirective — new content directives follow same structure: `@Directive` + `@Input` for key + `TemplateRef` injection
+  - Header templates use `TemplateRef<void>` since no row context needed (unlike cell templates)
 ---
 
-## 2026-03-22 - US-005
-- Created `BadgeComponent` (standalone) with 6 variants: success, warning, danger, primary, neutral, accent. Pill-shaped with design token colors.
-- Created `KpiCardComponent` (standalone) with label, value, optional change percentage with arrow, changeLabel, and invertColors flag for cost metrics.
-- Barrel export from `src/app/shared/components/index.ts`
-- Files changed: `src/app/shared/components/badge/badge.component.ts` (new), `src/app/shared/components/badge/badge.component.scss` (new), `src/app/shared/components/kpi-card/kpi-card.component.ts` (new), `src/app/shared/components/kpi-card/kpi-card.component.scss` (new), `src/app/shared/components/index.ts` (new)
+## 2026-03-25 04:30 UTC - US-004
+- Added server-side sorting support to DataGridComponent
+- `sortChange` output emits `GridSortEvent` with `{ column, direction }`
+- `activeSort` tracks current sort state; `onSortClick()` cycles asc → desc → null
+- `getSortDirection()` helper for template to query current column sort state
+- Inline SVG sort indicators (dual-arrow neutral, highlighted arrow for asc/desc)
+- Sortable headers get `cursor: pointer` + hover highlight; active sort column uses `--primary` color
+- Exported `GridSortEvent` and `SortDirection` types from barrel index
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`, `shared/components/index.ts`
 - **Learnings for future iterations:**
-  - Shared components go in `src/app/shared/components/{name}/` with barrel export via `src/app/shared/components/index.ts`
-  - SCSS `@use` path from `src/app/shared/components/{name}/` to `src/styles/` is `../../../../styles/mixins`
-  - Type re-exports require `export type` when `isolatedModules` is enabled in tsconfig
+  - Inline SVGs are simpler than icon fonts for small indicators — no extra dependencies
+  - The sort cycle pattern (asc → desc → null) resets column to empty string when direction is null, so `getSortDirection` comparison works cleanly
+  - Build takes ~20 seconds with development config — fast enough for iterative checks
 ---
 
-## 2026-03-22 - US-006
-- Created `EmptyStateComponent` (standalone) with title, description, optional icon, optional CTA button with actionClick emitter
-- Created `ErrorStateComponent` (standalone) with default title 'Algo deu errado', description, retry button emitter
-- Created `SkeletonComponent` (standalone) with 3 types: text, rect, circle. Shimmer animation via CSS gradient + keyframes
-- All components use design tokens for colors and spacing
-- Barrel export updated in `src/app/shared/components/index.ts`
-- Files changed: `src/app/shared/components/empty-state/` (new), `src/app/shared/components/error-state/` (new), `src/app/shared/components/skeleton/` (new), `src/app/shared/components/index.ts` (updated)
+## 2026-03-25 04:33 UTC - US-005
+- Added infinite scroll to DataGridComponent using IntersectionObserver on a sentinel element
+- New inputs: `loading` (boolean), `hasMore` (boolean), `pageSize` (default 20)
+- New output: `loadMore` event emitted when sentinel enters viewport and `hasMore && !loading`
+- Observer runs outside NgZone for performance, re-enters zone only to emit
+- Loading spinner row shown at bottom when `loading && data.length > 0`
+- Scroll wrapper already had `overflow: auto` and `flex: 1` from US-001 — scroll position naturally preserved when rows appended
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`
 - **Learnings for future iterations:**
-  - Skeleton shimmer animation uses `background-size: 200%` with position animation for smooth effect
-  - `git -c safe.directory=...` flag needed for commits in this environment (gitconfig is read-only)
+  - IntersectionObserver root must be the scroll container (`.data-grid__scroll-wrapper`), found via `closest()` from sentinel
+  - Running observer outside NgZone prevents unnecessary change detection on scroll
+  - Sentinel is a 1px div after the table — always at the bottom of scroll content
+  - `AfterViewInit` is needed because `@ViewChild` with `static: false` isn't available in `OnInit`
 ---
 
-## 2026-03-22 - US-007
-- Created `DataTableComponent` (standalone) with responsive desktop table and mobile card list
-- Desktop (>=1024px): standard HTML table with sortable column headers (asc/desc toggle), configurable cell alignment
-- Tablet (768-1023px): horizontal scroll with first column sticky
-- Mobile (<768px): each row renders as a card with label:value pairs stacked vertically
-- Loading state: 6 skeleton rows using SkeletonComponent
-- Empty state: uses EmptyStateComponent with configurable title/description
-- Pagination bar: 'Mostrando X-Y de Z', page size selector (10/25/50), prev/next buttons
-- Sort and page change emit output events for server-side handling
-- Barrel export updated in `src/app/shared/components/index.ts`
-- Files changed: `src/app/shared/components/data-table/data-table.component.ts` (new), `src/app/shared/components/data-table/data-table.component.scss` (new), `src/app/shared/components/index.ts` (updated)
+## 2026-03-25 04:35 UTC - US-006
+- Added initial loading state with skeleton placeholders to DataGridComponent
+- `showSkeleton` computed property: `loading && data.length === 0`
+- Skeleton rows (default 8, configurable via `skeletonRows` input) mirror column layout with same alignment and widths
+- Uses existing `<app-skeleton>` component with `type="text"` and 16px height
+- Right-aligned columns get 60% width skeletons with `margin-left: auto`, others get 80%
+- When `loading && data.length > 0`, skeleton NOT shown (existing bottom spinner handles this)
+- Imported `SkeletonComponent` into DataGridComponent standalone imports
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`
 - **Learnings for future iterations:**
-  - DataTableComponent accepts `columns` array with `{key, label, align, format, sortable}` and `data` array of records
-  - Use `format: 'mono'` or `format: 'currency'` on columns to apply Roboto Mono font
-  - Tablet sticky first column uses `position: sticky` with `::after` pseudo-element for border
-  - `rowClick` output emitter sends the full row record for navigation
+  - `app-skeleton` needs `display: block` on the host to respect margin-left for right-aligned cells
+  - Skeleton rows reuse the same `<td>` structure as data rows for consistent column widths
+  - `showSkeleton` as a getter is fine for OnPush — only evaluated on change detection
 ---
 
-## 2026-03-22 - US-008
-- Created `ToastService` as injectable root service with `show(message, type, duration?, description?)` method
-- Manages toast array via signal, auto-dismisses after configurable duration (default 5s), max 3 visible
-- Created `ToastContainerComponent` (standalone) positioned fixed top-right with 24px margin
-- Each toast: colored left border per type (success/warning/danger/info), Lucide icon, message, optional description, X close button
-- Slide-in animation from right (200ms) via CSS keyframe
-- Mobile: full width minus 24px padding
-- Added ToastContainerComponent to app root (app.html + app.ts)
-- Barrel export updated in `src/app/shared/components/index.ts`
-- Files changed: `src/app/services/toast.service.ts` (new), `src/app/shared/components/toast-container/toast-container.component.ts` (new), `src/app/shared/components/toast-container/toast-container.component.scss` (new), `src/app/shared/components/index.ts` (updated), `src/app/app.ts` (updated), `src/app/app.html` (updated)
+## 2026-03-25 04:37 UTC - US-007
+- Added empty state support to DataGridComponent
+- Created `GridEmptyDirective` with `appGridEmpty` selector for custom empty state content
+- Added `emptyTitle` and `emptyDescription` inputs for default empty state
+- `showEmpty` getter: `!loading && data.length === 0`
+- Default empty state renders an SVG table icon, title, and optional description
+- Empty state vertically centered via flexbox with `min-height: 200px`
+- Custom template via `<ng-template appGridEmpty>` replaces default when provided
+- Exported `GridEmptyDirective` from barrel index
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`, `shared/components/index.ts`
 - **Learnings for future iterations:**
-  - Lucide icon data type is `LucideIconData` from `lucide-angular`, not `object` — using `object` causes TS2740 build errors
-  - ToastService uses `signal<Toast[]>` for reactive toast list — components just read `toastService.toasts()`
-  - Toast container is added once in app root, not per-page
+  - Content projection directives follow consistent pattern: `@Directive` + `TemplateRef` injection + `@ContentChildren` query in host
+  - `GridEmptyDirective` uses `TemplateRef<void>` like `GridHeaderDirective` (no context needed)
+  - Empty state uses `flex: 1` to fill available space within the scroll wrapper for vertical centering
 ---
 
-## 2026-03-22 - US-009
-- Created `SidebarService` with `collapsed` signal persisted to localStorage and `mobileOpen` signal for overlay drawer
-- Created `SidebarComponent` (standalone) with 8 nav items using Lucide icons and RouterLink/RouterLinkActive
-- Desktop (>=1024px): expanded 256px by default, collapsible to 64px icons-only
-- Tablet (768-1023px): starts collapsed by default
-- Mobile (<768px): hidden by default, overlay drawer with backdrop when `mobileOpen` is true
-- Logo shows "PeruShopHub" when expanded, "P" when collapsed
-- Collapse toggle button at bottom, Esc key closes mobile drawer
-- Smooth 200ms transitions, active route highlight with --primary-light/--primary colors
-- Barrel export updated in shared/components/index.ts
-- Files changed: `src/app/services/sidebar.service.ts` (new), `src/app/shared/components/sidebar/` (new), `src/app/shared/components/index.ts` (updated)
+## 2026-03-25 04:40 UTC - US-008
+- Added mobile card layout to DataGridComponent
+- Created `GridCardDirective` with `appGridCard` selector for custom mobile card templates
+- Table hidden below 768px via `display: none`, card list shown via `display: flex`
+- Default card renders column label-value pairs stacked vertically with separator borders
+- Custom cell templates reused in default card layout (same `getCellTemplate` lookup)
+- Custom card template via `<ng-template appGridCard let-row>` replaces default when provided
+- Skeleton cards shown during initial loading on mobile (matching card structure)
+- Infinite scroll works on cards (same sentinel + IntersectionObserver in scroll wrapper)
+- Exported `GridCardDirective` and `GridCardContext` from barrel index
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`, `shared/components/index.ts`
 - **Learnings for future iterations:**
-  - SidebarService exposes `collapsed` and `mobileOpen` signals — header component will use `sidebar.toggleMobile()` to open drawer
-  - Lucide icons import individually: `import { LayoutDashboard, Package, ... } from 'lucide-angular'`
-  - Mobile sidebar uses transform translateX(-100%) → translateX(0) for slide-in, not width animation
-  - RouterLinkActive directive adds `active` class automatically for styling
+  - Use `display: table` / `display: none` toggle for table show/hide (not `visibility`) since `<table>` needs `display: table` not `display: block`
+  - The `@include m.mobile` mixin uses `max-width: 767px` — consistent with project's 768px tablet breakpoint
+  - Cards reuse the same cell templates as the table, so custom cell rendering works on both desktop and mobile automatically
+  - Infinite scroll sentinel is shared between table and card views since it's outside both containers
 ---
 
-## 2026-03-22 - US-010
-- Created `HeaderComponent` (standalone) with fixed 56px height, --surface background, bottom border
-- Left: hamburger button that calls SidebarService.toggle() on desktop or toggleMobile() on mobile
-- Center: search input with magnifying glass icon, Ctrl+K kbd hint, readonly placeholder (non-functional)
-- Right: green marketplace connection dot, notification bell with badge count (5), theme toggle cycling sun/moon/monitor icons via ThemeService.toggleTheme()
-- Right: user avatar circle with dropdown menu (name, email, role, separator, Configurações link, Sair button)
-- Dropdown closes on outside click (HostListener document:click) and Esc key
-- Responsive: search input hidden on mobile, user name hidden on mobile
-- Barrel export updated in shared/components/index.ts
-- Files changed: `src/app/shared/components/header/header.component.ts` (new), `src/app/shared/components/header/header.component.html` (new), `src/app/shared/components/header/header.component.scss` (new), `src/app/shared/components/index.ts` (updated)
+## 2026-03-25 04:42 UTC - US-009
+- Added `rowClick` output that emits full row object on row/card click
+- `onRowClick()` method filters out clicks on interactive elements (`button`, `a`, `input`, `select`, `textarea`, `[role="button"]`) using `closest()`
+- `hasRowClick` getter uses `EventEmitter.observed` to conditionally apply clickable class only when parent listens
+- Desktop rows get `data-grid__row--clickable` class with `cursor: pointer` and hover highlight
+- Mobile cards get `data-grid__card--clickable` class with same cursor and hover styling
+- Both custom and default card templates get click handlers
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`
 - **Learnings for future iterations:**
-  - HeaderComponent integrates ThemeService and SidebarService — it orchestrates both
-  - Use `HostListener('document:click')` with `ElementRef.contains()` for outside-click dropdown close
-  - Lucide icons imported individually as const fields for tree-shaking
-  - Search input is readonly placeholder for now — US-032 will implement Ctrl+K command palette
+  - `EventEmitter.observed` (boolean) is useful to conditionally apply styles only when the output has a subscriber — avoids unnecessary cursor/hover on grids that don't use row clicks
+  - `element.closest()` is the cleanest way to check if a click originated from an interactive element — works regardless of nesting depth
+  - Hover highlight on table rows uses `var(--neutral-50)` which is the same as the header background — subtle but visible
 ---
 
-## 2026-03-22 - US-011
-- Created `LayoutComponent` (standalone) combining HeaderComponent, SidebarComponent, and `<router-outlet>`
-- Content area uses CSS margin-left matching sidebar width (256px expanded, 64px collapsed) with 200ms transition
-- Responsive padding: 24px desktop, 16px tablet, 12px mobile
-- Mobile: margin-left 0 (sidebar is overlay drawer)
-- Restructured `app.routes.ts`: login route at top level (no layout), all other routes as children of LayoutComponent
-- LayoutComponent is lazy-loaded via `loadComponent` in routes
-- Barrel export updated in `shared/components/index.ts`
-- Files changed: `src/app/shared/components/layout/` (new), `src/app/app.routes.ts` (updated), `src/app/shared/components/index.ts` (updated)
+## 2026-03-25 04:45 UTC - US-010
+- Added sticky column support for columns marked `sticky: true`
+- Sticky cells use `position: sticky; left: 0` with `::after` pseudo-element for right border shadow
+- z-index layering: sticky header cells (z-index: 3) > sticky header row (z-index: 2) > sticky body cells (z-index: 1)
+- Sticky cells in `<thead>` use `var(--neutral-50)` background to match header; body cells use `var(--surface)`
+- Clickable row hover also updates sticky cell background to prevent visual gap
+- Added custom scrollbar styling on scroll wrapper: `scrollbar-width: thin`, webkit overrides matching global app design
+- Sticky class applied to `<th>`, skeleton `<td>`, and data `<td>` via `[class.data-grid__cell--sticky]="col.sticky"`
+- Files changed: `data-grid.component.html`, `data-grid.component.scss`
 - **Learnings for future iterations:**
-  - Layout wrapping via child routes in Angular: put LayoutComponent as `loadComponent` on parent route, page components as `children`
-  - Login and other full-page routes go ABOVE the layout route in `app.routes.ts` (first match wins)
-  - CSS custom properties `--sidebar-width`, `--sidebar-collapsed-width`, `--header-height` from tokens.css used for layout margins
-  - Mobile sidebar margin override uses `!important` since it must always be 0 regardless of collapsed state
+  - Sticky header + sticky column intersection needs z-index: 3 (higher than both) so the corner cell stays on top
+  - `::after` pseudo-element with gradient shadow is the standard pattern for indicating scroll underneath a sticky element
+  - Sticky cells need explicit background color because `position: sticky` makes content scroll behind transparent cells
 ---
 
-## 2026-03-22 - US-012
-- Created full login screen at /login route (rendered WITHOUT app shell layout)
-- Centered card (max-width 400px) with PeruShopHub logo + tagline
-- Reactive form with email (required, email validator) and password (required, min 6 chars) fields
-- Labels above fields, inline error messages on blur/submit
-- Full-width "Entrar" primary button, disabled when form invalid
-- Loading state: spinner in button, fields disabled, simulated 1.5s timeout
-- Error alert placeholder below form header
-- "Esqueceu a senha?" link below button
-- Background: gradient from --primary to --primary-hover
-- Responsive: 100% width with 16px padding on mobile, max 400px centered on desktop
-- Supports dark theme via design tokens
-- Files changed: `src/app/pages/login/login.component.ts` (rewritten), `src/app/pages/login/login.component.html` (new), `src/app/pages/login/login.component.scss` (new)
+## 2026-03-25 04:47 UTC - US-011
+- Added public `scrollToTop()` method to DataGridComponent
+- Added `#scrollWrapper` template ref and `@ViewChild('scrollWrapper')` to access scroll container
+- Added `scroll-behavior: smooth` CSS to scroll wrapper for smooth animation
+- `scrollToTop()` uses `scrollTo({ top: 0 })` — smooth behavior handled by CSS
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`
 - **Learnings for future iterations:**
-  - Angular `[attr.disabled]` with ternary works for conditionally disabling inputs without FormsModule conflicts
-  - Login route is already outside LayoutComponent in app.routes.ts (set up in US-011)
-  - Use `signal()` for simple component state like loading/error instead of plain properties for reactive template binding
+  - `scroll-behavior: smooth` on the CSS is cleaner than passing `behavior: 'smooth'` in JS — it applies to all programmatic scrolls on that container
+  - The scroll wrapper `#scrollWrapper` ViewChild is also useful for future `scrollToRow()` (US-012)
 ---
 
-## 2026-03-22 - US-013
-- Created DashboardComponent with period selector (Hoje, 7 dias, 30 dias, Personalizado) and 4 KPI cards
-- Period selector: button group with active state styling, Personalizado toggles date range inputs
-- KPI cards: Vendas, Receita Bruta, Lucro Líquido, Margem Média with mock data per period
-- Loading state: 4 skeleton cards with shimmer animation during period switch (600ms simulated)
-- Responsive: 4-col grid on desktop, 2-col on tablet, 1-col on mobile
-- Files changed: `src/app/pages/dashboard/dashboard.component.ts` (rewritten), `dashboard.component.html` (new), `dashboard.component.scss` (new)
+## 2026-03-25 04:48 UTC - US-012
+- Added public `scrollToRow(predicate: (row: any) => boolean)` method to DataGridComponent
+- Returns `false` if no matching row found in current data (so parent can load more)
+- Finds matching DOM elements in both desktop table rows and mobile card elements via querySelectorAll
+- Uses `scrollIntoView({ block: 'center' })` to bring matching element into view
+- Applies `data-grid__highlight` class with 1.5s fade pulse animation, removed via setTimeout
+- Animation uses `@keyframes data-grid-highlight-pulse` transitioning from primary-light color to transparent
+- Files changed: `data-grid.component.ts`, `data-grid.component.scss`
 - **Learnings for future iterations:**
-  - SCSS path from pages is `../../../styles/mixins` (3 levels up, not 4 like shared components)
-  - Angular `@for` and `@if` control flow syntax works well with signals
-  - Mock data pattern: `Record<Period, KpiData[]>` with computed signal for reactive data switching
+  - `scrollIntoView` with `block: 'center'` gives a better UX than `block: 'nearest'` for deep linking — the row appears in the middle of the viewport
+  - Using CSS class + setTimeout for the highlight is simpler than Angular animations for a one-shot effect
+  - querySelectorAll on DOM is acceptable here since `scrollToRow` is called imperatively (not per render cycle)
 ---
 
-## 2026-03-22 - US-014
-- Added Chart.js line chart to dashboard showing Receita Bruta (solid primary) and Lucro Líquido (dashed green) over 30 days
-- Registered `provideCharts(withDefaultRegisterables())` in app.config.ts (required for ng2-charts v10)
-- Chart uses `BaseChartDirective` with `type="line"`, responsive with 320px height (240px mobile)
-- Tooltip shows BRL-formatted values, legend is clickable above chart
-- Chart takes 60% width on desktop (left side), full width on tablet/mobile
-- Mock data: 30 random data points with realistic revenue/profit proportions
-- Files changed: `src/app/app.config.ts` (updated), `src/app/pages/dashboard/dashboard.component.ts` (updated), `dashboard.component.html` (updated), `dashboard.component.scss` (updated)
+## 2026-03-25 04:50 UTC - US-013
+- Added ARIA accessibility attributes to DataGridComponent
+- Table gets `role="grid"` and configurable `ariaLabel` input (default 'Data grid')
+- Header cells get `role="columnheader"` with `aria-sort` attribute for sortable columns (ascending/descending/none)
+- Body cells get `role="gridcell"`
+- Loading state announced via `aria-live="polite"` region with screen-reader-only text
+- Empty state container gets `aria-live="polite"` so screen readers announce when no data
+- Infinite scroll spinner gets `aria-label="Carregando mais itens"` and `role="status"`
+- Added `.data-grid__sr-only` CSS class for visually hidden but screen-reader-accessible content
+- Files changed: `data-grid.component.ts`, `data-grid.component.html`, `data-grid.component.scss`
 - **Learnings for future iterations:**
-  - ng2-charts v10 requires `provideCharts(withDefaultRegisterables())` in app.config.ts providers — without it, charts silently fail
-  - Import `BaseChartDirective` from `ng2-charts` and add to component `imports` array
-  - Chart.js `parsed.y` can be null — use `?? 0` to satisfy strict TypeScript
-  - Use `maintainAspectRatio: false` with a fixed-height container for responsive charts
-  - Chart colors are hardcoded hex values matching design tokens (CSS vars don't work in Chart.js config)
+  - `aria-sort` should only be present on sortable columns (use `null` for non-sortable via `[attr.aria-sort]`)
+  - `aria-live="polite"` regions should be always present in DOM (not conditionally rendered) — the content inside changes to trigger announcements
+  - Screen-reader-only class uses the standard clip/overflow hidden technique — keeps element in accessibility tree but invisible
 ---
 
-## 2026-03-22 - US-015
-- Added Chart.js doughnut chart to dashboard showing cost distribution across 8 categories
-- Donut chart takes 40% width on desktop (right of line chart), full width on tablet/mobile
-- Center text plugin renders "Total Custos" + BRL formatted total inside the donut hole
-- Custom legend labels show category name + percentage, positioned below chart
-- Tooltip shows category name, BRL value, and percentage
-- Mock data: Comissão ML, Frete, Custo Produto, Embalagem, Impostos, Armazenagem, Advertising, Outros with realistic proportions
-- Files changed: `dashboard.component.ts` (updated), `dashboard.component.html` (updated), `dashboard.component.scss` (updated)
+## 2026-03-25 04:57 UTC - US-014
+- Migrated Products list page from custom table HTML to `<app-data-grid>` with all custom cell templates
+- Replaced pagination with infinite scroll: `loadProducts(reset)` appends data on `loadMore`, resets on filter/sort change
+- Custom cell templates for all 9 columns: imageUrl (thumb), name (truncated), sku (mono), price (BRL currency), stock (conditional coloring), variantCount (badge + review), status (badge), margin (margin-badge), actions (edit button)
+- Custom mobile card template via `appGridCard` directive matching original card design
+- Removed all old custom table HTML (desktop table, mobile cards, pagination)
+- Removed old SCSS: scroll wrapper, th, td, row, pagination styles — kept only product-specific styles (thumb, badges, card layout)
+- `gridRef.scrollToTop()` called on search/filter/sort changes
+- Files changed: `products-list.component.ts`, `products-list.component.html`, `products-list.component.scss`
 - **Learnings for future iterations:**
-  - Chart.js `Plugin<'doughnut'>` type with `afterDraw` hook works for center text in donut charts
-  - `cutout: '65%'` creates the donut hole; use canvas ctx for text rendering in center
-  - Custom `generateLabels` in legend config can append percentage to each legend item
-  - Donut chart needs slightly more height (360px) than line chart (320px) to fit legend below
+  - Use `gridData` computed that maps Product to Record<string, any> with keys matching `GridColumn.key` — avoids renaming confusion
+  - `loadProducts(reset: boolean)` pattern: reset=true clears data + page, reset=false appends — clean infinite scroll lifecycle
+  - Custom cell templates use `let-row let-value="value"` — `value` is `row[col.key]`, `row` is the full object
+  - `appGridCard` directive provides custom mobile card; the data-grid wraps it in its card container with click handler
+  - `$event.stopPropagation()` still needed on interactive elements inside cell templates (edit button, variant badge click)
 ---
 
-## 2026-03-22 - US-016
-- Added two side-by-side product tables: "Top 5 Mais Lucrativos" and "Top 5 Menos Lucrativos" with columns: Produto, Vendas, Receita, Lucro, Margem
-- Margin column colored: green >=20%, yellow 10-19%, red <10% using margin-badge with design tokens
-- Rows with negative margin highlighted with --danger-light background
-- Rows clickable (console.log product ID for now)
-- Added "Ações Pendentes" card with 3 clickable pill badges: Perguntas sem resposta (accent), Pedidos pendentes (warning), Alertas (danger)
-- Added empty state: "Conecte seu Mercado Livre para começar" with EmptyStateComponent and "Conectar Marketplace" CTA button
-- hasData signal controls toggling between empty state and full dashboard
-- Increased anyComponentStyle budget from 4kB to 8kB in angular.json (dashboard SCSS grew with tables)
-- Files changed: `dashboard.component.ts` (updated), `dashboard.component.html` (rewritten), `dashboard.component.scss` (rewritten), `angular.json` (updated)
+## 2026-03-25 05:04 UTC - US-015
+- Migrated Sales list page from custom table HTML to `<app-data-grid>` with all custom cell templates
+- Replaced pagination with infinite scroll: `loadOrders(reset)` appends data on `loadMore`, resets on filter/sort/date change
+- Custom cell templates for: id (mono with #prefix), date (formatted), buyer (truncated), total (BRL currency mono), profit (conditional green/red mono), status (badge)
+- Custom mobile card template via `appGridCard` directive matching original card design
+- Removed all old custom table HTML (desktop table, mobile cards, pagination)
+- Removed old SCSS: scroll wrapper, th, td, row, pagination styles — kept only vendas-specific styles (mono, profit/loss colors, card layout)
+- Replaced `effect()` reactive pattern with explicit `ngOnInit()` + `loadOrders(true)` on filter/sort/date changes + `gridRef.scrollToTop()`
+- Date range filters trigger reload + scrollToTop on change
+- Files changed: `sales-list.component.ts`, `sales-list.component.html`, `sales-list.component.scss`
 - **Learnings for future iterations:**
-  - Don't import BadgeComponent if using custom styled buttons instead — Angular build warns on unused imports
-  - Component style budget in angular.json may need increasing as pages grow (especially dashboard with many sections)
-  - `ngClass` with string concatenation (`'prefix--' + variant`) works well for variant-based styling without needing a separate component
-  - Product tables with BRL formatting: use a component method `formatBrl()` rather than importing BrlCurrencyPipe for simple cases
----
-
-## 2026-03-22 - US-017
-- Created full ProductsListComponent at /produtos with search by name/SKU, status filter dropdown (Todos/Ativo/Pausado/Encerrado)
-- Custom table with 8 columns: Foto (package icon placeholder), Nome, SKU (mono), Preço (BRL), Estoque (colored for low/zero), Status (BadgeComponent), Margem (colored badge), Ações (edit icon)
-- 10 mock products with realistic Brazilian tech product names and varied margins/statuses
-- Mobile card list layout with product thumbnail, name, SKU, status badge, and key metrics in 3-column grid
-- Row click navigates to /produtos/:id, edit icon navigates to /produtos/:id/editar, "Novo Produto" button to /produtos/novo
-- Empty state with EmptyStateComponent when no data, filtered empty state when search yields no results
-- Loading skeleton state (600ms simulated)
-- Added routes for /produtos/novo, /produtos/:id, /produtos/:id/editar with stub components
-- Files changed: `produtos-list.component.ts` (rewritten), `produtos-list.component.html` (new), `produtos-list.component.scss` (new), `produto-detail.component.ts` (new stub), `produto-form.component.ts` (new stub), `app.routes.ts` (updated)
-- **Learnings for future iterations:**
-  - `getStatusVariant()` must return `BadgeVariant` type, not `string` — Angular strict template checking catches this at build time
-  - For custom cell rendering (thumbnails, badges, colored margins, action buttons), build a custom table rather than using DataTableComponent which only renders `row[col.key]` text
-  - Route order matters: `/produtos/novo` must come before `/produtos/:id` to avoid "novo" being captured as an ID parameter
-  - `$event.stopPropagation()` on edit button click prevents row click from also firing
----
-
-## 2026-03-22 - US-018
-- Created full ProductFormComponent with 3-tab form: Informações Básicas, Preço e Custos, Envio
-- Tab navigation on desktop/tablet, accordion sections on mobile
-- Basic info: título with 60-char counter, descrição textarea, searchable categoria dropdown (12 hardcoded categories), condição radio (Novo/Usado)
-- Pricing: preço de venda (R$ prefix), custo aquisição, custo embalagem, fornecedor, tipo de anúncio select (Grátis/Clássico/Premium), real-time margin calculator
-- Shipping: peso/altura/largura/comprimento inputs in 4-column grid, frete grátis toggle switch
-- Sticky bottom bar with Cancelar (ghost), Salvar Rascunho (outline), Publicar (accent) buttons
-- Edit mode loads mock product data when route has :id param
-- Created unsavedChangesGuard (CanDeactivateFn) wired to /produtos/novo and /produtos/:id/editar routes
-- Increased anyComponentStyle budget to 12kB/20kB in angular.json
-- Files changed: `produto-form.component.ts` (rewritten), `produto-form.component.html` (new), `produto-form.component.scss` (new), `guards/unsaved-changes.guard.ts` (new), `app.routes.ts` (updated), `angular.json` (updated)
-- **Learnings for future iterations:**
-  - Functional `CanDeactivateFn<T>` guards are simpler than class-based guards in Angular 17+ — define interface + function
-  - Searchable dropdown: use a text input + dropdown list + filter signal, close on document click via `@HostListener`
-  - Computed signals work for real-time margin calculation from reactive form values (read form values in computed)
-  - Mobile accordion pattern: use `display: none/block` toggled by a `Set<TabId>` signal, tabs hidden on mobile via media query
-  - `R$` prefix input: use `position: relative` container with absolute prefix span and extra left padding on input
----
-
-## 2026-03-22 - US-019
-- Created ProductDetailComponent at /produtos/:id with full product detail view
-- Header section: product photo placeholder (Package icon), name, SKU (mono), status badge, "Editar" outline button linking to /produtos/:id/editar
-- 5 KPI cards row: Vendas 30d, Receita 30d, Lucro 30d, Margem 30d, Estoque using KpiCardComponent
-- "Histórico de Custos" table: date, type, value (BRL) with 5 mock rows
-- "Vendas Recentes" table: order ID (mono), date, qty, value, profit (green/red colored) with 5 mock rows
-- Back button to /produtos list with ArrowLeft icon
-- Loading skeleton state (600ms simulated)
-- Responsive: 5-col KPI grid → 3-col tablet → 2-col mobile; two-column sections → single column on tablet/mobile
-- Files changed: `produto-detail.component.ts` (rewritten), `produto-detail.component.html` (new), `produto-detail.component.scss` (new)
-- **Learnings for future iterations:**
-  - BrlCurrencyPipe can be used directly in templates with `| brlCurrency` — no need for a component method when pipe is imported
-  - KPI computed signal from product signal provides reactive data — pattern: `computed(() => { const p = product(); if (!p) return []; ... })`
-  - Skeleton loading in detail pages: inline skeleton divs with fixed dimensions matching real content work well
----
-
-## 2026-03-22 - US-020
-- Created VendasListComponent at /vendas with search by ID/buyer, date range picker (two date inputs), status filter dropdown (Todos/Pago/Enviado/Entregue/Cancelado/Devolvido)
-- Custom table with 7 columns: ID (mono), Data, Comprador, Itens (center), Valor (BRL), Lucro (BRL, green/red colored), Status (BadgeComponent with variant mapping)
-- 15 mock orders with realistic Brazilian buyer names and varied statuses/profits
-- Mobile card list with order ID, date, buyer name, status badge, and 3-column metrics grid
-- Row click navigates to /vendas/:id
-- Empty state and filtered empty state via DataTableComponent
-- Loading skeleton state (600ms simulated)
-- Created stub VendaDetailComponent at /vendas/:id route
-- Files changed: `vendas-list.component.ts` (rewritten), `vendas-list.component.html` (new), `vendas-list.component.scss` (new), `venda-detail.component.ts` (new stub), `app.routes.ts` (updated)
-- **Learnings for future iterations:**
-  - Date filtering with string comparison (`>=`, `<=`) works for ISO date format strings (YYYY-MM-DD)
-  - `formatDate()` needs `+ 'T12:00:00'` to avoid timezone offset issues with `new Date('YYYY-MM-DD')`
-  - Orders page follows same patterns as products list: custom table for rich cell rendering, BEM SCSS, mobile card layout
----
-
-## 2026-03-22 - US-021
-- Created VendaDetailComponent at /vendas/:id with full order detail view
-- Header: order ID (mono), formatted date, status badge, back button to /vendas
-- Two-column layout on desktop (stacked on tablet/mobile)
-- Left column: "Itens do Pedido" section with product thumbnail placeholder, name, SKU (mono), variation, quantity x unit price, subtotal, and total row
-- Right column: "Comprador" section with name, nickname (mono), masked email/phone, total orders and total spent stats
-- Right column: "Envio" section with tracking number + copy button, carrier, logistic type badge (Full/Coleta/Agência), delivery timeline (4 steps with completed/pending states using green dots and connecting lines)
-- Right column: "Pagamento" section with payment method icon, installments breakdown, total amount, status badge
-- Loading skeleton state (600ms simulated)
-- All mock data with realistic Brazilian order details
-- Files changed: `venda-detail.component.ts` (rewritten), `venda-detail.component.html` (new), `venda-detail.component.scss` (new)
-- **Learnings for future iterations:**
-  - Don't import BrlCurrencyPipe if using `formatBrl()` method — Angular build warns on unused imports
-  - Timeline component pattern: use `position: absolute` line between dots, with completed state changing colors from neutral to success
-  - `navigator.clipboard.writeText()` for copy-to-clipboard with signal-based success feedback
-  - Two-column detail layout: use `grid-template-columns: 1fr 1fr` on desktop, single column on tablet via `@include m.tablet`
----
-
-## 2026-03-22 - US-022
-- Added "Decomposição de Custos" section to OrderDetailComponent (left column, below items)
-- Stacked horizontal bar (32px height) with segments proportional to each cost as % of revenue, final segment = lucro in --success color
-- Tooltip on hover showing category name + value + percentage
-- Legend below bar with colored dots and category names
-- Cost breakdown table with columns: Categoria (with colored dot), Valor (BRL, mono, right-aligned), % Receita (mono, right-aligned), Fonte (badge: API=primary, Manual=warning, Calculado=success)
-- 9 cost rows: Comissão ML, Taxa fixa, Frete vendedor, Taxa de pagamento, Custo do produto, Embalagem, Impostos, Armazenagem, Advertising
-- TOTAL CUSTOS row with --neutral-50 background and separator border
-- LUCRO LÍQUIDO row with double-border separator, metric font, green/red coloring based on positive/negative
-- Margin percentage displayed next to profit value
-- "+ Adicionar custo manual" text button below table (non-functional)
-- Mock data: R$ 159.90 revenue matching design spec
-- Files changed: `venda-detail.component.ts` (updated), `venda-detail.component.html` (updated), `venda-detail.component.scss` (updated)
-- **Learnings for future iterations:**
-  - `computed()` signals chain well for derived financial calculations (totalCosts → netProfit → profitMargin → costBarSegments)
-  - CSS `flex` with percentage widths works better than `grid` for proportional stacked bars
-  - `tfoot` with double-border separator (`border-top: 3px double`) gives visual emphasis to the profit row
-  - Cost source badges reuse BadgeComponent with variant mapping from `CostSource` type
----
-
-## 2026-03-22 - US-023
-- Created PerguntasComponent at /perguntas with tab filters (Sem Resposta with count badge, Respondidas, Todas)
-- Each question rendered as card: product icon + name + ID, buyer nickname, question text, relative timestamp via RelativeDatePipe
-- Time indicator turns --danger color if > 24h unanswered
-- Unanswered cards have "Responder" accent outline button that expands inline textarea with "Enviar" and "Cancelar" actions
-- On submit: question status updated to 'answered', success toast shown via ToastService, card moves to Respondidas tab
-- Unanswered sorted oldest first, answered sorted newest first
-- 8 mock questions (5 unanswered, 3 answered) with realistic Brazilian product/buyer data
-- Answer display section for answered questions with green left border
-- Loading skeleton state (600ms simulated), empty states per tab
-- Responsive: full-width cards on mobile, reply actions stack vertically
-- Files changed: `perguntas.component.ts` (rewritten), `perguntas.component.html` (new), `perguntas.component.scss` (new)
-- **Learnings for future iterations:**
-  - `FormsModule` + `ngModel` with signals: use `[ngModel]="signal()"` and `(ngModelChange)="signal.set($event)"` for two-way binding
-  - Tab filter pattern: signal for active tab + computed for filtered list works cleanly
-  - Card-based question list is simpler than DataTableComponent for this use case (variable height content, expandable sections)
-  - Unanswered indicator: compare hours since creation with `(Date.now() - date.getTime()) / (1000 * 60 * 60)` for >24h check
----
-
-## 2026-03-22 - US-024
-- Created ClientesComponent at /clientes with search by name/nickname/email
-- Custom table with 6 columns: Nome, Nickname (mono), Email, Total Pedidos (sortable), Total Gasto (BRL, sortable), Última Compra (relative date, sortable)
-- 10 mock customers with realistic Brazilian names and varied purchase histories
-- Mobile card list with customer name, nickname, email, and 3-column metrics grid
-- Row click opens slide-over panel (400px from right) with:
-  - Customer profile: avatar circle, name, nickname, email
-  - Stats grid: total orders, total spent (BRL), last purchase (relative)
-  - Order history table: 5 mock orders per customer with ID (mono), date, value (BRL), status badge
-- Slide-over closes on backdrop click, Esc key, or X button
-- Slide-in animation (200ms) with backdrop overlay
-- Loading skeleton state and empty states
-- Files changed: `clientes.component.ts` (rewritten), `clientes.component.html` (new), `clientes.component.scss` (new)
-- **Learnings for future iterations:**
-  - Slide-over pattern: fixed position right:0, z-index above backdrop, `animation: slideIn` from translateX(100%) → translateX(0)
-  - `@HostListener('document:keydown.escape')` works for Esc key close without needing window event listeners
-  - Don't import SkeletonComponent if only using DataTableComponent loading state — Angular warns on unused imports
-  - Delayed `selectedCustomer.set(null)` with `setTimeout(200ms)` prevents flash during slide-out animation
----
-
-## 2026-03-22 - US-025
-- Created FinanceiroComponent at /financeiro with full Resumo tab content
-- Page header with 'Financeiro' title and 'Exportar PDF' / 'Exportar Excel' outline buttons (show toast on click)
-- Sub-navigation tabs: Resumo (active), Lucratividade por SKU, Conciliação, Curva ABC
-- Resumo tab: period selector (Hoje/7 dias/30 dias/Personalizado) with date range toggle
-- 5 KPI cards in responsive 5-col grid: Receita Bruta, Total Custos (invertColors), Lucro Líquido, Margem Média, Ticket Médio
-- Loading skeleton state (600ms simulated) for KPI cards
-- Chart.js grouped bar chart: 'Receita vs Lucro' with 30 daily data points, primary/green colors
-- Chart.js line chart: 'Evolução da Margem' with margin % over 30 days and dashed red threshold line at 15%
-- Other tabs show 'Em desenvolvimento' placeholder card
-- All mock data with realistic Brazilian financial values per period
-- Responsive: charts 2-col desktop → 1-col tablet/mobile, KPIs 5-col → 3-col → 2-col
-- Files changed: `financeiro.component.ts` (rewritten), `financeiro.component.html` (new), `financeiro.component.scss` (new)
-- **Learnings for future iterations:**
-  - Chart.js bar chart uses `barPercentage` and `categoryPercentage` for grouped bar spacing, `borderRadius` for rounded corners
-  - Margin threshold line: use a second dataset with `Array(30).fill(15)`, `borderDash`, and `pointRadius: 0` for a clean horizontal line
-  - Tab navigation pattern: `border-bottom: 2px` with negative margin-bottom to overlap parent border creates the active tab indicator
-  - 5-column KPI grid needs breakpoint handling: 5 → 3 (tablet) → 2 (mobile) for best readability
-  - ToastService injected via constructor for export button feedback — simple pattern for non-functional placeholder actions
----
-
-## 2026-03-22 - US-026
-- Replaced 'Lucratividade por SKU' tab placeholder with full sortable profitability table
-- Table with 10 columns: SKU (mono), Produto, Vendas, Receita Bruta, CMV, Comissões, Frete, Impostos, Lucro Líquido (green/red colored), Margem % (with horizontal colored bar)
-- Margin column: colored bar + text — green >=20%, yellow 10-19%, red <10%
-- All numeric columns sortable (click toggles asc/desc), default sort by lucro desc
-- Negative margin rows highlighted with --danger-light background
-- Horizontal scroll with sticky SKU + Produto columns on tablet
-- Export buttons show 'Exportação em desenvolvimento' toast (reusing existing onExport method)
-- 8 mock product rows with varied margins (from 53% down to -1.3%)
-- Updated placeholder condition to only show for conciliacao and curva-abc tabs
-- Files changed: `financeiro.component.ts` (updated), `financeiro.component.html` (updated), `financeiro.component.scss` (updated)
-- **Learnings for future iterations:**
-  - Don't import BadgeComponent or BrlCurrencyPipe if only using the type or a method — Angular warns on unused component/pipe imports
-  - Use `type` import (`import type { BadgeVariant }`) for type-only references to avoid unused import warnings
-  - Sticky columns in horizontal-scroll table: use `position: sticky` + `left: Npx` with matching offsets for multiple sticky columns
-  - `computed()` signal for sorted data: spread `[...array].sort()` in computed to avoid mutating source array
----
-
-## 2026-03-22 - US-027
-- Replaced placeholder for Conciliação and Curva ABC tabs with full implementations
-- Conciliação tab: table with 6 mock rows (Período, Valor Esperado, Valor Depositado, Diferença, Status badge). 2 rows with divergences highlighted with --warning-light background
-- Curva ABC tab: Chart.js mixed chart (vertical bars for profit + line for cumulative %) with dual Y-axes (R$ left, % right). Products color-coded by classification (A=green, B=yellow, C=red)
-- ABC table below chart: Rank, Produto, SKU, Lucro (BRL), % do Lucro Total, Classificação badge (A/B/C). 10 mock products sorted by profit contribution
-- A=top 80% cumulative, B=next 15%, C=bottom 5%
-- Both tabs have loading skeleton state (600ms simulated) and empty state
-- Imported BadgeComponent for status/classification badges
-- Files changed: `financeiro.component.ts`, `financeiro.component.html`, `financeiro.component.scss`
-- **Learnings for future iterations:**
-  - Mixed chart (bar + line) in Chart.js: use `type: 'bar'` on canvas, then set `type: 'line'` on the line dataset. Use `order` to control z-index (lower = on top)
-  - Dual Y-axes: configure `yAxisID: 'y'` for bars and `yAxisID: 'y1'` for line, set `y1` to `position: 'right'` with `grid: { display: false }`
-  - ABC classification: calculate cumulative % of total profit, assign A <=80%, B <=95%, C >95%
-  - Use `(() => { ... })()` IIFE for complex computed mock data that needs cumulative calculations
----
-
-## 2026-03-22 - US-028
-- Implemented Inventory screen (`/estoque`) with two active tabs: Visão Geral and Movimentações, plus disabled Estoque Full tab with "Em breve" tooltip
-- Visão Geral: 4 KPI cards (Total SKUs, Unidades em Estoque, Itens Críticos, Valor em Estoque), inventory table with 10 mock rows, color-coded rows for low/zero stock, sync status badges
-- Movimentações: table with 15 mock rows, movement type badges (Entrada=success, Saída=danger, Ajuste=primary), colored +/- quantities, date range filter and type dropdown filter
-- Files changed: `src/app/pages/estoque/estoque.component.ts` (rewritten), `estoque.component.html` (new), `estoque.component.scss` (new)
-- **Learnings for future iterations:**
-  - Disabled tabs pattern: use `disabled` property on tab definition, check in `selectTab()`, add `--disabled` CSS class with `cursor: not-allowed`
-  - Row-level conditional backgrounds (warning-light / danger-light) use `[ngClass]` with a method returning the class string
-  - Movement type filter uses `computed()` with `signal<MovementType | 'all'>` for reactive filtering
----
-
-## 2026-03-22 - US-029
-- Implemented Settings screen (`/configuracoes`) with vertical sub-navigation (desktop) / horizontal tabs (mobile)
-- 6 tabs: Empresa, Usuários, Integrações (functional), Custos Fixos, Alertas, Aparência (placeholder with "Em desenvolvimento")
-- Empresa tab: Reactive form with nome, CNPJ (masked input XX.XXX.XXX/XXXX-XX with live formatting), endereço, Salvar button with validation
-- Usuários tab: table (nome, email, role badge Admin/Manager/Viewer, status Ativo/Inativo, edit/delete icons). "Novo Usuário" button opens modal with nome, email, role dropdown, ativo toggle, Salvar/Cancelar. 3 mock users. Mobile card layout
-- Integrações tab: card per marketplace. Mercado Livre card: logo placeholder, seller nickname (PERUSHOP_OFICIAL), "Conectado" badge, last sync time, "Desconectar" danger outline button. Amazon card disabled with "Em breve" state
-- Modal: opens on Novo/Edit click, closes on backdrop click, Esc, or X button
-- Files changed: `configuracoes.component.ts` (rewritten), `configuracoes.component.html` (new), `configuracoes.component.scss` (new)
-- **Learnings for future iterations:**
-  - Settings page uses vertical nav on desktop + horizontal tabs on mobile — different from other pages that use horizontal tabs everywhere
-  - CNPJ mask: apply via (input) event handler that strips non-digits and reformats progressively
-  - User modal follows standard pattern: FormGroup + signal for editing state, backdrop click/Esc to close
-  - Integration cards use `--disabled` class with `opacity: 0.55` and `pointer-events: none` for coming-soon state
----
-
-## 2026-03-22 - US-030
-- Replaced placeholder tabs for Custos Fixos, Alertas, and Aparência with full content
-- Custos Fixos: R$ prefix input for embalagem padrão, % input for alíquota Simples Nacional, editable table for other fixed costs with add/delete functionality, 2 mock entries
-- Alertas: 4 toggle cards (Margem mínima, Estoque mínimo, Pergunta sem resposta, Divergência financeira) with enable/disable toggle + threshold input when enabled
-- Aparência: 3 radio-style theme cards (Claro/sun, Escuro/moon, Sistema/monitor) calling ThemeService.setTheme(), disabled language selector with "Em breve" badge
-- Enabled all 3 tabs in navigation (removed disabled: true)
-- Files changed: configuracoes.component.ts (added interfaces, signals, forms, methods), .html (replaced placeholder with 3 tab sections), .scss (added styles for fixed costs table, alerts grid, theme cards, language section, form prefix/suffix groups)
-- **Learnings for future iterations:**
-  - ThemeService exposes `currentTheme` signal and `setTheme(theme)` method - easy to integrate into settings
-  - For form prefix/suffix (R$, %) groups, use flex containers with border-radius overrides on the input
-  - The SCSS budget warning for configuracoes.component.scss (15KB > 12KB limit) is pre-existing from US-029
----
-
-## 2026-03-22 - US-031
-- Implemented notification slide-over panel with 8 mock notifications (5 unread, 3 read)
-- Created NotificationService with signals-based state management (notifications, unreadCount, markAsRead, markAllAsRead)
-- Created NotificationPanelComponent as slide-over from right (320px desktop, full width mobile)
-- 5 notification types with distinct icons: sale (cart), question (message-circle), stock (alert-triangle), margin (trending-down), connection (wifi-off)
-- Each notification has colored icon background per type, title, description, relative timestamp, unread dot indicator
-- "Marcar todas como lidas" link in header to mark all as read
-- Click notification: marks as read, logs navigation target, routes to target, closes panel
-- Unread count in header bell badge updates reactively via NotificationService.unreadCount signal
-- Panel opens on bell click, closes on backdrop/Esc/X button
-- Integrated directly in HeaderComponent (same pattern as user dropdown)
-- Files changed:
-  - src/PeruShopHub.Web/src/app/services/notification.service.ts (new)
-  - src/PeruShopHub.Web/src/app/shared/components/notification-panel/notification-panel.component.ts (new)
-  - src/PeruShopHub.Web/src/app/shared/components/notification-panel/notification-panel.component.html (new)
-  - src/PeruShopHub.Web/src/app/shared/components/notification-panel/notification-panel.component.scss (new)
-  - src/PeruShopHub.Web/src/app/shared/components/header/header.component.ts (modified)
-  - src/PeruShopHub.Web/src/app/shared/components/header/header.component.html (modified)
-  - src/PeruShopHub.Web/src/app/shared/components/index.ts (modified)
-- **Learnings for future iterations:**
-  - Notification panel integrated directly in header component rather than layout - keeps related functionality together
-  - Replaced hardcoded notificationCount signal with NotificationService.unreadCount computed signal
-  - Slide-over panels follow consistent pattern: backdrop with fadeIn + panel with slideIn animation, z-index 1000/1001
-  - The notification panel uses 320px width (narrower than the 400px customer slide-over) for a lightweight feel
----
-
-## 2026-03-22 - US-032
-- Implemented global search command palette (Ctrl+K / Cmd+K)
-- SearchPaletteComponent with modal overlay, debounced search (300ms), grouped results (Pedidos, Produtos, Clientes), keyboard navigation (arrows + Enter), Esc to close
-- Mock datasets: 10 products, 15 orders, 10 customers searchable by name/ID/SKU/email
-- Results limited to 3 per group, click or Enter navigates to detail screen
-- Wired into HeaderComponent: click on search input or Ctrl+K/Cmd+K opens palette
-- Footer shows keyboard hints
-- Files changed:
-  - `src/app/shared/components/search-palette/search-palette.component.ts` (new)
-  - `src/app/shared/components/search-palette/search-palette.component.html` (new)
-  - `src/app/shared/components/search-palette/search-palette.component.scss` (new)
-  - `src/app/shared/components/header/header.component.ts` (updated - added search palette import, Ctrl+K listener)
-  - `src/app/shared/components/header/header.component.html` (updated - click handler on search, search palette conditional render)
-  - `src/app/shared/components/index.ts` (updated - export SearchPaletteComponent)
-- **Learnings for future iterations:**
-  - Unified `@HostListener('document:keydown')` is better than separate escape/key listeners when multiple keyboard shortcuts coexist
-  - Search palette z-index (1100) must be higher than notification panel (1000) to overlay properly
-  - Debounce with signals: use a separate `debouncedQuery` signal updated via setTimeout, consumed in computed
-  - Manual browser verification needed
----
-
-## 2026-03-22 - US-033
-- Created NotFoundComponent at wildcard route ** (within app shell layout)
-- Centered content: large "404" text (7rem, primary color at 15% opacity), title "Página não encontrada", description, "Voltar ao Dashboard" primary button linking to /dashboard
-- Supports dark theme via CSS custom properties (--primary, --neutral-900, --neutral-600)
-- Responsive: smaller 404 text on mobile (5rem)
-- Added wildcard route as last child of layout route in app.routes.ts
-- Files changed: `not-found.component.ts` (new), `not-found.component.html` (new), `not-found.component.scss` (new), `app.routes.ts` (updated)
-- **Learnings for future iterations:**
-  - Wildcard route `**` must be the last route in the children array to catch all unmatched paths
-  - Placing 404 inside the layout children means it renders within the app shell (sidebar + header visible)
-  - Manual browser verification needed
+  - The `effect()` pattern from original sales-list was replaced with explicit handlers like in products-list — `effect()` causes double-load issues with infinite scroll since signals change during load
+  - Sales-list had `onStatusChange(event: Event)` using raw DOM events AND `onStatusFilterChange(value: string)` — only the latter is needed with `SelectDropdownComponent`
+  - BEM class renaming from `vendas-table__td--profit` to `vendas__profit` keeps styles consistent when moving from custom table to data-grid
+  - `DataTableComponent` import replaced with `DataGridComponent` + directives — remove old import to avoid unused reference warnings
 ---

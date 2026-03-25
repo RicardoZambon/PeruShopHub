@@ -1,11 +1,17 @@
-import { Component, signal, inject, effect } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Search, ShoppingCart, Eye } from 'lucide-angular';
+import {
+  DataGridComponent,
+  GridCellDirective,
+  GridCardDirective,
+  GridColumn,
+  GridSortEvent,
+} from '../../shared/components/data-grid/data-grid.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
@@ -18,14 +24,18 @@ type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
 @Component({
   selector: 'app-sales-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, DataTableComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent],
   templateUrl: './sales-list.component.html',
   styleUrl: './sales-list.component.scss',
 })
-export class SalesListComponent {
+export class SalesListComponent implements OnInit {
+  private readonly orderService = inject(OrderService);
+
   readonly searchIcon = Search;
   readonly cartIcon = ShoppingCart;
   readonly eyeIcon = Eye;
+
+  @ViewChild('grid') gridRef!: DataGridComponent;
 
   readonly statusOptions: SelectOption[] = [
     { value: 'Todos', label: 'Todos' },
@@ -42,34 +52,75 @@ export class SalesListComponent {
   readonly dateTo = signal('');
   readonly loading = signal(true);
   readonly hasData = signal(true);
-  readonly filteredOrders = signal<OrderListItem[]>([]);
+  readonly hasMore = signal(true);
 
-  private readonly orderService = inject(OrderService);
+  readonly orders = signal<OrderListItem[]>([]);
+  readonly currentPage = signal(1);
+  readonly pageSize = signal(20);
+  readonly sortBy = signal<string | null>(null);
+  readonly sortDirection = signal<'asc' | 'desc'>('asc');
 
-  constructor(public router: Router) {
-    effect(() => {
-      // Track all filter signals to trigger reload
-      const search = this.searchQuery();
-      const status = this.statusFilter();
-      const from = this.dateFrom();
-      const to = this.dateTo();
-      this.loadOrders(search, status, from, to);
-    });
+  readonly gridColumns: GridColumn[] = [
+    { key: 'id', label: 'ID', width: '100px' },
+    { key: 'date', label: 'Data', sortable: true },
+    { key: 'buyer', label: 'Comprador', sortable: true },
+    { key: 'itemCount', label: 'Itens', align: 'center' },
+    { key: 'total', label: 'Valor', align: 'right', sortable: true },
+    { key: 'profit', label: 'Lucro', align: 'right', sortable: true },
+    { key: 'status', label: 'Status' },
+  ];
+
+  readonly gridData = computed(() => {
+    return this.orders().map(o => ({
+      ...o,
+      id: o.id,
+      date: o.date,
+      buyer: o.buyer,
+      itemCount: o.itemCount,
+      total: o.total,
+      profit: o.profit,
+      status: o.status,
+    }));
+  });
+
+  constructor(public router: Router) {}
+
+  ngOnInit(): void {
+    this.loadOrders(true);
   }
 
-  private async loadOrders(search: string, status: string, dateFrom: string, dateTo: string): Promise<void> {
+  async loadOrders(reset = false): Promise<void> {
+    if (reset) {
+      this.currentPage.set(1);
+      this.orders.set([]);
+      this.hasMore.set(true);
+    }
+
     this.loading.set(true);
     try {
       const response = await firstValueFrom(this.orderService.list({
-        search: search || undefined,
-        status: status !== 'Todos' ? status : undefined,
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
+        search: this.searchQuery() || undefined,
+        status: this.statusFilter() !== 'Todos' ? this.statusFilter() : undefined,
+        dateFrom: this.dateFrom() || undefined,
+        dateTo: this.dateTo() || undefined,
+        page: this.currentPage(),
+        pageSize: this.pageSize(),
       }));
-      this.filteredOrders.set(response.items as OrderListItem[]);
-      this.hasData.set(response.totalCount > 0 || !!search || status !== 'Todos' || !!dateFrom || !!dateTo);
+
+      if (reset) {
+        this.orders.set(response.items as OrderListItem[]);
+      } else {
+        this.orders.update(prev => [...prev, ...response.items as OrderListItem[]]);
+      }
+
+      const totalLoaded = this.orders().length;
+      this.hasMore.set(totalLoaded < response.totalCount);
+      this.hasData.set(totalLoaded > 0 || this.searchQuery().length > 0 || this.statusFilter() !== 'Todos' || !!this.dateFrom() || !!this.dateTo());
     } catch {
-      this.filteredOrders.set([]);
+      if (reset) {
+        this.orders.set([]);
+      }
+      this.hasMore.set(false);
       this.hasData.set(false);
     } finally {
       this.loading.set(false);
@@ -98,25 +149,41 @@ export class SalesListComponent {
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
-  }
-
-  onStatusChange(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value as 'Todos' | OrderStatus);
+    this.loadOrders(true);
+    this.gridRef?.scrollToTop();
   }
 
   onStatusFilterChange(value: string): void {
     this.statusFilter.set(value as 'Todos' | OrderStatus);
+    this.loadOrders(true);
+    this.gridRef?.scrollToTop();
   }
 
   onDateFromChange(event: Event): void {
     this.dateFrom.set((event.target as HTMLInputElement).value);
+    this.loadOrders(true);
+    this.gridRef?.scrollToTop();
   }
 
   onDateToChange(event: Event): void {
     this.dateTo.set((event.target as HTMLInputElement).value);
+    this.loadOrders(true);
+    this.gridRef?.scrollToTop();
   }
 
-  onRowClick(order: OrderListItem): void {
-    this.router.navigate(['/vendas', order.id]);
+  onSort(event: GridSortEvent): void {
+    this.sortBy.set(event.direction ? event.column : null);
+    this.sortDirection.set(event.direction ?? 'asc');
+    this.loadOrders(true);
+    this.gridRef?.scrollToTop();
+  }
+
+  onLoadMore(): void {
+    this.currentPage.update(p => p + 1);
+    this.loadOrders(false);
+  }
+
+  onRowClick(row: Record<string, any>): void {
+    this.router.navigate(['/vendas', row['id']]);
   }
 }
