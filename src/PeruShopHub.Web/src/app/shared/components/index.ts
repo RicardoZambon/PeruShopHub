@@ -7,6 +7,8 @@ export { SkeletonComponent } from './skeleton/skeleton.component';
 export type { SkeletonType } from './skeleton/skeleton.component';
 export { DataTableComponent } from './data-table/data-table.component';
 export type { DataTableColumn, SortEvent, PageEvent } from './data-table/data-table.component';
+export { DataGridComponent } from './data-grid/data-grid.component';
+export type { GridColumn } from './data-grid/data-grid.component';
 export { ToastContainerComponent } from './toast-container/toast-container.component';
 export { SidebarComponent } from './sidebar/sidebar.component';
 export { HeaderComponent } from './header/header.component';

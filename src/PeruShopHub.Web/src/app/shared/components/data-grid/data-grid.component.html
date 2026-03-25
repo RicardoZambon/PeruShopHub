@@ -1,0 +1,29 @@
+<div class="data-grid">
+  <div class="data-grid__scroll-wrapper">
+    <table class="data-grid__table">
+      <thead>
+        <tr>
+          <th
+            *ngFor="let col of columns"
+            [style.text-align]="col.align || 'left'"
+            [style.width]="col.width || null"
+            [class]="col.headerClass || ''"
+          >
+            {{ col.label }}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of data">
+          <td
+            *ngFor="let col of columns"
+            [style.text-align]="col.align || 'left'"
+            [class]="col.cellClass || ''"
+          >
+            {{ row[col.key] }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
