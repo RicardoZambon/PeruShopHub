@@ -1,6 +1,7 @@
 <div class="data-grid">
   <div class="data-grid__scroll-wrapper">
-    <table class="data-grid__table">
+    <!-- Desktop table view -->
+    <table class="data-grid__table data-grid__desktop-only">
       <thead>
         <tr>
           <th
@@ -72,6 +73,45 @@
         </ng-container>
       </tbody>
     </table>
+
+    <!-- Mobile card view -->
+    <div class="data-grid__cards data-grid__mobile-only">
+      <!-- Skeleton cards for initial loading on mobile -->
+      <ng-container *ngIf="showSkeleton">
+        <div *ngFor="let i of skeletonRowsArray" class="data-grid__card data-grid__card--skeleton">
+          <div *ngFor="let col of columns" class="data-grid__card-field">
+            <app-skeleton type="text" width="30%" height="12px"></app-skeleton>
+            <app-skeleton type="text" width="60%" height="14px"></app-skeleton>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Data cards -->
+      <ng-container *ngIf="!showSkeleton">
+        <ng-container *ngFor="let row of data">
+          <!-- Custom card template -->
+          <ng-container *ngIf="cardTemplate as customCard; else defaultCard">
+            <div class="data-grid__card">
+              <ng-container *ngTemplateOutlet="customCard; context: { $implicit: row }"></ng-container>
+            </div>
+          </ng-container>
+          <!-- Default card: label-value pairs from columns -->
+          <ng-template #defaultCard>
+            <div class="data-grid__card">
+              <div *ngFor="let col of columns" class="data-grid__card-field">
+                <span class="data-grid__card-label">{{ col.label }}</span>
+                <span class="data-grid__card-value" [style.text-align]="col.align || 'left'">
+                  <ng-container *ngIf="getCellTemplate(col.key) as tmpl; else defaultCardCell">
+                    <ng-container *ngTemplateOutlet="tmpl; context: { $implicit: row, value: row[col.key] }"></ng-container>
+                  </ng-container>
+                  <ng-template #defaultCardCell>{{ row[col.key] }}</ng-template>
+                </span>
+              </div>
+            </div>
+          </ng-template>
+        </ng-container>
+      </ng-container>
+    </div>
 
     <!-- Empty state -->
     <div *ngIf="showEmpty" class="data-grid__empty">

@@ -68,6 +68,18 @@ export class GridEmptyDirective {
   constructor(public templateRef: TemplateRef<void>) {}
 }
 
+export interface GridCardContext {
+  $implicit: Record<string, any>;
+}
+
+@Directive({
+  selector: '[appGridCard]',
+  standalone: true,
+})
+export class GridCardDirective {
+  constructor(public templateRef: TemplateRef<GridCardContext>) {}
+}
+
 @Component({
   selector: 'app-data-grid',
   standalone: true,
@@ -92,6 +104,7 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
   @ContentChildren(GridCellDirective) cellTemplates!: QueryList<GridCellDirective>;
   @ContentChildren(GridHeaderDirective) headerTemplates!: QueryList<GridHeaderDirective>;
   @ContentChildren(GridEmptyDirective) emptyTemplates!: QueryList<GridEmptyDirective>;
+  @ContentChildren(GridCardDirective) cardTemplates!: QueryList<GridCardDirective>;
 
   @ViewChild('sentinel', { static: false }) sentinelRef!: ElementRef<HTMLDivElement>;
 
@@ -186,6 +199,10 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
 
   get emptyTemplate(): TemplateRef<void> | null {
     return this.emptyTemplates?.first?.templateRef ?? null;
+  }
+
+  get cardTemplate(): TemplateRef<GridCardContext> | null {
+    return this.cardTemplates?.first?.templateRef ?? null;
   }
 
   getSortDirection(columnKey: string): SortDirection {
