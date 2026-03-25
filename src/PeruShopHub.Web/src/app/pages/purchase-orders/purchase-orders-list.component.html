@@ -21,98 +21,69 @@
     </app-select-dropdown>
   </div>
 
-  <!-- Loading State -->
-  @if (loading()) {
-    <div class="po-table">
-      <app-page-skeleton type="list" [rows]="6" />
-    </div>
-  } @else if (orders().length === 0) {
-    <div class="po-empty">
-      <app-empty-state
-        title="Nenhuma compra encontrada"
-        description="Tente ajustar os filtros de busca ou crie uma nova ordem de compra."
-        actionLabel="Nova Compra"
-        (actionClick)="onNewOrder()"
-      ></app-empty-state>
-    </div>
-  } @else {
-    <!-- Table -->
-    <div class="po-table">
-      <!-- Desktop/Tablet Table -->
-      <div class="po-table__scroll-wrapper">
-        <table class="po-table__table">
-          <thead>
-            <tr>
-              <th class="po-table__th">Fornecedor</th>
-              <th class="po-table__th">Status</th>
-              <th class="po-table__th" style="text-align: right">Itens</th>
-              <th class="po-table__th" style="text-align: right">Total</th>
-              <th class="po-table__th">Data Criacao</th>
-              <th class="po-table__th">Recebido em</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (order of orders(); track order.id) {
-              <tr class="po-table__row" (click)="onRowClick(order)">
-                <td class="po-table__td po-table__td--name">
-                  {{ order.supplier || 'Sem fornecedor' }}
-                </td>
-                <td class="po-table__td">
-                  <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)" />
-                </td>
-                <td class="po-table__td" style="text-align: right">
-                  {{ order.itemCount }}
-                </td>
-                <td class="po-table__td po-table__td--mono" style="text-align: right">
-                  {{ order.total | brlCurrency }}
-                </td>
-                <td class="po-table__td">
-                  {{ formatDate(order.createdAt) }}
-                </td>
-                <td class="po-table__td">
-                  {{ formatDate(order.receivedAt) }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+  <!-- Data Grid -->
+  <app-data-grid
+    #grid
+    [columns]="gridColumns"
+    [data]="gridData()"
+    [loading]="loading()"
+    [hasMore]="hasMore()"
+    [pageSize]="pageSize()"
+    emptyTitle="Nenhuma compra encontrada"
+    emptyDescription="Tente ajustar os filtros de busca ou crie uma nova ordem de compra."
+    ariaLabel="Lista de ordens de compra"
+    (sortChange)="onSort($event)"
+    (loadMore)="onLoadMore()"
+    (rowClick)="onRowClick($event)"
+  >
+    <!-- Supplier cell -->
+    <ng-template appGridCell="supplier" let-row let-value="value">
+      <span class="po-list__name">{{ value || 'Sem fornecedor' }}</span>
+    </ng-template>
 
-      <!-- Mobile Card List -->
-      <div class="po-table__cards">
-        @for (order of orders(); track order.id) {
-          <div class="po-table__card" (click)="onRowClick(order)">
-            <div class="po-table__card-header">
-              <div class="po-table__card-title">
-                <span class="po-table__card-name">{{ order.supplier || 'Sem fornecedor' }}</span>
-                <span class="po-table__card-date">{{ formatDate(order.createdAt) }}</span>
-              </div>
-              <app-badge [label]="order.status" [variant]="getStatusVariant(order.status)" />
-            </div>
-            <div class="po-table__card-body">
-              <div class="po-table__card-field">
-                <span class="po-table__card-label">Itens</span>
-                <span class="po-table__card-value">{{ order.itemCount }}</span>
-              </div>
-              <div class="po-table__card-field">
-                <span class="po-table__card-label">Total</span>
-                <span class="po-table__card-value po-table__td--mono">{{ order.total | brlCurrency }}</span>
-              </div>
-              <div class="po-table__card-field">
-                <span class="po-table__card-label">Recebido</span>
-                <span class="po-table__card-value">{{ formatDate(order.receivedAt) }}</span>
-              </div>
-            </div>
-          </div>
-        }
-      </div>
+    <!-- Status cell (badge) -->
+    <ng-template appGridCell="status" let-row let-value="value">
+      <app-badge [label]="value" [variant]="getStatusVariant(value)" />
+    </ng-template>
 
-      <!-- Pagination -->
-      <div class="po-table__pagination">
-        <span class="po-table__pagination-info">
-          Mostrando {{ orders().length }} de {{ totalCount() }}
-        </span>
+    <!-- Total cell (currency mono) -->
+    <ng-template appGridCell="total" let-row let-value="value">
+      <span class="po-list__mono">{{ value | brlCurrency }}</span>
+    </ng-template>
+
+    <!-- Created date cell -->
+    <ng-template appGridCell="createdAt" let-row let-value="value">
+      {{ formatDate(value) }}
+    </ng-template>
+
+    <!-- Received date cell -->
+    <ng-template appGridCell="receivedAt" let-row let-value="value">
+      {{ formatDate(value) }}
+    </ng-template>
+
+    <!-- Mobile card template -->
+    <ng-template appGridCard let-row>
+      <div class="po-list__card-header">
+        <div class="po-list__card-title">
+          <span class="po-list__card-name">{{ row.supplier || 'Sem fornecedor' }}</span>
+          <span class="po-list__card-date">{{ formatDate(row.createdAt) }}</span>
+        </div>
+        <app-badge [label]="row.status" [variant]="getStatusVariant(row.status)" />
       </div>
-    </div>
-  }
+      <div class="po-list__card-body">
+        <div class="po-list__card-field">
+          <span class="po-list__card-label">Itens</span>
+          <span class="po-list__card-value">{{ row.itemCount }}</span>
+        </div>
+        <div class="po-list__card-field">
+          <span class="po-list__card-label">Total</span>
+          <span class="po-list__card-value po-list__mono">{{ row.total | brlCurrency }}</span>
+        </div>
+        <div class="po-list__card-field">
+          <span class="po-list__card-label">Recebido</span>
+          <span class="po-list__card-value">{{ formatDate(row.receivedAt) }}</span>
+        </div>
+      </div>
+    </ng-template>
+  </app-data-grid>
 </div>

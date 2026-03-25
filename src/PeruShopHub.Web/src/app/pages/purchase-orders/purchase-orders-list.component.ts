@@ -1,15 +1,21 @@
-import { Component, signal, inject, effect } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Search, Plus, ShoppingCart } from 'lucide-angular';
+import { LucideAngularModule, Plus } from 'lucide-angular';
+import {
+  DataGridComponent,
+  GridCellDirective,
+  GridCardDirective,
+  GridColumn,
+  GridSortEvent,
+} from '../../shared/components/data-grid/data-grid.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
-import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
-import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { PurchaseOrderService, type PurchaseOrderListItem } from '../../services/purchase-order.service';
 import { firstValueFrom } from 'rxjs';
@@ -19,14 +25,14 @@ type POStatus = 'Rascunho' | 'Recebido' | 'Cancelado';
 @Component({
   selector: 'app-purchase-orders-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, BadgeComponent, EmptyStateComponent, BrlCurrencyPipe, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, PageSkeletonComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent],
   templateUrl: './purchase-orders-list.component.html',
   styleUrl: './purchase-orders-list.component.scss',
 })
-export class PurchaseOrdersListComponent {
-  readonly searchIcon = Search;
+export class PurchaseOrdersListComponent implements OnInit {
   readonly plusIcon = Plus;
-  readonly cartIcon = ShoppingCart;
+
+  @ViewChild('grid') gridRef!: DataGridComponent;
 
   readonly statusOptions: SelectOption[] = [
     { value: 'Todos', label: 'Todos os status' },
@@ -38,37 +44,65 @@ export class PurchaseOrdersListComponent {
   readonly searchQuery = signal('');
   readonly statusFilter = signal<'Todos' | POStatus>('Todos');
   readonly loading = signal(true);
+  readonly hasMore = signal(true);
   readonly orders = signal<PurchaseOrderListItem[]>([]);
-  readonly totalCount = signal(0);
   readonly currentPage = signal(1);
-  readonly pageSize = signal(10);
+  readonly pageSize = signal(20);
+  readonly sortBy = signal<string | null>(null);
+  readonly sortDirection = signal<'asc' | 'desc'>('desc');
 
   private readonly poService = inject(PurchaseOrderService);
 
-  constructor(public router: Router) {
-    effect(() => {
-      const search = this.searchQuery();
-      const status = this.statusFilter();
-      const page = this.currentPage();
-      const size = this.pageSize();
-      this.loadOrders(search, status, page, size);
-    });
+  readonly gridColumns: GridColumn[] = [
+    { key: 'supplier', label: 'Fornecedor', sortable: true },
+    { key: 'status', label: 'Status' },
+    { key: 'itemCount', label: 'Itens', align: 'right' },
+    { key: 'total', label: 'Total', align: 'right', sortable: true },
+    { key: 'createdAt', label: 'Data Criação', sortable: true },
+    { key: 'receivedAt', label: 'Recebido em' },
+  ];
+
+  readonly gridData = computed(() => {
+    return this.orders().map(o => ({
+      ...o,
+    }));
+  });
+
+  constructor(public router: Router) {}
+
+  ngOnInit(): void {
+    this.loadOrders(true);
   }
 
-  private async loadOrders(search: string, status: string, page: number, pageSize: number): Promise<void> {
+  async loadOrders(reset = false): Promise<void> {
+    if (reset) {
+      this.currentPage.set(1);
+      this.orders.set([]);
+      this.hasMore.set(true);
+    }
+
     this.loading.set(true);
     try {
       const response = await firstValueFrom(this.poService.list({
-        supplier: search || undefined,
-        status: status !== 'Todos' ? status : undefined,
-        page,
-        pageSize,
+        supplier: this.searchQuery() || undefined,
+        status: this.statusFilter() !== 'Todos' ? this.statusFilter() : undefined,
+        page: this.currentPage(),
+        pageSize: this.pageSize(),
       }));
-      this.orders.set(response.items);
-      this.totalCount.set(response.totalCount);
+
+      if (reset) {
+        this.orders.set(response.items);
+      } else {
+        this.orders.update(prev => [...prev, ...response.items]);
+      }
+
+      const totalLoaded = this.orders().length;
+      this.hasMore.set(totalLoaded < response.totalCount);
     } catch {
-      this.orders.set([]);
-      this.totalCount.set(0);
+      if (reset) {
+        this.orders.set([]);
+      }
+      this.hasMore.set(false);
     } finally {
       this.loading.set(false);
     }
@@ -90,22 +124,31 @@ export class PurchaseOrdersListComponent {
   }
 
   onSearchChange(value: string): void {
-    this.currentPage.set(1);
     this.searchQuery.set(value);
-  }
-
-  onStatusChange(event: Event): void {
-    this.currentPage.set(1);
-    this.statusFilter.set((event.target as HTMLSelectElement).value as 'Todos' | POStatus);
+    this.loadOrders(true);
+    this.gridRef?.scrollToTop();
   }
 
   onStatusFilterChange(value: string): void {
-    this.currentPage.set(1);
     this.statusFilter.set(value as 'Todos' | POStatus);
+    this.loadOrders(true);
+    this.gridRef?.scrollToTop();
   }
 
-  onRowClick(order: PurchaseOrderListItem): void {
-    this.router.navigate(['/compras', order.id]);
+  onSort(event: GridSortEvent): void {
+    this.sortBy.set(event.direction ? event.column : null);
+    this.sortDirection.set(event.direction ?? 'asc');
+    this.loadOrders(true);
+    this.gridRef?.scrollToTop();
+  }
+
+  onLoadMore(): void {
+    this.currentPage.update(p => p + 1);
+    this.loadOrders(false);
+  }
+
+  onRowClick(row: Record<string, any>): void {
+    this.router.navigate(['/compras', row['id']]);
   }
 
   onNewOrder(): void {
