@@ -15,6 +15,7 @@ import {
   NgZone,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { SkeletonComponent } from '../skeleton/skeleton.component';
 
 export interface GridColumn {
   key: string;
@@ -62,7 +63,7 @@ export class GridHeaderDirective {
 @Component({
   selector: 'app-data-grid',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SkeletonComponent],
   templateUrl: './data-grid.component.html',
   styleUrl: './data-grid.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -73,6 +74,7 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
   @Input() loading = false;
   @Input() hasMore = false;
   @Input() pageSize = 20;
+  @Input() skeletonRows = 8;
 
   @Output() sortChange = new EventEmitter<GridSortEvent>();
   @Output() loadMore = new EventEmitter<void>();
@@ -157,6 +159,14 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
       column: column.key,
       direction,
     });
+  }
+
+  get skeletonRowsArray(): number[] {
+    return Array.from({ length: this.skeletonRows }, (_, i) => i);
+  }
+
+  get showSkeleton(): boolean {
+    return this.loading && this.data.length === 0;
   }
 
   getSortDirection(columnKey: string): SortDirection {

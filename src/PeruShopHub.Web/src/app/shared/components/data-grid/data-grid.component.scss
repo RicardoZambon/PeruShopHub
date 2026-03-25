@@ -71,6 +71,17 @@
     }
   }
 
+  &__skeleton-row {
+    td {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--neutral-100);
+    }
+
+    app-skeleton {
+      display: block;
+    }
+  }
+
   &__sentinel {
     height: 1px;
     width: 100%;

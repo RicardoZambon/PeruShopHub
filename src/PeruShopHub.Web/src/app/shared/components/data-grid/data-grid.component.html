@@ -37,18 +37,39 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let row of data">
-          <td
-            *ngFor="let col of columns"
-            [style.text-align]="col.align || 'left'"
-            [class]="col.cellClass || ''"
-          >
-            <ng-container *ngIf="getCellTemplate(col.key) as tmpl; else defaultCell">
-              <ng-container *ngTemplateOutlet="tmpl; context: { $implicit: row, value: row[col.key] }"></ng-container>
-            </ng-container>
-            <ng-template #defaultCell>{{ row[col.key] }}</ng-template>
-          </td>
-        </tr>
+        <!-- Skeleton rows for initial loading -->
+        <ng-container *ngIf="showSkeleton">
+          <tr *ngFor="let i of skeletonRowsArray" class="data-grid__skeleton-row">
+            <td
+              *ngFor="let col of columns"
+              [style.text-align]="col.align || 'left'"
+              [style.width]="col.width || null"
+            >
+              <app-skeleton
+                type="text"
+                [width]="col.align === 'right' ? '60%' : '80%'"
+                height="16px"
+                [style.margin-left]="col.align === 'right' ? 'auto' : null"
+              ></app-skeleton>
+            </td>
+          </tr>
+        </ng-container>
+
+        <!-- Data rows -->
+        <ng-container *ngIf="!showSkeleton">
+          <tr *ngFor="let row of data">
+            <td
+              *ngFor="let col of columns"
+              [style.text-align]="col.align || 'left'"
+              [class]="col.cellClass || ''"
+            >
+              <ng-container *ngIf="getCellTemplate(col.key) as tmpl; else defaultCell">
+                <ng-container *ngTemplateOutlet="tmpl; context: { $implicit: row, value: row[col.key] }"></ng-container>
+              </ng-container>
+              <ng-template #defaultCell>{{ row[col.key] }}</ng-template>
+            </td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
 
