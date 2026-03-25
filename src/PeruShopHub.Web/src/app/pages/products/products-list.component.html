@@ -31,138 +31,122 @@
       ></app-select-dropdown>
     </div>
 
-    <!-- Loading State -->
-    @if (loading()) {
-      <app-data-table
-        [columns]="columns"
-        [data]="[]"
-        [loading]="true"
-        [totalItems]="0"
-      ></app-data-table>
-    } @else if (filteredProducts().length === 0) {
-      <app-data-table
-        [columns]="columns"
-        [data]="[]"
-        [loading]="false"
-        emptyTitle="Nenhum produto encontrado"
-        emptyDescription="Tente ajustar os filtros de busca."
-        [totalItems]="0"
-      ></app-data-table>
-    } @else {
-      <!-- Custom Table (not using DataTable for custom cell rendering) -->
-      <div class="produtos-table">
-        <!-- Desktop/Tablet Table -->
-        <div class="produtos-table__scroll-wrapper">
-          <table class="produtos-table__table produtos-table__table--desktop">
-            <thead>
-              <tr>
-                <th class="produtos-table__th" style="width: 56px; text-align: center">Foto</th>
-                <th class="produtos-table__th">Nome</th>
-                <th class="produtos-table__th produtos-table__th--mono">SKU</th>
-                <th class="produtos-table__th" style="text-align: right">Preço</th>
-                <th class="produtos-table__th" style="text-align: right">Estoque</th>
-                <th class="produtos-table__th" style="text-align: center">Variantes</th>
-                <th class="produtos-table__th">Status</th>
-                <th class="produtos-table__th" style="text-align: right">Margem</th>
-                <th class="produtos-table__th" style="text-align: center; width: 56px">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (product of filteredProducts(); track product.id) {
-                <tr class="produtos-table__row" (click)="onRowClick(product)">
-                  <td class="produtos-table__td" style="text-align: center">
-                    <div class="produtos-table__thumb">
-                      <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
-                    </div>
-                  </td>
-                  <td class="produtos-table__td produtos-table__td--name">{{ product.name }}</td>
-                  <td class="produtos-table__td produtos-table__td--mono">{{ product.sku }}</td>
-                  <td class="produtos-table__td produtos-table__td--mono" style="text-align: right">{{ formatBrl(product.price) }}</td>
-                  <td class="produtos-table__td" style="text-align: right"
-                    [class.produtos-table__td--low-stock]="product.stock > 0 && product.stock <= 10"
-                    [class.produtos-table__td--no-stock]="product.stock === 0">
-                    {{ product.stock }}
-                  </td>
-                  <td class="produtos-table__td" style="text-align: center">
-                    @if (product.variantCount > 0) {
-                      <span class="variant-badge" (click)="onVariantClick($event, product.id)">
-                        {{ product.variantCount }} var.
-                      </span>
-                    } @else {
-                      <span class="produtos-table__td--mono">—</span>
-                    }
-                    @if (product.needsReview) {
-                      <span class="review-badge">Revisão</span>
-                    }
-                  </td>
-                  <td class="produtos-table__td">
-                    <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
-                  </td>
-                  <td class="produtos-table__td" style="text-align: right">
-                    <app-margin-badge [margin]="product.margin"></app-margin-badge>
-                  </td>
-                  <td class="produtos-table__td" style="text-align: center">
-                    <button class="produtos-table__edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', product.id, 'editar'])">
-                      <lucide-icon [img]="editIcon" [size]="16"></lucide-icon>
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+    <!-- Data Grid -->
+    <app-data-grid
+      #grid
+      [columns]="gridColumns"
+      [data]="gridData()"
+      [loading]="loading()"
+      [hasMore]="hasMore()"
+      [pageSize]="pageSize()"
+      emptyTitle="Nenhum produto encontrado"
+      emptyDescription="Tente ajustar os filtros de busca."
+      ariaLabel="Lista de produtos"
+      (sortChange)="onSort($event)"
+      (loadMore)="onLoadMore()"
+      (rowClick)="onRowClick($event)"
+    >
+      <!-- Image cell -->
+      <ng-template appGridCell="imageUrl" let-row>
+        <div class="produtos__thumb">
+          <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
         </div>
+      </ng-template>
 
-        <!-- Mobile Card List -->
-        <div class="produtos-table__cards">
-          @for (product of filteredProducts(); track product.id) {
-            <div class="produtos-table__card" (click)="onRowClick(product)">
-              <div class="produtos-table__card-header">
-                <div class="produtos-table__thumb produtos-table__thumb--sm">
-                  <lucide-icon [img]="packageIcon" [size]="16"></lucide-icon>
-                </div>
-                <div class="produtos-table__card-title">
-                  <span class="produtos-table__card-name">{{ product.name }}</span>
-                  <span class="produtos-table__card-sku">{{ product.sku }}</span>
-                  @if (product.variantCount > 0) {
-                    <span class="variant-chip" (click)="onVariantClick($event, product.id)">
-                      {{ product.variantCount }} variantes
-                    </span>
-                  }
-                  @if (product.needsReview) {
-                    <span class="review-chip">Precisa revisão</span>
-                  }
-                </div>
-                <app-badge [label]="product.status" [variant]="getStatusVariant(product.status)"></app-badge>
-              </div>
-              <div class="produtos-table__card-body">
-                <div class="produtos-table__card-field">
-                  <span class="produtos-table__card-label">Preço</span>
-                  <span class="produtos-table__card-value produtos-table__td--mono">{{ formatBrl(product.price) }}</span>
-                </div>
-                <div class="produtos-table__card-field">
-                  <span class="produtos-table__card-label">Estoque</span>
-                  <span class="produtos-table__card-value"
-                    [class.produtos-table__td--low-stock]="product.stock > 0 && product.stock <= 10"
-                    [class.produtos-table__td--no-stock]="product.stock === 0">
-                    {{ product.stock }}
-                  </span>
-                </div>
-                <div class="produtos-table__card-field">
-                  <span class="produtos-table__card-label">Margem</span>
-                  <app-margin-badge [margin]="product.margin"></app-margin-badge>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
+      <!-- Name cell -->
+      <ng-template appGridCell="name" let-row let-value="value">
+        <span class="produtos__name">{{ value }}</span>
+      </ng-template>
 
-        <!-- Pagination -->
-        <div class="produtos-table__pagination">
-          <span class="produtos-table__pagination-info">
-            Mostrando 1-{{ filteredProducts().length }} de {{ filteredProducts().length }}
+      <!-- SKU cell -->
+      <ng-template appGridCell="sku" let-row let-value="value">
+        <span class="produtos__mono">{{ value }}</span>
+      </ng-template>
+
+      <!-- Price cell -->
+      <ng-template appGridCell="price" let-row let-value="value">
+        <span class="produtos__mono">{{ formatBrl(value) }}</span>
+      </ng-template>
+
+      <!-- Stock cell -->
+      <ng-template appGridCell="stock" let-row let-value="value">
+        <span
+          [class.produtos__stock--low]="value > 0 && value <= 10"
+          [class.produtos__stock--zero]="value === 0">
+          {{ value }}
+        </span>
+      </ng-template>
+
+      <!-- Variants cell -->
+      <ng-template appGridCell="variantCount" let-row let-value="value">
+        @if (value > 0) {
+          <span class="variant-badge" (click)="onVariantClick($event, row.id)">
+            {{ value }} var.
           </span>
+        } @else {
+          <span class="produtos__mono">—</span>
+        }
+        @if (row.needsReview) {
+          <span class="review-badge">Revisão</span>
+        }
+      </ng-template>
+
+      <!-- Status cell -->
+      <ng-template appGridCell="status" let-row let-value="value">
+        <app-badge [label]="value" [variant]="getStatusVariant(value)"></app-badge>
+      </ng-template>
+
+      <!-- Margin cell -->
+      <ng-template appGridCell="margin" let-row let-value="value">
+        <app-margin-badge [margin]="value"></app-margin-badge>
+      </ng-template>
+
+      <!-- Actions cell -->
+      <ng-template appGridCell="actions" let-row>
+        <button class="produtos__edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', row.id, 'editar'])">
+          <lucide-icon [img]="editIcon" [size]="16"></lucide-icon>
+        </button>
+      </ng-template>
+
+      <!-- Mobile card template -->
+      <ng-template appGridCard let-row>
+        <div class="produtos__card-header">
+          <div class="produtos__thumb produtos__thumb--sm">
+            <lucide-icon [img]="packageIcon" [size]="16"></lucide-icon>
+          </div>
+          <div class="produtos__card-title">
+            <span class="produtos__card-name">{{ row.name }}</span>
+            <span class="produtos__card-sku">{{ row.sku }}</span>
+            @if (row.variantCount > 0) {
+              <span class="variant-chip" (click)="onVariantClick($event, row.id)">
+                {{ row.variantCount }} variantes
+              </span>
+            }
+            @if (row.needsReview) {
+              <span class="review-chip">Precisa revisão</span>
+            }
+          </div>
+          <app-badge [label]="row.status" [variant]="getStatusVariant(row.status)"></app-badge>
         </div>
-      </div>
-    }
+        <div class="produtos__card-body">
+          <div class="produtos__card-field">
+            <span class="produtos__card-label">Preço</span>
+            <span class="produtos__card-value produtos__mono">{{ formatBrl(row.price) }}</span>
+          </div>
+          <div class="produtos__card-field">
+            <span class="produtos__card-label">Estoque</span>
+            <span class="produtos__card-value"
+              [class.produtos__stock--low]="row.stock > 0 && row.stock <= 10"
+              [class.produtos__stock--zero]="row.stock === 0">
+              {{ row.stock }}
+            </span>
+          </div>
+          <div class="produtos__card-field">
+            <span class="produtos__card-label">Margem</span>
+            <app-margin-badge [margin]="row.margin"></app-margin-badge>
+          </div>
+        </div>
+      </ng-template>
+    </app-data-grid>
   </div>
 }

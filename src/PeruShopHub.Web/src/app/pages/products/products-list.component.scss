@@ -24,96 +24,8 @@
       align-items: stretch;
     }
   }
-}
 
-// Custom table
-.produtos-table {
-  background: var(--surface);
-  border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-
-  &__scroll-wrapper {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-
-    @include m.mobile {
-      display: none;
-    }
-  }
-
-  &__table--desktop {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  &__th {
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--text-xs);
-    font-weight: 600;
-    color: var(--neutral-600);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--neutral-200);
-    text-align: left;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: var(--surface);
-    white-space: nowrap;
-
-    &--mono {
-      font-family: var(--font-mono);
-    }
-  }
-
-  &__row {
-    cursor: pointer;
-    transition: background 100ms;
-
-    &:hover {
-      background: var(--neutral-50);
-    }
-
-    &:not(:last-child) .produtos-table__td {
-      border-bottom: 1px solid var(--neutral-100);
-    }
-  }
-
-  &__td {
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--text-sm);
-    color: var(--neutral-900);
-    white-space: nowrap;
-
-    &--name {
-      max-width: 260px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-weight: 500;
-    }
-
-    &--mono {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-    }
-
-    &--low-stock {
-      color: var(--warning);
-      font-weight: 600;
-    }
-
-    &--no-stock {
-      color: var(--danger);
-      font-weight: 600;
-    }
-  }
-
+  // Thumbnail
   &__thumb {
     width: 40px;
     height: 40px;
@@ -130,6 +42,31 @@
       height: 32px;
       flex-shrink: 0;
     }
+  }
+
+  // Cell styles
+  &__name {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+    display: block;
+  }
+
+  &__mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+
+  &__stock--low {
+    color: var(--warning);
+    font-weight: 600;
+  }
+
+  &__stock--zero {
+    color: var(--danger);
+    font-weight: 600;
   }
 
   &__edit-btn {
@@ -151,30 +88,7 @@
     }
   }
 
-  // Mobile cards
-  &__cards {
-    display: none;
-
-    @include m.mobile {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-      padding: var(--space-3);
-    }
-  }
-
-  &__card {
-    border: 1px solid var(--neutral-200);
-    border-radius: var(--radius-md);
-    padding: var(--space-3);
-    cursor: pointer;
-    transition: background 100ms;
-
-    &:hover {
-      background: var(--neutral-50);
-    }
-  }
-
+  // Mobile card styles (used inside custom appGridCard template)
   &__card-header {
     display: flex;
     align-items: center;
@@ -226,23 +140,9 @@
     font-weight: 500;
     color: var(--neutral-900);
   }
-
-  // Pagination
-  &__pagination {
-    padding: var(--space-3) var(--space-4);
-    border-top: 1px solid var(--neutral-200);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  &__pagination-info {
-    font-size: var(--text-xs);
-    color: var(--neutral-500);
-  }
 }
 
-// Variant badge
+// Variant badge (desktop)
 .variant-badge {
   display: inline-block;
   padding: 2px var(--space-2);

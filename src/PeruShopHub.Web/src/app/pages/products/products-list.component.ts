@@ -1,9 +1,15 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Plus, Edit, Package } from 'lucide-angular';
-import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
+import {
+  DataGridComponent,
+  GridCellDirective,
+  GridCardDirective,
+  GridColumn,
+  GridSortEvent,
+} from '../../shared/components/data-grid/data-grid.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
@@ -11,7 +17,6 @@ import { SearchInputComponent } from '../../shared/components/search-input/searc
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
 import { ProductService, Product } from '../../services/product.service';
-import type { DataTableColumn, SortEvent, PageEvent } from '../../shared/components/data-table/data-table.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 
 type ProductStatus = 'Ativo' | 'Pausado' | 'Encerrado';
@@ -20,7 +25,7 @@ type FilterStatus = 'Todos' | ProductStatus | 'Revisão';
 @Component({
   selector: 'app-products-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, DataTableComponent, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, MarginBadgeComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, MarginBadgeComponent],
   templateUrl: './products-list.component.html',
   styleUrl: './products-list.component.scss',
 })
@@ -30,6 +35,8 @@ export class ProductsListComponent implements OnInit {
   readonly plusIcon = Plus;
   readonly editIcon = Edit;
   readonly packageIcon = Package;
+
+  @ViewChild('grid') gridRef!: DataGridComponent;
 
   readonly statusOptions: SelectOption[] = [
     { value: 'Todos', label: 'Todos' },
@@ -43,54 +50,55 @@ export class ProductsListComponent implements OnInit {
   readonly statusFilter = signal<FilterStatus>('Todos');
   readonly loading = signal(true);
   readonly hasData = signal(true);
+  readonly hasMore = signal(true);
 
   readonly products = signal<Product[]>([]);
-  readonly totalCount = signal(0);
   readonly currentPage = signal(1);
   readonly pageSize = signal(20);
   readonly sortBy = signal<string | null>(null);
   readonly sortDirection = signal<'asc' | 'desc'>('asc');
 
-  readonly columns: DataTableColumn[] = [
-    { key: 'foto', label: 'Foto', align: 'center' },
-    { key: 'nome', label: 'Nome', sortable: true },
-    { key: 'sku', label: 'SKU', format: 'mono' },
-    { key: 'preco', label: 'Preço', align: 'right', format: 'currency', sortable: true },
-    { key: 'estoque', label: 'Estoque', align: 'right', sortable: true },
-    { key: 'variantes', label: 'Variantes', align: 'center' },
+  readonly gridColumns: GridColumn[] = [
+    { key: 'imageUrl', label: 'Foto', align: 'center', width: '56px' },
+    { key: 'name', label: 'Nome', sortable: true },
+    { key: 'sku', label: 'SKU', cellClass: 'cell-mono' },
+    { key: 'price', label: 'Preço', align: 'right', sortable: true },
+    { key: 'stock', label: 'Estoque', align: 'right', sortable: true },
+    { key: 'variantCount', label: 'Variantes', align: 'center' },
     { key: 'status', label: 'Status' },
-    { key: 'margem', label: 'Margem', align: 'right', sortable: true },
-    { key: 'acoes', label: 'Ações', align: 'center' },
+    { key: 'margin', label: 'Margem', align: 'right', sortable: true },
+    { key: 'actions', label: 'Ações', align: 'center', width: '56px' },
   ];
 
-  readonly filteredProducts = computed(() => {
-    return this.products();
-  });
-
-  readonly tableData = computed(() => {
+  readonly gridData = computed(() => {
     return this.products().map(p => ({
+      ...p,
       id: p.id,
-      foto: p.imageUrl ?? '',
-      nome: p.name,
+      imageUrl: p.imageUrl ?? '',
+      name: p.name,
       sku: p.sku,
-      preco: p.price,
-      estoque: p.stock,
+      price: p.price,
+      stock: p.stock,
       status: p.status,
-      margem: p.margin,
+      margin: p.margin,
       variantCount: p.variantCount,
       needsReview: p.needsReview,
-      precoFormatted: this.formatBrl(p.price),
-      margemFormatted: `${(p.margin ?? 0).toFixed(1)}%`,
     }));
   });
 
   constructor(public router: Router) {}
 
   ngOnInit(): void {
-    this.loadProducts();
+    this.loadProducts(true);
   }
 
-  async loadProducts(): Promise<void> {
+  async loadProducts(reset = false): Promise<void> {
+    if (reset) {
+      this.currentPage.set(1);
+      this.products.set([]);
+      this.hasMore.set(true);
+    }
+
     this.loading.set(true);
     try {
       const result = await this.productService.list({
@@ -101,12 +109,21 @@ export class ProductsListComponent implements OnInit {
         sortBy: this.sortBy() ?? undefined,
         sortDirection: this.sortDirection(),
       });
-      this.products.set(result.items);
-      this.totalCount.set(result.totalCount);
-      this.hasData.set(result.items.length > 0 || this.searchQuery().length > 0 || this.statusFilter() !== 'Todos');
+
+      if (reset) {
+        this.products.set(result.items);
+      } else {
+        this.products.update(prev => [...prev, ...result.items]);
+      }
+
+      const totalLoaded = this.products().length;
+      this.hasMore.set(totalLoaded < result.totalCount);
+      this.hasData.set(totalLoaded > 0 || this.searchQuery().length > 0 || this.statusFilter() !== 'Todos');
     } catch {
-      this.products.set([]);
-      this.totalCount.set(0);
+      if (reset) {
+        this.products.set([]);
+      }
+      this.hasMore.set(false);
       this.hasData.set(false);
     } finally {
       this.loading.set(false);
@@ -128,14 +145,14 @@ export class ProductsListComponent implements OnInit {
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
-    this.currentPage.set(1);
-    this.loadProducts();
+    this.loadProducts(true);
+    this.gridRef?.scrollToTop();
   }
 
   onStatusChange(value: string): void {
     this.statusFilter.set(value as FilterStatus);
-    this.currentPage.set(1);
-    this.loadProducts();
+    this.loadProducts(true);
+    this.gridRef?.scrollToTop();
   }
 
   onRowClick(row: Record<string, any>): void {
@@ -151,15 +168,15 @@ export class ProductsListComponent implements OnInit {
     this.router.navigate(['/produtos', productId, 'editar'], { queryParams: { tab: 'variacoes' } });
   }
 
-  onSort(event: SortEvent): void {
-    this.sortBy.set(event.column);
-    this.sortDirection.set(event.direction);
-    this.loadProducts();
+  onSort(event: GridSortEvent): void {
+    this.sortBy.set(event.direction ? event.column : null);
+    this.sortDirection.set(event.direction ?? 'asc');
+    this.loadProducts(true);
+    this.gridRef?.scrollToTop();
   }
 
-  onPageChange(event: PageEvent): void {
-    this.currentPage.set(event.page);
-    this.pageSize.set(event.pageSize);
-    this.loadProducts();
+  onLoadMore(): void {
+    this.currentPage.update(p => p + 1);
+    this.loadProducts(false);
   }
 }
