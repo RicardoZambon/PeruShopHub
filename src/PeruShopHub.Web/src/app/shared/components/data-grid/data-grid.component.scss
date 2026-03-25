@@ -16,6 +16,28 @@
     min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+
+    // Custom scrollbar matching app design
+    scrollbar-width: thin;
+    scrollbar-color: var(--neutral-300) transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--neutral-300);
+      border-radius: 3px;
+
+      &:hover {
+        background-color: var(--neutral-400);
+      }
+    }
   }
 
   &__table {
@@ -70,12 +92,40 @@
       border-bottom: 1px solid var(--neutral-100);
     }
 
+    .data-grid__cell--sticky {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: var(--surface);
+
+      // Right border shadow to indicate scroll underneath
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: -6px;
+        bottom: 0;
+        width: 6px;
+        background: linear-gradient(to right, rgba(0, 0, 0, 0.06), transparent);
+        pointer-events: none;
+      }
+    }
+
+    thead .data-grid__cell--sticky {
+      z-index: 3; // Above both sticky header (z-index: 2) and sticky cells (z-index: 1)
+      background: var(--neutral-50);
+    }
+
     .data-grid__row--clickable {
       cursor: pointer;
       transition: background-color 0.15s ease;
 
       &:hover {
         background-color: var(--neutral-50);
+
+        .data-grid__cell--sticky {
+          background-color: var(--neutral-50);
+        }
       }
     }
   }

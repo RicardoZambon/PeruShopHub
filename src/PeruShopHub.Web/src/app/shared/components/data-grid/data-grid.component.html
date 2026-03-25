@@ -11,6 +11,7 @@
             [class]="col.headerClass || ''"
             [class.data-grid__th--sortable]="col.sortable"
             [class.data-grid__th--active]="col.sortable && getSortDirection(col.key)"
+            [class.data-grid__cell--sticky]="col.sticky"
             (click)="onSortClick(col)"
           >
             <span class="data-grid__header-content">
@@ -45,6 +46,7 @@
               *ngFor="let col of columns"
               [style.text-align]="col.align || 'left'"
               [style.width]="col.width || null"
+              [class.data-grid__cell--sticky]="col.sticky"
             >
               <app-skeleton
                 type="text"
@@ -67,6 +69,7 @@
               *ngFor="let col of columns"
               [style.text-align]="col.align || 'left'"
               [class]="col.cellClass || ''"
+              [class.data-grid__cell--sticky]="col.sticky"
             >
               <ng-container *ngIf="getCellTemplate(col.key) as tmpl; else defaultCell">
                 <ng-container *ngTemplateOutlet="tmpl; context: { $implicit: row, value: row[col.key] }"></ng-container>
