@@ -5,8 +5,6 @@ export { EmptyStateComponent } from './empty-state/empty-state.component';
 export { ErrorStateComponent } from './error-state/error-state.component';
 export { SkeletonComponent } from './skeleton/skeleton.component';
 export type { SkeletonType } from './skeleton/skeleton.component';
-export { DataTableComponent } from './data-table/data-table.component';
-export type { DataTableColumn, SortEvent, PageEvent } from './data-table/data-table.component';
 export { DataGridComponent, GridCellDirective, GridHeaderDirective, GridEmptyDirective, GridCardDirective } from './data-grid/data-grid.component';
 export type { GridColumn, GridCellContext, GridCardContext, GridSortEvent, SortDirection } from './data-grid/data-grid.component';
 export { ToastContainerComponent } from './toast-container/toast-container.component';
