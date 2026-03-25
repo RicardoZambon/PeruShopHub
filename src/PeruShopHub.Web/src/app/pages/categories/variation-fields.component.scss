@@ -47,6 +47,10 @@
 
 .variation-fields__section {
   margin-bottom: var(--space-4);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .variation-fields__section-label {

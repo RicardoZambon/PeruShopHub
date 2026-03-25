@@ -4,10 +4,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  flex: 1;
 }
 
 .produtos {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+
   &__action-bar {
     display: flex;
     align-items: center;
@@ -27,9 +32,15 @@
   border: 1px solid var(--neutral-200);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 
   &__scroll-wrapper {
-    overflow-x: auto;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
 
     @include m.mobile {
       display: none;
@@ -50,6 +61,10 @@
     letter-spacing: 0.05em;
     border-bottom: 1px solid var(--neutral-200);
     text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--surface);
     white-space: nowrap;
 
     &--mono {

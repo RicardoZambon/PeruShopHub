@@ -6,9 +6,15 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--neutral-200);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 
   &__scroll-wrapper {
-    overflow-x: auto;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -24,6 +30,9 @@
     }
 
     thead {
+      position: sticky;
+      top: 0;
+      z-index: 2;
       background: var(--neutral-50);
       border-bottom: 2px solid var(--neutral-200);
     }
@@ -34,6 +43,7 @@
       color: var(--neutral-700);
       white-space: nowrap;
       user-select: none;
+      background: var(--neutral-50);
     }
 
     td {

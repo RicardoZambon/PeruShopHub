@@ -1,10 +1,14 @@
 @use '../../../styles/mixins' as m;
 
+// Categories manages its own panel scrolling — disable layout's default scroll
+:host {
+  overflow: hidden !important;
+}
+
 .categorias-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--header-height, 56px) - 48px); // 48px = 24px padding top + bottom
-  overflow: hidden;
+  height: 100%;
 }
 
 .categorias-page__search-wrap {
@@ -47,16 +51,17 @@
 }
 
 .categorias-page__resize-handle {
-  width: 4px;
+  width: 1px;
   cursor: col-resize;
-  background: transparent;
+  background: var(--neutral-200);
   position: relative;
   flex-shrink: 0;
   z-index: 1;
-  transition: background 150ms ease;
+  transition: background 150ms ease, width 150ms ease;
 
   &:hover,
   &--active {
+    width: 3px;
     background: var(--primary);
   }
 
@@ -84,11 +89,9 @@
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  border-left: 1px solid var(--neutral-200);
 
   @include m.mobile {
     width: 100%;
-    border-left: none;
 
     &--hidden-mobile {
       display: none;

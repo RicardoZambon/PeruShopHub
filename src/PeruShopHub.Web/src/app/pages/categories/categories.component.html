@@ -18,7 +18,7 @@
   <!-- Split panel layout -->
   <div class="categorias-page__content">
     <div
-      class="categorias-page__tree-panel"
+      class="categorias-page__tree-panel scroll-on-hover"
       [class.categorias-page__tree-panel--hidden-mobile]="mobileView() === 'detail'"
       [style.width.px]="treeWidth()"
     >
@@ -38,7 +38,7 @@
     ></div>
 
     <div
-      class="categorias-page__detail-panel"
+      class="categorias-page__detail-panel scroll-on-hover"
       [class.categorias-page__detail-panel--hidden-mobile]="mobileView() === 'tree'"
     >
       <app-category-detail

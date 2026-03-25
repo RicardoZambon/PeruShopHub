@@ -24,6 +24,55 @@ body {
   transition: background-color 200ms ease, color 200ms ease;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   CUSTOM SCROLLBARS
+   Thin, unobtrusive scrollbars that appear on hover/scroll.
+   Uses both WebKit (Chrome/Edge/Safari) and standard (Firefox).
+   ═══════════════════════════════════════════════════════════════ */
+
+// Firefox
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--neutral-300) transparent;
+}
+
+// WebKit (Chrome, Edge, Safari)
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-300);
+  border-radius: 3px;
+  transition: background 150ms ease;
+
+  &:hover {
+    background: var(--neutral-500);
+  }
+}
+
+// Hide scrollbar until hover on panels (smooth reveal)
+.scroll-on-hover {
+  scrollbar-width: none; // Firefox
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+
+  &:hover {
+    scrollbar-width: thin; // Firefox
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--neutral-300);
+    }
+  }
+}
+
 a {
   color: var(--primary);
   text-decoration: none;
@@ -149,6 +198,37 @@ a:hover {
       .btn { flex: 1; min-width: 120px; }
     }
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT SCROLL — Routed page components
+   Each page fills the layout content area as a flex column.
+   The page header and action bars stay fixed at top.
+   The grid/table area fills remaining height and scrolls.
+   ═══════════════════════════════════════════════════════════════ */
+
+.layout-content > :not(router-outlet) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// Any element with this class fills remaining height and scrolls
+.page-scroll-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+// DataTable component auto-fills remaining space when inside a page
+app-data-table {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════════════
