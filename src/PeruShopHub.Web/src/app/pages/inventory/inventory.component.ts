@@ -1,4 +1,4 @@
-import { Component, signal, computed, OnInit, inject } from '@angular/core';
+import { Component, signal, computed, OnInit, inject, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
@@ -12,9 +12,17 @@ import { DialogComponent } from '../../shared/components/dialog/dialog.component
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
 import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
 import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
+import {
+  DataGridComponent,
+  GridCellDirective,
+  GridCardDirective,
+  GridColumn,
+  GridSortEvent,
+} from '../../shared/components/data-grid/data-grid.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { InventoryService } from '../../services/inventory.service';
 import type { InventoryItem, StockMovement } from '../../services/inventory.service';
+import { firstValueFrom } from 'rxjs';
 
 type InventoryTab = 'visao-geral' | 'movimentacoes' | 'estoque-full';
 type MovementType = 'Entrada' | 'Saída' | 'Ajuste';
@@ -27,12 +35,14 @@ interface ProductOption {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabBarComponent, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, PageSkeletonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabBarComponent, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, PageSkeletonComponent, DataGridComponent, GridCellDirective, GridCardDirective],
   templateUrl: './inventory.component.html',
   styleUrl: './inventory.component.scss',
 })
 export class InventoryComponent implements OnInit {
   private readonly inventoryService = inject(InventoryService);
+
+  @ViewChild('movGrid') movGridRef!: DataGridComponent;
 
   activeTab = signal<InventoryTab>('visao-geral');
   loading = signal(true);
@@ -41,6 +51,27 @@ export class InventoryComponent implements OnInit {
   // Mutable inventory and movements data
   inventoryData = signal<InventoryItem[]>([]);
   movements = signal<StockMovement[]>([]);
+
+  // Movements grid state (for infinite scroll in movimentações tab)
+  movLoading = signal(false);
+  movHasMore = signal(true);
+  movCurrentPage = signal(1);
+  readonly movPageSize = signal(20);
+
+  readonly movGridColumns: GridColumn[] = [
+    { key: 'data', label: 'Data', sortable: true },
+    { key: 'produto', label: 'Produto', sortable: true },
+    { key: 'tipo', label: 'Tipo' },
+    { key: 'quantidade', label: 'Quantidade', align: 'right' },
+    { key: 'custoUnitario', label: 'Custo Unitário', align: 'right' },
+    { key: 'motivo', label: 'Observação' },
+  ];
+
+  readonly movGridData = computed(() => {
+    return this.movements().map(m => ({
+      ...m,
+    }));
+  });
 
   // Modal state
   entryModalOpen = signal(false);
@@ -97,6 +128,13 @@ export class InventoryComponent implements OnInit {
     return all.filter(m => m.tipo === filter);
   });
 
+  formatMovDate(dateStr: string | null): string {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
   // Recent movements for the overview tab (latest 5)
   recentMovements = computed(() => {
     return this.movements().slice(0, 5);
@@ -144,21 +182,52 @@ export class InventoryComponent implements OnInit {
     if (tabDef?.disabled) return;
     this.activeTab.set(tab);
     if (tab === 'movimentacoes') {
-      this.loadMovementsWithFilters();
+      this.loadMovementsGrid(true);
     }
   }
 
-  private loadMovementsWithFilters(): void {
-    const filter = this.movementTypeFilter();
-    this.inventoryService.getMovements({
-      type: filter === 'all' ? undefined : filter,
-      page: 1,
-      pageSize: 50,
-    }).subscribe({
-      next: (result) => {
+  async loadMovementsGrid(reset = false): Promise<void> {
+    if (reset) {
+      this.movCurrentPage.set(1);
+      this.movements.set([]);
+      this.movHasMore.set(true);
+    }
+
+    this.movLoading.set(true);
+    try {
+      const filter = this.movementTypeFilter();
+      const result = await firstValueFrom(this.inventoryService.getMovements({
+        type: filter === 'all' ? undefined : filter,
+        page: this.movCurrentPage(),
+        pageSize: this.movPageSize(),
+      }));
+
+      if (reset) {
         this.movements.set(result.items);
-      },
-    });
+      } else {
+        this.movements.update(prev => [...prev, ...result.items]);
+      }
+
+      const totalLoaded = this.movements().length;
+      this.movHasMore.set(totalLoaded < result.totalCount);
+    } catch {
+      if (reset) {
+        this.movements.set([]);
+      }
+      this.movHasMore.set(false);
+    } finally {
+      this.movLoading.set(false);
+    }
+  }
+
+  onMovLoadMore(): void {
+    this.movCurrentPage.update(p => p + 1);
+    this.loadMovementsGrid(false);
+  }
+
+  onMovSort(event: GridSortEvent): void {
+    this.loadMovementsGrid(true);
+    this.movGridRef?.scrollToTop();
   }
 
   // Entry modal methods
@@ -248,6 +317,7 @@ export class InventoryComponent implements OnInit {
 
   setMovementFilter(type: MovementType | 'all'): void {
     this.movementTypeFilter.set(type);
-    this.loadMovementsWithFilters();
+    this.loadMovementsGrid(true);
+    this.movGridRef?.scrollToTop();
   }
 }

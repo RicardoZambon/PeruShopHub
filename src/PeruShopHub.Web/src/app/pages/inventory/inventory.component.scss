@@ -194,15 +194,83 @@
   }
 }
 
-// Movements table
-.mov-table-wrapper {
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+// Movements data-grid custom cell styles
+.mov {
+  &__date {
+    font-family: var(--font-mono);
+    color: var(--neutral-500);
+    font-size: var(--label-size);
+  }
+
+  &__qty {
+    font-family: var(--font-mono);
+    font-weight: 600;
+
+    &--positive {
+      color: var(--success);
+    }
+
+    &--negative {
+      color: var(--danger);
+    }
+  }
+
+  &__mono {
+    font-family: var(--font-mono);
+  }
+
+  &__muted {
+    color: var(--neutral-500);
+  }
+
+  // Mobile card styles
+  &__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-1);
+  }
+
+  &__card-date {
+    font-family: var(--font-mono);
+    font-size: var(--label-size);
+    color: var(--neutral-500);
+  }
+
+  &__card-product {
+    font-weight: 500;
+    color: var(--neutral-900);
+    margin-bottom: var(--space-2);
+  }
+
+  &__card-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  &__card-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    &--full {
+      width: 100%;
+    }
+  }
+
+  &__card-label {
+    font-size: var(--text-xs);
+    color: var(--neutral-500);
+  }
+
+  &__card-value {
+    font-size: var(--text-sm);
+    color: var(--neutral-800);
+  }
 }
 
+// Movements table (used by recent movements in overview tab)
 .mov-table {
   width: 100%;
   border-collapse: collapse;
