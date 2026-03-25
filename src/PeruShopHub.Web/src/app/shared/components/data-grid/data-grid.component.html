@@ -8,11 +8,31 @@
             [style.text-align]="col.align || 'left'"
             [style.width]="col.width || null"
             [class]="col.headerClass || ''"
+            [class.data-grid__th--sortable]="col.sortable"
+            [class.data-grid__th--active]="col.sortable && getSortDirection(col.key)"
+            (click)="onSortClick(col)"
           >
-            <ng-container *ngIf="getHeaderTemplate(col.key) as headerTmpl; else defaultHeader">
-              <ng-container *ngTemplateOutlet="headerTmpl"></ng-container>
-            </ng-container>
-            <ng-template #defaultHeader>{{ col.label }}</ng-template>
+            <span class="data-grid__header-content">
+              <ng-container *ngIf="getHeaderTemplate(col.key) as headerTmpl; else defaultHeader">
+                <ng-container *ngTemplateOutlet="headerTmpl"></ng-container>
+              </ng-container>
+              <ng-template #defaultHeader>{{ col.label }}</ng-template>
+
+              <span *ngIf="col.sortable" class="data-grid__sort-icon">
+                <svg *ngIf="!getSortDirection(col.key)" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                  <path d="M7 2.5L10 6H4L7 2.5Z" opacity="0.4"/>
+                  <path d="M7 11.5L4 8H10L7 11.5Z" opacity="0.4"/>
+                </svg>
+                <svg *ngIf="getSortDirection(col.key) === 'asc'" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                  <path d="M7 2.5L10 6H4L7 2.5Z"/>
+                  <path d="M7 11.5L4 8H10L7 11.5Z" opacity="0.2"/>
+                </svg>
+                <svg *ngIf="getSortDirection(col.key) === 'desc'" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                  <path d="M7 2.5L10 6H4L7 2.5Z" opacity="0.2"/>
+                  <path d="M7 11.5L4 8H10L7 11.5Z"/>
+                </svg>
+              </span>
+            </span>
           </th>
         </tr>
       </thead>

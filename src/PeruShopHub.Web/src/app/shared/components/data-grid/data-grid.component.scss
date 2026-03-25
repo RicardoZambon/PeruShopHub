@@ -40,6 +40,30 @@
       background: var(--neutral-50);
     }
 
+    .data-grid__th--sortable {
+      cursor: pointer;
+
+      &:hover {
+        color: var(--neutral-900);
+      }
+    }
+
+    .data-grid__th--active {
+      color: var(--primary);
+    }
+
+    .data-grid__header-content {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .data-grid__sort-icon {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
     td {
       padding: var(--space-3) var(--space-4);
       color: var(--neutral-900);

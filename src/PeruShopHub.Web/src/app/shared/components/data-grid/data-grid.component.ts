@@ -1,6 +1,8 @@
 import {
   Component,
   Input,
+  Output,
+  EventEmitter,
   ChangeDetectionStrategy,
   ContentChildren,
   QueryList,
@@ -23,6 +25,13 @@ export interface GridColumn {
 export interface GridCellContext {
   $implicit: Record<string, any>;
   value: any;
+}
+
+export type SortDirection = 'asc' | 'desc' | null;
+
+export interface GridSortEvent {
+  column: string;
+  direction: SortDirection;
 }
 
 @Directive({
@@ -57,8 +66,12 @@ export class DataGridComponent {
   @Input({ required: true }) columns: GridColumn[] = [];
   @Input({ required: true }) data: Record<string, any>[] = [];
 
+  @Output() sortChange = new EventEmitter<GridSortEvent>();
+
   @ContentChildren(GridCellDirective) cellTemplates!: QueryList<GridCellDirective>;
   @ContentChildren(GridHeaderDirective) headerTemplates!: QueryList<GridHeaderDirective>;
+
+  activeSort: GridSortEvent = { column: '', direction: null };
 
   getCellTemplate(columnKey: string): TemplateRef<GridCellContext> | null {
     const directive = this.cellTemplates?.find(d => d.appGridCell === columnKey);
@@ -68,5 +81,38 @@ export class DataGridComponent {
   getHeaderTemplate(columnKey: string): TemplateRef<void> | null {
     const directive = this.headerTemplates?.find(d => d.appGridHeader === columnKey);
     return directive ? directive.templateRef : null;
+  }
+
+  onSortClick(column: GridColumn): void {
+    if (!column.sortable) return;
+
+    let direction: SortDirection;
+
+    if (this.activeSort.column === column.key) {
+      // Cycle: asc → desc → null
+      if (this.activeSort.direction === 'asc') {
+        direction = 'desc';
+      } else if (this.activeSort.direction === 'desc') {
+        direction = null;
+      } else {
+        direction = 'asc';
+      }
+    } else {
+      direction = 'asc';
+    }
+
+    this.activeSort = {
+      column: direction ? column.key : '',
+      direction,
+    };
+
+    this.sortChange.emit({
+      column: column.key,
+      direction,
+    });
+  }
+
+  getSortDirection(columnKey: string): SortDirection {
+    return this.activeSort.column === columnKey ? this.activeSort.direction : null;
   }
 }
