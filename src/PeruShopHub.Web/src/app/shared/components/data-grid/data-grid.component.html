@@ -58,7 +58,11 @@
 
         <!-- Data rows -->
         <ng-container *ngIf="!showSkeleton">
-          <tr *ngFor="let row of data">
+          <tr
+            *ngFor="let row of data"
+            [class.data-grid__row--clickable]="hasRowClick"
+            (click)="onRowClick($event, row)"
+          >
             <td
               *ngFor="let col of columns"
               [style.text-align]="col.align || 'left'"
@@ -91,13 +95,13 @@
         <ng-container *ngFor="let row of data">
           <!-- Custom card template -->
           <ng-container *ngIf="cardTemplate as customCard; else defaultCard">
-            <div class="data-grid__card">
+            <div class="data-grid__card" [class.data-grid__card--clickable]="hasRowClick" (click)="onRowClick($event, row)">
               <ng-container *ngTemplateOutlet="customCard; context: { $implicit: row }"></ng-container>
             </div>
           </ng-container>
           <!-- Default card: label-value pairs from columns -->
           <ng-template #defaultCard>
-            <div class="data-grid__card">
+            <div class="data-grid__card" [class.data-grid__card--clickable]="hasRowClick" (click)="onRowClick($event, row)">
               <div *ngFor="let col of columns" class="data-grid__card-field">
                 <span class="data-grid__card-label">{{ col.label }}</span>
                 <span class="data-grid__card-value" [style.text-align]="col.align || 'left'">

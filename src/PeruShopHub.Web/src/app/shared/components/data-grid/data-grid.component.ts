@@ -100,6 +100,7 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
 
   @Output() sortChange = new EventEmitter<GridSortEvent>();
   @Output() loadMore = new EventEmitter<void>();
+  @Output() rowClick = new EventEmitter<Record<string, any>>();
 
   @ContentChildren(GridCellDirective) cellTemplates!: QueryList<GridCellDirective>;
   @ContentChildren(GridHeaderDirective) headerTemplates!: QueryList<GridHeaderDirective>;
@@ -207,5 +208,18 @@ export class DataGridComponent implements AfterViewInit, OnDestroy {
 
   getSortDirection(columnKey: string): SortDirection {
     return this.activeSort.column === columnKey ? this.activeSort.direction : null;
+  }
+
+  onRowClick(event: MouseEvent, row: Record<string, any>): void {
+    // Don't fire rowClick when user clicks interactive elements inside cells
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, input, select, textarea, [role="button"]')) {
+      return;
+    }
+    this.rowClick.emit(row);
+  }
+
+  get hasRowClick(): boolean {
+    return this.rowClick.observed;
   }
 }
