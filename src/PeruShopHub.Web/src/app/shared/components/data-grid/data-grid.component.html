@@ -9,7 +9,10 @@
             [style.width]="col.width || null"
             [class]="col.headerClass || ''"
           >
-            {{ col.label }}
+            <ng-container *ngIf="getHeaderTemplate(col.key) as headerTmpl; else defaultHeader">
+              <ng-container *ngTemplateOutlet="headerTmpl"></ng-container>
+            </ng-container>
+            <ng-template #defaultHeader>{{ col.label }}</ng-template>
           </th>
         </tr>
       </thead>
