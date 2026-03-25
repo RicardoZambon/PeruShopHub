@@ -33,6 +33,7 @@ export class CustomersComponent implements OnInit {
   readonly loading = signal(true);
   readonly hasData = signal(true);
   readonly hasMore = signal(true);
+  readonly totalCount = signal(0);
 
   readonly customers = signal<CustomerListItem[]>([]);
   readonly currentPage = signal(1);
@@ -88,6 +89,7 @@ export class CustomersComponent implements OnInit {
 
       const totalLoaded = this.customers().length;
       this.hasMore.set(totalLoaded < response.totalCount);
+      this.totalCount.set(response.totalCount);
       this.hasData.set(totalLoaded > 0 || this.searchQuery().length > 0);
     } catch {
       if (reset) {

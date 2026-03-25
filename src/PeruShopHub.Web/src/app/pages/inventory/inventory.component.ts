@@ -60,6 +60,7 @@ export class InventoryComponent implements OnInit {
   invSortBy = signal('productName');
   invSortDir = signal<'asc' | 'desc'>('asc');
   invSearch = signal('');
+  invTotalCount = signal(0);
 
   readonly invGridColumns: GridColumn[] = [
     { key: 'sku', label: 'SKU', sortable: true },
@@ -80,6 +81,7 @@ export class InventoryComponent implements OnInit {
   // Movements grid state (for infinite scroll in movimentações tab)
   movLoading = signal(false);
   movHasMore = signal(true);
+  movTotalCount = signal(0);
   movCurrentPage = signal(1);
   readonly movPageSize = signal(20);
 
@@ -207,6 +209,7 @@ export class InventoryComponent implements OnInit {
 
       const totalLoaded = this.inventoryData().length;
       this.invHasMore.set(totalLoaded < result.totalCount);
+      this.invTotalCount.set(result.totalCount);
     } catch {
       if (reset) {
         this.inventoryData.set([]);
@@ -276,6 +279,7 @@ export class InventoryComponent implements OnInit {
 
       const totalLoaded = this.movements().length;
       this.movHasMore.set(totalLoaded < result.totalCount);
+      this.movTotalCount.set(result.totalCount);
     } catch {
       if (reset) {
         this.movements.set([]);

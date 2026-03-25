@@ -53,6 +53,7 @@ export class SalesListComponent implements OnInit {
   readonly loading = signal(true);
   readonly hasData = signal(true);
   readonly hasMore = signal(true);
+  readonly totalCount = signal(0);
 
   readonly orders = signal<OrderListItem[]>([]);
   readonly currentPage = signal(1);
@@ -115,6 +116,7 @@ export class SalesListComponent implements OnInit {
 
       const totalLoaded = this.orders().length;
       this.hasMore.set(totalLoaded < response.totalCount);
+      this.totalCount.set(response.totalCount);
       this.hasData.set(totalLoaded > 0 || this.searchQuery().length > 0 || this.statusFilter() !== 'Todos' || !!this.dateFrom() || !!this.dateTo());
     } catch {
       if (reset) {

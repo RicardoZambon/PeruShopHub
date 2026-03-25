@@ -51,6 +51,7 @@ export class ProductsListComponent implements OnInit {
   readonly loading = signal(true);
   readonly hasData = signal(true);
   readonly hasMore = signal(true);
+  readonly totalCount = signal(0);
 
   readonly products = signal<Product[]>([]);
   readonly currentPage = signal(1);
@@ -118,6 +119,7 @@ export class ProductsListComponent implements OnInit {
 
       const totalLoaded = this.products().length;
       this.hasMore.set(totalLoaded < result.totalCount);
+      this.totalCount.set(result.totalCount);
       this.hasData.set(totalLoaded > 0 || this.searchQuery().length > 0 || this.statusFilter() !== 'Todos');
     } catch {
       if (reset) {

@@ -45,6 +45,7 @@ export class PurchaseOrdersListComponent implements OnInit {
   readonly statusFilter = signal<'Todos' | POStatus>('Todos');
   readonly loading = signal(true);
   readonly hasMore = signal(true);
+  readonly totalCount = signal(0);
   readonly orders = signal<PurchaseOrderListItem[]>([]);
   readonly currentPage = signal(1);
   readonly pageSize = signal(20);
@@ -98,6 +99,7 @@ export class PurchaseOrdersListComponent implements OnInit {
 
       const totalLoaded = this.orders().length;
       this.hasMore.set(totalLoaded < response.totalCount);
+      this.totalCount.set(response.totalCount);
     } catch {
       if (reset) {
         this.orders.set([]);
