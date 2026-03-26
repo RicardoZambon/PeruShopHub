@@ -2,7 +2,7 @@ import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { LucideAngularModule, ArrowLeft, Save, X, ChevronDown, ChevronUp, Trash2 } from 'lucide-angular';
+import { LucideAngularModule, ArrowLeft, Save, X, ChevronDown, ChevronUp, Trash2, MoreVertical, Power, PowerOff } from 'lucide-angular';
 import { MediaGalleryComponent, GalleryImage } from './media-gallery.component';
 import { VariantManagerComponent } from './variant-manager.component';
 import { TreeSelectComponent } from './tree-select.component';
@@ -51,6 +51,11 @@ export class ProductFormComponent {
   readonly chevronDownIcon = ChevronDown;
   readonly chevronUpIcon = ChevronUp;
   readonly trashIcon = Trash2;
+  readonly moreIcon = MoreVertical;
+  readonly powerIcon = Power;
+  readonly powerOffIcon = PowerOff;
+
+  menuOpen = signal(false);
 
   readonly tabs = TABS;
 
