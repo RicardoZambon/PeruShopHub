@@ -83,7 +83,7 @@ export class ProductService {
     if (params.status) httpParams = httpParams.set('status', params.status);
     if (params.categoryId) httpParams = httpParams.set('categoryId', params.categoryId);
     if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
-    if (params.sortDirection) httpParams = httpParams.set('sortDirection', params.sortDirection);
+    if (params.sortDirection) httpParams = httpParams.set('sortDir', params.sortDirection);
     return firstValueFrom(
       this.http.get<PagedResult<Product>>(this.baseUrl, { params: httpParams }),
     );
