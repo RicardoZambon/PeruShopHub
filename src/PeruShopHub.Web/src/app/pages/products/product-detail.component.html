@@ -1,27 +1,24 @@
 <!-- Loading skeleton -->
 @if (loading()) {
-  <div class="detail-page">
-    <div class="detail-page__back">
-      <div class="skeleton skeleton--rect" style="width: 120px; height: 32px;"></div>
+  <div class="detail-page__back">
+    <div class="skeleton skeleton--rect" style="width: 120px; height: 32px;"></div>
+  </div>
+  <div class="detail-page__header">
+    <div class="skeleton skeleton--rect" style="width: 80px; height: 80px; border-radius: 8px;"></div>
+    <div style="flex: 1;">
+      <div class="skeleton skeleton--text" style="width: 300px; height: 24px; margin-bottom: 8px;"></div>
+      <div class="skeleton skeleton--text" style="width: 150px; height: 16px;"></div>
     </div>
-    <div class="detail-page__header">
-      <div class="skeleton skeleton--rect" style="width: 80px; height: 80px; border-radius: 8px;"></div>
-      <div style="flex: 1;">
-        <div class="skeleton skeleton--text" style="width: 300px; height: 24px; margin-bottom: 8px;"></div>
-        <div class="skeleton skeleton--text" style="width: 150px; height: 16px;"></div>
-      </div>
-    </div>
-    <div class="kpi-grid kpi-grid--3">
-      @for (i of [1,2,3]; track i) {
-        <div class="skeleton skeleton--rect" style="height: 100px; border-radius: 8px;"></div>
-      }
-    </div>
+  </div>
+  <div class="kpi-grid kpi-grid--3">
+    @for (i of [1,2,3]; track i) {
+      <div class="skeleton skeleton--rect" style="height: 100px; border-radius: 8px;"></div>
+    }
   </div>
 }
 
 <!-- Loaded content -->
 @if (!loading() && product()) {
-  <div class="detail-page">
     <!-- Back button -->
     <a class="detail-page__back" routerLink="/produtos">
       <lucide-icon [img]="ArrowLeft" [size]="18"></lucide-icon>
@@ -378,5 +375,4 @@
         </div>
       </div>
     }
-  </div>
 }
