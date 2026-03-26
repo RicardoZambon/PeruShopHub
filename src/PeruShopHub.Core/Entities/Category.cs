@@ -10,6 +10,7 @@ public class Category
     public bool IsActive { get; set; } = true;
     public int ProductCount { get; set; }
     public int Order { get; set; }
+    public string? SkuPrefix { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public Category? Parent { get; set; }

@@ -85,6 +85,14 @@ export class CategoryService {
     return categories;
   }
 
+  async search(query: string): Promise<Category[]> {
+    const params = new HttpParams().set('q', query);
+    const categories = await firstValueFrom(
+      this.http.get<Category[]>(`${this.baseUrl}/search`, { params }),
+    );
+    return categories;
+  }
+
   async getTree(): Promise<Category[]> {
     await this.getAll();
     return this.categoryTree();

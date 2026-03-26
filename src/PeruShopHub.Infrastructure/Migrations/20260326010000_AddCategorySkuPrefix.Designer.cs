@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PeruShopHub.Infrastructure.Persistence;
@@ -11,9 +12,10 @@ using PeruShopHub.Infrastructure.Persistence;
 namespace PeruShopHub.Infrastructure.Migrations
 {
     [DbContext(typeof(PeruShopHubDbContext))]
-    partial class PeruShopHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260326010000_AddCategorySkuPrefix")]
+    partial class AddCategorySkuPrefix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

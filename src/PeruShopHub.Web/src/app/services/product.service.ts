@@ -19,6 +19,7 @@ export interface Product {
   imageUrl: string | null;
   stock: number;
   status: string;
+  isActive: boolean;
   margin: number | null;
   variantCount: number;
   needsReview: boolean;
@@ -85,6 +86,22 @@ export class ProductService {
     return firstValueFrom(
       this.http.put<Product>(`${this.baseUrl}/${id}`, dto),
     );
+  }
+
+  async delete(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${this.baseUrl}/${id}`),
+    );
+  }
+
+  async getNextSku(categoryId: string): Promise<string | null> {
+    const result = await firstValueFrom(
+      this.http.get<{ suggestedSku: string | null }>(
+        `${this.baseUrl}/next-sku`,
+        { params: new HttpParams().set('categoryId', categoryId) },
+      ),
+    );
+    return result.suggestedSku;
   }
 
   getVariants(id: string): Observable<any[]> {

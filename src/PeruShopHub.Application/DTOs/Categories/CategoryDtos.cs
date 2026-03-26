@@ -9,7 +9,8 @@ public record CategoryListDto(
     bool IsActive,
     int ProductCount,
     int Order,
-    bool HasChildren);
+    bool HasChildren,
+    string? SkuPrefix);
 
 public record CategoryDetailDto(
     Guid Id,
@@ -23,14 +24,16 @@ public record CategoryDetailDto(
     int Order,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    IReadOnlyList<CategoryListDto> Children);
+    IReadOnlyList<CategoryListDto> Children,
+    string? SkuPrefix);
 
 public record CreateCategoryDto(
     string Name,
     string Slug,
     Guid? ParentId,
     string? Icon,
-    int Order);
+    int Order,
+    string? SkuPrefix);
 
 public record UpdateCategoryDto(
     string? Name,
@@ -38,4 +41,5 @@ public record UpdateCategoryDto(
     Guid? ParentId,
     string? Icon,
     bool? IsActive,
-    int? Order);
+    int? Order,
+    string? SkuPrefix);

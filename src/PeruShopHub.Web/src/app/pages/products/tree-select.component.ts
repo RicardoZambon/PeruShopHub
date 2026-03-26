@@ -1,7 +1,10 @@
-import { Component, input, output, signal, computed, HostListener, ElementRef, inject } from '@angular/core';
+import { Component, input, output, signal, computed, HostListener, ElementRef, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, ChevronDown, ChevronRight, Search } from 'lucide-angular';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Category } from '../../models/category.model';
 import { CategoryService } from '../../services/category.service';
 
@@ -22,6 +25,8 @@ interface FlatNode {
 export class TreeSelectComponent {
   private readonly el = inject(ElementRef);
   private readonly categoryService = inject(CategoryService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly searchSubject = new Subject<string>();
 
   readonly chevronDownIcon = ChevronDown;
   readonly chevronRightIcon = ChevronRight;
@@ -35,12 +40,60 @@ export class TreeSelectComponent {
   searchQuery = signal('');
   expandedIds = signal<Set<string>>(new Set());
   focusedIndex = signal(-1);
+  readonly searchResults = signal<Category[] | null>(null);
+
+  constructor() {
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(async (query) => {
+      if (!query.trim()) {
+        this.searchResults.set(null);
+        return;
+      }
+      try {
+        const results = await this.categoryService.search(query);
+        this.searchResults.set(results);
+      } catch {
+        this.searchResults.set(null);
+      }
+    });
+  }
 
   /** Get breadcrumb for selected category */
   selectedBreadcrumb = computed(() => {
     if (!this.value()) return '';
     return this.categoryService.getBreadcrumb(this.value()!).join(' > ');
   });
+
+  /** The effective tree: API search results when searching, or the full input tree */
+  private effectiveCategories = computed((): Category[] => {
+    const apiResults = this.searchResults();
+    if (apiResults !== null && this.searchQuery().trim()) {
+      return this.buildTreeFromFlat(apiResults);
+    }
+    return this.categories();
+  });
+
+  private buildTreeFromFlat(flat: Category[]): Category[] {
+    const map = new Map<string, Category>();
+    const roots: Category[] = [];
+
+    for (const cat of flat) {
+      map.set(cat.id, { ...cat, children: [] });
+    }
+
+    for (const cat of map.values()) {
+      if (cat.parentId && map.has(cat.parentId)) {
+        map.get(cat.parentId)!.children.push(cat);
+      } else if (!cat.parentId || !map.has(cat.parentId)) {
+        roots.push(cat);
+      }
+    }
+
+    return roots;
+  }
 
   /** Flatten the tree for rendering, respecting expanded state and search */
   flatNodes = computed((): FlatNode[] => {
@@ -76,7 +129,7 @@ export class TreeSelectComponent {
       }
     };
 
-    flatten(this.categories(), 0);
+    flatten(this.effectiveCategories(), 0);
     return nodes;
   });
 
@@ -91,12 +144,14 @@ export class TreeSelectComponent {
   close(): void {
     this.isOpen.set(false);
     this.searchQuery.set('');
+    this.searchResults.set(null);
   }
 
   onSearchInput(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.searchQuery.set(value);
     this.focusedIndex.set(-1);
+    this.searchSubject.next(value);
   }
 
   toggleExpand(nodeId: string, event: Event): void {

@@ -312,95 +312,31 @@
   }
 }
 
-// Searchable Category Dropdown
-.categoria-dropdown {
-  position: relative;
-}
-
-.dropdown-trigger {
-  position: relative;
+// SKU field with suggest link
+.sku-field-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 
   input {
-    width: 100%;
-    padding: var(--space-3) var(--space-4);
-    padding-right: var(--space-8);
-    border: 1px solid var(--neutral-300);
-    border-radius: var(--radius-md);
-    font-family: var(--font-ui);
-    font-size: var(--body-size);
-    color: var(--neutral-900);
-    background: var(--surface);
-    outline: none;
-    transition: border-color 200ms ease;
-    box-sizing: border-box;
-
-    &::placeholder {
-      color: var(--neutral-500);
-    }
-
-    &:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px var(--primary-light);
-    }
-
-    &.invalid {
-      border-color: var(--danger);
-    }
-  }
-
-  .dropdown-icon {
-    position: absolute;
-    right: var(--space-3);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--neutral-500);
-    pointer-events: none;
+    flex: 1;
   }
 }
 
-.dropdown-list {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--surface);
-  border: 1px solid var(--neutral-300);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 10;
-  margin-top: var(--space-1);
-}
-
-.dropdown-item {
-  display: block;
-  width: 100%;
-  padding: var(--space-2) var(--space-4);
+.sku-suggest-link {
   border: none;
   background: none;
-  text-align: left;
-  font-family: var(--font-ui);
-  font-size: var(--body-size);
-  color: var(--neutral-900);
+  color: var(--primary);
+  font-size: var(--body-small-size);
+  font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
 
   &:hover {
-    background: var(--neutral-100);
-  }
-
-  &.selected {
     background: var(--primary-light);
-    color: var(--primary);
-    font-weight: 500;
   }
-}
-
-.dropdown-empty {
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--body-small-size);
-  color: var(--neutral-500);
-  text-align: center;
 }
 
 // Margin Calculator
@@ -446,6 +382,11 @@
     flex-wrap: wrap;
     gap: var(--space-2);
   }
+}
+
+.bottom-bar-left {
+  display: flex;
+  gap: var(--space-3);
 }
 
 .bottom-bar-actions {

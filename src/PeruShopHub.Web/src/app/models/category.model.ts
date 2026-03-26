@@ -8,6 +8,7 @@ export interface Category {
   isActive: boolean;
   productCount: number;
   order: number;
+  skuPrefix: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +34,7 @@ export interface CreateCategoryDto {
   parentId: string | null;
   icon: string | null;
   order: number;
+  skuPrefix?: string | null;
 }
 export interface UpdateCategoryDto {
   name?: string;
@@ -41,6 +43,7 @@ export interface UpdateCategoryDto {
   icon?: string | null;
   isActive?: boolean;
   order?: number;
+  skuPrefix?: string | null;
 }
 export type CreateVariationFieldDto = Pick<VariationField, 'name' | 'type' | 'options' | 'required'>;
 export type UpdateVariationFieldDto = Partial<CreateVariationFieldDto & { order: number }>;

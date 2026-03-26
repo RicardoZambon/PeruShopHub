@@ -45,13 +45,77 @@ public class CategoriesController : ControllerBase
                 c.IsActive,
                 c.ProductCount,
                 c.Order,
-                false))
+                false,
+                c.SkuPrefix))
             .ToListAsync();
 
         var result = categories.Select(c => c with
         {
             HasChildren = childrenLookup.Contains(c.Id)
         }).ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("search")]
+    public async Task<ActionResult<IReadOnlyList<CategoryListDto>>> SearchCategories(
+        [FromQuery] string q = "")
+    {
+        if (string.IsNullOrWhiteSpace(q))
+            return Ok(Array.Empty<CategoryListDto>());
+
+        var term = q.ToLower();
+
+        // Find all categories matching the search term
+        var matchingIds = await _db.Categories
+            .AsNoTracking()
+            .Where(c => c.Name.ToLower().Contains(term))
+            .Select(c => c.Id)
+            .ToListAsync();
+
+        if (matchingIds.Count == 0)
+            return Ok(Array.Empty<CategoryListDto>());
+
+        // Load all categories to reconstruct ancestor chains
+        var allCategories = await _db.Categories
+            .AsNoTracking()
+            .ToListAsync();
+
+        var resultIds = new HashSet<Guid>(matchingIds);
+
+        // For each match, walk up the parent chain and include ancestors
+        foreach (var id in matchingIds)
+        {
+            var current = allCategories.FirstOrDefault(c => c.Id == id);
+            while (current?.ParentId != null)
+            {
+                resultIds.Add(current.ParentId.Value);
+                current = allCategories.FirstOrDefault(c => c.Id == current.ParentId.Value);
+            }
+        }
+
+        // Build HasChildren lookup
+        var parentIds = allCategories
+            .Where(c => c.ParentId != null && resultIds.Contains(c.ParentId.Value))
+            .Select(c => c.ParentId!.Value)
+            .Distinct()
+            .ToHashSet();
+
+        var result = allCategories
+            .Where(c => resultIds.Contains(c.Id))
+            .OrderBy(c => c.Name)
+            .Select(c => new CategoryListDto(
+                c.Id,
+                c.Name,
+                c.Slug,
+                c.ParentId,
+                c.Icon,
+                c.IsActive,
+                c.ProductCount,
+                c.Order,
+                parentIds.Contains(c.Id),
+                c.SkuPrefix))
+            .ToList();
 
         return Ok(result);
     }
@@ -99,7 +163,8 @@ public class CategoriesController : ControllerBase
                 c.IsActive,
                 c.ProductCount,
                 c.Order,
-                false))
+                false,
+                c.SkuPrefix))
             .ToListAsync();
 
         var childrenWithFlag = children.Select(c => c with
@@ -119,7 +184,8 @@ public class CategoriesController : ControllerBase
             category.Order,
             category.CreatedAt,
             category.UpdatedAt,
-            childrenWithFlag);
+            childrenWithFlag,
+            category.SkuPrefix);
 
         return Ok(dto);
     }
@@ -152,6 +218,7 @@ public class CategoriesController : ControllerBase
             ParentId = dto.ParentId,
             Icon = dto.Icon,
             Order = dto.Order,
+            SkuPrefix = dto.SkuPrefix,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -180,7 +247,8 @@ public class CategoriesController : ControllerBase
             category.Order,
             category.CreatedAt,
             category.UpdatedAt,
-            Array.Empty<CategoryListDto>());
+            Array.Empty<CategoryListDto>(),
+            category.SkuPrefix);
 
         return CreatedAtAction(nameof(GetCategory), new { id = category.Id }, result);
     }
@@ -218,6 +286,7 @@ public class CategoriesController : ControllerBase
         if (dto.Icon is not null) category.Icon = dto.Icon;
         if (dto.IsActive.HasValue) category.IsActive = dto.IsActive.Value;
         if (dto.Order.HasValue) category.Order = dto.Order.Value;
+        if (dto.SkuPrefix is not null) category.SkuPrefix = dto.SkuPrefix;
 
         category.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
@@ -244,7 +313,8 @@ public class CategoriesController : ControllerBase
                 c.IsActive,
                 c.ProductCount,
                 c.Order,
-                _db.Categories.Any(gc => gc.ParentId == c.Id)))
+                _db.Categories.Any(gc => gc.ParentId == c.Id),
+                c.SkuPrefix))
             .ToListAsync();
 
         var result = new CategoryDetailDto(
@@ -259,7 +329,8 @@ public class CategoriesController : ControllerBase
             category.Order,
             category.CreatedAt,
             category.UpdatedAt,
-            children);
+            children,
+            category.SkuPrefix);
 
         return Ok(result);
     }
