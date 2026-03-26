@@ -11,6 +11,8 @@ public record ProductListDto(
     bool NeedsReview,
     bool IsActive,
     int VariantCount,
+    int Stock,
+    decimal? Margin,
     string? PhotoUrl,
     DateTime CreatedAt);
 
