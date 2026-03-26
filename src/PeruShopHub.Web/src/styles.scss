@@ -212,7 +212,7 @@ a:hover {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: clip;
 }
 
 // Any element with this class fills remaining height and scrolls
