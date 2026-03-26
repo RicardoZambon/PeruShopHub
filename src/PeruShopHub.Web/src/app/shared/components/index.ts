@@ -20,6 +20,7 @@ export { ButtonComponent } from './button/button.component';
 export { PageHeaderComponent } from './page-header/page-header.component';
 export { SearchInputComponent } from './search-input/search-input.component';
 export { SelectDropdownComponent } from './select-dropdown/select-dropdown.component';
+export type { SelectOption } from './select-dropdown/select-dropdown.component';
 export { FormFieldComponent } from './form-field/form-field.component';
 export { ToggleSwitchComponent } from './toggle-switch/toggle-switch.component';
 export { RadioGroupComponent } from './radio-group/radio-group.component';

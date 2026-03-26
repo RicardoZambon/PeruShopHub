@@ -12,17 +12,23 @@ export interface Product {
   supplier?: string;
   price: number;
   acquisitionCost: number;
+  purchaseCost: number;
+  packagingCost: number;
   weight?: number;
   height?: number;
   width?: number;
   length?: number;
   imageUrl: string | null;
+  photoUrls?: string[];
   stock: number;
   status: string;
   isActive: boolean;
   margin: number | null;
   variantCount: number;
   needsReview: boolean;
+  variants?: any[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CostHistoryItem {
@@ -51,6 +57,17 @@ export interface ProductListParams {
   categoryId?: string;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
+}
+
+export interface ProductAnalytics {
+  totalSales: number;
+  totalRevenue: number;
+  totalProfit: number;
+  margin: number | null;
+  salesChange: number | null;
+  revenueChange: number | null;
+  profitChange: number | null;
+  marginChange: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -115,5 +132,20 @@ export class ProductService {
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
     return this.http.get<PagedResult<CostHistoryItem>>(`${this.baseUrl}/${id}/cost-history`, { params });
+  }
+
+  async getAnalytics(id: string, days = 30): Promise<ProductAnalytics> {
+    const params = new HttpParams().set('days', days.toString());
+    return firstValueFrom(
+      this.http.get<ProductAnalytics>(`${this.baseUrl}/${id}/analytics`, { params }),
+    );
+  }
+
+  getRecentOrders(id: string, days = 30, page = 1, pageSize = 10): Observable<PagedResult<any>> {
+    const params = new HttpParams()
+      .set('days', days.toString())
+      .set('page', page.toString())
+      .set('pageSize', pageSize.toString());
+    return this.http.get<PagedResult<any>>(`${this.baseUrl}/${id}/recent-orders`, { params });
   }
 }
