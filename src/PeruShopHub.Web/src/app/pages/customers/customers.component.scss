@@ -17,7 +17,6 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    margin-bottom: var(--space-4);
 
     @include m.mobile {
       flex-direction: column;
