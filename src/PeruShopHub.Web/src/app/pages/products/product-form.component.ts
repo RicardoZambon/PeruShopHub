@@ -95,20 +95,22 @@ export class ProductFormComponent {
       fornecedor: [''],
       precoVenda: [null as number | null, [Validators.required, Validators.min(0.01)]],
       custoAquisicao: [null as number | null, [Validators.min(0)]],
-      peso: [null as number | null, [Validators.min(0.01)]],
-      altura: [null as number | null, [Validators.min(1)]],
-      largura: [null as number | null, [Validators.min(1)]],
-      comprimento: [null as number | null, [Validators.min(1)]],
+      peso: [null as number | null],
+      altura: [null as number | null],
+      largura: [null as number | null],
+      comprimento: [null as number | null],
     });
-
-    this.loadCategories();
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode.set(true);
       this.productId.set(id);
-      this.loadProduct(id);
     }
+
+    // Load categories first, then product (so TreeSelect can show the selection)
+    this.loadCategories().then(() => {
+      if (id) this.loadProduct(id);
+    });
   }
 
   private async loadCategories(): Promise<void> {
