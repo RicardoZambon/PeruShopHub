@@ -19,32 +19,13 @@
 
 <!-- Loaded content -->
 @if (!loading() && product()) {
-    <!-- Back button -->
-    <a class="detail-page__back" routerLink="/produtos">
-      <lucide-icon [img]="ArrowLeft" [size]="18"></lucide-icon>
-      Voltar para Produtos
-    </a>
-
-    <!-- Header section -->
-    <div class="detail-page__header">
-      <div class="detail-page__photo">
-        @if (product()!.imageUrl) {
-          <img [src]="product()!.imageUrl" [alt]="product()!.name" />
-        } @else {
-          <lucide-icon [img]="Package" [size]="32" class="detail-page__photo-placeholder"></lucide-icon>
-        }
-      </div>
-      <div class="detail-page__info">
-        <h1 class="detail-page__name">{{ product()!.name }}</h1>
-        <div class="detail-page__meta">
-          <span class="detail-page__sku">{{ product()!.sku }}</span>
-          <app-badge [label]="product()!.status" [variant]="statusVariant()"></app-badge>
-        </div>
-      </div>
-      <a [routerLink]="'/produtos/' + product()!.id + '/editar'" class="detail-page__edit-link">
-        <app-button variant="outline" [icon]="EditIcon">Editar</app-button>
-      </a>
-    </div>
+    <app-page-header
+      [title]="product()!.name"
+      [subtitle]="product()!.sku"
+      actionLabel="Editar"
+      [actionIcon]="EditIcon"
+      (action)="onEdit()"
+    ></app-page-header>
 
     <!-- Info sections grid -->
     <div class="info-sections">

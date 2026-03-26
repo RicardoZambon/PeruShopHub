@@ -46,6 +46,6 @@ app-header {
   grid-area: main;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
   min-height: 0;
 }

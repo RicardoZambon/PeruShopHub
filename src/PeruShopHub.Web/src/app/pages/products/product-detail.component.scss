@@ -1,8 +1,6 @@
 @use '../../../styles/mixins' as m;
 
 :host {
-  overflow-y: auto;
-  max-width: 1200px;
   padding-bottom: var(--space-8);
 
   &__back {

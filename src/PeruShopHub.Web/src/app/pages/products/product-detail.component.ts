@@ -1,6 +1,6 @@
 import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Package, Edit } from 'lucide-angular';
 import {
   KpiCardComponent,
@@ -9,6 +9,7 @@ import {
   DataGridComponent,
   GridCellDirective,
   GridCardDirective,
+  PageHeaderComponent,
 } from '../../shared/components';
 import type { BadgeVariant, SelectOption, GridColumn } from '../../shared/components';
 import { ButtonComponent } from '../../shared/components/button/button.component';
@@ -59,6 +60,7 @@ interface ProductDetail {
     DataGridComponent,
     GridCellDirective,
     GridCardDirective,
+    PageHeaderComponent,
   ],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
@@ -203,10 +205,15 @@ export class ProductDetailComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private variantService: ProductVariantService,
     private productService: ProductService,
     private categoryService: CategoryService,
   ) {}
+
+  onEdit(): void {
+    this.router.navigate(['/produtos', this.productId, 'editar']);
+  }
 
   ngOnInit(): void {
     this.productId = this.route.snapshot.paramMap.get('id') || '1';
