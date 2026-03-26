@@ -48,6 +48,7 @@ export interface ProductListParams {
   pageSize?: number;
   search?: string;
   status?: string;
+  categoryId?: string;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
 }
@@ -63,6 +64,7 @@ export class ProductService {
     if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize.toString());
     if (params.search) httpParams = httpParams.set('search', params.search);
     if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.categoryId) httpParams = httpParams.set('categoryId', params.categoryId);
     if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
     if (params.sortDirection) httpParams = httpParams.set('sortDirection', params.sortDirection);
     return firstValueFrom(
