@@ -41,6 +41,20 @@
       />
     </app-form-field>
 
+    <app-form-field
+      label="Prefixo SKU"
+      hint="Usado para sugerir SKU automaticamente nos produtos"
+      [error]="serverErrors()['skuprefix'] || (form.get('skuPrefix')!.touched && form.get('skuPrefix')!.hasError('maxlength') ? 'Máximo de 10 caracteres' : '')">
+      <input
+        id="category-sku-prefix"
+        type="text"
+        formControlName="skuPrefix"
+        placeholder="Ex: ELE, CEL, INF"
+        maxlength="10"
+        (input)="serverErrors.set({})"
+      />
+    </app-form-field>
+
     <app-form-field label="Categoria Pai">
       <div class="parent-dropdown">
         <button

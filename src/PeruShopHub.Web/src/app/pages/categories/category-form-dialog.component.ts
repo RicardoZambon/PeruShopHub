@@ -86,6 +86,7 @@ export class CategoryFormDialogComponent implements OnInit {
         [Validators.required, Validators.maxLength(120)],
       ],
       parentId: [this.category?.parentId || this.preselectedParentId || null],
+      skuPrefix: [this.category?.skuPrefix || '', [Validators.maxLength(10)]],
       isActive: [this.category?.isActive ?? true],
     });
 
@@ -143,11 +144,12 @@ export class CategoryFormDialogComponent implements OnInit {
     this.serverErrors.set({});
 
     try {
-      const { name, slug, parentId, isActive } = this.form.value;
+      const { name, slug, parentId, isActive, skuPrefix } = this.form.value;
       const iconValue = this.selectedIcon() || null;
+      const skuPrefixValue = skuPrefix?.trim() || null;
 
       if (this.isEditMode && this.category) {
-        const dto: UpdateCategoryDto = { name, slug, parentId, icon: iconValue, isActive };
+        const dto: UpdateCategoryDto = { name, slug, parentId, icon: iconValue, isActive, skuPrefix: skuPrefixValue };
         const updated = await this.categoryService.update(this.category.id, dto);
         if (updated) {
           this.saved.emit(updated);
@@ -161,6 +163,7 @@ export class CategoryFormDialogComponent implements OnInit {
           parentId,
           icon: iconValue,
           order: siblings.length + 1,
+          skuPrefix: skuPrefixValue,
         };
         const created = await this.categoryService.create(dto);
         this.saved.emit(created);

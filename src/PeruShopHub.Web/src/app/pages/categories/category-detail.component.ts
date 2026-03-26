@@ -66,6 +66,7 @@ export class CategoryDetailComponent implements OnChanges {
     this.form = this.fb.group({
       name: [this.category.name, [Validators.required, Validators.maxLength(100)]],
       slug: [this.category.slug, [Validators.required, Validators.maxLength(120)]],
+      skuPrefix: [this.category.skuPrefix || '', [Validators.maxLength(10)]],
       isActive: [this.category.isActive],
     });
   }
@@ -89,11 +90,13 @@ export class CategoryDetailComponent implements OnChanges {
 
     this.saving.set(true);
     try {
+      const skuPrefixValue = this.form.value.skuPrefix?.trim() || null;
       const dto: UpdateCategoryDto = {
         name: this.form.value.name,
         slug: this.form.value.slug,
         icon: this.editIcon(),
         isActive: this.form.value.isActive,
+        skuPrefix: skuPrefixValue,
       };
       const updated = await this.categoryService.update(this.category.id, dto);
       if (updated) {

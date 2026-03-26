@@ -80,6 +80,19 @@
           />
         </app-form-field>
 
+        <app-form-field
+          label="Prefixo SKU"
+          hint="Usado para sugerir SKU automaticamente nos produtos"
+          [error]="form.get('skuPrefix')!.touched && form.get('skuPrefix')!.hasError('maxlength') ? 'Máximo de 10 caracteres' : ''">
+          <input
+            id="edit-sku-prefix"
+            type="text"
+            formControlName="skuPrefix"
+            placeholder="Ex: ELE, CEL, INF"
+            maxlength="10"
+          />
+        </app-form-field>
+
         <app-toggle-switch label="Ativo" formControlName="isActive"></app-toggle-switch>
 
         <app-form-actions
@@ -123,6 +136,10 @@
             <span class="detail-panel__meta-value mono">{{ category.slug }}</span>
           </div>
         }
+        <div class="detail-panel__meta-row">
+          <span class="detail-panel__meta-label">Prefixo SKU</span>
+          <span class="detail-panel__meta-value mono">{{ category.skuPrefix || '—' }}</span>
+        </div>
         @if (category.createdAt) {
           <div class="detail-panel__meta-row">
             <span class="detail-panel__meta-label">Criado em</span>
