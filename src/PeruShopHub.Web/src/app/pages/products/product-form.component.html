@@ -237,7 +237,7 @@
           <span>Variações</span>
           <lucide-icon [img]="isAccordionOpen('variacoes') ? chevronUpIcon : chevronDownIcon" [size]="20"></lucide-icon>
         </div>
-        <div class="tab-panel" [class.active]="activeTab() === 'variacoes'" [class.accordion-open]="isAccordionOpen('variacoes')">
+        <div class="tab-panel form-layout" [class.active]="activeTab() === 'variacoes'" [class.accordion-open]="isAccordionOpen('variacoes')">
           <app-variant-manager
             [productId]="productId()"
             [categoryId]="form.get('categoria')?.value"
@@ -250,6 +250,7 @@
     <!-- Right panel: Media Gallery -->
     <div class="gallery-panel">
       <app-media-gallery
+        [productId]="productId()"
         [images]="galleryImages()"
         [videoUrl]="galleryVideoUrl()"
         (imagesChange)="onGalleryImagesChange($event)"

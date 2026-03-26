@@ -168,6 +168,12 @@
 // Form Fields
 .form-content {
   max-width: 720px;
+  overflow: visible;
+}
+
+// Ensure tab-panel does not clip dropdowns
+.tab-panel {
+  overflow: visible;
 }
 
 .field {
