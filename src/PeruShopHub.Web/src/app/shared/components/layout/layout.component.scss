@@ -42,11 +42,15 @@ app-header {
   z-index: 10; // above main content, below dropdowns
 }
 
-.layout-content {
+.layout-outer {
   grid-area: main;
+  overflow: hidden;
+}
+
+.layout-content {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  height: 100%;
   padding: 24px;
   box-sizing: border-box;
 
