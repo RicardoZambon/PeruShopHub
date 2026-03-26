@@ -266,10 +266,41 @@ public class ProductsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ProductDetailDto>> CreateProduct(CreateProductDto dto)
     {
+        // Auto-generate SKU if not provided
+        var sku = dto.Sku;
+        if (string.IsNullOrWhiteSpace(sku))
+        {
+            if (!string.IsNullOrWhiteSpace(dto.CategoryId))
+            {
+                var catId = Guid.TryParse(dto.CategoryId, out var cid) ? cid : (Guid?)null;
+                if (catId.HasValue)
+                {
+                    var cat = await _db.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == catId.Value);
+                    if (!string.IsNullOrWhiteSpace(cat?.SkuPrefix))
+                    {
+                        var prefix = cat.SkuPrefix;
+                        var maxSku = await _db.Products.AsNoTracking()
+                            .Where(p => p.Sku.StartsWith(prefix + "-"))
+                            .Select(p => p.Sku)
+                            .OrderByDescending(s => s)
+                            .FirstOrDefaultAsync();
+                        var nextNumber = 1;
+                        if (maxSku != null)
+                        {
+                            var suffix = maxSku[(prefix.Length + 1)..];
+                            if (int.TryParse(suffix, out var parsed)) nextNumber = parsed + 1;
+                        }
+                        sku = $"{prefix}-{nextNumber:D3}";
+                    }
+                }
+            }
+            sku ??= $"PRD-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        }
+
         var product = new Product
         {
             Id = Guid.NewGuid(),
-            Sku = dto.Sku,
+            Sku = sku,
             Name = dto.Name,
             Description = dto.Description,
             CategoryId = dto.CategoryId,

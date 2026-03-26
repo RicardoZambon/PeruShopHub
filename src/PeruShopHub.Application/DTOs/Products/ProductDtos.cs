@@ -53,7 +53,7 @@ public record ProductVariantDto(
     decimal? Length);
 
 public record CreateProductDto(
-    string Sku,
+    string? Sku,
     string Name,
     string? Description,
     string? CategoryId,

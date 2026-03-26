@@ -1,5 +1,9 @@
 @use '../../../styles/mixins' as m;
 
+:host {
+  overflow-y: auto;
+}
+
 .product-form-page {
   padding-bottom: 80px; // space for sticky bottom bar
 }
