@@ -44,13 +44,17 @@ app-header {
 
 .layout-outer {
   grid-area: main;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .layout-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   padding: 24px;
   box-sizing: border-box;
 
