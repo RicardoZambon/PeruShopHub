@@ -71,7 +71,7 @@ namespace PeruShopHub.Infrastructure.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.CommissionRule", b =>
@@ -107,7 +107,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("MarketplaceId", "CategoryPattern", "ListingType");
 
-                    b.ToTable("CommissionRules");
+                    b.ToTable("CommissionRules", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.Customer", b =>
@@ -150,7 +150,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("Email");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.FileUpload", b =>
@@ -195,7 +195,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("EntityType", "EntityId");
 
-                    b.ToTable("FileUploads");
+                    b.ToTable("FileUploads", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.MarketplaceConnection", b =>
@@ -239,7 +239,7 @@ namespace PeruShopHub.Infrastructure.Migrations
                     b.HasIndex("MarketplaceId")
                         .IsUnique();
 
-                    b.ToTable("MarketplaceConnections");
+                    b.ToTable("MarketplaceConnections", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.Notification", b =>
@@ -275,7 +275,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.Order", b =>
@@ -365,7 +365,7 @@ namespace PeruShopHub.Infrastructure.Migrations
                     b.HasIndex("ExternalOrderId")
                         .IsUnique();
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.OrderCost", b =>
@@ -399,7 +399,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("OrderCosts");
+                    b.ToTable("OrderCosts", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.OrderItem", b =>
@@ -443,7 +443,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.Product", b =>
@@ -524,7 +524,7 @@ namespace PeruShopHub.Infrastructure.Migrations
                     b.HasIndex("Sku")
                         .IsUnique();
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.ProductCostHistory", b =>
@@ -573,7 +573,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("VariantId");
 
-                    b.ToTable("ProductCostHistories");
+                    b.ToTable("ProductCostHistories", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.ProductVariant", b =>
@@ -636,7 +636,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductVariants");
+                    b.ToTable("ProductVariants", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.PurchaseOrder", b =>
@@ -678,7 +678,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PurchaseOrders");
+                    b.ToTable("PurchaseOrders", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.PurchaseOrderCost", b =>
@@ -708,7 +708,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("PurchaseOrderId");
 
-                    b.ToTable("PurchaseOrderCosts");
+                    b.ToTable("PurchaseOrderCosts", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.PurchaseOrderItem", b =>
@@ -753,7 +753,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("VariantId");
 
-                    b.ToTable("PurchaseOrderItems");
+                    b.ToTable("PurchaseOrderItems", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.StockMovement", b =>
@@ -807,7 +807,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("VariantId");
 
-                    b.ToTable("StockMovements");
+                    b.ToTable("StockMovements", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.Supply", b =>
@@ -858,7 +858,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Supplies");
+                    b.ToTable("Supplies", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.SystemUser", b =>
@@ -896,7 +896,7 @@ namespace PeruShopHub.Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("SystemUsers");
+                    b.ToTable("SystemUsers", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.VariationField", b =>
@@ -938,7 +938,7 @@ namespace PeruShopHub.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("VariationFields");
+                    b.ToTable("VariationFields", (string)null);
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.Category", b =>
