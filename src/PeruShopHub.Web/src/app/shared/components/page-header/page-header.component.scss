@@ -2,9 +2,27 @@
 
 .page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+
+  &__back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    color: var(--neutral-600);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: background 150ms ease, color 150ms ease;
+
+    &:hover {
+      background: var(--neutral-100);
+      color: var(--neutral-900);
+    }
+  }
 
   &__text {
     display: flex;

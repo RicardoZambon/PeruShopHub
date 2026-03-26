@@ -22,6 +22,7 @@
     <app-page-header
       [title]="product()!.name"
       [subtitle]="product()!.sku"
+      backRoute="/produtos"
       actionLabel="Editar"
       [actionIcon]="EditIcon"
       (action)="onEdit()"

@@ -1,4 +1,7 @@
 <div class="page-header">
+  <a *ngIf="backRoute" class="page-header__back" [routerLink]="backRoute">
+    <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
+  </a>
   <div class="page-header__text">
     <h1 class="page-header__title">{{ title }}</h1>
     <span *ngIf="subtitle" class="page-header__subtitle">{{ subtitle }}</span>
