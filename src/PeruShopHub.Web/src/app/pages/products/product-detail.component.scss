@@ -124,7 +124,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
-  margin-top: var(--space-6);
 
   @include m.tablet {
     grid-template-columns: 1fr;
@@ -186,8 +185,6 @@
 
 // Section blocks
 .section-block {
-  margin-top: var(--space-6);
-
   &__title {
     font-size: var(--text-lg);
     font-weight: 600;
