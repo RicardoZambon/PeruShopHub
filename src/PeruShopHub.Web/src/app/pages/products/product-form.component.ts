@@ -9,6 +9,7 @@ import { TreeSelectComponent } from './tree-select.component';
 import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ProductService } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
 import { Category } from '../../models/category.model';
@@ -34,7 +35,7 @@ const TABS: Tab[] = [
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, MediaGalleryComponent, VariantManagerComponent, TreeSelectComponent, TabBarComponent, FormFieldComponent, ButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, MediaGalleryComponent, VariantManagerComponent, TreeSelectComponent, TabBarComponent, FormFieldComponent, ButtonComponent, PageHeaderComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })

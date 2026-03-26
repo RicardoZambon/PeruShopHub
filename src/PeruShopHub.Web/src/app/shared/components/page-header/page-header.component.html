@@ -6,6 +6,7 @@
     <h1 class="page-header__title">{{ title }}</h1>
     <span *ngIf="subtitle" class="page-header__subtitle">{{ subtitle }}</span>
   </div>
+  <ng-content></ng-content>
   <div *ngIf="actionLabel" class="page-header__action">
     <app-button
       variant="accent"

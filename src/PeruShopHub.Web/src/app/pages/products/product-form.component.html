@@ -1,37 +1,30 @@
 <!-- Header -->
-<div class="page-header">
-    <button class="btn-back" (click)="onCancel()">
-      <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
-    </button>
-    <h1>
-      @if (isEditMode()) {
-        Editar Produto: {{ productName() }}
-      } @else {
-        Novo Produto
+<app-page-header
+  [title]="isEditMode() ? 'Editar Produto: ' + productName() : 'Novo Produto'"
+  backRoute="/produtos"
+>
+  @if (isEditMode()) {
+    <div class="header-menu">
+      <button class="btn-more" (click)="menuOpen.set(!menuOpen())" aria-label="Mais ações">
+        <lucide-icon [img]="moreIcon" [size]="20"></lucide-icon>
+      </button>
+      @if (menuOpen()) {
+        <div class="header-menu__backdrop" (click)="menuOpen.set(false)"></div>
+        <div class="header-menu__dropdown">
+          <button class="header-menu__item" (click)="menuOpen.set(false); toggleActive()">
+            <lucide-icon [img]="isActive() ? powerOffIcon : powerIcon" [size]="16"></lucide-icon>
+            {{ isActive() ? 'Desativar Produto' : 'Ativar Produto' }}
+          </button>
+          <div class="header-menu__divider"></div>
+          <button class="header-menu__item header-menu__item--danger" (click)="menuOpen.set(false); deleteProduct()">
+            <lucide-icon [img]="trashIcon" [size]="16"></lucide-icon>
+            Excluir Produto
+          </button>
+        </div>
       }
-    </h1>
-    @if (isEditMode()) {
-      <div class="header-menu">
-        <button class="btn-more" (click)="menuOpen.set(!menuOpen())" aria-label="Mais ações">
-          <lucide-icon [img]="moreIcon" [size]="20"></lucide-icon>
-        </button>
-        @if (menuOpen()) {
-          <div class="header-menu__backdrop" (click)="menuOpen.set(false)"></div>
-          <div class="header-menu__dropdown">
-            <button class="header-menu__item" (click)="menuOpen.set(false); toggleActive()">
-              <lucide-icon [img]="isActive() ? powerOffIcon : powerIcon" [size]="16"></lucide-icon>
-              {{ isActive() ? 'Desativar Produto' : 'Ativar Produto' }}
-            </button>
-            <div class="header-menu__divider"></div>
-            <button class="header-menu__item header-menu__item--danger" (click)="menuOpen.set(false); deleteProduct()">
-              <lucide-icon [img]="trashIcon" [size]="16"></lucide-icon>
-              Excluir Produto
-            </button>
-          </div>
-        }
-      </div>
-    }
-  </div>
+    </div>
+  }
+</app-page-header>
 
   <!-- Two-panel layout -->
   <div class="two-panel-layout">
