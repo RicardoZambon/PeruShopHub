@@ -12,11 +12,14 @@
     justify-content: center;
     width: 36px;
     height: 36px;
+    border: 1px solid var(--neutral-300);
     border-radius: var(--radius-md);
-    color: var(--neutral-600);
+    background: var(--surface);
+    color: var(--neutral-700);
     text-decoration: none;
     flex-shrink: 0;
-    transition: background 150ms ease, color 150ms ease;
+    cursor: pointer;
+    transition: all 200ms ease;
 
     &:hover {
       background: var(--neutral-100);
