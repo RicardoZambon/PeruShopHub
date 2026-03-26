@@ -17,6 +17,8 @@ import { SearchInputComponent } from '../../shared/components/search-input/searc
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
 import { ProductService, Product } from '../../services/product.service';
+import { CategoryService } from '../../services/category.service';
+import type { Category } from '../../models/category.model';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 
 type ProductStatus = 'Ativo' | 'Pausado' | 'Encerrado';
@@ -31,6 +33,7 @@ type FilterStatus = 'Todos' | ProductStatus | 'Revisão';
 })
 export class ProductsListComponent implements OnInit {
   private readonly productService = inject(ProductService);
+  private readonly categoryService = inject(CategoryService);
 
   readonly plusIcon = Plus;
   readonly editIcon = Edit;
@@ -48,6 +51,8 @@ export class ProductsListComponent implements OnInit {
 
   readonly searchQuery = signal('');
   readonly statusFilter = signal<FilterStatus>('Todos');
+  readonly categoryFilter = signal<string>('');
+  readonly categoryOptions = signal<SelectOption[]>([{ value: '', label: 'Todas as categorias' }]);
   readonly loading = signal(true);
   readonly hasData = signal(true);
   readonly hasMore = signal(true);
@@ -90,6 +95,7 @@ export class ProductsListComponent implements OnInit {
   constructor(public router: Router) {}
 
   ngOnInit(): void {
+    this.loadCategories();
     this.loadProducts(true);
   }
 
@@ -107,6 +113,7 @@ export class ProductsListComponent implements OnInit {
         pageSize: this.pageSize(),
         search: this.searchQuery() || undefined,
         status: this.statusFilter() === 'Todos' ? undefined : this.statusFilter(),
+        categoryId: this.categoryFilter() || undefined,
         sortBy: this.sortBy() ?? undefined,
         sortDirection: this.sortDirection(),
       });
@@ -120,7 +127,7 @@ export class ProductsListComponent implements OnInit {
       const totalLoaded = this.products().length;
       this.hasMore.set(totalLoaded < result.totalCount);
       this.totalCount.set(result.totalCount);
-      this.hasData.set(totalLoaded > 0 || this.searchQuery().length > 0 || this.statusFilter() !== 'Todos');
+      this.hasData.set(totalLoaded > 0 || this.searchQuery().length > 0 || this.statusFilter() !== 'Todos' || this.categoryFilter() !== '');
     } catch {
       if (reset) {
         this.products.set([]);
@@ -155,6 +162,32 @@ export class ProductsListComponent implements OnInit {
     this.statusFilter.set(value as FilterStatus);
     this.loadProducts(true);
     this.gridRef?.scrollToTop();
+  }
+
+  onCategoryChange(value: string): void {
+    this.categoryFilter.set(value);
+    this.loadProducts(true);
+    this.gridRef?.scrollToTop();
+  }
+
+  private async loadCategories(): Promise<void> {
+    try {
+      const tree = await this.categoryService.getTree();
+      const options: SelectOption[] = [{ value: '', label: 'Todas as categorias' }];
+      const flatten = (categories: Category[], depth: number): void => {
+        for (const cat of categories) {
+          const indent = '\u00A0\u00A0'.repeat(depth);
+          options.push({ value: cat.id, label: `${indent}${cat.name}` });
+          if (cat.children?.length) {
+            flatten(cat.children, depth + 1);
+          }
+        }
+      };
+      flatten(tree, 0);
+      this.categoryOptions.set(options);
+    } catch {
+      // Silently fail — category filter just won't be populated
+    }
   }
 
   onRowClick(row: Record<string, any>): void {

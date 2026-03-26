@@ -29,6 +29,11 @@
         [value]="statusFilter()"
         (valueChange)="onStatusChange($event)"
       ></app-select-dropdown>
+      <app-select-dropdown
+        [options]="categoryOptions()"
+        [value]="categoryFilter()"
+        (valueChange)="onCategoryChange($event)"
+      ></app-select-dropdown>
     </div>
 
     <!-- Data Grid -->
