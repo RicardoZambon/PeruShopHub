@@ -1,12 +1,6 @@
 @use '../../../styles/mixins' as m;
 
 .estoque {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  gap: var(--space-6);
-
   &__content {
     display: flex;
     flex-direction: column;

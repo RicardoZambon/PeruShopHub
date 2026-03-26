@@ -6,80 +6,78 @@
     ></app-empty-state>
   </div>
 } @else {
-  <div class="clientes">
-    <!-- Header -->
-    <app-page-header title="Clientes"></app-page-header>
+  <!-- Header -->
+  <app-page-header title="Clientes"></app-page-header>
 
-    <!-- Action Bar -->
-    <div class="clientes__action-bar">
-      <app-search-input
-        placeholder="Buscar por nome, nickname ou email..."
-        [value]="searchQuery()"
-        (valueChange)="onSearchChange($event)"
-      ></app-search-input>
-    </div>
-
-    <!-- Data Grid -->
-    <app-data-grid
-      #grid
-      [columns]="gridColumns"
-      [data]="gridData()"
-      [loading]="loading()"
-      [hasMore]="hasMore()"
-      [pageSize]="pageSize()"
-      [totalCount]="totalCount()"
-      entityName="clientes"
-      emptyTitle="Nenhum cliente encontrado"
-      emptyDescription="Tente ajustar os filtros de busca."
-      ariaLabel="Lista de clientes"
-      (sortChange)="onSort($event)"
-      (loadMore)="onLoadMore()"
-      (rowClick)="onRowClick($event)"
-    >
-      <!-- Name cell -->
-      <ng-template appGridCell="nome" let-row let-value="value">
-        <span class="clientes__name">{{ value }}</span>
-      </ng-template>
-
-      <!-- Nickname cell (mono) -->
-      <ng-template appGridCell="nickname" let-row let-value="value">
-        <span class="clientes__mono">{{ value }}</span>
-      </ng-template>
-
-      <!-- Total Spent cell (currency mono) -->
-      <ng-template appGridCell="totalGasto" let-row let-value="value">
-        <span class="clientes__mono">{{ formatBrl(value) }}</span>
-      </ng-template>
-
-      <!-- Last Purchase cell (relative date) -->
-      <ng-template appGridCell="ultimaCompra" let-row let-value="value">
-        {{ value | relativeDate }}
-      </ng-template>
-
-      <!-- Mobile card template -->
-      <ng-template appGridCard let-row>
-        <div class="clientes__card-header">
-          <div class="clientes__card-info">
-            <span class="clientes__card-name">{{ row.nome }}</span>
-            <span class="clientes__card-nickname">{{ row.nickname }}</span>
-          </div>
-        </div>
-        <div class="clientes__card-email">{{ row.email }}</div>
-        <div class="clientes__card-body">
-          <div class="clientes__card-field">
-            <span class="clientes__card-label">Pedidos</span>
-            <span class="clientes__card-value">{{ row.totalPedidos }}</span>
-          </div>
-          <div class="clientes__card-field">
-            <span class="clientes__card-label">Total Gasto</span>
-            <span class="clientes__card-value clientes__mono">{{ formatBrl(row.totalGasto) }}</span>
-          </div>
-          <div class="clientes__card-field">
-            <span class="clientes__card-label">Última Compra</span>
-            <span class="clientes__card-value">{{ row.ultimaCompra | relativeDate }}</span>
-          </div>
-        </div>
-      </ng-template>
-    </app-data-grid>
+  <!-- Action Bar -->
+  <div class="action-bar">
+    <app-search-input
+      placeholder="Buscar por nome, nickname ou email..."
+      [value]="searchQuery()"
+      (valueChange)="onSearchChange($event)"
+    ></app-search-input>
   </div>
+
+  <!-- Data Grid -->
+  <app-data-grid
+    #grid
+    [columns]="gridColumns"
+    [data]="gridData()"
+    [loading]="loading()"
+    [hasMore]="hasMore()"
+    [pageSize]="pageSize()"
+    [totalCount]="totalCount()"
+    entityName="clientes"
+    emptyTitle="Nenhum cliente encontrado"
+    emptyDescription="Tente ajustar os filtros de busca."
+    ariaLabel="Lista de clientes"
+    (sortChange)="onSort($event)"
+    (loadMore)="onLoadMore()"
+    (rowClick)="onRowClick($event)"
+  >
+    <!-- Name cell -->
+    <ng-template appGridCell="nome" let-row let-value="value">
+      <span class="clientes__name">{{ value }}</span>
+    </ng-template>
+
+    <!-- Nickname cell (mono) -->
+    <ng-template appGridCell="nickname" let-row let-value="value">
+      <span class="clientes__mono">{{ value }}</span>
+    </ng-template>
+
+    <!-- Total Spent cell (currency mono) -->
+    <ng-template appGridCell="totalGasto" let-row let-value="value">
+      <span class="clientes__mono">{{ formatBrl(value) }}</span>
+    </ng-template>
+
+    <!-- Last Purchase cell (relative date) -->
+    <ng-template appGridCell="ultimaCompra" let-row let-value="value">
+      {{ value | relativeDate }}
+    </ng-template>
+
+    <!-- Mobile card template -->
+    <ng-template appGridCard let-row>
+      <div class="clientes__card-header">
+        <div class="clientes__card-info">
+          <span class="clientes__card-name">{{ row.nome }}</span>
+          <span class="clientes__card-nickname">{{ row.nickname }}</span>
+        </div>
+      </div>
+      <div class="clientes__card-email">{{ row.email }}</div>
+      <div class="clientes__card-body">
+        <div class="clientes__card-field">
+          <span class="clientes__card-label">Pedidos</span>
+          <span class="clientes__card-value">{{ row.totalPedidos }}</span>
+        </div>
+        <div class="clientes__card-field">
+          <span class="clientes__card-label">Total Gasto</span>
+          <span class="clientes__card-value clientes__mono">{{ formatBrl(row.totalGasto) }}</span>
+        </div>
+        <div class="clientes__card-field">
+          <span class="clientes__card-label">Última Compra</span>
+          <span class="clientes__card-value">{{ row.ultimaCompra | relativeDate }}</span>
+        </div>
+      </div>
+    </ng-template>
+  </app-data-grid>
 }

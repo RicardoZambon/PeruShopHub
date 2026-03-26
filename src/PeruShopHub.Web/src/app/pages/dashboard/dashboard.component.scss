@@ -8,18 +8,6 @@
 }
 
 .dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: var(--section-gap-desktop);
-
-  @include m.tablet {
-    gap: var(--section-gap-tablet);
-  }
-
-  @include m.mobile {
-    gap: var(--section-gap-mobile);
-  }
-
   &__header {
     display: flex;
     align-items: flex-start;

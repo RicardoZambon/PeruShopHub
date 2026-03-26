@@ -1,187 +1,266 @@
-<div class="settings">
-  <app-page-header title="Configurações"></app-page-header>
+<app-page-header title="Configurações"></app-page-header>
 
-  <div class="settings__layout">
-    <!-- Vertical sub-navigation (desktop) / horizontal tabs (mobile) -->
-    <nav class="settings__nav">
-      @for (tab of tabs; track tab.key) {
-        <button
-          class="settings__nav-item"
-          [class.settings__nav-item--active]="activeTab() === tab.key"
-          [class.settings__nav-item--disabled]="tab.disabled"
-          [attr.title]="tab.disabled ? 'Em desenvolvimento' : null"
-          (click)="selectTab($any(tab.key))">
-          {{ tab.label }}
-          @if (tab.disabled) {
-            <span class="settings__nav-badge">Em breve</span>
-          }
-        </button>
-      }
-    </nav>
+<div class="settings__layout">
+  <!-- Vertical sub-navigation (desktop) / horizontal tabs (mobile) -->
+  <nav class="settings__nav">
+    @for (tab of tabs; track tab.key) {
+      <button
+        class="settings__nav-item"
+        [class.settings__nav-item--active]="activeTab() === tab.key"
+        [class.settings__nav-item--disabled]="tab.disabled"
+        [attr.title]="tab.disabled ? 'Em desenvolvimento' : null"
+        (click)="selectTab($any(tab.key))">
+        {{ tab.label }}
+        @if (tab.disabled) {
+          <span class="settings__nav-badge">Em breve</span>
+        }
+      </button>
+    }
+  </nav>
 
-    <!-- Content area -->
-    <div class="settings__content">
-      <!-- Empresa Tab -->
-      @if (activeTab() === 'empresa') {
-        <div class="settings__section">
-          <h2 class="settings__section-title">Dados da Empresa</h2>
-          <form [formGroup]="companyForm" (ngSubmit)="saveCompany()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
-            <app-form-field label="Nome da Empresa"
-              [error]="companyForm.get('nome')?.invalid && companyForm.get('nome')?.touched ? 'Nome é obrigatório' : ''">
-              <input
-                class="form-field__input"
-                type="text"
-                formControlName="nome"
-                placeholder="Nome da empresa" />
-            </app-form-field>
+  <!-- Content area -->
+  <div class="settings__content">
+    <!-- Empresa Tab -->
+    @if (activeTab() === 'empresa') {
+      <div class="settings__section">
+        <h2 class="settings__section-title">Dados da Empresa</h2>
+        <form [formGroup]="companyForm" (ngSubmit)="saveCompany()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
+          <app-form-field label="Nome da Empresa"
+            [error]="companyForm.get('nome')?.invalid && companyForm.get('nome')?.touched ? 'Nome é obrigatório' : ''">
+            <input
+              class="form-field__input"
+              type="text"
+              formControlName="nome"
+              placeholder="Nome da empresa" />
+          </app-form-field>
 
-            <app-form-field label="CNPJ"
-              [error]="companyForm.get('cnpj')?.invalid && companyForm.get('cnpj')?.touched ? 'CNPJ inválido. Formato: XX.XXX.XXX/XXXX-XX' : ''">
-              <input
-                class="form-field__input form-field__input--mono"
-                type="text"
-                formControlName="cnpj"
-                placeholder="XX.XXX.XXX/XXXX-XX"
-                maxlength="18"
-                (input)="applyCnpjMask($event)" />
-            </app-form-field>
+          <app-form-field label="CNPJ"
+            [error]="companyForm.get('cnpj')?.invalid && companyForm.get('cnpj')?.touched ? 'CNPJ inválido. Formato: XX.XXX.XXX/XXXX-XX' : ''">
+            <input
+              class="form-field__input form-field__input--mono"
+              type="text"
+              formControlName="cnpj"
+              placeholder="XX.XXX.XXX/XXXX-XX"
+              maxlength="18"
+              (input)="applyCnpjMask($event)" />
+          </app-form-field>
 
-            <app-form-field label="Endereço">
-              <input
-                class="form-field__input"
-                type="text"
-                formControlName="endereco"
-                placeholder="Endereço completo" />
-            </app-form-field>
+          <app-form-field label="Endereço">
+            <input
+              class="form-field__input"
+              type="text"
+              formControlName="endereco"
+              placeholder="Endereço completo" />
+          </app-form-field>
 
-            <div class="settings__form-actions">
-              <app-button
-                variant="accent"
-                type="submit"
-                [disabled]="companyForm.invalid || companyForm.pristine">
-                Salvar
-              </app-button>
-            </div>
-          </form>
+          <div class="settings__form-actions">
+            <app-button
+              variant="accent"
+              type="submit"
+              [disabled]="companyForm.invalid || companyForm.pristine">
+              Salvar
+            </app-button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Usuários Tab -->
+    @if (activeTab() === 'usuarios') {
+      <div class="settings__section">
+        <div class="settings__section-header">
+          <h2 class="settings__section-title">Usuários</h2>
+          <app-button variant="accent" (click)="openNewUserModal()">Novo Usuário</app-button>
         </div>
-      }
 
-      <!-- Usuários Tab -->
-      @if (activeTab() === 'usuarios') {
-        <div class="settings__section">
-          <div class="settings__section-header">
-            <h2 class="settings__section-title">Usuários</h2>
-            <app-button variant="accent" (click)="openNewUserModal()">Novo Usuário</app-button>
-          </div>
-
-          <div class="users-table-wrapper">
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th class="users-table__th">Nome</th>
-                  <th class="users-table__th">Email</th>
-                  <th class="users-table__th">Perfil</th>
-                  <th class="users-table__th">Status</th>
-                  <th class="users-table__th users-table__th--actions">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (user of users(); track user.id) {
-                  <tr class="users-table__row">
-                    <td class="users-table__td">{{ user.nome }}</td>
-                    <td class="users-table__td users-table__td--mono">{{ user.email }}</td>
-                    <td class="users-table__td">
-                      <app-badge [label]="user.role" [variant]="roleBadgeVariant(user.role)" />
-                    </td>
-                    <td class="users-table__td">
-                      <app-badge [label]="user.ativo ? 'Ativo' : 'Inativo'" [variant]="statusBadgeVariant(user.ativo)" />
-                    </td>
-                    <td class="users-table__td users-table__td--actions">
-                      <app-button variant="icon" [icon]="pencilIcon" [iconOnly]="true" ariaLabel="Editar" size="sm" (click)="openEditUserModal(user)"></app-button>
-                      <app-button variant="danger" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Excluir" size="sm" (click)="deleteUser(user)"></app-button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile card view -->
-          <div class="users-cards">
-            @for (user of users(); track user.id) {
-              <div class="user-card">
-                <div class="user-card__header">
-                  <span class="user-card__name">{{ user.nome }}</span>
-                  <div class="user-card__actions">
+        <div class="users-table-wrapper">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th class="users-table__th">Nome</th>
+                <th class="users-table__th">Email</th>
+                <th class="users-table__th">Perfil</th>
+                <th class="users-table__th">Status</th>
+                <th class="users-table__th users-table__th--actions">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of users(); track user.id) {
+                <tr class="users-table__row">
+                  <td class="users-table__td">{{ user.nome }}</td>
+                  <td class="users-table__td users-table__td--mono">{{ user.email }}</td>
+                  <td class="users-table__td">
+                    <app-badge [label]="user.role" [variant]="roleBadgeVariant(user.role)" />
+                  </td>
+                  <td class="users-table__td">
+                    <app-badge [label]="user.ativo ? 'Ativo' : 'Inativo'" [variant]="statusBadgeVariant(user.ativo)" />
+                  </td>
+                  <td class="users-table__td users-table__td--actions">
                     <app-button variant="icon" [icon]="pencilIcon" [iconOnly]="true" ariaLabel="Editar" size="sm" (click)="openEditUserModal(user)"></app-button>
                     <app-button variant="danger" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Excluir" size="sm" (click)="deleteUser(user)"></app-button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile card view -->
+        <div class="users-cards">
+          @for (user of users(); track user.id) {
+            <div class="user-card">
+              <div class="user-card__header">
+                <span class="user-card__name">{{ user.nome }}</span>
+                <div class="user-card__actions">
+                  <app-button variant="icon" [icon]="pencilIcon" [iconOnly]="true" ariaLabel="Editar" size="sm" (click)="openEditUserModal(user)"></app-button>
+                  <app-button variant="danger" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Excluir" size="sm" (click)="deleteUser(user)"></app-button>
+                </div>
+              </div>
+              <span class="user-card__email">{{ user.email }}</span>
+              <div class="user-card__badges">
+                <app-badge [label]="user.role" [variant]="roleBadgeVariant(user.role)" />
+                <app-badge [label]="user.ativo ? 'Ativo' : 'Inativo'" [variant]="statusBadgeVariant(user.ativo)" />
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Integrações Tab -->
+    @if (activeTab() === 'integracoes') {
+      <div class="settings__section">
+        <h2 class="settings__section-title">Integrações</h2>
+        <div class="integrations-grid">
+          @for (integration of integrations(); track integration.id) {
+            <div class="integration-card" [class.integration-card--disabled]="integration.comingSoon">
+              <div class="integration-card__logo">
+                <span class="integration-card__logo-text">{{ integration.logo }}</span>
+              </div>
+              <div class="integration-card__info">
+                <h3 class="integration-card__name">{{ integration.name }}</h3>
+                @if (integration.connected) {
+                  <span class="integration-card__nickname">{{ integration.sellerNickname }}</span>
+                  <div class="integration-card__status">
+                    <app-badge label="Conectado" variant="success" />
+                    <span class="integration-card__sync">Última sync: {{ integration.lastSync }}</span>
                   </div>
-                </div>
-                <span class="user-card__email">{{ user.email }}</span>
-                <div class="user-card__badges">
-                  <app-badge [label]="user.role" [variant]="roleBadgeVariant(user.role)" />
-                  <app-badge [label]="user.ativo ? 'Ativo' : 'Inativo'" [variant]="statusBadgeVariant(user.ativo)" />
-                </div>
+                } @else if (integration.comingSoon) {
+                  <span class="integration-card__coming-soon">Em breve</span>
+                }
               </div>
-            }
-          </div>
+              <div class="integration-card__actions">
+                @if (integration.connected) {
+                  <app-button variant="danger">Desconectar</app-button>
+                } @else if (!integration.comingSoon) {
+                  <app-button variant="accent">Conectar</app-button>
+                }
+              </div>
+            </div>
+          }
         </div>
-      }
+      </div>
+    }
 
-      <!-- Integrações Tab -->
-      @if (activeTab() === 'integracoes') {
-        <div class="settings__section">
-          <h2 class="settings__section-title">Integrações</h2>
-          <div class="integrations-grid">
-            @for (integration of integrations(); track integration.id) {
-              <div class="integration-card" [class.integration-card--disabled]="integration.comingSoon">
-                <div class="integration-card__logo">
-                  <span class="integration-card__logo-text">{{ integration.logo }}</span>
-                </div>
-                <div class="integration-card__info">
-                  <h3 class="integration-card__name">{{ integration.name }}</h3>
-                  @if (integration.connected) {
-                    <span class="integration-card__nickname">{{ integration.sellerNickname }}</span>
-                    <div class="integration-card__status">
-                      <app-badge label="Conectado" variant="success" />
-                      <span class="integration-card__sync">Última sync: {{ integration.lastSync }}</span>
-                    </div>
-                  } @else if (integration.comingSoon) {
-                    <span class="integration-card__coming-soon">Em breve</span>
+    <!-- Custos Fixos Tab -->
+    @if (activeTab() === 'custos-fixos') {
+      <div class="settings__section">
+        <h2 class="settings__section-title">Custos Fixos</h2>
+
+        <form [formGroup]="fixedCostsForm" (ngSubmit)="saveFixedCosts()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
+          <app-form-field label="Embalagem padrão">
+            <div class="form-field__prefix-group">
+              <span class="form-field__prefix">R$</span>
+              <input
+                class="form-field__input form-field__input--mono form-field__input--with-prefix"
+                type="number"
+                step="0.01"
+                min="0"
+                formControlName="embalagemPadrao" />
+            </div>
+          </app-form-field>
+
+          <app-form-field label="Alíquota Simples Nacional">
+            <div class="form-field__prefix-group">
+              <input
+                class="form-field__input form-field__input--mono form-field__input--with-suffix"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                formControlName="aliquotaSimples" />
+              <span class="form-field__suffix">%</span>
+            </div>
+          </app-form-field>
+
+          <div class="fixed-costs">
+            <div class="fixed-costs__header">
+              <h3 class="fixed-costs__title">Outros custos fixos</h3>
+            </div>
+
+            <div class="fixed-costs__table-wrapper">
+              <table class="fixed-costs__table">
+                <thead>
+                  <tr>
+                    <th class="fixed-costs__th">Nome</th>
+                    <th class="fixed-costs__th fixed-costs__th--value">Valor (R$)</th>
+                    <th class="fixed-costs__th fixed-costs__th--actions">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (cost of fixedCosts(); track cost.id) {
+                    <tr class="fixed-costs__row">
+                      <td class="fixed-costs__td">
+                        <input
+                          class="form-field__input"
+                          type="text"
+                          [value]="cost.nome"
+                          placeholder="Nome do custo"
+                          (input)="updateFixedCostName(cost.id, $event)" />
+                      </td>
+                      <td class="fixed-costs__td fixed-costs__td--value">
+                        <input
+                          class="form-field__input form-field__input--mono"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          [value]="cost.valor"
+                          (input)="updateFixedCostValue(cost.id, $event)" />
+                      </td>
+                      <td class="fixed-costs__td fixed-costs__td--actions">
+                        <app-button variant="icon" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Remover" size="sm" (click)="removeFixedCost(cost.id)"></app-button>
+                      </td>
+                    </tr>
                   }
-                </div>
-                <div class="integration-card__actions">
-                  @if (integration.connected) {
-                    <app-button variant="danger">Desconectar</app-button>
-                  } @else if (!integration.comingSoon) {
-                    <app-button variant="accent">Conectar</app-button>
+                  @if (fixedCosts().length === 0) {
+                    <tr>
+                      <td colspan="3" class="fixed-costs__empty">Nenhum custo fixo adicional cadastrado</td>
+                    </tr>
                   }
-                </div>
-              </div>
-            }
+                </tbody>
+              </table>
+            </div>
+
+            <button type="button" class="btn-text" (click)="addFixedCost()">
+              + Adicionar custo
+            </button>
           </div>
-        </div>
-      }
 
-      <!-- Custos Fixos Tab -->
-      @if (activeTab() === 'custos-fixos') {
-        <div class="settings__section">
-          <h2 class="settings__section-title">Custos Fixos</h2>
+          <div class="settings__form-actions">
+            <app-button
+              variant="accent"
+              type="submit"
+              [disabled]="fixedCostsForm.invalid">
+              Salvar
+            </app-button>
+          </div>
+        </form>
 
-          <form [formGroup]="fixedCostsForm" (ngSubmit)="saveFixedCosts()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
-            <app-form-field label="Embalagem padrão">
-              <div class="form-field__prefix-group">
-                <span class="form-field__prefix">R$</span>
-                <input
-                  class="form-field__input form-field__input--mono form-field__input--with-prefix"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  formControlName="embalagemPadrao" />
-              </div>
-            </app-form-field>
-
-            <app-form-field label="Alíquota Simples Nacional">
+        <!-- Tax Rate Section -->
+        <div class="settings__subsection">
+          <h3 class="settings__subsection-title">Alíquota de Impostos</h3>
+          <form [formGroup]="taxRateForm" (ngSubmit)="saveTaxRate()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
+            <app-form-field label="Taxa de imposto padrão">
               <div class="form-field__prefix-group">
                 <input
                   class="form-field__input form-field__input--mono form-field__input--with-suffix"
@@ -189,250 +268,169 @@
                   step="0.1"
                   min="0"
                   max="100"
-                  formControlName="aliquotaSimples" />
+                  formControlName="taxRate" />
                 <span class="form-field__suffix">%</span>
               </div>
             </app-form-field>
-
-            <div class="fixed-costs">
-              <div class="fixed-costs__header">
-                <h3 class="fixed-costs__title">Outros custos fixos</h3>
-              </div>
-
-              <div class="fixed-costs__table-wrapper">
-                <table class="fixed-costs__table">
-                  <thead>
-                    <tr>
-                      <th class="fixed-costs__th">Nome</th>
-                      <th class="fixed-costs__th fixed-costs__th--value">Valor (R$)</th>
-                      <th class="fixed-costs__th fixed-costs__th--actions">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (cost of fixedCosts(); track cost.id) {
-                      <tr class="fixed-costs__row">
-                        <td class="fixed-costs__td">
-                          <input
-                            class="form-field__input"
-                            type="text"
-                            [value]="cost.nome"
-                            placeholder="Nome do custo"
-                            (input)="updateFixedCostName(cost.id, $event)" />
-                        </td>
-                        <td class="fixed-costs__td fixed-costs__td--value">
-                          <input
-                            class="form-field__input form-field__input--mono"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            [value]="cost.valor"
-                            (input)="updateFixedCostValue(cost.id, $event)" />
-                        </td>
-                        <td class="fixed-costs__td fixed-costs__td--actions">
-                          <app-button variant="icon" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Remover" size="sm" (click)="removeFixedCost(cost.id)"></app-button>
-                        </td>
-                      </tr>
-                    }
-                    @if (fixedCosts().length === 0) {
-                      <tr>
-                        <td colspan="3" class="fixed-costs__empty">Nenhum custo fixo adicional cadastrado</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-
-              <button type="button" class="btn-text" (click)="addFixedCost()">
-                + Adicionar custo
-              </button>
-            </div>
-
             <div class="settings__form-actions">
               <app-button
                 variant="accent"
                 type="submit"
-                [disabled]="fixedCostsForm.invalid">
+                [disabled]="taxRateForm.invalid">
                 Salvar
               </app-button>
             </div>
           </form>
+        </div>
 
-          <!-- Tax Rate Section -->
-          <div class="settings__subsection">
-            <h3 class="settings__subsection-title">Alíquota de Impostos</h3>
-            <form [formGroup]="taxRateForm" (ngSubmit)="saveTaxRate()" class="settings__form form-layout" [class.form-layout--saving]="saving()">
-              <app-form-field label="Taxa de imposto padrão">
-                <div class="form-field__prefix-group">
-                  <input
-                    class="form-field__input form-field__input--mono form-field__input--with-suffix"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    formControlName="taxRate" />
-                  <span class="form-field__suffix">%</span>
-                </div>
-              </app-form-field>
-              <div class="settings__form-actions">
-                <app-button
-                  variant="accent"
-                  type="submit"
-                  [disabled]="taxRateForm.invalid">
-                  Salvar
-                </app-button>
-              </div>
-            </form>
+        <!-- Commission Rules Section -->
+        <div class="settings__subsection">
+          <div class="settings__section-header">
+            <h3 class="settings__subsection-title">Regras de Comissão</h3>
+            <app-button variant="accent" (click)="openNewCommissionRuleModal()">Nova Regra</app-button>
           </div>
 
-          <!-- Commission Rules Section -->
-          <div class="settings__subsection">
-            <div class="settings__section-header">
-              <h3 class="settings__subsection-title">Regras de Comissão</h3>
-              <app-button variant="accent" (click)="openNewCommissionRuleModal()">Nova Regra</app-button>
-            </div>
-
-            <div class="commission-rules-table-wrapper">
-              <table class="commission-rules-table">
-                <thead>
-                  <tr>
-                    <th class="commission-rules-table__th">Marketplace</th>
-                    <th class="commission-rules-table__th">Categoria</th>
-                    <th class="commission-rules-table__th">Tipo Anúncio</th>
-                    <th class="commission-rules-table__th commission-rules-table__th--rate">Taxa (%)</th>
-                    <th class="commission-rules-table__th">Padrão</th>
-                    <th class="commission-rules-table__th commission-rules-table__th--actions">Ações</th>
+          <div class="commission-rules-table-wrapper">
+            <table class="commission-rules-table">
+              <thead>
+                <tr>
+                  <th class="commission-rules-table__th">Marketplace</th>
+                  <th class="commission-rules-table__th">Categoria</th>
+                  <th class="commission-rules-table__th">Tipo Anúncio</th>
+                  <th class="commission-rules-table__th commission-rules-table__th--rate">Taxa (%)</th>
+                  <th class="commission-rules-table__th">Padrão</th>
+                  <th class="commission-rules-table__th commission-rules-table__th--actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (rule of commissionRules(); track rule.id) {
+                  <tr class="commission-rules-table__row">
+                    <td class="commission-rules-table__td">{{ rule.marketplace }}</td>
+                    <td class="commission-rules-table__td">{{ rule.categoryPattern }}</td>
+                    <td class="commission-rules-table__td">{{ rule.listingType }}</td>
+                    <td class="commission-rules-table__td commission-rules-table__td--mono">{{ rule.rate * 100 }}%</td>
+                    <td class="commission-rules-table__td">
+                      @if (rule.isDefault) {
+                        <app-badge label="Padrão" variant="primary" />
+                      }
+                    </td>
+                    <td class="commission-rules-table__td commission-rules-table__td--actions">
+                      <app-button variant="icon" [icon]="pencilIcon" [iconOnly]="true" ariaLabel="Editar" size="sm" (click)="openEditCommissionRuleModal(rule)"></app-button>
+                      <app-button variant="danger" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Excluir" size="sm" [disabled]="rule.isDefault" (click)="deleteCommissionRule(rule)"></app-button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  @for (rule of commissionRules(); track rule.id) {
-                    <tr class="commission-rules-table__row">
-                      <td class="commission-rules-table__td">{{ rule.marketplace }}</td>
-                      <td class="commission-rules-table__td">{{ rule.categoryPattern }}</td>
-                      <td class="commission-rules-table__td">{{ rule.listingType }}</td>
-                      <td class="commission-rules-table__td commission-rules-table__td--mono">{{ rule.rate * 100 }}%</td>
-                      <td class="commission-rules-table__td">
-                        @if (rule.isDefault) {
-                          <app-badge label="Padrão" variant="primary" />
-                        }
-                      </td>
-                      <td class="commission-rules-table__td commission-rules-table__td--actions">
-                        <app-button variant="icon" [icon]="pencilIcon" [iconOnly]="true" ariaLabel="Editar" size="sm" (click)="openEditCommissionRuleModal(rule)"></app-button>
-                        <app-button variant="danger" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Excluir" size="sm" [disabled]="rule.isDefault" (click)="deleteCommissionRule(rule)"></app-button>
-                      </td>
-                    </tr>
-                  }
-                  @if (commissionRules().length === 0) {
-                    <tr>
-                      <td colspan="6" class="commission-rules-table__empty">Nenhuma regra de comissão cadastrada</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Alertas Tab -->
-      @if (activeTab() === 'alertas') {
-        <div class="settings__section">
-          <h2 class="settings__section-title">Alertas</h2>
-          <div class="alerts-grid">
-            @for (alert of alerts(); track alert.id) {
-              <div class="alert-card" [class.alert-card--enabled]="alert.enabled">
-                <div class="alert-card__header">
-                  <div class="alert-card__info">
-                    <h3 class="alert-card__label">{{ alert.label }}</h3>
-                    <p class="alert-card__description">{{ alert.description }}</p>
-                  </div>
-                  <app-toggle-switch
-                    [checked]="alert.enabled"
-                    (checkedChange)="toggleAlert(alert.id)">
-                  </app-toggle-switch>
-                </div>
-                @if (alert.enabled) {
-                  <div class="alert-card__threshold">
-                    <label class="form-field__label">Limite</label>
-                    <div class="form-field__prefix-group">
-                      <input
-                        class="form-field__input form-field__input--mono form-field__input--with-suffix alert-card__input"
-                        type="number"
-                        step="1"
-                        min="0"
-                        [value]="alert.threshold"
-                        (input)="updateAlertThreshold(alert.id, $event)" />
-                      <span class="form-field__suffix">{{ alert.unit }}</span>
-                    </div>
-                  </div>
                 }
+                @if (commissionRules().length === 0) {
+                  <tr>
+                    <td colspan="6" class="commission-rules-table__empty">Nenhuma regra de comissão cadastrada</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Alertas Tab -->
+    @if (activeTab() === 'alertas') {
+      <div class="settings__section">
+        <h2 class="settings__section-title">Alertas</h2>
+        <div class="alerts-grid">
+          @for (alert of alerts(); track alert.id) {
+            <div class="alert-card" [class.alert-card--enabled]="alert.enabled">
+              <div class="alert-card__header">
+                <div class="alert-card__info">
+                  <h3 class="alert-card__label">{{ alert.label }}</h3>
+                  <p class="alert-card__description">{{ alert.description }}</p>
+                </div>
+                <app-toggle-switch
+                  [checked]="alert.enabled"
+                  (checkedChange)="toggleAlert(alert.id)">
+                </app-toggle-switch>
               </div>
-            }
+              @if (alert.enabled) {
+                <div class="alert-card__threshold">
+                  <label class="form-field__label">Limite</label>
+                  <div class="form-field__prefix-group">
+                    <input
+                      class="form-field__input form-field__input--mono form-field__input--with-suffix alert-card__input"
+                      type="number"
+                      step="1"
+                      min="0"
+                      [value]="alert.threshold"
+                      (input)="updateAlertThreshold(alert.id, $event)" />
+                    <span class="form-field__suffix">{{ alert.unit }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Aparência Tab -->
+    @if (activeTab() === 'aparencia') {
+      <div class="settings__section">
+        <h2 class="settings__section-title">Aparência</h2>
+
+        <div class="theme-section">
+          <h3 class="theme-section__label">Tema</h3>
+          <div class="theme-cards">
+            <button
+              class="theme-card"
+              [class.theme-card--active]="currentTheme() === 'light'"
+              (click)="selectTheme('light')">
+              <div class="theme-card__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/>
+                  <path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/>
+                  <path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+                </svg>
+              </div>
+              <span class="theme-card__label">Claro</span>
+            </button>
+
+            <button
+              class="theme-card"
+              [class.theme-card--active]="currentTheme() === 'dark'"
+              (click)="selectTheme('dark')">
+              <div class="theme-card__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                </svg>
+              </div>
+              <span class="theme-card__label">Escuro</span>
+            </button>
+
+            <button
+              class="theme-card"
+              [class.theme-card--active]="currentTheme() === 'system'"
+              (click)="selectTheme('system')">
+              <div class="theme-card__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/>
+                  <path d="M8 21h8"/><path d="M12 17v4"/>
+                </svg>
+              </div>
+              <span class="theme-card__label">Sistema</span>
+            </button>
           </div>
         </div>
-      }
 
-      <!-- Aparência Tab -->
-      @if (activeTab() === 'aparencia') {
-        <div class="settings__section">
-          <h2 class="settings__section-title">Aparência</h2>
-
-          <div class="theme-section">
-            <h3 class="theme-section__label">Tema</h3>
-            <div class="theme-cards">
-              <button
-                class="theme-card"
-                [class.theme-card--active]="currentTheme() === 'light'"
-                (click)="selectTheme('light')">
-                <div class="theme-card__icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="4"/>
-                    <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/>
-                    <path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/>
-                    <path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
-                  </svg>
-                </div>
-                <span class="theme-card__label">Claro</span>
-              </button>
-
-              <button
-                class="theme-card"
-                [class.theme-card--active]="currentTheme() === 'dark'"
-                (click)="selectTheme('dark')">
-                <div class="theme-card__icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-                  </svg>
-                </div>
-                <span class="theme-card__label">Escuro</span>
-              </button>
-
-              <button
-                class="theme-card"
-                [class.theme-card--active]="currentTheme() === 'system'"
-                (click)="selectTheme('system')">
-                <div class="theme-card__icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/>
-                    <path d="M8 21h8"/><path d="M12 17v4"/>
-                  </svg>
-                </div>
-                <span class="theme-card__label">Sistema</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="language-section">
-            <h3 class="language-section__label">Idioma</h3>
-            <div class="language-section__select-wrapper">
-              <select class="form-field__select" disabled>
-                <option>Português (Brasil)</option>
-              </select>
-              <span class="language-section__badge">Em breve</span>
-            </div>
+        <div class="language-section">
+          <h3 class="language-section__label">Idioma</h3>
+          <div class="language-section__select-wrapper">
+            <select class="form-field__select" disabled>
+              <option>Português (Brasil)</option>
+            </select>
+            <span class="language-section__badge">Em breve</span>
           </div>
         </div>
-      }
-    </div>
+      </div>
+    }
   </div>
 </div>
 

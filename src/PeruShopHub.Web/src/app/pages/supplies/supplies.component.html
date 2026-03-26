@@ -1,120 +1,118 @@
-<div class="supplies">
-  <!-- Header -->
-  <app-page-header
-    title="Suprimentos"
-    actionLabel="Novo Suprimento"
-    [actionIcon]="plusIcon"
-    (action)="openModal()">
-  </app-page-header>
+<!-- Header -->
+<app-page-header
+  title="Suprimentos"
+  actionLabel="Novo Suprimento"
+  [actionIcon]="plusIcon"
+  (action)="openModal()">
+</app-page-header>
 
-  <!-- Action Bar -->
-  <div class="supplies__action-bar">
-    <app-search-input
-      placeholder="Buscar por nome, SKU ou fornecedor..."
-      [value]="searchQuery()"
-      (valueChange)="onSearchChange($event)">
-    </app-search-input>
-    <app-select-dropdown
-      [options]="categoryOptions"
-      [value]="categoryFilter()"
-      (valueChange)="onCategoryFilterChange($event)">
-    </app-select-dropdown>
+<!-- Action Bar -->
+<div class="action-bar">
+  <app-search-input
+    placeholder="Buscar por nome, SKU ou fornecedor..."
+    [value]="searchQuery()"
+    (valueChange)="onSearchChange($event)">
+  </app-search-input>
+  <app-select-dropdown
+    [options]="categoryOptions"
+    [value]="categoryFilter()"
+    (valueChange)="onCategoryFilterChange($event)">
+  </app-select-dropdown>
+</div>
+
+<!-- Loading State -->
+@if (loading()) {
+  <div class="supplies-table">
+    <app-page-skeleton type="list" [rows]="6" />
   </div>
-
-  <!-- Loading State -->
-  @if (loading()) {
-    <div class="supplies-table">
-      <app-page-skeleton type="list" [rows]="6" />
-    </div>
-  } @else if (filteredSupplies().length === 0) {
-    <div class="supplies-empty">
-      <app-empty-state
-        title="Nenhum suprimento encontrado"
-        description="Tente ajustar os filtros de busca ou adicione um novo suprimento."
-        actionLabel="Novo Suprimento"
-        (actionClick)="openModal()"
-      ></app-empty-state>
-    </div>
-  } @else {
-    <!-- Table -->
-    <div class="supplies-table">
-      <!-- Desktop/Tablet Table -->
-      <div class="supplies-table__scroll-wrapper">
-        <table class="supplies-table__table">
-          <thead>
-            <tr>
-              <th class="supplies-table__th">Nome</th>
-              <th class="supplies-table__th supplies-table__th--mono">SKU</th>
-              <th class="supplies-table__th">Categoria</th>
-              <th class="supplies-table__th" style="text-align: right">Custo Unitário</th>
-              <th class="supplies-table__th" style="text-align: right">Estoque</th>
-              <th class="supplies-table__th">Status</th>
+} @else if (filteredSupplies().length === 0) {
+  <div class="supplies-empty">
+    <app-empty-state
+      title="Nenhum suprimento encontrado"
+      description="Tente ajustar os filtros de busca ou adicione um novo suprimento."
+      actionLabel="Novo Suprimento"
+      (actionClick)="openModal()"
+    ></app-empty-state>
+  </div>
+} @else {
+  <!-- Table -->
+  <div class="supplies-table">
+    <!-- Desktop/Tablet Table -->
+    <div class="supplies-table__scroll-wrapper">
+      <table class="supplies-table__table">
+        <thead>
+          <tr>
+            <th class="supplies-table__th">Nome</th>
+            <th class="supplies-table__th supplies-table__th--mono">SKU</th>
+            <th class="supplies-table__th">Categoria</th>
+            <th class="supplies-table__th" style="text-align: right">Custo Unitário</th>
+            <th class="supplies-table__th" style="text-align: right">Estoque</th>
+            <th class="supplies-table__th">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (supply of filteredSupplies(); track supply.id) {
+            <tr class="supplies-table__row" [ngClass]="getRowClass(supply)">
+              <td class="supplies-table__td supplies-table__td--name">
+                {{ supply.nome }}
+                @if (supply.fornecedor) {
+                  <span class="supplies-table__td--supplier">{{ supply.fornecedor }}</span>
+                }
+              </td>
+              <td class="supplies-table__td supplies-table__td--mono">{{ supply.sku }}</td>
+              <td class="supplies-table__td">
+                <app-badge [label]="supply.categoria" variant="neutral" />
+              </td>
+              <td class="supplies-table__td supplies-table__td--mono" style="text-align: right">{{ supply.custoUnitario | brlCurrency }}</td>
+              <td class="supplies-table__td" style="text-align: right" [ngClass]="getStockClass(supply)">
+                {{ supply.estoque }}
+              </td>
+              <td class="supplies-table__td">
+                <app-badge [label]="getStockStatusLabel(supply)" [variant]="getStockStatusVariant(supply)" />
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            @for (supply of filteredSupplies(); track supply.id) {
-              <tr class="supplies-table__row" [ngClass]="getRowClass(supply)">
-                <td class="supplies-table__td supplies-table__td--name">
-                  {{ supply.nome }}
-                  @if (supply.fornecedor) {
-                    <span class="supplies-table__td--supplier">{{ supply.fornecedor }}</span>
-                  }
-                </td>
-                <td class="supplies-table__td supplies-table__td--mono">{{ supply.sku }}</td>
-                <td class="supplies-table__td">
-                  <app-badge [label]="supply.categoria" variant="neutral" />
-                </td>
-                <td class="supplies-table__td supplies-table__td--mono" style="text-align: right">{{ supply.custoUnitario | brlCurrency }}</td>
-                <td class="supplies-table__td" style="text-align: right" [ngClass]="getStockClass(supply)">
-                  {{ supply.estoque }}
-                </td>
-                <td class="supplies-table__td">
-                  <app-badge [label]="getStockStatusLabel(supply)" [variant]="getStockStatusVariant(supply)" />
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+          }
+        </tbody>
+      </table>
+    </div>
 
-      <!-- Mobile Card List -->
-      <div class="supplies-table__cards">
-        @for (supply of filteredSupplies(); track supply.id) {
-          <div class="supplies-table__card" [ngClass]="getRowClass(supply)">
-            <div class="supplies-table__card-header">
-              <div class="supplies-table__card-title">
-                <span class="supplies-table__card-name">{{ supply.nome }}</span>
-                <span class="supplies-table__card-sku">{{ supply.sku }}</span>
-              </div>
-              <app-badge [label]="getStockStatusLabel(supply)" [variant]="getStockStatusVariant(supply)" />
+    <!-- Mobile Card List -->
+    <div class="supplies-table__cards">
+      @for (supply of filteredSupplies(); track supply.id) {
+        <div class="supplies-table__card" [ngClass]="getRowClass(supply)">
+          <div class="supplies-table__card-header">
+            <div class="supplies-table__card-title">
+              <span class="supplies-table__card-name">{{ supply.nome }}</span>
+              <span class="supplies-table__card-sku">{{ supply.sku }}</span>
             </div>
-            <div class="supplies-table__card-body">
-              <div class="supplies-table__card-field">
-                <span class="supplies-table__card-label">Categoria</span>
-                <span class="supplies-table__card-value">{{ supply.categoria }}</span>
-              </div>
-              <div class="supplies-table__card-field">
-                <span class="supplies-table__card-label">Custo</span>
-                <span class="supplies-table__card-value supplies-table__td--mono">{{ supply.custoUnitario | brlCurrency }}</span>
-              </div>
-              <div class="supplies-table__card-field">
-                <span class="supplies-table__card-label">Estoque</span>
-                <span class="supplies-table__card-value" [ngClass]="getStockClass(supply)">{{ supply.estoque }}</span>
-              </div>
+            <app-badge [label]="getStockStatusLabel(supply)" [variant]="getStockStatusVariant(supply)" />
+          </div>
+          <div class="supplies-table__card-body">
+            <div class="supplies-table__card-field">
+              <span class="supplies-table__card-label">Categoria</span>
+              <span class="supplies-table__card-value">{{ supply.categoria }}</span>
+            </div>
+            <div class="supplies-table__card-field">
+              <span class="supplies-table__card-label">Custo</span>
+              <span class="supplies-table__card-value supplies-table__td--mono">{{ supply.custoUnitario | brlCurrency }}</span>
+            </div>
+            <div class="supplies-table__card-field">
+              <span class="supplies-table__card-label">Estoque</span>
+              <span class="supplies-table__card-value" [ngClass]="getStockClass(supply)">{{ supply.estoque }}</span>
             </div>
           </div>
-        }
-      </div>
-
-      <!-- Pagination -->
-      <div class="supplies-table__pagination">
-        <span class="supplies-table__pagination-info">
-          Mostrando 1-{{ filteredSupplies().length }} de {{ filteredSupplies().length }}
-        </span>
-      </div>
+        </div>
+      }
     </div>
-  }
-</div>
+
+    <!-- Pagination -->
+    <div class="supplies-table__pagination">
+      <span class="supplies-table__pagination-info">
+        Mostrando 1-{{ filteredSupplies().length }} de {{ filteredSupplies().length }}
+      </span>
+    </div>
+  </div>
+}
 
 <!-- New Supply Modal -->
 <app-dialog

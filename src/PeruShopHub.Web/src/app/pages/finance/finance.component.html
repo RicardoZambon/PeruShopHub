@@ -1,299 +1,297 @@
-<div class="financeiro">
-  <div class="financeiro__header">
-    <app-page-header title="Financeiro"></app-page-header>
-    <div class="financeiro__actions">
-      <app-button variant="outline" (click)="onExport('pdf')">Exportar PDF</app-button>
-      <app-button variant="outline" (click)="onExport('excel')">Exportar Excel</app-button>
+<div class="financeiro__header">
+  <app-page-header title="Financeiro"></app-page-header>
+  <div class="financeiro__actions">
+    <app-button variant="outline" (click)="onExport('pdf')">Exportar PDF</app-button>
+    <app-button variant="outline" (click)="onExport('excel')">Exportar Excel</app-button>
+  </div>
+</div>
+
+<!-- Sub-navigation tabs -->
+<app-tab-bar
+  [tabs]="tabItems"
+  [activeTab]="activeTab()"
+  (tabChange)="selectTab($any($event))"
+></app-tab-bar>
+
+<!-- Resumo Tab -->
+@if (activeTab() === 'resumo') {
+  <div class="financeiro__content">
+    <!-- Period selector -->
+    <div class="period-selector">
+      <div class="period-selector__buttons">
+        @for (period of periods; track period.key) {
+          <button
+            class="period-selector__btn"
+            [class.period-selector__btn--active]="activePeriod() === period.key"
+            (click)="selectPeriod(period.key)">
+            {{ period.label }}
+          </button>
+        }
+      </div>
+
+      @if (showDateRange()) {
+        <div class="period-selector__date-range">
+          <input type="date" class="period-selector__date-input" />
+          <span class="period-selector__date-separator">até</span>
+          <input type="date" class="period-selector__date-input" />
+        </div>
+      }
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="financeiro__kpis">
+      @if (loading()) {
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="financeiro__kpi-skeleton">
+            <app-skeleton type="text" width="60%" height="14px" />
+            <app-skeleton type="text" width="80%" height="32px" />
+            <app-skeleton type="text" width="40%" height="14px" />
+          </div>
+        }
+      } @else {
+        @for (kpi of kpis(); track kpi.label) {
+          <app-kpi-card
+            [label]="kpi.label"
+            [value]="kpi.value"
+            [change]="kpi.change"
+            [changeLabel]="kpi.changeLabel"
+            [invertColors]="kpi.invertColors ?? false" />
+        }
+      }
+    </div>
+
+    <!-- Charts -->
+    <div class="financeiro__charts">
+      <div class="chart-card">
+        <h2 class="chart-card__title">Receita vs Lucro</h2>
+        <div class="chart-card__body">
+          <canvas
+            baseChart
+            type="bar"
+            [data]="barChartData()"
+            [options]="barChartOptions">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h2 class="chart-card__title">Evolução da Margem</h2>
+        <div class="chart-card__body">
+          <canvas
+            baseChart
+            type="line"
+            [data]="marginChartData()"
+            [options]="marginChartOptions">
+          </canvas>
+        </div>
+      </div>
     </div>
   </div>
+}
 
-  <!-- Sub-navigation tabs -->
-  <app-tab-bar
-    [tabs]="tabItems"
-    [activeTab]="activeTab()"
-    (tabChange)="selectTab($any($event))"
-  ></app-tab-bar>
-
-  <!-- Resumo Tab -->
-  @if (activeTab() === 'resumo') {
-    <div class="financeiro__content">
-      <!-- Period selector -->
-      <div class="period-selector">
-        <div class="period-selector__buttons">
-          @for (period of periods; track period.key) {
-            <button
-              class="period-selector__btn"
-              [class.period-selector__btn--active]="activePeriod() === period.key"
-              (click)="selectPeriod(period.key)">
-              {{ period.label }}
-            </button>
+<!-- Lucratividade por SKU Tab -->
+@if (activeTab() === 'lucratividade') {
+  <div class="financeiro__content">
+    <div class="sku-table-wrapper">
+      <table class="sku-table">
+        <thead>
+          <tr>
+            <th class="sku-table__th sku-table__th--sticky">SKU</th>
+            <th class="sku-table__th sku-table__th--sticky-produto">Produto</th>
+            <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('vendas')">
+              Vendas
+              @if (skuSortField() === 'vendas') {
+                <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('receita')">
+              Receita Bruta
+              @if (skuSortField() === 'receita') {
+                <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('cmv')">
+              CMV
+              @if (skuSortField() === 'cmv') {
+                <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('comissoes')">
+              Comissões
+              @if (skuSortField() === 'comissoes') {
+                <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('frete')">
+              Frete
+              @if (skuSortField() === 'frete') {
+                <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('impostos')">
+              Impostos
+              @if (skuSortField() === 'impostos') {
+                <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('lucro')">
+              Lucro Líquido
+              @if (skuSortField() === 'lucro') {
+                <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th class="sku-table__th sku-table__th--sortable" (click)="sortSku('margem')">
+              Margem %
+              @if (skuSortField() === 'margem') {
+                <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of sortedSkuData(); track row.sku) {
+            <tr class="sku-table__row" [class.sku-table__row--negative]="row.margem < 0">
+              <td class="sku-table__td sku-table__td--mono sku-table__td--sticky">{{ row.sku }}</td>
+              <td class="sku-table__td sku-table__td--sticky-produto">{{ row.produto }}</td>
+              <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ row.vendas }}</td>
+              <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.receita) }}</td>
+              <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.cmv) }}</td>
+              <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.comissoes) }}</td>
+              <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.frete) }}</td>
+              <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.impostos) }}</td>
+              <td class="sku-table__td sku-table__td--mono sku-table__td--right" [class.sku-table__td--profit]="row.lucro >= 0" [class.sku-table__td--loss]="row.lucro < 0">
+                {{ formatBrl(row.lucro) }}
+              </td>
+              <td class="sku-table__td sku-table__td--margin">
+                <app-margin-badge [margin]="row.margem"></app-margin-badge>
+              </td>
+            </tr>
           }
-        </div>
-
-        @if (showDateRange()) {
-          <div class="period-selector__date-range">
-            <input type="date" class="period-selector__date-input" />
-            <span class="period-selector__date-separator">até</span>
-            <input type="date" class="period-selector__date-input" />
-          </div>
-        }
-      </div>
-
-      <!-- KPI Cards -->
-      <div class="financeiro__kpis">
-        @if (loading()) {
-          @for (i of [1, 2, 3, 4, 5]; track i) {
-            <div class="financeiro__kpi-skeleton">
-              <app-skeleton type="text" width="60%" height="14px" />
-              <app-skeleton type="text" width="80%" height="32px" />
-              <app-skeleton type="text" width="40%" height="14px" />
-            </div>
-          }
-        } @else {
-          @for (kpi of kpis(); track kpi.label) {
-            <app-kpi-card
-              [label]="kpi.label"
-              [value]="kpi.value"
-              [change]="kpi.change"
-              [changeLabel]="kpi.changeLabel"
-              [invertColors]="kpi.invertColors ?? false" />
-          }
-        }
-      </div>
-
-      <!-- Charts -->
-      <div class="financeiro__charts">
-        <div class="chart-card">
-          <h2 class="chart-card__title">Receita vs Lucro</h2>
-          <div class="chart-card__body">
-            <canvas
-              baseChart
-              type="bar"
-              [data]="barChartData()"
-              [options]="barChartOptions">
-            </canvas>
-          </div>
-        </div>
-
-        <div class="chart-card">
-          <h2 class="chart-card__title">Evolução da Margem</h2>
-          <div class="chart-card__body">
-            <canvas
-              baseChart
-              type="line"
-              [data]="marginChartData()"
-              [options]="marginChartOptions">
-            </canvas>
-          </div>
-        </div>
-      </div>
+        </tbody>
+      </table>
     </div>
-  }
+  </div>
+}
 
-  <!-- Lucratividade por SKU Tab -->
-  @if (activeTab() === 'lucratividade') {
-    <div class="financeiro__content">
-      <div class="sku-table-wrapper">
-        <table class="sku-table">
+<!-- Conciliação Tab -->
+@if (activeTab() === 'conciliacao') {
+  <div class="financeiro__content">
+    @if (conciliacaoLoading()) {
+      <div class="conciliacao-skeleton">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="conciliacao-skeleton__row">
+            <app-skeleton type="text" width="80px" height="16px" />
+            <app-skeleton type="text" width="120px" height="16px" />
+            <app-skeleton type="text" width="120px" height="16px" />
+            <app-skeleton type="text" width="100px" height="16px" />
+            <app-skeleton type="text" width="70px" height="24px" />
+          </div>
+        }
+      </div>
+    } @else if (reconciliationData().length === 0) {
+      <div class="empty-state">
+        <p class="empty-state__text">Nenhum dado de conciliação disponível</p>
+      </div>
+    } @else {
+      <div class="conciliacao-wrapper">
+        <table class="conciliacao-table">
           <thead>
             <tr>
-              <th class="sku-table__th sku-table__th--sticky">SKU</th>
-              <th class="sku-table__th sku-table__th--sticky-produto">Produto</th>
-              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('vendas')">
-                Vendas
-                @if (skuSortField() === 'vendas') {
-                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
-                }
-              </th>
-              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('receita')">
-                Receita Bruta
-                @if (skuSortField() === 'receita') {
-                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
-                }
-              </th>
-              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('cmv')">
-                CMV
-                @if (skuSortField() === 'cmv') {
-                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
-                }
-              </th>
-              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('comissoes')">
-                Comissões
-                @if (skuSortField() === 'comissoes') {
-                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
-                }
-              </th>
-              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('frete')">
-                Frete
-                @if (skuSortField() === 'frete') {
-                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
-                }
-              </th>
-              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('impostos')">
-                Impostos
-                @if (skuSortField() === 'impostos') {
-                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
-                }
-              </th>
-              <th class="sku-table__th sku-table__th--sortable sku-table__th--right" (click)="sortSku('lucro')">
-                Lucro Líquido
-                @if (skuSortField() === 'lucro') {
-                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
-                }
-              </th>
-              <th class="sku-table__th sku-table__th--sortable" (click)="sortSku('margem')">
-                Margem %
-                @if (skuSortField() === 'margem') {
-                  <span class="sku-table__sort-icon">{{ skuSortDir() === 'asc' ? '↑' : '↓' }}</span>
-                }
-              </th>
+              <th class="conciliacao-table__th">Período</th>
+              <th class="conciliacao-table__th conciliacao-table__th--right">Valor Esperado</th>
+              <th class="conciliacao-table__th conciliacao-table__th--right">Valor Depositado</th>
+              <th class="conciliacao-table__th conciliacao-table__th--right">Diferença</th>
+              <th class="conciliacao-table__th">Status</th>
             </tr>
           </thead>
           <tbody>
-            @for (row of sortedSkuData(); track row.sku) {
-              <tr class="sku-table__row" [class.sku-table__row--negative]="row.margem < 0">
-                <td class="sku-table__td sku-table__td--mono sku-table__td--sticky">{{ row.sku }}</td>
-                <td class="sku-table__td sku-table__td--sticky-produto">{{ row.produto }}</td>
-                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ row.vendas }}</td>
-                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.receita) }}</td>
-                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.cmv) }}</td>
-                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.comissoes) }}</td>
-                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.frete) }}</td>
-                <td class="sku-table__td sku-table__td--mono sku-table__td--right">{{ formatBrl(row.impostos) }}</td>
-                <td class="sku-table__td sku-table__td--mono sku-table__td--right" [class.sku-table__td--profit]="row.lucro >= 0" [class.sku-table__td--loss]="row.lucro < 0">
-                  {{ formatBrl(row.lucro) }}
+            @for (row of reconciliationData(); track row.periodo) {
+              <tr class="conciliacao-table__row" [class.conciliacao-table__row--divergence]="row.status === 'Divergência'">
+                <td class="conciliacao-table__td">{{ row.periodo }}</td>
+                <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right">{{ formatBrl(row.valorEsperado) }}</td>
+                <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right">{{ formatBrl(row.valorDepositado) }}</td>
+                <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right"
+                  [class.conciliacao-table__td--loss]="row.diferenca < 0">
+                  {{ formatBrl(row.diferenca) }}
                 </td>
-                <td class="sku-table__td sku-table__td--margin">
-                  <app-margin-badge [margin]="row.margem"></app-margin-badge>
+                <td class="conciliacao-table__td">
+                  <app-badge [label]="row.status" [variant]="getConciliacaoStatusVariant(row.status)" />
                 </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
-    </div>
-  }
+    }
+  </div>
+}
 
-  <!-- Conciliação Tab -->
-  @if (activeTab() === 'conciliacao') {
-    <div class="financeiro__content">
-      @if (conciliacaoLoading()) {
-        <div class="conciliacao-skeleton">
-          @for (i of [1, 2, 3, 4, 5, 6]; track i) {
-            <div class="conciliacao-skeleton__row">
-              <app-skeleton type="text" width="80px" height="16px" />
-              <app-skeleton type="text" width="120px" height="16px" />
-              <app-skeleton type="text" width="120px" height="16px" />
-              <app-skeleton type="text" width="100px" height="16px" />
-              <app-skeleton type="text" width="70px" height="24px" />
-            </div>
-          }
+<!-- Curva ABC Tab -->
+@if (activeTab() === 'curva-abc') {
+  <div class="financeiro__content">
+    @if (abcLoading()) {
+      <div class="abc-skeleton">
+        <div class="abc-skeleton__chart">
+          <app-skeleton type="rect" width="100%" height="320px" />
         </div>
-      } @else if (reconciliationData().length === 0) {
-        <div class="empty-state">
-          <p class="empty-state__text">Nenhum dado de conciliação disponível</p>
-        </div>
-      } @else {
-        <div class="conciliacao-wrapper">
-          <table class="conciliacao-table">
-            <thead>
-              <tr>
-                <th class="conciliacao-table__th">Período</th>
-                <th class="conciliacao-table__th conciliacao-table__th--right">Valor Esperado</th>
-                <th class="conciliacao-table__th conciliacao-table__th--right">Valor Depositado</th>
-                <th class="conciliacao-table__th conciliacao-table__th--right">Diferença</th>
-                <th class="conciliacao-table__th">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of reconciliationData(); track row.periodo) {
-                <tr class="conciliacao-table__row" [class.conciliacao-table__row--divergence]="row.status === 'Divergência'">
-                  <td class="conciliacao-table__td">{{ row.periodo }}</td>
-                  <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right">{{ formatBrl(row.valorEsperado) }}</td>
-                  <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right">{{ formatBrl(row.valorDepositado) }}</td>
-                  <td class="conciliacao-table__td conciliacao-table__td--mono conciliacao-table__td--right"
-                    [class.conciliacao-table__td--loss]="row.diferenca < 0">
-                    {{ formatBrl(row.diferenca) }}
-                  </td>
-                  <td class="conciliacao-table__td">
-                    <app-badge [label]="row.status" [variant]="getConciliacaoStatusVariant(row.status)" />
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </div>
-  }
-
-  <!-- Curva ABC Tab -->
-  @if (activeTab() === 'curva-abc') {
-    <div class="financeiro__content">
-      @if (abcLoading()) {
-        <div class="abc-skeleton">
-          <div class="abc-skeleton__chart">
-            <app-skeleton type="rect" width="100%" height="320px" />
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="abc-skeleton__row">
+            <app-skeleton type="text" width="30px" height="16px" />
+            <app-skeleton type="text" width="180px" height="16px" />
+            <app-skeleton type="text" width="80px" height="16px" />
+            <app-skeleton type="text" width="100px" height="16px" />
+            <app-skeleton type="text" width="60px" height="16px" />
+            <app-skeleton type="text" width="40px" height="24px" />
           </div>
-          @for (i of [1, 2, 3, 4, 5]; track i) {
-            <div class="abc-skeleton__row">
-              <app-skeleton type="text" width="30px" height="16px" />
-              <app-skeleton type="text" width="180px" height="16px" />
-              <app-skeleton type="text" width="80px" height="16px" />
-              <app-skeleton type="text" width="100px" height="16px" />
-              <app-skeleton type="text" width="60px" height="16px" />
-              <app-skeleton type="text" width="40px" height="24px" />
-            </div>
-          }
+        }
+      </div>
+    } @else if (abcData().length === 0) {
+      <div class="empty-state">
+        <p class="empty-state__text">Nenhum dado de curva ABC disponível</p>
+      </div>
+    } @else {
+      <!-- ABC Chart -->
+      <div class="chart-card">
+        <h2 class="chart-card__title">Curva ABC — Contribuição ao Lucro</h2>
+        <div class="chart-card__body">
+          <canvas
+            baseChart
+            type="bar"
+            [data]="abcMixedChartData()"
+            [options]="abcChartOptions">
+          </canvas>
         </div>
-      } @else if (abcData().length === 0) {
-        <div class="empty-state">
-          <p class="empty-state__text">Nenhum dado de curva ABC disponível</p>
-        </div>
-      } @else {
-        <!-- ABC Chart -->
-        <div class="chart-card">
-          <h2 class="chart-card__title">Curva ABC — Contribuição ao Lucro</h2>
-          <div class="chart-card__body">
-            <canvas
-              baseChart
-              type="bar"
-              [data]="abcMixedChartData()"
-              [options]="abcChartOptions">
-            </canvas>
-          </div>
-        </div>
+      </div>
 
-        <!-- ABC Table -->
-        <div class="abc-table-wrapper">
-          <table class="abc-table">
-            <thead>
-              <tr>
-                <th class="abc-table__th abc-table__th--center">Rank</th>
-                <th class="abc-table__th">Produto</th>
-                <th class="abc-table__th abc-table__th--mono">SKU</th>
-                <th class="abc-table__th abc-table__th--right">Lucro</th>
-                <th class="abc-table__th abc-table__th--right">% do Lucro Total</th>
-                <th class="abc-table__th abc-table__th--center">Classificação</th>
+      <!-- ABC Table -->
+      <div class="abc-table-wrapper">
+        <table class="abc-table">
+          <thead>
+            <tr>
+              <th class="abc-table__th abc-table__th--center">Rank</th>
+              <th class="abc-table__th">Produto</th>
+              <th class="abc-table__th abc-table__th--mono">SKU</th>
+              <th class="abc-table__th abc-table__th--right">Lucro</th>
+              <th class="abc-table__th abc-table__th--right">% do Lucro Total</th>
+              <th class="abc-table__th abc-table__th--center">Classificação</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of abcData(); track row.sku) {
+              <tr class="abc-table__row">
+                <td class="abc-table__td abc-table__td--center abc-table__td--mono">{{ row.rank }}</td>
+                <td class="abc-table__td">{{ row.produto }}</td>
+                <td class="abc-table__td abc-table__td--mono">{{ row.sku }}</td>
+                <td class="abc-table__td abc-table__td--mono abc-table__td--right abc-table__td--profit">{{ formatBrl(row.lucro) }}</td>
+                <td class="abc-table__td abc-table__td--mono abc-table__td--right">{{ row.percentLucro.toFixed(1) }}%</td>
+                <td class="abc-table__td abc-table__td--center">
+                  <app-badge [label]="row.classificacao" [variant]="getAbcVariant(row.classificacao)" />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              @for (row of abcData(); track row.sku) {
-                <tr class="abc-table__row">
-                  <td class="abc-table__td abc-table__td--center abc-table__td--mono">{{ row.rank }}</td>
-                  <td class="abc-table__td">{{ row.produto }}</td>
-                  <td class="abc-table__td abc-table__td--mono">{{ row.sku }}</td>
-                  <td class="abc-table__td abc-table__td--mono abc-table__td--right abc-table__td--profit">{{ formatBrl(row.lucro) }}</td>
-                  <td class="abc-table__td abc-table__td--mono abc-table__td--right">{{ row.percentLucro.toFixed(1) }}%</td>
-                  <td class="abc-table__td abc-table__td--center">
-                    <app-badge [label]="row.classificacao" [variant]="getAbcVariant(row.classificacao)" />
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </div>
-  }
-</div>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+}

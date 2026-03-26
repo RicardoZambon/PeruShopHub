@@ -6,121 +6,119 @@
     ></app-empty-state>
   </div>
 } @else {
-  <div class="vendas">
-    <!-- Header -->
-    <app-page-header title="Vendas"></app-page-header>
+  <!-- Header -->
+  <app-page-header title="Vendas"></app-page-header>
 
-    <!-- Action Bar -->
-    <div class="vendas__action-bar">
-      <app-search-input
-        placeholder="Buscar por ID ou comprador..."
-        [value]="searchQuery()"
-        (valueChange)="onSearchChange($event)"
-      ></app-search-input>
-      <div class="vendas__date-range">
-        <input
-          type="date"
-          class="vendas__date-input"
-          [value]="dateFrom()"
-          (change)="onDateFromChange($event)"
-          placeholder="Data início"
-        />
-        <span class="vendas__date-separator">até</span>
-        <input
-          type="date"
-          class="vendas__date-input"
-          [value]="dateTo()"
-          (change)="onDateToChange($event)"
-          placeholder="Data fim"
-        />
-      </div>
-      <app-select-dropdown
-        [options]="statusOptions"
-        [value]="statusFilter()"
-        (valueChange)="onStatusFilterChange($event)"
-      ></app-select-dropdown>
+  <!-- Action Bar -->
+  <div class="action-bar">
+    <app-search-input
+      placeholder="Buscar por ID ou comprador..."
+      [value]="searchQuery()"
+      (valueChange)="onSearchChange($event)"
+    ></app-search-input>
+    <div class="vendas__date-range">
+      <input
+        type="date"
+        class="vendas__date-input"
+        [value]="dateFrom()"
+        (change)="onDateFromChange($event)"
+        placeholder="Data início"
+      />
+      <span class="vendas__date-separator">até</span>
+      <input
+        type="date"
+        class="vendas__date-input"
+        [value]="dateTo()"
+        (change)="onDateToChange($event)"
+        placeholder="Data fim"
+      />
     </div>
-
-    <!-- Data Grid -->
-    <app-data-grid
-      #grid
-      [columns]="gridColumns"
-      [data]="gridData()"
-      [loading]="loading()"
-      [hasMore]="hasMore()"
-      [pageSize]="pageSize()"
-      [totalCount]="totalCount()"
-      entityName="vendas"
-      emptyTitle="Nenhuma venda encontrada"
-      emptyDescription="Tente ajustar os filtros de busca."
-      ariaLabel="Lista de vendas"
-      (sortChange)="onSort($event)"
-      (loadMore)="onLoadMore()"
-      (rowClick)="onRowClick($event)"
-    >
-      <!-- ID cell (mono clickable) -->
-      <ng-template appGridCell="id" let-row let-value="value">
-        <span class="vendas__mono">#{{ value }}</span>
-      </ng-template>
-
-      <!-- Date cell -->
-      <ng-template appGridCell="date" let-row let-value="value">
-        {{ formatDate(value) }}
-      </ng-template>
-
-      <!-- Buyer cell -->
-      <ng-template appGridCell="buyer" let-row let-value="value">
-        <span class="vendas__buyer">{{ value }}</span>
-      </ng-template>
-
-      <!-- Profit cell (conditional green/red) -->
-      <ng-template appGridCell="profit" let-row let-value="value">
-        <span class="vendas__mono"
-          [class.vendas__profit]="value >= 0"
-          [class.vendas__loss]="value < 0">
-          {{ formatBrl(value) }}
-        </span>
-      </ng-template>
-
-      <!-- Total cell -->
-      <ng-template appGridCell="total" let-row let-value="value">
-        <span class="vendas__mono">{{ formatBrl(value) }}</span>
-      </ng-template>
-
-      <!-- Status cell (badge) -->
-      <ng-template appGridCell="status" let-row let-value="value">
-        <app-badge [label]="value" [variant]="getStatusVariant(value)"></app-badge>
-      </ng-template>
-
-      <!-- Mobile card template -->
-      <ng-template appGridCard let-row>
-        <div class="vendas__card-header">
-          <div class="vendas__card-title">
-            <span class="vendas__card-id">#{{ row.id }}</span>
-            <span class="vendas__card-date">{{ formatDate(row.date) }}</span>
-          </div>
-          <app-badge [label]="row.status" [variant]="getStatusVariant(row.status)"></app-badge>
-        </div>
-        <div class="vendas__card-buyer">{{ row.buyer }}</div>
-        <div class="vendas__card-body">
-          <div class="vendas__card-field">
-            <span class="vendas__card-label">Itens</span>
-            <span class="vendas__card-value">{{ row.itemCount }}</span>
-          </div>
-          <div class="vendas__card-field">
-            <span class="vendas__card-label">Valor</span>
-            <span class="vendas__card-value vendas__mono">{{ formatBrl(row.total) }}</span>
-          </div>
-          <div class="vendas__card-field">
-            <span class="vendas__card-label">Lucro</span>
-            <span class="vendas__card-value vendas__mono"
-              [class.vendas__profit]="row.profit >= 0"
-              [class.vendas__loss]="row.profit < 0">
-              {{ formatBrl(row.profit) }}
-            </span>
-          </div>
-        </div>
-      </ng-template>
-    </app-data-grid>
+    <app-select-dropdown
+      [options]="statusOptions"
+      [value]="statusFilter()"
+      (valueChange)="onStatusFilterChange($event)"
+    ></app-select-dropdown>
   </div>
+
+  <!-- Data Grid -->
+  <app-data-grid
+    #grid
+    [columns]="gridColumns"
+    [data]="gridData()"
+    [loading]="loading()"
+    [hasMore]="hasMore()"
+    [pageSize]="pageSize()"
+    [totalCount]="totalCount()"
+    entityName="vendas"
+    emptyTitle="Nenhuma venda encontrada"
+    emptyDescription="Tente ajustar os filtros de busca."
+    ariaLabel="Lista de vendas"
+    (sortChange)="onSort($event)"
+    (loadMore)="onLoadMore()"
+    (rowClick)="onRowClick($event)"
+  >
+    <!-- ID cell (mono clickable) -->
+    <ng-template appGridCell="id" let-row let-value="value">
+      <span class="vendas__mono">#{{ value }}</span>
+    </ng-template>
+
+    <!-- Date cell -->
+    <ng-template appGridCell="date" let-row let-value="value">
+      {{ formatDate(value) }}
+    </ng-template>
+
+    <!-- Buyer cell -->
+    <ng-template appGridCell="buyer" let-row let-value="value">
+      <span class="vendas__buyer">{{ value }}</span>
+    </ng-template>
+
+    <!-- Profit cell (conditional green/red) -->
+    <ng-template appGridCell="profit" let-row let-value="value">
+      <span class="vendas__mono"
+        [class.vendas__profit]="value >= 0"
+        [class.vendas__loss]="value < 0">
+        {{ formatBrl(value) }}
+      </span>
+    </ng-template>
+
+    <!-- Total cell -->
+    <ng-template appGridCell="total" let-row let-value="value">
+      <span class="vendas__mono">{{ formatBrl(value) }}</span>
+    </ng-template>
+
+    <!-- Status cell (badge) -->
+    <ng-template appGridCell="status" let-row let-value="value">
+      <app-badge [label]="value" [variant]="getStatusVariant(value)"></app-badge>
+    </ng-template>
+
+    <!-- Mobile card template -->
+    <ng-template appGridCard let-row>
+      <div class="vendas__card-header">
+        <div class="vendas__card-title">
+          <span class="vendas__card-id">#{{ row.id }}</span>
+          <span class="vendas__card-date">{{ formatDate(row.date) }}</span>
+        </div>
+        <app-badge [label]="row.status" [variant]="getStatusVariant(row.status)"></app-badge>
+      </div>
+      <div class="vendas__card-buyer">{{ row.buyer }}</div>
+      <div class="vendas__card-body">
+        <div class="vendas__card-field">
+          <span class="vendas__card-label">Itens</span>
+          <span class="vendas__card-value">{{ row.itemCount }}</span>
+        </div>
+        <div class="vendas__card-field">
+          <span class="vendas__card-label">Valor</span>
+          <span class="vendas__card-value vendas__mono">{{ formatBrl(row.total) }}</span>
+        </div>
+        <div class="vendas__card-field">
+          <span class="vendas__card-label">Lucro</span>
+          <span class="vendas__card-value vendas__mono"
+            [class.vendas__profit]="row.profit >= 0"
+            [class.vendas__loss]="row.profit < 0">
+            {{ formatBrl(row.profit) }}
+          </span>
+        </div>
+      </div>
+    </ng-template>
+  </app-data-grid>
 }
