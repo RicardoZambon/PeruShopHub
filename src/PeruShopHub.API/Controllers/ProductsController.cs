@@ -29,11 +29,12 @@ public class ProductsController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,
+        [FromQuery] Guid? categoryId = null,
         [FromQuery] string sortBy = "name",
         [FromQuery] string sortDir = "asc",
         CancellationToken ct = default)
     {
-        var cacheKey = $"products:list:{page}:{pageSize}:{search}:{status}:{sortBy}:{sortDir}";
+        var cacheKey = $"products:list:{page}:{pageSize}:{search}:{status}:{categoryId}:{sortBy}:{sortDir}";
         var cached = await _cache.GetAsync<PagedResult<ProductListDto>>(cacheKey, ct);
         if (cached is not null) return Ok(cached);
 
@@ -52,6 +53,30 @@ public class ProductsController : ControllerBase
             query = query.Where(p => p.Status == status);
         }
 
+        if (categoryId.HasValue)
+        {
+            // Get all descendant category IDs recursively
+            var categoryIds = new List<Guid> { categoryId.Value };
+            var toCheck = new Queue<Guid>();
+            toCheck.Enqueue(categoryId.Value);
+            while (toCheck.Count > 0)
+            {
+                var parentId = toCheck.Dequeue();
+                var childIds = await _db.Categories
+                    .AsNoTracking()
+                    .Where(c => c.ParentId == parentId)
+                    .Select(c => c.Id)
+                    .ToListAsync(ct);
+                foreach (var childId in childIds)
+                {
+                    categoryIds.Add(childId);
+                    toCheck.Enqueue(childId);
+                }
+            }
+            var categoryIdStrings = categoryIds.Select(id => id.ToString()).ToList();
+            query = query.Where(p => p.CategoryId != null && categoryIdStrings.Contains(p.CategoryId));
+        }
+
         var totalCount = await query.CountAsync();
 
         query = sortBy.ToLower() switch
@@ -68,6 +93,12 @@ public class ProductsController : ControllerBase
             "createdat" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
                 ? query.OrderByDescending(p => p.CreatedAt)
                 : query.OrderBy(p => p.CreatedAt),
+            "stock" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
+                ? query.OrderByDescending(p => p.Variants.Sum(v => v.Stock))
+                : query.OrderBy(p => p.Variants.Sum(v => v.Stock)),
+            "margin" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
+                ? query.OrderByDescending(p => p.Price > 0 ? (p.Price - p.PurchaseCost - p.PackagingCost) / p.Price * 100 : 0)
+                : query.OrderBy(p => p.Price > 0 ? (p.Price - p.PurchaseCost - p.PackagingCost) / p.Price * 100 : 0),
             _ => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
                 ? query.OrderByDescending(p => p.Name)
                 : query.OrderBy(p => p.Name),
@@ -87,13 +118,17 @@ public class ProductsController : ControllerBase
                 p.NeedsReview,
                 p.IsActive,
                 p.Variants.Count,
+                p.Variants.Sum(v => v.Stock),
+                p.Price > 0
+                    ? (p.Price - p.PurchaseCost - p.PackagingCost) / p.Price * 100m
+                    : (decimal?)null,
                 _db.FileUploads
                     .Where(f => f.EntityType == "product" && f.EntityId == p.Id)
                     .OrderBy(f => f.SortOrder)
                     .Select(f => f.StoragePath)
                     .FirstOrDefault(),
                 p.CreatedAt))
-            .ToListAsync();
+            .ToListAsync(ct);
 
         var result = new PagedResult<ProductListDto>
         {
