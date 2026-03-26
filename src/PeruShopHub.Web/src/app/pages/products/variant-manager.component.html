@@ -135,7 +135,8 @@
     </div>
   }
 
-  <!-- Desktop Table -->
+  <!-- Desktop Table — uses custom table (not DataGridComponent) because of expandable detail rows,
+       inline editing, and dynamic attribute columns that vary per product category. -->
   <div class="vm-table-wrapper">
     <table class="vm-table">
       <thead>
@@ -171,13 +172,7 @@
               <td>{{ variant.attributes[key] || '-' }}</td>
             }
             <td>
-              <input
-                type="number"
-                class="inline-input inline-stock"
-                min="0"
-                [value]="variant.stock"
-                (change)="updateVariantStock(variant.id, +$any($event.target).value)"
-              />
+              <span class="stock-value">{{ variant.stock }}</span>
             </td>
             <td>
               <input

@@ -62,7 +62,10 @@
         >
           <div class="drag-placeholder" *cdkDragPlaceholder></div>
 
-          <div class="image-content" [style.background-color]="image.color">
+          <div class="image-content">
+            @if (image.url) {
+              <img [src]="image.url" [alt]="image.fileName" class="image-preview" />
+            }
             <span class="image-number">{{ i + 1 }}</span>
 
             <!-- Drag handle -->
@@ -93,10 +96,15 @@
 
       <!-- Empty slots -->
       @for (slot of emptySlots(); track $index) {
-        <div class="image-slot empty" (click)="addMockImage()">
+        <div class="image-slot empty" (click)="triggerFileInput()">
           <div class="empty-content">
-            <lucide-icon [img]="cameraIcon" [size]="24"></lucide-icon>
-            <span class="empty-text">Adicionar</span>
+            @if (uploading() && $index === 0) {
+              <lucide-icon [img]="loaderIcon" [size]="24" class="spin"></lucide-icon>
+              <span class="empty-text">Enviando...</span>
+            } @else {
+              <lucide-icon [img]="cameraIcon" [size]="24"></lucide-icon>
+              <span class="empty-text">Adicionar</span>
+            }
           </div>
         </div>
       }

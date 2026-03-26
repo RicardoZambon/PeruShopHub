@@ -333,11 +333,6 @@ export class VariantManagerComponent implements OnChanges, OnInit {
     this.variantsSignal.update(list => list.map(v => v.id === variantId ? { ...v, price } : v));
   }
 
-  async updateVariantStock(variantId: string, stock: number): Promise<void> {
-    await this.variantService.update(variantId, { stock });
-    this.variantsSignal.update(list => list.map(v => v.id === variantId ? { ...v, stock } : v));
-  }
-
   async updateVariantSku(variantId: string, sku: string): Promise<void> {
     await this.variantService.update(variantId, { sku });
     this.variantsSignal.update(list => list.map(v => v.id === variantId ? { ...v, sku } : v));
@@ -366,8 +361,8 @@ export class VariantManagerComponent implements OnChanges, OnInit {
 
   async deleteVariant(variantId: string): Promise<void> {
     const confirmed = await this.confirmDialog.confirm({
-      title: 'Excluir variante',
-      message: 'Tem certeza que deseja excluir esta variante?',
+      title: 'Excluir variação',
+      message: 'Tem certeza que deseja excluir esta variação?',
       confirmLabel: 'Excluir',
       variant: 'danger',
     });

@@ -5,6 +5,7 @@ import {
   signal,
   computed,
   model,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -24,18 +25,18 @@ import {
   Star,
   GripVertical,
   Video,
+  Loader2,
 } from 'lucide-angular';
+import { firstValueFrom } from 'rxjs';
+import { FileUploadService } from '../../services/file-upload.service';
+import { ConfirmDialogService } from '../../shared/components';
 
 export interface GalleryImage {
   id: string;
-  color: string;
+  url: string;
+  fileName: string;
   order: number;
 }
-
-const PLACEHOLDER_COLORS = [
-  '#5C6BC0', '#42A5F5', '#66BB6A', '#FFA726', '#EF5350',
-  '#AB47BC', '#26C6DA', '#8D6E63', '#78909C',
-];
 
 @Component({
   selector: 'app-media-gallery',
@@ -59,7 +60,12 @@ export class MediaGalleryComponent {
   readonly starIcon = Star;
   readonly gripIcon = GripVertical;
   readonly videoIcon = Video;
+  readonly loaderIcon = Loader2;
 
+  private fileUploadService = inject(FileUploadService);
+  private confirmDialog = inject(ConfirmDialogService);
+
+  readonly productId = input<string>('');
   readonly images = model<GalleryImage[]>([]);
   readonly videoUrl = model<string | null>(null);
 
@@ -67,7 +73,7 @@ export class MediaGalleryComponent {
   readonly imageRemove = output<number>();
 
   readonly maxImages = 9;
-  private nextColorIndex = 0;
+  readonly uploading = signal(false);
 
   videoInputValue = signal('');
 
@@ -100,24 +106,68 @@ export class MediaGalleryComponent {
     this.videoInputValue.set('');
   }
 
-  addMockImage(): void {
+  triggerFileInput(): void {
     if (this.images().length >= this.maxImages) return;
-
-    const color = PLACEHOLDER_COLORS[this.nextColorIndex % PLACEHOLDER_COLORS.length];
-    this.nextColorIndex++;
-
-    const newImage: GalleryImage = {
-      id: 'img-' + Math.random().toString(36).substring(2, 8),
-      color,
-      order: this.images().length,
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp';
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) this.onFileSelected(file);
     };
-
-    this.images.set([...this.images(), newImage]);
-    this.imageAdd.emit();
+    input.click();
   }
 
-  removeImage(index: number): void {
-    const updated = this.images().filter((_, i) => i !== index)
+  async onFileSelected(file: File): Promise<void> {
+    if (this.images().length >= this.maxImages) return;
+    if (file.size > 10 * 1024 * 1024) return; // 10MB limit
+
+    const productId = this.productId();
+    if (!productId) return;
+
+    this.uploading.set(true);
+    try {
+      const response = await firstValueFrom(
+        this.fileUploadService.upload(file, 'product', productId, this.images().length),
+      );
+      const newImage: GalleryImage = {
+        id: response.id,
+        url: response.url,
+        fileName: response.fileName,
+        order: this.images().length,
+      };
+      this.images.set([...this.images(), newImage]);
+      this.imageAdd.emit();
+    } catch {
+      // Upload failed — could emit an error event
+    } finally {
+      this.uploading.set(false);
+    }
+  }
+
+  async removeImage(index: number): Promise<void> {
+    const image = this.images()[index];
+    if (!image) return;
+
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Remover imagem',
+      message: 'Tem certeza que deseja remover esta imagem?',
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await firstValueFrom(this.fileUploadService.delete(image.id));
+      this.confirmDialog.done();
+    } catch {
+      this.confirmDialog.done();
+      return;
+    }
+
+    const updated = this.images()
+      .filter((_, i) => i !== index)
       .map((img, i) => ({ ...img, order: i }));
     this.images.set(updated);
     this.imageRemove.emit(index);

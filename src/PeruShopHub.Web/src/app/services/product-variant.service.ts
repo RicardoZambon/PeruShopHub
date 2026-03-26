@@ -50,8 +50,12 @@ export class ProductVariantService {
   }
 
   async update(variantId: string, dto: UpdateVariantDto): Promise<ProductVariant | undefined> {
+    const cached = this.variantsSignal().find(v => v.id === variantId);
+    const productId = cached?.productId;
+    if (!productId) return undefined;
+
     const updated = await firstValueFrom(
-      this.http.put<ProductVariant>(`/api/variants/${variantId}`, dto),
+      this.http.put<ProductVariant>(`/api/products/${productId}/variants/${variantId}`, dto),
     );
     this.variantsSignal.update((list) =>
       list.map((v) => (v.id === variantId ? updated : v)),
@@ -60,9 +64,13 @@ export class ProductVariantService {
   }
 
   async delete(variantId: string): Promise<boolean> {
+    const cached = this.variantsSignal().find(v => v.id === variantId);
+    const productId = cached?.productId;
+    if (!productId) return false;
+
     try {
       await firstValueFrom(
-        this.http.delete<void>(`/api/variants/${variantId}`),
+        this.http.delete<void>(`/api/products/${productId}/variants/${variantId}`),
       );
       this.variantsSignal.update((list) => list.filter((v) => v.id !== variantId));
       return true;

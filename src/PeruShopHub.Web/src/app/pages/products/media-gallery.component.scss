@@ -223,11 +223,32 @@
   border-radius: var(--radius-md);
 }
 
+.image-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
 .image-number {
   font-size: var(--heading-2-size);
   font-weight: 700;
   color: rgba(255, 255, 255, 0.7);
   user-select: none;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 // Drag Handle

@@ -79,3 +79,21 @@ public record UpdateProductDto(
     decimal? Height,
     decimal? Width,
     decimal? Length);
+
+public record CreateProductVariantDto(
+    string Sku,
+    string Attributes,
+    decimal? Price,
+    bool IsActive);
+
+public record UpdateProductVariantDto
+{
+    public string? Sku { get; init; }
+    public decimal? Price { get; init; }
+    public bool? IsActive { get; init; }
+    public decimal? PurchaseCost { get; init; }
+    public decimal? Weight { get; init; }
+    public decimal? Height { get; init; }
+    public decimal? Width { get; init; }
+    public decimal? Length { get; init; }
+}

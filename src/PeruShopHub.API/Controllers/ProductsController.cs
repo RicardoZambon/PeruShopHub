@@ -106,6 +106,44 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("next-sku")]
+    public async Task<ActionResult> GetNextSku([FromQuery] Guid? categoryId)
+    {
+        if (!categoryId.HasValue)
+            return Ok(new { suggestedSku = (string?)null });
+
+        var category = await _db.Categories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == categoryId.Value);
+
+        if (category?.SkuPrefix is null or "")
+            return Ok(new { suggestedSku = (string?)null });
+
+        var prefix = category.SkuPrefix;
+        var pattern = $"{prefix}-";
+
+        // Find the max existing SKU with this prefix
+        var maxSku = await _db.Products
+            .AsNoTracking()
+            .Where(p => p.Sku.StartsWith(pattern))
+            .Select(p => p.Sku)
+            .OrderByDescending(s => s)
+            .FirstOrDefaultAsync();
+
+        int nextNumber = 1;
+        if (maxSku is not null)
+        {
+            var suffix = maxSku[(pattern.Length)..];
+            if (int.TryParse(suffix, out var parsed))
+            {
+                nextNumber = parsed + 1;
+            }
+        }
+
+        var suggestedSku = $"{prefix}-{nextNumber:D3}";
+        return Ok(new { suggestedSku });
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProductDetailDto>> GetProduct(Guid id)
     {
@@ -357,4 +395,103 @@ public class ProductsController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("{id:guid}/variants")]
+    public async Task<ActionResult<ProductVariantDto>> CreateVariant(Guid id, CreateProductVariantDto dto)
+    {
+        var product = await _db.Products.FindAsync(id);
+        if (product is null) return NotFound();
+
+        var variant = new ProductVariant
+        {
+            Id = Guid.NewGuid(),
+            ProductId = id,
+            Sku = dto.Sku,
+            Attributes = dto.Attributes,
+            Price = dto.Price,
+            Stock = 0,
+            IsActive = dto.IsActive,
+        };
+
+        _db.ProductVariants.Add(variant);
+        await _db.SaveChangesAsync();
+
+        return Ok(MapToVariantDto(variant));
+    }
+
+    [HttpPut("{id:guid}/variants/{variantId:guid}")]
+    public async Task<ActionResult<ProductVariantDto>> UpdateVariant(Guid id, Guid variantId, UpdateProductVariantDto dto)
+    {
+        var variant = await _db.ProductVariants.FirstOrDefaultAsync(v => v.Id == variantId && v.ProductId == id);
+        if (variant is null) return NotFound();
+
+        if (dto.Sku is not null) variant.Sku = dto.Sku;
+        if (dto.Price.HasValue) variant.Price = dto.Price;
+        if (dto.IsActive.HasValue) variant.IsActive = dto.IsActive.Value;
+        if (dto.PurchaseCost.HasValue) variant.PurchaseCost = dto.PurchaseCost;
+        if (dto.Weight.HasValue) variant.Weight = dto.Weight;
+        if (dto.Height.HasValue) variant.Height = dto.Height;
+        if (dto.Width.HasValue) variant.Width = dto.Width;
+        if (dto.Length.HasValue) variant.Length = dto.Length;
+
+        await _db.SaveChangesAsync();
+        return Ok(MapToVariantDto(variant));
+    }
+
+    [HttpDelete("{id:guid}/variants/{variantId:guid}")]
+    public async Task<IActionResult> DeleteVariant(Guid id, Guid variantId)
+    {
+        var variant = await _db.ProductVariants.FirstOrDefaultAsync(v => v.Id == variantId && v.ProductId == id);
+        if (variant is null) return NotFound();
+
+        _db.ProductVariants.Remove(variant);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteProduct(Guid id)
+    {
+        var product = await _db.Products
+            .Include(p => p.Variants)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (product is null)
+            return NotFound();
+
+        // Check if product has order history
+        var hasOrders = await _db.OrderItems.AnyAsync(oi => oi.ProductId == id);
+
+        if (hasOrders)
+        {
+            // Soft delete: deactivate and set status
+            product.IsActive = false;
+            product.Status = "Excluído";
+            product.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+        else
+        {
+            // Hard delete: remove product and its variants
+            _db.Products.Remove(product);
+            await _db.SaveChangesAsync();
+        }
+
+        await _dispatcher.BroadcastDataChangeAsync("product", "deleted", id.ToString(), default);
+        return NoContent();
+    }
+
+    private static ProductVariantDto MapToVariantDto(ProductVariant v) => new(
+        v.Id,
+        v.Sku,
+        v.Attributes,
+        v.Price,
+        v.Stock,
+        v.IsActive,
+        v.NeedsReview,
+        v.PurchaseCost,
+        v.Weight,
+        v.Height,
+        v.Width,
+        v.Length);
 }
