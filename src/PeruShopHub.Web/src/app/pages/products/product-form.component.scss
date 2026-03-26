@@ -134,6 +134,7 @@
 .form-content {
   max-width: 720px;
   overflow: visible;
+  padding: 2px; // room for focus ring box-shadow (2px outward spread)
 }
 
 // Ensure tab-panel does not clip dropdowns
