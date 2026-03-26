@@ -357,6 +357,142 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}/analytics")]
+    public async Task<ActionResult<ProductAnalyticsDto>> GetAnalytics(
+        Guid id,
+        [FromQuery] int days = 30,
+        CancellationToken ct = default)
+    {
+        var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
+        if (product is null)
+            return NotFound();
+
+        var now = DateTime.UtcNow;
+        var currentStart = now.AddDays(-days);
+        var previousStart = now.AddDays(-days * 2);
+
+        // Current period
+        var currentItems = await _db.OrderItems
+            .AsNoTracking()
+            .Where(oi => oi.ProductId == id)
+            .Join(_db.Orders.AsNoTracking(),
+                oi => oi.OrderId,
+                o => o.Id,
+                (oi, o) => new { oi, o })
+            .Where(x => x.o.CreatedAt >= currentStart && x.o.CreatedAt < now)
+            .Select(x => new
+            {
+                x.oi.Quantity,
+                x.oi.UnitPrice,
+                x.oi.Subtotal
+            })
+            .ToListAsync(ct);
+
+        var currentSales = currentItems.Sum(x => x.Quantity);
+        var currentRevenue = currentItems.Sum(x => x.Subtotal);
+        var currentProfit = currentItems.Sum(x => (x.UnitPrice - product.PurchaseCost - product.PackagingCost) * x.Quantity);
+        var currentMargin = currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : (decimal?)null;
+
+        // Previous period
+        var previousItems = await _db.OrderItems
+            .AsNoTracking()
+            .Where(oi => oi.ProductId == id)
+            .Join(_db.Orders.AsNoTracking(),
+                oi => oi.OrderId,
+                o => o.Id,
+                (oi, o) => new { oi, o })
+            .Where(x => x.o.CreatedAt >= previousStart && x.o.CreatedAt < currentStart)
+            .Select(x => new
+            {
+                x.oi.Quantity,
+                x.oi.UnitPrice,
+                x.oi.Subtotal
+            })
+            .ToListAsync(ct);
+
+        var previousSales = previousItems.Sum(x => x.Quantity);
+        var previousRevenue = previousItems.Sum(x => x.Subtotal);
+        var previousProfit = previousItems.Sum(x => (x.UnitPrice - product.PurchaseCost - product.PackagingCost) * x.Quantity);
+        var previousMargin = previousRevenue > 0 ? (previousProfit / previousRevenue) * 100 : (decimal?)null;
+
+        decimal? CalcChange(decimal current, decimal previous) =>
+            previous != 0 ? ((current - previous) / Math.Abs(previous)) * 100 : null;
+
+        var dto = new ProductAnalyticsDto(
+            currentSales,
+            currentRevenue,
+            currentProfit,
+            currentMargin,
+            CalcChange(currentSales, previousSales),
+            CalcChange(currentRevenue, previousRevenue),
+            CalcChange(currentProfit, previousProfit),
+            currentMargin.HasValue && previousMargin.HasValue
+                ? currentMargin.Value - previousMargin.Value
+                : null);
+
+        return Ok(dto);
+    }
+
+    [HttpGet("{id:guid}/recent-orders")]
+    public async Task<ActionResult<PagedResult<ProductRecentOrderDto>>> GetRecentOrders(
+        Guid id,
+        [FromQuery] int days = 30,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken ct = default)
+    {
+        var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
+        if (product is null)
+            return NotFound();
+
+        var cutoff = DateTime.UtcNow.AddDays(-days);
+
+        var query = _db.OrderItems
+            .AsNoTracking()
+            .Where(oi => oi.ProductId == id)
+            .Join(_db.Orders.AsNoTracking(),
+                oi => oi.OrderId,
+                o => o.Id,
+                (oi, o) => new { oi, o })
+            .Where(x => x.o.CreatedAt >= cutoff);
+
+        var totalCount = await query.CountAsync(ct);
+
+        // Materialize first, then compute profit in memory (product cost is a captured variable)
+        var rawItems = await query
+            .OrderByDescending(x => x.o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new
+            {
+                OrderId = x.o.Id,
+                Date = x.o.CreatedAt,
+                x.oi.Quantity,
+                x.oi.UnitPrice,
+                x.oi.Subtotal
+            })
+            .ToListAsync(ct);
+
+        var items = rawItems.Select(x => new ProductRecentOrderDto(
+            x.OrderId,
+            x.Date,
+            x.Quantity,
+            x.UnitPrice,
+            x.Subtotal,
+            (x.UnitPrice - product.PurchaseCost - product.PackagingCost) * x.Quantity))
+            .ToList();
+
+        var result = new PagedResult<ProductRecentOrderDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+
+        return Ok(result);
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<ProductDetailDto>> UpdateProduct(Guid id, UpdateProductDto dto)
     {

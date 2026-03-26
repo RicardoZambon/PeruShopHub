@@ -99,3 +99,21 @@ public record UpdateProductVariantDto
     public decimal? Width { get; init; }
     public decimal? Length { get; init; }
 }
+
+public record ProductAnalyticsDto(
+    int TotalSales,
+    decimal TotalRevenue,
+    decimal TotalProfit,
+    decimal? Margin,
+    decimal? SalesChange,
+    decimal? RevenueChange,
+    decimal? ProfitChange,
+    decimal? MarginChange);
+
+public record ProductRecentOrderDto(
+    Guid OrderId,
+    DateTime Date,
+    int Quantity,
+    decimal UnitPrice,
+    decimal Total,
+    decimal Profit);
