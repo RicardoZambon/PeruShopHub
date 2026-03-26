@@ -1,38 +1,58 @@
 @use '../../../../styles/mixins' as m;
 
 :host {
-  display: block;
+  display: grid;
+  grid-template-columns: var(--sidebar-width-expanded) 1fr;
+  grid-template-rows: var(--header-height) 1fr;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar main";
   height: 100vh;
   overflow: hidden;
+  transition: grid-template-columns 200ms ease;
+
+  &.sidebar-collapsed {
+    grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+  }
+
+  @include m.mobile {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "main";
+  }
+}
+
+app-sidebar {
+  grid-area: sidebar;
+  overflow: hidden;
+
+  @include m.mobile {
+    // On mobile, sidebar is not a grid item — it's a fixed overlay
+    grid-area: unset;
+    position: fixed;
+    z-index: 100;
+  }
+}
+
+app-header {
+  grid-area: header;
+  z-index: 10; // above main content, below dropdowns
 }
 
 .layout-content {
-  position: absolute;
-  top: var(--header-height, 56px);
-  bottom: 0;
-  right: 0;
-  left: 0;
+  grid-area: main;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 24px;
   box-sizing: border-box;
-  transition: left 200ms ease;
-
-  &.sidebar-expanded {
-    left: var(--sidebar-width, 256px);
-  }
-
-  &.sidebar-collapsed {
-    left: var(--sidebar-collapsed-width, 64px);
-  }
 
   @include m.tablet {
     padding: 16px;
   }
 
   @include m.mobile {
-    left: 0 !important;
     padding: 12px;
   }
 }
