@@ -290,12 +290,15 @@ export class ProductFormComponent {
   async onSave(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      // Switch to tab with first error
+      // Switch to tab with first error and show feedback
+      const invalidFields = Object.keys(this.form.controls).filter(k => this.form.get(k)?.invalid);
+      console.warn('Form invalid. Fields:', invalidFields);
       if (this.titulo.invalid || this.categoria.invalid) {
         this.activeTab.set('basicas');
       } else if (this.precoVenda.invalid) {
         this.activeTab.set('preco');
       }
+      this.toast.show('Preencha os campos obrigatórios destacados', 'warning');
       return;
     }
 
