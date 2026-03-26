@@ -1,18 +1,6 @@
 @use '../../../styles/mixins' as m;
 
-// Categories manages its own panel scrolling — disable layout's default scroll
-:host {
-  overflow: hidden !important;
-}
-
-.categorias-page {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-
-.categorias-page__content {
+.content-panels {
   display: flex;
   flex: 1;
   min-height: 0;
@@ -28,13 +16,13 @@
   }
 }
 
-.categorias-page__tree-panel {
+.tree-panel {
   display: flex;
   flex-shrink: 0;
   overflow-y: auto;
 
   @include m.mobile {
-    width: 100% !important; // override inline style on mobile
+    width: 100% !important;
 
     &--hidden-mobile {
       display: none;
@@ -42,11 +30,11 @@
   }
 
   @include m.tablet {
-    width: 280px !important; // override inline style on tablet
+    width: 280px !important;
   }
 }
 
-.categorias-page__resize-handle {
+.resize-handle {
   width: 1px;
   cursor: col-resize;
   background: var(--neutral-200);
@@ -61,7 +49,6 @@
     background: var(--primary);
   }
 
-  // Larger invisible hit area
   &::before {
     content: '';
     position: absolute;
@@ -80,7 +67,7 @@
   }
 }
 
-.categorias-page__detail-panel {
+.detail-panel {
   display: flex;
   flex: 1;
   min-width: 0;

@@ -1,55 +1,53 @@
-<div class="categorias-page">
-  <app-page-header
-    title="Categorias"
-    [subtitle]="totalCategories() + ' categorias \u00B7 ' + totalProducts() + ' produtos'"
-    actionLabel="Adicionar Categoria"
-    [actionIcon]="folderPlusIcon"
-    (action)="onAddCategory()">
-  </app-page-header>
+<app-page-header
+  title="Categorias"
+  [subtitle]="totalCategories() + ' categorias \u00B7 ' + totalProducts() + ' produtos'"
+  actionLabel="Adicionar Categoria"
+  [actionIcon]="folderPlusIcon"
+  (action)="onAddCategory()">
+</app-page-header>
 
-  <div class="action-bar">
-    <app-search-input
-      placeholder="Buscar categorias..."
-      [value]="searchQuery()"
-      (valueChange)="onSearchChange($event)">
-    </app-search-input>
+<div class="action-bar">
+  <app-search-input
+    placeholder="Buscar categorias..."
+    [value]="searchQuery()"
+    (valueChange)="onSearchChange($event)">
+  </app-search-input>
+</div>
+
+<!-- Split panel layout -->
+<div class="content-panels">
+  <div
+    class="tree-panel scroll-on-hover"
+    [class.tree-panel--hidden-mobile]="mobileView() === 'detail'"
+    [style.width.px]="treeWidth()"
+  >
+    <app-category-tree
+      [categories]="categoryTree()"
+      [selectedId]="selectedCategoryId()"
+      [externalSearchQuery]="searchQuery()"
+      [loading]="loading()"
+      (selectCategory)="onSelectCategory($event)"
+    ></app-category-tree>
   </div>
 
-  <!-- Split panel layout -->
-  <div class="categorias-page__content">
-    <div
-      class="categorias-page__tree-panel scroll-on-hover"
-      [class.categorias-page__tree-panel--hidden-mobile]="mobileView() === 'detail'"
-      [style.width.px]="treeWidth()"
-    >
-      <app-category-tree
-        [categories]="categoryTree()"
-        [selectedId]="selectedCategoryId()"
-        [externalSearchQuery]="searchQuery()"
-        [loading]="loading()"
-        (selectCategory)="onSelectCategory($event)"
-      ></app-category-tree>
-    </div>
+  <div
+    class="resize-handle"
+    [class.resize-handle--active]="resizing()"
+    (mousedown)="onResizeStart($event)"
+  ></div>
 
-    <div
-      class="categorias-page__resize-handle"
-      [class.categorias-page__resize-handle--active]="resizing()"
-      (mousedown)="onResizeStart($event)"
-    ></div>
-
-    <div
-      class="categorias-page__detail-panel scroll-on-hover"
-      [class.categorias-page__detail-panel--hidden-mobile]="mobileView() === 'tree'"
-    >
-      <app-category-detail
-        [category]="selectedCategory()"
-        [allCategories]="categoryTree()"
-        [loading]="detailLoading()"
-        (updated)="onCategoryUpdated($event)"
-        (deleted)="onCategoryDeleted($event)"
-        (back)="onBackToTree()"
-      ></app-category-detail>
-    </div>
+  <div
+    class="detail-panel scroll-on-hover"
+    [class.detail-panel--hidden-mobile]="mobileView() === 'tree'"
+  >
+    <app-category-detail
+      [category]="selectedCategory()"
+      [allCategories]="categoryTree()"
+      [loading]="detailLoading()"
+      (updated)="onCategoryUpdated($event)"
+      (deleted)="onCategoryDeleted($event)"
+      (back)="onBackToTree()"
+    ></app-category-detail>
   </div>
 </div>
 
