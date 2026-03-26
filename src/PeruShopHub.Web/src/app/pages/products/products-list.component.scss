@@ -7,153 +7,147 @@
   flex: 1;
 }
 
-.produtos {
+// Action bar — no wrapper div needed, host element handles flex layout
+.action-bar {
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 
-  &__action-bar {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
-
-    app-search-input {
-      flex: 1;
-      min-width: 0;
-    }
-
-    app-select-dropdown {
-      flex-shrink: 0;
-    }
-
-    @include m.mobile {
-      flex-direction: column;
-      align-items: stretch;
-
-      app-search-input,
-      app-select-dropdown {
-        flex: unset;
-      }
-    }
-  }
-
-  // Thumbnail
-  &__thumb {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-sm);
-    background: var(--neutral-100);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--neutral-400);
-    margin: 0 auto;
-
-    &--sm {
-      width: 32px;
-      height: 32px;
-      flex-shrink: 0;
-    }
-  }
-
-  // Cell styles
-  &__name {
-    max-width: 260px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 500;
-    display: block;
-  }
-
-  &__mono {
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-  }
-
-  &__stock--low {
-    color: var(--warning);
-    font-weight: 600;
-  }
-
-  &__stock--zero {
-    color: var(--danger);
-    font-weight: 600;
-  }
-
-  &__edit-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: var(--neutral-500);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background 100ms, color 100ms;
-
-    &:hover {
-      background: var(--neutral-100);
-      color: var(--primary);
-    }
-  }
-
-  // Mobile card styles (used inside custom appGridCard template)
-  &__card-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin-bottom: var(--space-3);
-  }
-
-  &__card-title {
+  app-search-input {
     flex: 1;
     min-width: 0;
   }
 
-  &__card-name {
-    display: block;
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--neutral-900);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  app-select-dropdown {
+    flex-shrink: 0;
   }
 
-  &__card-sku {
-    display: block;
-    font-size: var(--text-xs);
-    font-family: var(--font-mono);
-    color: var(--neutral-500);
-  }
-
-  &__card-body {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-2);
-  }
-
-  &__card-field {
-    display: flex;
+  @include m.mobile {
     flex-direction: column;
-    gap: 2px;
-  }
+    align-items: stretch;
 
-  &__card-label {
-    font-size: var(--text-xs);
-    color: var(--neutral-500);
+    app-search-input,
+    app-select-dropdown {
+      flex: unset;
+    }
   }
+}
 
-  &__card-value {
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--neutral-900);
+// Thumbnail
+.thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--neutral-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--neutral-400);
+  margin: 0 auto;
+
+  &--sm {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
   }
+}
+
+// Cell styles
+.cell-name {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  display: block;
+}
+
+.cell-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.stock--low {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.stock--zero {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--neutral-500);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 100ms, color 100ms;
+
+  &:hover {
+    background: var(--neutral-100);
+    color: var(--primary);
+  }
+}
+
+// Mobile card styles
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.card-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-name {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--neutral-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-sku {
+  display: block;
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--neutral-500);
+}
+
+.card-body {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-label {
+  font-size: var(--text-xs);
+  color: var(--neutral-500);
+}
+
+.card-value {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--neutral-900);
 }
 
 // Variant badge (desktop)

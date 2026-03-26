@@ -8,152 +8,150 @@
     ></app-empty-state>
   </div>
 } @else {
-  <div class="produtos">
-    <!-- Header -->
-    <app-page-header
-      title="Produtos"
-      actionLabel="Novo Produto"
-      [actionIcon]="plusIcon"
-      (action)="onNewProduct()">
-    </app-page-header>
+  <!-- Header -->
+  <app-page-header
+    title="Produtos"
+    actionLabel="Novo Produto"
+    [actionIcon]="plusIcon"
+    (action)="onNewProduct()">
+  </app-page-header>
 
-    <!-- Action Bar -->
-    <div class="produtos__action-bar">
-      <app-search-input
-        placeholder="Buscar por nome ou SKU..."
-        [value]="searchQuery()"
-        (valueChange)="onSearchChange($event)"
-      ></app-search-input>
-      <app-select-dropdown
-        [options]="statusOptions"
-        [value]="statusFilter()"
-        (valueChange)="onStatusChange($event)"
-      ></app-select-dropdown>
-      <app-select-dropdown
-        [options]="categoryOptions()"
-        [value]="categoryFilter()"
-        (valueChange)="onCategoryChange($event)"
-      ></app-select-dropdown>
-    </div>
-
-    <!-- Data Grid -->
-    <app-data-grid
-      #grid
-      [columns]="gridColumns"
-      [data]="gridData()"
-      [loading]="loading()"
-      [hasMore]="hasMore()"
-      [pageSize]="pageSize()"
-      [totalCount]="totalCount()"
-      entityName="produtos"
-      emptyTitle="Nenhum produto encontrado"
-      emptyDescription="Tente ajustar os filtros de busca."
-      ariaLabel="Lista de produtos"
-      (sortChange)="onSort($event)"
-      (loadMore)="onLoadMore()"
-      (rowClick)="onRowClick($event)"
-    >
-      <!-- Image cell -->
-      <ng-template appGridCell="imageUrl" let-row>
-        <div class="produtos__thumb">
-          <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
-        </div>
-      </ng-template>
-
-      <!-- Name cell -->
-      <ng-template appGridCell="name" let-row let-value="value">
-        <span class="produtos__name">{{ value }}</span>
-      </ng-template>
-
-      <!-- SKU cell -->
-      <ng-template appGridCell="sku" let-row let-value="value">
-        <span class="produtos__mono">{{ value }}</span>
-      </ng-template>
-
-      <!-- Price cell -->
-      <ng-template appGridCell="price" let-row let-value="value">
-        <span class="produtos__mono">{{ formatBrl(value) }}</span>
-      </ng-template>
-
-      <!-- Stock cell -->
-      <ng-template appGridCell="stock" let-row let-value="value">
-        <span
-          [class.produtos__stock--low]="value > 0 && value <= 10"
-          [class.produtos__stock--zero]="value === 0">
-          {{ value }}
-        </span>
-      </ng-template>
-
-      <!-- Variants cell -->
-      <ng-template appGridCell="variantCount" let-row let-value="value">
-        @if (value > 0) {
-          <span class="variant-badge" (click)="onVariantClick($event, row.id)">
-            {{ value }} var.
-          </span>
-        } @else {
-          <span class="produtos__mono">—</span>
-        }
-        @if (row.needsReview) {
-          <span class="review-badge">Revisão</span>
-        }
-      </ng-template>
-
-      <!-- Status cell -->
-      <ng-template appGridCell="status" let-row let-value="value">
-        <app-badge [label]="value" [variant]="getStatusVariant(value)"></app-badge>
-      </ng-template>
-
-      <!-- Margin cell -->
-      <ng-template appGridCell="margin" let-row let-value="value">
-        <app-margin-badge [margin]="value"></app-margin-badge>
-      </ng-template>
-
-      <!-- Actions cell -->
-      <ng-template appGridCell="actions" let-row>
-        <button class="produtos__edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', row.id, 'editar'])">
-          <lucide-icon [img]="editIcon" [size]="16"></lucide-icon>
-        </button>
-      </ng-template>
-
-      <!-- Mobile card template -->
-      <ng-template appGridCard let-row>
-        <div class="produtos__card-header">
-          <div class="produtos__thumb produtos__thumb--sm">
-            <lucide-icon [img]="packageIcon" [size]="16"></lucide-icon>
-          </div>
-          <div class="produtos__card-title">
-            <span class="produtos__card-name">{{ row.name }}</span>
-            <span class="produtos__card-sku">{{ row.sku }}</span>
-            @if (row.variantCount > 0) {
-              <span class="variant-chip" (click)="onVariantClick($event, row.id)">
-                {{ row.variantCount }} variantes
-              </span>
-            }
-            @if (row.needsReview) {
-              <span class="review-chip">Precisa revisão</span>
-            }
-          </div>
-          <app-badge [label]="row.status" [variant]="getStatusVariant(row.status)"></app-badge>
-        </div>
-        <div class="produtos__card-body">
-          <div class="produtos__card-field">
-            <span class="produtos__card-label">Preço</span>
-            <span class="produtos__card-value produtos__mono">{{ formatBrl(row.price) }}</span>
-          </div>
-          <div class="produtos__card-field">
-            <span class="produtos__card-label">Estoque</span>
-            <span class="produtos__card-value"
-              [class.produtos__stock--low]="row.stock > 0 && row.stock <= 10"
-              [class.produtos__stock--zero]="row.stock === 0">
-              {{ row.stock }}
-            </span>
-          </div>
-          <div class="produtos__card-field">
-            <span class="produtos__card-label">Margem</span>
-            <app-margin-badge [margin]="row.margin"></app-margin-badge>
-          </div>
-        </div>
-      </ng-template>
-    </app-data-grid>
+  <!-- Action Bar -->
+  <div class="action-bar">
+    <app-search-input
+      placeholder="Buscar por nome ou SKU..."
+      [value]="searchQuery()"
+      (valueChange)="onSearchChange($event)"
+    ></app-search-input>
+    <app-select-dropdown
+      [options]="statusOptions"
+      [value]="statusFilter()"
+      (valueChange)="onStatusChange($event)"
+    ></app-select-dropdown>
+    <app-select-dropdown
+      [options]="categoryOptions()"
+      [value]="categoryFilter()"
+      (valueChange)="onCategoryChange($event)"
+    ></app-select-dropdown>
   </div>
+
+  <!-- Data Grid -->
+  <app-data-grid
+    #grid
+    [columns]="gridColumns"
+    [data]="gridData()"
+    [loading]="loading()"
+    [hasMore]="hasMore()"
+    [pageSize]="pageSize()"
+    [totalCount]="totalCount()"
+    entityName="produtos"
+    emptyTitle="Nenhum produto encontrado"
+    emptyDescription="Tente ajustar os filtros de busca."
+    ariaLabel="Lista de produtos"
+    (sortChange)="onSort($event)"
+    (loadMore)="onLoadMore()"
+    (rowClick)="onRowClick($event)"
+  >
+    <!-- Image cell -->
+    <ng-template appGridCell="imageUrl" let-row>
+      <div class="thumb">
+        <lucide-icon [img]="packageIcon" [size]="18"></lucide-icon>
+      </div>
+    </ng-template>
+
+    <!-- Name cell -->
+    <ng-template appGridCell="name" let-row let-value="value">
+      <span class="cell-name">{{ value }}</span>
+    </ng-template>
+
+    <!-- SKU cell -->
+    <ng-template appGridCell="sku" let-row let-value="value">
+      <span class="cell-mono">{{ value }}</span>
+    </ng-template>
+
+    <!-- Price cell -->
+    <ng-template appGridCell="price" let-row let-value="value">
+      <span class="cell-mono">{{ formatBrl(value) }}</span>
+    </ng-template>
+
+    <!-- Stock cell -->
+    <ng-template appGridCell="stock" let-row let-value="value">
+      <span
+        [class.stock--low]="value > 0 && value <= 10"
+        [class.stock--zero]="value === 0">
+        {{ value }}
+      </span>
+    </ng-template>
+
+    <!-- Variants cell -->
+    <ng-template appGridCell="variantCount" let-row let-value="value">
+      @if (value > 0) {
+        <span class="variant-badge" (click)="onVariantClick($event, row.id)">
+          {{ value }} var.
+        </span>
+      } @else {
+        <span class="cell-mono">—</span>
+      }
+      @if (row.needsReview) {
+        <span class="review-badge">Revisão</span>
+      }
+    </ng-template>
+
+    <!-- Status cell -->
+    <ng-template appGridCell="status" let-row let-value="value">
+      <app-badge [label]="value" [variant]="getStatusVariant(value)"></app-badge>
+    </ng-template>
+
+    <!-- Margin cell -->
+    <ng-template appGridCell="margin" let-row let-value="value">
+      <app-margin-badge [margin]="value"></app-margin-badge>
+    </ng-template>
+
+    <!-- Actions cell -->
+    <ng-template appGridCell="actions" let-row>
+      <button class="edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', row.id, 'editar'])">
+        <lucide-icon [img]="editIcon" [size]="16"></lucide-icon>
+      </button>
+    </ng-template>
+
+    <!-- Mobile card template -->
+    <ng-template appGridCard let-row>
+      <div class="card-header">
+        <div class="thumb thumb--sm">
+          <lucide-icon [img]="packageIcon" [size]="16"></lucide-icon>
+        </div>
+        <div class="card-title">
+          <span class="card-name">{{ row.name }}</span>
+          <span class="card-sku">{{ row.sku }}</span>
+          @if (row.variantCount > 0) {
+            <span class="variant-chip" (click)="onVariantClick($event, row.id)">
+              {{ row.variantCount }} variantes
+            </span>
+          }
+          @if (row.needsReview) {
+            <span class="review-chip">Precisa revisão</span>
+          }
+        </div>
+        <app-badge [label]="row.status" [variant]="getStatusVariant(row.status)"></app-badge>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <span class="card-label">Preço</span>
+          <span class="card-value cell-mono">{{ formatBrl(row.price) }}</span>
+        </div>
+        <div class="card-field">
+          <span class="card-label">Estoque</span>
+          <span class="card-value"
+            [class.stock--low]="row.stock > 0 && row.stock <= 10"
+            [class.stock--zero]="row.stock === 0">
+            {{ row.stock }}
+          </span>
+        </div>
+        <div class="card-field">
+          <span class="card-label">Margem</span>
+          <app-margin-badge [margin]="row.margin"></app-margin-badge>
+        </div>
+      </div>
+    </ng-template>
+  </app-data-grid>
 }
