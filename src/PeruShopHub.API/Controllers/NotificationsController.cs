@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Notifications;
@@ -7,6 +8,7 @@ namespace PeruShopHub.API.Controllers;
 
 [ApiController]
 [Route("api/notifications")]
+[Authorize]
 public class NotificationsController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;

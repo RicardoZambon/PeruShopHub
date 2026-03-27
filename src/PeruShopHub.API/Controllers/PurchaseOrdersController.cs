@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.Common;
@@ -10,6 +11,7 @@ namespace PeruShopHub.API.Controllers;
 
 [ApiController]
 [Route("api/purchase-orders")]
+[Authorize]
 public class PurchaseOrdersController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;

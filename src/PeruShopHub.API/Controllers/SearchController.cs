@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Search;
@@ -7,6 +8,7 @@ namespace PeruShopHub.API.Controllers;
 
 [ApiController]
 [Route("api/search")]
+[Authorize]
 public class SearchController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;

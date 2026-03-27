@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Settings;
@@ -8,6 +9,7 @@ namespace PeruShopHub.API.Controllers;
 
 [ApiController]
 [Route("api/settings")]
+[Authorize]
 public class SettingsController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;
