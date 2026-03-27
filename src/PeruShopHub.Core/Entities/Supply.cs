@@ -11,6 +11,7 @@ public class Supply
     public int MinimumStock { get; set; }
     public string? Supplier { get; set; }
     public string Status { get; set; } = "Ativo";
+    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

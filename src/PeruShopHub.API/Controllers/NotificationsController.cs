@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Notifications;
-using PeruShopHub.Infrastructure.Persistence;
+using PeruShopHub.Application.Services;
 
 namespace PeruShopHub.API.Controllers;
 
@@ -11,47 +10,31 @@ namespace PeruShopHub.API.Controllers;
 [Authorize]
 public class NotificationsController : ControllerBase
 {
-    private readonly PeruShopHubDbContext _db;
+    private readonly INotificationService _notificationService;
 
-    public NotificationsController(PeruShopHubDbContext db)
+    public NotificationsController(INotificationService notificationService)
     {
-        _db = db;
+        _notificationService = notificationService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetAll()
+    public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetAll(CancellationToken ct = default)
     {
-        var notifications = await _db.Notifications
-            .AsNoTracking()
-            .OrderByDescending(n => n.Timestamp)
-            .Select(n => new NotificationDto(
-                n.Id, n.Type, n.Title, n.Description,
-                n.Timestamp, n.IsRead, n.NavigationTarget))
-            .ToListAsync();
-
-        return Ok(notifications);
+        var result = await _notificationService.GetListAsync(ct);
+        return Ok(result);
     }
 
     [HttpPatch("{id:guid}/read")]
-    public async Task<IActionResult> MarkAsRead(Guid id)
+    public async Task<IActionResult> MarkAsRead(Guid id, CancellationToken ct = default)
     {
-        var notification = await _db.Notifications.FindAsync(id);
-        if (notification is null)
-            return NotFound();
-
-        notification.IsRead = true;
-        await _db.SaveChangesAsync();
-
+        await _notificationService.MarkReadAsync(id, ct);
         return NoContent();
     }
 
     [HttpPatch("read-all")]
-    public async Task<IActionResult> MarkAllAsRead()
+    public async Task<IActionResult> MarkAllAsRead(CancellationToken ct = default)
     {
-        await _db.Notifications
-            .Where(n => !n.IsRead)
-            .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
-
+        await _notificationService.MarkAllReadAsync(ct);
         return NoContent();
     }
 }

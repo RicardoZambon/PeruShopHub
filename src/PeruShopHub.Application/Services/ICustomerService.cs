@@ -1,7 +1,14 @@
+using PeruShopHub.Application.Common;
+using PeruShopHub.Application.DTOs.Customers;
+
 namespace PeruShopHub.Application.Services;
 
 public interface ICustomerService
 {
-    Task<object> GetListAsync(CancellationToken ct = default);
-    Task<object?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<PagedResult<CustomerListDto>> GetListAsync(
+        int page, int pageSize, string? search,
+        string sortBy, string sortDir,
+        CancellationToken ct = default);
+
+    Task<CustomerDetailDto> GetByIdAsync(Guid id, CancellationToken ct = default);
 }

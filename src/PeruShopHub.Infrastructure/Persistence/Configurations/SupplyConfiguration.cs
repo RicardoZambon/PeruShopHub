@@ -17,5 +17,7 @@ public class SupplyConfiguration : IEntityTypeConfiguration<Supply>
         builder.Property(s => s.Status).HasMaxLength(50).IsRequired();
 
         builder.Property(s => s.UnitCost).HasPrecision(18, 4);
+
+        builder.Property(s => s.IsActive).HasDefaultValue(true);
     }
 }

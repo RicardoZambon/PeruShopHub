@@ -21,7 +21,7 @@
         ".NET build passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Foundation for all other stories — every service will use these exceptions."
     },
     {
@@ -38,7 +38,7 @@
         ".NET build passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Creates the scaffolding. Subsequent stories fill in the implementations."
     },
     {
@@ -58,7 +58,7 @@
         ".NET build passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Categories are simpler than Products — good first extraction to establish the pattern."
     },
     {
@@ -79,7 +79,7 @@
         ".NET build passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Largest extraction — includes SKU generation, analytics, cache, variants."
     },
     {
@@ -99,7 +99,7 @@
         ".NET build passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

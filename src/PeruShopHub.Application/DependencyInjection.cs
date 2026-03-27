@@ -18,6 +18,8 @@ public static class DependencyInjection
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<ISearchService, SearchService>();
+        services.AddScoped<INotificationService, NotificationService>();
 
         return services;
     }
