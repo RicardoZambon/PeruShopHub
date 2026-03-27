@@ -368,19 +368,22 @@
   align-items: center;
   justify-content: flex-end;
   padding: var(--space-3) 24px;
-  margin: 0 -24px;
+  margin: -24px;
+  margin-top: 0;
   background: var(--surface);
   border-top: 1px solid var(--neutral-200);
   box-shadow: var(--shadow-md);
 
   @include m.tablet {
     padding: var(--space-3) 16px;
-    margin: 0 -16px;
+    margin: -16px;
+    margin-top: 0;
   }
 
   @include m.mobile {
     padding: var(--space-3) 12px;
-    margin: 0 -12px;
+    margin: -12px;
+    margin-top: 0;
   }
 }
 
