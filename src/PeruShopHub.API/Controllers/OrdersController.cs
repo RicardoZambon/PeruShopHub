@@ -146,13 +146,21 @@ public class OrdersController : ControllerBase
             c.Value,
             c.Source)).ToList();
 
+        var revenue = order.TotalAmount;
+        var totalCosts = order.Costs.Sum(c => c.Value);
+        var profit = revenue - totalCosts;
+        var margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+
         var detail = new OrderDetailDto(
             order.Id,
             order.ExternalOrderId,
             buyer,
             order.ItemCount,
             order.TotalAmount,
-            order.Profit,
+            revenue,
+            totalCosts,
+            profit,
+            margin,
             order.Status,
             order.OrderDate,
             shipping,
@@ -161,6 +169,55 @@ public class OrdersController : ControllerBase
             costs);
 
         return Ok(detail);
+    }
+
+    [HttpPost("{id:guid}/costs")]
+    public async Task<ActionResult<OrderCostDto>> AddCost(Guid id, [FromBody] CreateOrderCostRequest request)
+    {
+        var order = await _db.Orders.FindAsync(id);
+        if (order is null) return NotFound();
+
+        var cost = new Core.Entities.OrderCost
+        {
+            Id = Guid.NewGuid(),
+            OrderId = id,
+            Category = request.Category,
+            Description = request.Description,
+            Value = request.Value,
+            Source = "Manual"
+        };
+
+        _db.OrderCosts.Add(cost);
+        await _db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetOrder), new { id },
+            new OrderCostDto(cost.Id, cost.Category, cost.Description, cost.Value, cost.Source));
+    }
+
+    [HttpPut("{id:guid}/costs/{costId:guid}")]
+    public async Task<ActionResult<OrderCostDto>> UpdateCost(Guid id, Guid costId, [FromBody] UpdateOrderCostRequest request)
+    {
+        var cost = await _db.OrderCosts.FirstOrDefaultAsync(c => c.Id == costId && c.OrderId == id);
+        if (cost is null) return NotFound();
+
+        cost.Category = request.Category;
+        cost.Description = request.Description;
+        cost.Value = request.Value;
+        await _db.SaveChangesAsync();
+
+        return Ok(new OrderCostDto(cost.Id, cost.Category, cost.Description, cost.Value, cost.Source));
+    }
+
+    [HttpDelete("{id:guid}/costs/{costId:guid}")]
+    public async Task<IActionResult> DeleteCost(Guid id, Guid costId)
+    {
+        var cost = await _db.OrderCosts.FirstOrDefaultAsync(c => c.Id == costId && c.OrderId == id);
+        if (cost is null) return NotFound();
+
+        _db.OrderCosts.Remove(cost);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpPost("{id:guid}/recalculate-costs")]

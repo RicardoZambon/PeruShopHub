@@ -17,13 +17,26 @@ public record OrderDetailDto(
     BuyerDto Buyer,
     int ItemCount,
     decimal TotalAmount,
+    decimal Revenue,
+    decimal TotalCosts,
     decimal Profit,
+    decimal Margin,
     string Status,
     DateTime OrderDate,
     ShippingInfoDto Shipping,
     PaymentInfoDto Payment,
     IReadOnlyList<OrderItemDto> Items,
     IReadOnlyList<OrderCostDto> Costs);
+
+public record CreateOrderCostRequest(
+    string Category,
+    string? Description,
+    decimal Value);
+
+public record UpdateOrderCostRequest(
+    string Category,
+    string? Description,
+    decimal Value);
 
 public record OrderItemDto(
     Guid Id,
