@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PeruShopHub.API.Filters;
 using PeruShopHub.API.Hubs;
+using PeruShopHub.API.Middleware;
 using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Cache;
 using PeruShopHub.Infrastructure.Notifications;
@@ -46,6 +47,9 @@ builder.Services.AddScoped<ICostCalculationService, CostCalculationService>();
 
 // ── Application Services ─────────────────────────────────
 builder.Services.AddApplicationServices();
+
+// -- Tenant Context --
+builder.Services.AddScoped<ITenantContext, TenantContext>();
 
 // ── Authentication ──────────────────────────────────────
 builder.Services.AddAuthentication(options =>
@@ -130,6 +134,7 @@ app.UseCors();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<TenantMiddleware>();
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
