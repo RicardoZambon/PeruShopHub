@@ -13,6 +13,8 @@ public class SystemUserConfiguration : IEntityTypeConfiguration<SystemUser>
         builder.Property(u => u.Email).HasMaxLength(300).IsRequired();
         builder.HasIndex(u => u.Email).IsUnique();
         builder.Property(u => u.Name).HasMaxLength(300).IsRequired();
+        builder.Property(u => u.PasswordHash).HasMaxLength(200).IsRequired();
         builder.Property(u => u.Role).HasMaxLength(50).IsRequired();
+        builder.Property(u => u.RefreshToken).HasMaxLength(200);
     }
 }
