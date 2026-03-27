@@ -2,9 +2,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PeruShopHub.Core\PeruShopHub.Core.csproj" />
+    <ProjectReference Include="..\PeruShopHub.Infrastructure\PeruShopHub.Infrastructure.csproj" />
   </ItemGroup>
 
-  <PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.*" />
+  </ItemGroup>
+
+<PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

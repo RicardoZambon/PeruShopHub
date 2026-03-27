@@ -11,6 +11,7 @@ using PeruShopHub.Infrastructure.Cache;
 using PeruShopHub.Infrastructure.Notifications;
 using PeruShopHub.Infrastructure.Persistence;
 using PeruShopHub.Infrastructure.Services;
+using PeruShopHub.Application;
 using PeruShopHub.Infrastructure.Storage;
 using StackExchange.Redis;
 
@@ -42,6 +43,9 @@ builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
 // ── Cost Calculation ─────────────────────────────────────
 builder.Services.AddScoped<ICostCalculationService, CostCalculationService>();
+
+// ── Application Services ─────────────────────────────────
+builder.Services.AddApplicationServices();
 
 // ── Authentication ──────────────────────────────────────
 builder.Services.AddAuthentication(options =>
