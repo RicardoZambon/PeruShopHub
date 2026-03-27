@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { SearchResult } from '../models/api.models';
+import { environment } from '../../environments/environment';
 export type { SearchResult };
 
 @Injectable({ providedIn: 'root' })
@@ -12,6 +13,6 @@ export class SearchService {
     const params = new HttpParams()
       .set('q', query)
       .set('limit', limit);
-    return this.http.get<SearchResult[]>('/api/search', { params });
+    return this.http.get<SearchResult[]>(`${environment.apiUrl}/search`, { params });
   }
 }

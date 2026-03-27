@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface UserRow {
   id: number;
@@ -41,18 +42,18 @@ export interface CommissionRule {
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private http = inject(HttpClient);
-  private readonly baseUrl = '/api/settings';
+  private readonly baseUrl = `${environment.apiUrl}/settings`;
 
   getUsers(): Observable<UserRow[]> {
-    return this.http.get<UserRow[]>('/api/settings/users');
+    return this.http.get<UserRow[]>(`${this.baseUrl}/users`);
   }
 
   getIntegrations(): Observable<Integration[]> {
-    return this.http.get<Integration[]>('/api/settings/integrations');
+    return this.http.get<Integration[]>(`${this.baseUrl}/integrations`);
   }
 
   getCosts(): Observable<FixedCostsResponse> {
-    return this.http.get<FixedCostsResponse>('/api/settings/costs');
+    return this.http.get<FixedCostsResponse>(`${this.baseUrl}/costs`);
   }
 
   getCommissionRules(): Observable<CommissionRule[]> {

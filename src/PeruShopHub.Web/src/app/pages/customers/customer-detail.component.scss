@@ -1,22 +1,10 @@
 @use '../../../styles/mixins' as m;
 
+// Customer-specific styles only — shared styles come from global
+// _detail-page.scss (.detail-table, .skeleton, .kpi-grid, .text-right, .mono)
+
 .detail-page {
   max-width: 1200px;
-
-  &__back {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--neutral-600);
-    text-decoration: none;
-    font-size: var(--text-sm);
-    margin-bottom: var(--space-4);
-    cursor: pointer;
-
-    &:hover {
-      color: var(--primary);
-    }
-  }
 
   &__header {
     display: flex;
@@ -56,17 +44,6 @@
   &__info {
     flex: 1;
     min-width: 0;
-  }
-
-  &__name {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--neutral-900);
-    margin: 0 0 var(--space-2) 0;
-
-    @include m.mobile {
-      font-size: var(--text-lg);
-    }
   }
 
   &__contact {
@@ -131,87 +108,4 @@
   &__table-wrap {
     overflow-x: auto;
   }
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
-
-  @include m.tablet {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @include m.mobile {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.detail-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-sm);
-
-  th {
-    text-align: left;
-    padding: var(--space-2) var(--space-3);
-    font-weight: 600;
-    color: var(--neutral-600);
-    border-bottom: 2px solid var(--neutral-200);
-    white-space: nowrap;
-  }
-
-  td {
-    padding: var(--space-2) var(--space-3);
-    color: var(--neutral-800);
-    border-bottom: 1px solid var(--neutral-100);
-  }
-
-  tbody tr:hover {
-    background: var(--neutral-50);
-  }
-
-  &__row--clickable {
-    cursor: pointer;
-    transition: background 100ms;
-
-    &:hover {
-      background: var(--neutral-50);
-    }
-  }
-
-  &__empty {
-    text-align: center;
-    color: var(--neutral-500);
-    padding: var(--space-6) var(--space-3) !important;
-  }
-}
-
-.text-right {
-  text-align: right;
-}
-
-.mono {
-  font-family: var(--font-mono);
-}
-
-// Skeleton styles
-.skeleton {
-  background: linear-gradient(90deg, var(--neutral-100) 25%, var(--neutral-200) 50%, var(--neutral-100) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-sm);
-
-  &--text {
-    display: block;
-  }
-
-  &--rect {
-    display: block;
-  }
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
 }

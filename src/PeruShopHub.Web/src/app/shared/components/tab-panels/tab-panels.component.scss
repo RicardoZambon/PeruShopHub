@@ -1,0 +1,57 @@
+@use '../../../../styles/mixins' as m;
+
+// Desktop: show tab bar, hide accordion headers
+.tab-panels__nav {
+  @include m.mobile {
+    display: none;
+  }
+}
+
+// Mobile: show accordion, hide on desktop
+.tab-panels__accordion {
+  display: none;
+  width: 100%;
+  padding: var(--space-4);
+  background: var(--neutral-100);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--body-size);
+  color: var(--neutral-900);
+  transition: background 150ms;
+
+  &:hover {
+    background: var(--neutral-200);
+  }
+
+  @include m.mobile {
+    display: flex;
+  }
+}
+
+// Panel visibility
+.tab-panels__panel {
+  display: none;
+
+  // Desktop: show active panel
+  &--active {
+    display: block;
+
+    @include m.mobile {
+      display: none;
+    }
+  }
+
+  // Mobile: show open accordion panel
+  @include m.mobile {
+    &--accordion-open {
+      display: block;
+      padding-bottom: var(--space-4);
+    }
+  }
+}

@@ -1,9 +1,7 @@
 <!-- Loading skeleton -->
 @if (loading()) {
   <div class="detail-page">
-    <div class="detail-page__back">
-      <div class="skeleton skeleton--rect" style="width: 160px; height: 32px;"></div>
-    </div>
+    <app-page-header title=" " backRoute="/clientes"></app-page-header>
     <div class="detail-page__header">
       <div class="skeleton skeleton--rect" style="width: 80px; height: 80px; border-radius: 50%;"></div>
       <div style="flex: 1;">
@@ -23,11 +21,7 @@
 <!-- Loaded content -->
 @if (!loading() && customer()) {
   <div class="detail-page">
-    <!-- Back button -->
-    <a class="detail-page__back" routerLink="/clientes">
-      <lucide-icon [img]="ArrowLeft" [size]="18"></lucide-icon>
-      Voltar para Clientes
-    </a>
+    <app-page-header [title]="customer()!.name" backRoute="/clientes"></app-page-header>
 
     <!-- Header section -->
     <div class="detail-page__header">
@@ -35,7 +29,6 @@
         <lucide-icon [img]="UserIcon" [size]="32" class="detail-page__avatar-icon"></lucide-icon>
       </div>
       <div class="detail-page__info">
-        <h1 class="detail-page__name">{{ customer()!.name }}</h1>
         <div class="detail-page__contact">
           <span class="detail-page__contact-item">
             <lucide-icon [img]="MailIcon" [size]="14"></lucide-icon>

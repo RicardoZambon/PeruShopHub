@@ -1,0 +1,6 @@
+# Ralph Progress - Generic Grid Component
+# Branch: ralph/backend-wiring
+# Created: 2026-03-25
+
+## Codebase Patterns
+

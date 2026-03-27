@@ -2,7 +2,8 @@ import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-import { LucideAngularModule, Search, Plus, Trash2, ArrowLeft, Package } from 'lucide-angular';
+import { LucideAngularModule, Search, Plus, Trash2, Package } from 'lucide-angular';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
@@ -10,6 +11,7 @@ import { BrlCurrencyPipe } from '../../shared/pipes';
 import { PurchaseOrderService, type CreatePurchaseOrderDto } from '../../services/purchase-order.service';
 import { ProductService, type Product } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
+import { formatBrl as formatBrlUtil } from '../../shared/utils';
 
 interface SelectedProduct {
   productId: string;
@@ -29,7 +31,7 @@ interface AdditionalCost {
 @Component({
   selector: 'app-purchase-order-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, BrlCurrencyPipe, ButtonComponent, FormFieldComponent, SelectDropdownComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, LucideAngularModule, BrlCurrencyPipe, ButtonComponent, FormFieldComponent, SelectDropdownComponent, PageHeaderComponent],
   templateUrl: './purchase-order-form.component.html',
   styleUrl: './purchase-order-form.component.scss',
 })
@@ -43,7 +45,6 @@ export class PurchaseOrderFormComponent {
   readonly searchIcon = Search;
   readonly plusIcon = Plus;
   readonly trashIcon = Trash2;
-  readonly arrowLeftIcon = ArrowLeft;
   readonly packageIcon = Package;
 
   private readonly router = inject(Router);
@@ -85,9 +86,7 @@ export class PurchaseOrderFormComponent {
 
   readonly total = computed(() => this.subtotal() + this.totalAdditionalCosts());
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
   onSupplierChange(event: Event): void {
     this.supplier.set((event.target as HTMLInputElement).value);

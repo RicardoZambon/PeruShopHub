@@ -1,24 +1,24 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideAngularModule, ArrowLeft, Package, CheckCircle } from 'lucide-angular';
+import { ActivatedRoute } from '@angular/router';
+import { LucideAngularModule, Package, CheckCircle } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
-import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { PurchaseOrderService, type PurchaseOrderDetail } from '../../services/purchase-order.service';
 import { ToastService } from '../../services/toast.service';
+import { formatBrl, formatDate as formatDateUtil, getPurchaseOrderStatusVariant } from '../../shared/utils';
 
 @Component({
   selector: 'app-purchase-order-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, BadgeComponent, BrlCurrencyPipe, ButtonComponent, PageSkeletonComponent],
+  imports: [CommonModule, LucideAngularModule, BadgeComponent, BrlCurrencyPipe, ButtonComponent, PageSkeletonComponent, PageHeaderComponent],
   templateUrl: './purchase-order-detail.component.html',
   styleUrl: './purchase-order-detail.component.scss',
 })
 export class PurchaseOrderDetailComponent implements OnInit {
-  readonly arrowLeftIcon = ArrowLeft;
   readonly packageIcon = Package;
   readonly checkCircleIcon = CheckCircle;
 
@@ -51,30 +51,13 @@ export class PurchaseOrderDetailComponent implements OnInit {
     });
   }
 
-  getStatusVariant(status: string): BadgeVariant {
-    switch (status) {
-      case 'Rascunho': return 'neutral';
-      case 'Recebido': return 'success';
-      case 'Cancelado': return 'danger';
-      default: return 'neutral';
-    }
-  }
+  getStatusVariant = getPurchaseOrderStatusVariant;
 
   formatDate(dateStr: string | null): string {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateUtil(dateStr, true);
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrl;
 
   getMethodLabel(method: string): string {
     switch (method) {

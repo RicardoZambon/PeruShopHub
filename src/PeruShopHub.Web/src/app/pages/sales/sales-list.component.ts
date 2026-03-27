@@ -15,7 +15,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
-import type { BadgeVariant } from '../../shared/components/badge/badge.component';
+import { formatBrl as formatBrlUtil, formatDateShort, getOrderStatusVariant } from '../../shared/utils';
 import { OrderService, type OrderListItem } from '../../services/order.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -129,25 +129,11 @@ export class SalesListComponent implements OnInit {
     }
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
-  formatDate(dateStr: string): string {
-    const date = new Date(dateStr + 'T12:00:00');
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
+  formatDate = formatDateShort;
 
-  getStatusVariant(status: string): BadgeVariant {
-    switch (status) {
-      case 'Pago': return 'primary';
-      case 'Enviado': return 'warning';
-      case 'Entregue': return 'success';
-      case 'Cancelado': return 'danger';
-      case 'Devolvido': return 'neutral';
-      default: return 'neutral';
-    }
-  }
+  getStatusVariant = getOrderStatusVariant;
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);

@@ -2,11 +2,12 @@ import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { LucideAngularModule, ArrowLeft, Save, X, ChevronDown, ChevronUp, Trash2, MoreVertical, Power, PowerOff } from 'lucide-angular';
+import { LucideAngularModule, ArrowLeft, Save, X, Trash2, MoreVertical, Power, PowerOff } from 'lucide-angular';
 import { MediaGalleryComponent, GalleryImage } from './media-gallery.component';
 import { VariantManagerComponent } from './variant-manager.component';
 import { TreeSelectComponent } from './tree-select.component';
-import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
+import { TabPanelsComponent, TabPanelDirective } from '../../shared/components/tab-panels/tab-panels.component';
+import type { TabItem } from '../../shared/components/tab-bar/tab-bar.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
@@ -35,7 +36,7 @@ const TABS: Tab[] = [
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, MediaGalleryComponent, VariantManagerComponent, TreeSelectComponent, TabBarComponent, FormFieldComponent, ButtonComponent, PageHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, MediaGalleryComponent, VariantManagerComponent, TreeSelectComponent, TabPanelsComponent, TabPanelDirective, FormFieldComponent, ButtonComponent, PageHeaderComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })
@@ -49,8 +50,6 @@ export class ProductFormComponent {
   readonly arrowLeftIcon = ArrowLeft;
   readonly saveIcon = Save;
   readonly closeIcon = X;
-  readonly chevronDownIcon = ChevronDown;
-  readonly chevronUpIcon = ChevronUp;
   readonly trashIcon = Trash2;
   readonly moreIcon = MoreVertical;
   readonly powerIcon = Power;
@@ -73,9 +72,6 @@ export class ProductFormComponent {
 
   galleryImages = signal<GalleryImage[]>([]);
   galleryVideoUrl = signal<string | null>(null);
-
-  // Mobile accordion: track which tabs are open
-  openAccordions = signal<Set<TabId>>(new Set(['basicas']));
 
   form: FormGroup;
 
@@ -177,20 +173,6 @@ export class ProductFormComponent {
 
   setActiveTab(tabId: TabId | string): void {
     this.activeTab.set(tabId as TabId);
-  }
-
-  toggleAccordion(tabId: TabId): void {
-    const current = new Set(this.openAccordions());
-    if (current.has(tabId)) {
-      current.delete(tabId);
-    } else {
-      current.add(tabId);
-    }
-    this.openAccordions.set(current);
-  }
-
-  isAccordionOpen(tabId: TabId): boolean {
-    return this.openAccordions().has(tabId);
   }
 
   async onCategoryChange(categoryId: string): Promise<void> {

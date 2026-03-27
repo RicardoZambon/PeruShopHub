@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
+import { buildHttpParams } from '../shared/utils';
 import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { PagedResult } from '../models/api.models';
 
 export interface Product {
   id: string;
@@ -42,13 +44,6 @@ export interface CostHistoryItem {
   reason: string;
 }
 
-export interface PagedResult<T> {
-  items: T[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-}
-
 export interface ProductListParams {
   page?: number;
   pageSize?: number;
@@ -76,16 +71,11 @@ export class ProductService {
   private readonly baseUrl = `${environment.apiUrl}/products`;
 
   async list(params: ProductListParams = {}): Promise<PagedResult<Product>> {
-    let httpParams = new HttpParams();
-    if (params.page) httpParams = httpParams.set('page', params.page.toString());
-    if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize.toString());
-    if (params.search) httpParams = httpParams.set('search', params.search);
-    if (params.status) httpParams = httpParams.set('status', params.status);
-    if (params.categoryId) httpParams = httpParams.set('categoryId', params.categoryId);
-    if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
-    if (params.sortDirection) httpParams = httpParams.set('sortDir', params.sortDirection);
+    const { sortDirection, ...rest } = params;
     return firstValueFrom(
-      this.http.get<PagedResult<Product>>(this.baseUrl, { params: httpParams }),
+      this.http.get<PagedResult<Product>>(this.baseUrl, {
+        params: buildHttpParams({ ...rest, sortDir: sortDirection }),
+      }),
     );
   }
 
@@ -117,7 +107,7 @@ export class ProductService {
     const result = await firstValueFrom(
       this.http.get<{ suggestedSku: string | null }>(
         `${this.baseUrl}/next-sku`,
-        { params: new HttpParams().set('categoryId', categoryId) },
+        { params: buildHttpParams({ categoryId }) },
       ),
     );
     return result.suggestedSku;
@@ -128,24 +118,16 @@ export class ProductService {
   }
 
   getCostHistory(id: string, page = 1, pageSize = 20): Observable<PagedResult<CostHistoryItem>> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('pageSize', pageSize.toString());
-    return this.http.get<PagedResult<CostHistoryItem>>(`${this.baseUrl}/${id}/cost-history`, { params });
+    return this.http.get<PagedResult<CostHistoryItem>>(`${this.baseUrl}/${id}/cost-history`, { params: buildHttpParams({ page, pageSize }) });
   }
 
   async getAnalytics(id: string, days = 30): Promise<ProductAnalytics> {
-    const params = new HttpParams().set('days', days.toString());
     return firstValueFrom(
-      this.http.get<ProductAnalytics>(`${this.baseUrl}/${id}/analytics`, { params }),
+      this.http.get<ProductAnalytics>(`${this.baseUrl}/${id}/analytics`, { params: buildHttpParams({ days }) }),
     );
   }
 
   getRecentOrders(id: string, days = 30, page = 1, pageSize = 10): Observable<PagedResult<any>> {
-    const params = new HttpParams()
-      .set('days', days.toString())
-      .set('page', page.toString())
-      .set('pageSize', pageSize.toString());
-    return this.http.get<PagedResult<any>>(`${this.baseUrl}/${id}/recent-orders`, { params });
+    return this.http.get<PagedResult<any>>(`${this.baseUrl}/${id}/recent-orders`, { params: buildHttpParams({ days, page, pageSize }) });
   }
 }

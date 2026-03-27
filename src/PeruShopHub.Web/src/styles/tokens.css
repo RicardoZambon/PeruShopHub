@@ -19,15 +19,18 @@
   --success: #2E7D32;
   --success-light: #E8F5E9;
   --warning: #F57F17;
+  --warning-dark: #E65100;
   --warning-light: #FFFDE7;
   --danger: #C62828;
   --danger-light: #FFEBEE;
 
   /* ── Colors: Neutral Scale ── */
   --neutral-900: #212121;
+  --neutral-800: #424242;
   --neutral-700: #616161;
   --neutral-600: #757575;
   --neutral-500: #9E9E9E;
+  --neutral-400: #BDBDBD;
   --neutral-300: #E0E0E0;
   --neutral-200: #E8E8E8;
   --neutral-100: #F5F5F5;
@@ -97,11 +100,23 @@
   --text-2xl: var(--heading-1-size);
   --text-xl: var(--heading-2-size);
   --text-lg: var(--heading-3-size);
+  --text-base: var(--body-size);
   --text-sm: var(--body-small-size);
-  --text-xs: var(--body-small-size);
+  --text-xs: 10px;
   --text-caption: var(--label-size);
+  --text-body: var(--body-size);
   --text-body-small: var(--body-small-size);
+  --body-base: var(--body-size);
+  --body-small: var(--body-small-size);
+  --caption: var(--label-size);
+  --font-body: var(--body-size);
+  --font-heading-2: var(--heading-2-size);
+  --font-heading-3: var(--heading-3-size);
+  --font-label: var(--label-size);
   --h2-size: var(--heading-2-size);
+  --h2-weight: var(--heading-2-weight);
+  --h3-size: var(--heading-3-size);
+  --h3-weight: var(--heading-3-weight);
   --h4-size: var(--heading-3-size);
   --h4-weight: var(--heading-3-weight);
 
@@ -234,9 +249,11 @@
   --danger-light: #3E1111;
 
   --neutral-900: #FAFAFA;
+  --neutral-800: #E0E0E0;
   --neutral-700: #BDBDBD;
   --neutral-600: #999999;
   --neutral-500: #757575;
+  --neutral-400: #616161;
   --neutral-300: #424242;
   --neutral-200: #424242;
   --neutral-100: #303030;

@@ -1,4 +1,4 @@
-@use '../../../../styles/mixins' as *;
+@use '../../../../styles/mixins' as m;
 
 .page-header {
   display: flex;
@@ -51,7 +51,7 @@
     color: var(--neutral-500);
   }
 
-  @include mobile {
+  @include m.mobile {
     flex-direction: column;
 
     &__action {

@@ -30,35 +30,10 @@
     </div>
   }
 
-  <!-- US-057: Unlock Confirmation Dialog -->
-  @if (showUnlockConfirm()) {
-    <div class="confirm-overlay" (click)="cancelUnlock()">
-      <div class="confirm-dialog" (click)="$event.stopPropagation()">
-        <h3>Desbloquear edição?</h3>
-        <p>Você está prestes a desbloquear uma venda já enviada. Alterações manuais podem causar inconsistências com os dados do marketplace.</p>
-        <div class="confirm-actions">
-          <app-button variant="outline" (click)="cancelUnlock()">Cancelar</app-button>
-          <app-button variant="danger" [icon]="unlockIcon" (click)="confirmUnlock()">
-            Confirmar desbloqueio
-          </app-button>
-        </div>
-      </div>
-    </div>
-  }
-
   <!-- Header -->
-  <div class="detail-header">
-    <div class="header-left">
-      <a routerLink="/vendas" class="back-btn">
-        <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
-      </a>
-      <div class="header-info">
-        <h1>Pedido #{{ o.id }}</h1>
-        <span class="header-date">{{ formatDate(o.date) }}</span>
-      </div>
-    </div>
+  <app-page-header [title]="'Pedido #' + o.id" [subtitle]="formatDate(o.date)" backRoute="/vendas">
     <app-badge [label]="o.status" [variant]="o.statusVariant"></app-badge>
-  </div>
+  </app-page-header>
 
   <div class="detail-columns">
     <!-- Left Column -->

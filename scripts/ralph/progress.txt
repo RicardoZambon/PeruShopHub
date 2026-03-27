@@ -242,3 +242,81 @@ Started: Wed Mar 25 04:14:54 AM UTC 2026
   - BEM class renaming from `vendas-table__td--profit` to `vendas__profit` keeps styles consistent when moving from custom table to data-grid
   - `DataTableComponent` import replaced with `DataGridComponent` + directives — remove old import to avoid unused reference warnings
 ---
+
+## 2026-03-25 05:08 UTC - US-016
+- Migrated Customers list page from custom table HTML to `<app-data-grid>` with custom cell templates
+- Replaced `effect()` reactive pattern with explicit `ngOnInit()` + `loadCustomers(reset)` for infinite scroll
+- Custom cell templates for: nome (truncated with font-weight 500), nickname (mono), totalGasto (BRL currency mono), ultimaCompra (relative date pipe)
+- Custom mobile card template via `appGridCard` directive matching original card design
+- Removed all old custom table HTML (desktop table, mobile cards, pagination)
+- Removed old SCSS: scroll wrapper, th, td, row, pagination styles — kept only clientes-specific styles (name, mono, card layout)
+- `gridRef.scrollToTop()` called on search/sort changes
+- Files changed: `customers.component.ts`, `customers.component.html`, `customers.component.scss`
+- **Learnings for future iterations:**
+  - Customers list used `effect()` like original sales-list — same replacement pattern: explicit handlers + `loadCustomers(reset)` avoids double-load issues
+  - `RelativeDatePipe` works in custom cell templates the same way as in inline HTML — just import it in the component
+  - The `hasData` signal check pattern: `totalLoaded > 0 || searchQuery.length > 0` — if user has a search active, always show the grid (with empty state) rather than the "no data" full-page empty
+---
+
+## 2026-03-25 05:12 UTC - US-017
+- Migrated Purchase Orders list page from custom table HTML to `<app-data-grid>` with all custom cell templates
+- Replaced `effect()` reactive pattern with explicit `ngOnInit()` + `loadOrders(reset)` for infinite scroll
+- Custom cell templates for: supplier (font-weight 500 + fallback text), status (badge), total (BRL currency mono), createdAt (formatted date), receivedAt (formatted date)
+- Custom mobile card template via `appGridCard` directive matching original card design
+- Removed all old custom table HTML (desktop table, mobile cards, pagination, loading/empty conditional blocks)
+- Removed old SCSS: scroll wrapper, th, td, row, pagination styles — kept only po-specific styles (name, mono, card layout)
+- Removed unused `EmptyStateComponent` import (data-grid handles empty state internally)
+- `gridRef.scrollToTop()` called on search/filter/sort changes
+- Files changed: `purchase-orders-list.component.ts`, `purchase-orders-list.component.html`, `purchase-orders-list.component.scss`
+- **Learnings for future iterations:**
+  - Purchase Orders list also used `effect()` — same replacement pattern as sales-list and customers: explicit handlers + `loadOrders(reset)` avoids double-load
+  - When removing `EmptyStateComponent`, also remove it from `imports` array — Angular warns about unused imports in standalone components
+  - The `onStatusChange(event: Event)` using raw DOM events can be removed when using `SelectDropdownComponent` — only `onStatusFilterChange(value: string)` is needed
+  - Removed unused icon imports (`Search`, `ShoppingCart`) when migrating — only `Plus` needed for the header action button
+---
+
+## 2026-03-25 05:16 UTC - US-018
+- Migrated Inventory Movements table (Movimentações tab) from custom table HTML to `<app-data-grid>` with custom cell templates
+- Replaced load-all pattern with infinite scroll: `loadMovementsGrid(reset)` using `firstValueFrom` + page/hasMore signals
+- Custom cell templates for: data (mono muted date), tipo (colored badge), quantidade (signed +/- with green/red), custoUnitario (BRL currency mono with fallback dash)
+- Custom mobile card template via `appGridCard` directive with header (date + badge), product name, and field rows
+- Removed old movements table HTML (`mov-table-wrapper` + `<table>` in movimentações tab)
+- Removed `mov-table-wrapper` SCSS; kept `mov-table` styles for recent movements section in overview tab
+- Added `mov__` BEM styles for grid cell templates and mobile card
+- `movGridRef.scrollToTop()` called on filter/sort changes
+- Files changed: `inventory.component.ts`, `inventory.component.html`, `inventory.component.scss`
+- **Learnings for future iterations:**
+  - The inventory page has TWO movement tables: the main one in the "Movimentações" tab (migrated) and a 5-item "Recent Movements" in overview (kept as-is). When SCSS classes are shared between both, only remove what's exclusive to the migrated table.
+  - `firstValueFrom` from rxjs is the clean way to convert Observable to Promise for async/await pattern in load methods
+  - The movements grid is inside a tab — `selectTab()` triggers `loadMovementsGrid(true)` when switching to the movements tab
+  - `filteredMovements` computed still exists for the recent movements section but the main movements tab now uses server-side filtering via the service
+---
+
+## 2026-03-25 05:22 UTC - US-019
+- Migrated Inventory overview table from custom HTML to `<app-data-grid>` with backend pagination support
+- Backend: Updated `GET /api/inventory` to return `PagedResult<InventoryItemDto>` with `page`, `pageSize`, `search`, `sortBy`, `sortDir` query params
+- Frontend: Added `InventoryQueryParams` interface to `inventory.service.ts`, updated `getInventory()` to accept params and return `PagedResult<InventoryItem>`
+- Added `invGridColumns`, `invGridData`, `invLoading`, `invHasMore`, `invCurrentPage` signals for inventory grid state
+- Custom cell templates for: sku (mono), totalStock (mono), reserved (mono), available (conditional danger/warning coloring), unitCost (BRL mono), stockValue (BRL mono)
+- Custom mobile card template via `appGridCard` with header (name + SKU) and field rows
+- Removed old `inv-table-wrapper`, `.inv-table` HTML and SCSS; added `inv__` BEM styles for grid cell templates and mobile card
+- Recent Movements section preserved as-is (separate table in overview tab)
+- Removed unused `PageSkeletonComponent` import and `getRowClass` method
+- Files changed: `InventoryController.cs`, `inventory.service.ts`, `inventory.component.ts`, `inventory.component.html`, `inventory.component.scss`
+- **Learnings for future iterations:**
+  - Backend pagination pattern: project (Select) BEFORE sorting for computed DTO fields like `StockValue` — otherwise EF can't sort on projected fields
+  - The inventory overview page has TWO sections: the inventory grid (migrated) and a Recent Movements table (kept as-is with `.mov-table` styles)
+  - `loading` signal serves dual purpose: KPI skeleton display AND initial page load state. Set it true on reset loads, false when done, separate from `invLoading` which drives the data-grid
+  - Sort field names in backend switch must match lowercase of `GridColumn.key` values (e.g., `totalstock`, `unitcost`, `stockvalue`)
+---
+
+## 2026-03-25 05:25 UTC - US-020
+- Removed old `DataTableComponent` from `shared/components/data-table/` directory
+- Removed `DataTableComponent`, `DataTableColumn`, `SortEvent`, `PageEvent` exports from barrel `shared/components/index.ts`
+- Verified no other component imports or uses DataTableComponent
+- `ng build` succeeds with no errors
+- Files changed: `data-table/data-table.component.ts` (deleted), `data-table/data-table.component.scss` (deleted), `shared/components/index.ts`
+- **Learnings for future iterations:**
+  - Before deleting a shared component, grep for its selector (`app-data-table`), class name (`DataTableComponent`), and exported types (`DataTableColumn`, `SortEvent`, `PageEvent`) to confirm no remaining usage
+  - Barrel index cleanup: remove both the component export and type exports when deleting a component
+---

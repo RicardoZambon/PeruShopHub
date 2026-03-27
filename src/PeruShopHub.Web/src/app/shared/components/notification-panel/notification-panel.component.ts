@@ -54,7 +54,6 @@ export class NotificationPanelComponent {
   onNotificationClick(notification: Notification): void {
     this.notifications.markAsRead(notification.id);
     if (notification.navigationTarget) {
-      console.log('Navigate to:', notification.navigationTarget);
       this.router.navigateByUrl(notification.navigationTarget);
     }
     this.closed.emit();

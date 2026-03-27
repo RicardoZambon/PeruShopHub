@@ -5,265 +5,259 @@
 </app-page-header>
 
 <!-- Sub-navigation tabs -->
-<app-tab-bar
-  [tabs]="tabs"
-  [activeTab]="activeTab()"
-  (tabChange)="selectTab($any($event))">
-</app-tab-bar>
+<app-tab-panels [tabs]="tabs" [activeTab]="activeTab()" (activeTabChange)="selectTab($any($event))" [lazy]="true">
+  <ng-template appTabPanel="visao-geral">
+    <div class="estoque__content">
+      <!-- KPI Cards -->
+      <div class="estoque__kpis">
+        @if (loading()) {
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="estoque__kpi-skeleton">
+              <app-skeleton type="text" width="60%" height="14px" />
+              <app-skeleton type="text" width="80%" height="32px" />
+              <app-skeleton type="text" width="40%" height="14px" />
+            </div>
+          }
+        } @else {
+          @for (kpi of kpis(); track kpi.label) {
+            <app-kpi-card
+              [label]="kpi.label"
+              [value]="kpi.value"
+              [change]="kpi.change"
+              [changeLabel]="kpi.changeLabel"
+              [invertColors]="kpi.invertColors ?? false" />
+          }
+        }
+      </div>
 
-<!-- Visão Geral Tab -->
-@if (activeTab() === 'visao-geral') {
-  <div class="estoque__content">
-    <!-- KPI Cards -->
-    <div class="estoque__kpis">
-      @if (loading()) {
-        @for (i of [1, 2, 3, 4]; track i) {
-          <div class="estoque__kpi-skeleton">
-            <app-skeleton type="text" width="60%" height="14px" />
-            <app-skeleton type="text" width="80%" height="32px" />
-            <app-skeleton type="text" width="40%" height="14px" />
+      <!-- Inventory Data Grid -->
+      <app-data-grid
+        #invGrid
+        [columns]="invGridColumns"
+        [data]="invGridData()"
+        [loading]="invLoading()"
+        [hasMore]="invHasMore()"
+        [pageSize]="invPageSize()"
+        [totalCount]="invTotalCount()"
+        entityName="itens"
+        emptyTitle="Nenhum item em estoque"
+        emptyDescription="Cadastre produtos para começar a gerenciar seu estoque."
+        ariaLabel="Lista de itens em estoque"
+        (sortChange)="onInvSort($event)"
+        (loadMore)="onInvLoadMore()"
+      >
+        <!-- SKU cell (mono) -->
+        <ng-template appGridCell="sku" let-row let-value="value">
+          <span class="inv__mono">{{ value }}</span>
+        </ng-template>
+
+        <!-- Total Stock cell (mono) -->
+        <ng-template appGridCell="totalStock" let-row let-value="value">
+          <span class="inv__mono">{{ value }}</span>
+        </ng-template>
+
+        <!-- Reserved cell (mono) -->
+        <ng-template appGridCell="reserved" let-row let-value="value">
+          <span class="inv__mono">{{ value }}</span>
+        </ng-template>
+
+        <!-- Available cell (conditional coloring) -->
+        <ng-template appGridCell="available" let-row let-value="value">
+          <span class="inv__mono"
+            [class.inv__available--danger]="value === 0"
+            [class.inv__available--warning]="value > 0 && value <= 5">
+            {{ value }}
+          </span>
+        </ng-template>
+
+        <!-- Unit Cost cell (mono currency) -->
+        <ng-template appGridCell="unitCost" let-row let-value="value">
+          <span class="inv__mono">{{ value | brlCurrency }}</span>
+        </ng-template>
+
+        <!-- Stock Value cell (mono currency) -->
+        <ng-template appGridCell="stockValue" let-row let-value="value">
+          <span class="inv__mono">{{ value | brlCurrency }}</span>
+        </ng-template>
+
+        <!-- Mobile card template -->
+        <ng-template appGridCard let-row>
+          <div class="inv__card-header">
+            <span class="inv__card-name">{{ row.productName }}</span>
+            <span class="inv__card-sku">{{ row.sku }}</span>
           </div>
-        }
-      } @else {
-        @for (kpi of kpis(); track kpi.label) {
-          <app-kpi-card
-            [label]="kpi.label"
-            [value]="kpi.value"
-            [change]="kpi.change"
-            [changeLabel]="kpi.changeLabel"
-            [invertColors]="kpi.invertColors ?? false" />
-        }
+          <div class="inv__card-body">
+            <div class="inv__card-field">
+              <span class="inv__card-label">Estoque Total</span>
+              <span class="inv__card-value inv__mono">{{ row.totalStock }}</span>
+            </div>
+            <div class="inv__card-field">
+              <span class="inv__card-label">Reservado</span>
+              <span class="inv__card-value inv__mono">{{ row.reserved }}</span>
+            </div>
+            <div class="inv__card-field">
+              <span class="inv__card-label">Disponível</span>
+              <span class="inv__card-value inv__mono"
+                [class.inv__available--danger]="row.available === 0"
+                [class.inv__available--warning]="row.available > 0 && row.available <= 5">
+                {{ row.available }}
+              </span>
+            </div>
+            <div class="inv__card-field">
+              <span class="inv__card-label">Custo Unit.</span>
+              <span class="inv__card-value inv__mono">{{ row.unitCost | brlCurrency }}</span>
+            </div>
+            <div class="inv__card-field">
+              <span class="inv__card-label">Valor Estoque</span>
+              <span class="inv__card-value inv__mono">{{ row.stockValue | brlCurrency }}</span>
+            </div>
+          </div>
+        </ng-template>
+      </app-data-grid>
+
+      <!-- Recent Movements Section -->
+      @if (!loading()) {
+        <div class="recent-movements">
+          <h2 class="recent-movements__title">Movimentações Recentes</h2>
+          <div class="recent-movements__table-wrap">
+            <table class="mov-table">
+              <thead>
+                <tr>
+                  <th class="mov-table__th">Data</th>
+                  <th class="mov-table__th">Produto</th>
+                  <th class="mov-table__th">Tipo</th>
+                  <th class="mov-table__th mov-table__th--right">Quantidade</th>
+                  <th class="mov-table__th mov-table__th--right">Custo Unitário</th>
+                  <th class="mov-table__th">Observação</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of recentMovements(); track $index) {
+                  <tr class="mov-table__row">
+                    <td class="mov-table__td mov-table__td--mono mov-table__td--muted">{{ row.data }}</td>
+                    <td class="mov-table__td">{{ row.produto }}</td>
+                    <td class="mov-table__td">
+                      <app-badge [label]="row.tipo" [variant]="getMovementTypeVariant(row.tipo)" />
+                    </td>
+                    <td class="mov-table__td mov-table__td--mono mov-table__td--right"
+                      [class.mov-table__td--positive]="row.quantidade > 0"
+                      [class.mov-table__td--negative]="row.quantidade < 0">
+                      {{ row.quantidade > 0 ? '+' : '' }}{{ row.quantidade }}
+                    </td>
+                    <td class="mov-table__td mov-table__td--mono mov-table__td--right">
+                      @if (row.custoUnitario) {
+                        {{ row.custoUnitario | brlCurrency }}
+                      } @else {
+                        <span class="mov-table__td--muted">—</span>
+                      }
+                    </td>
+                    <td class="mov-table__td">{{ row.motivo }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
       }
     </div>
+  </ng-template>
 
-    <!-- Inventory Data Grid -->
-    <app-data-grid
-      #invGrid
-      [columns]="invGridColumns"
-      [data]="invGridData()"
-      [loading]="invLoading()"
-      [hasMore]="invHasMore()"
-      [pageSize]="invPageSize()"
-      [totalCount]="invTotalCount()"
-      entityName="itens"
-      emptyTitle="Nenhum item em estoque"
-      emptyDescription="Cadastre produtos para começar a gerenciar seu estoque."
-      ariaLabel="Lista de itens em estoque"
-      (sortChange)="onInvSort($event)"
-      (loadMore)="onInvLoadMore()"
-    >
-      <!-- SKU cell (mono) -->
-      <ng-template appGridCell="sku" let-row let-value="value">
-        <span class="inv__mono">{{ value }}</span>
-      </ng-template>
-
-      <!-- Total Stock cell (mono) -->
-      <ng-template appGridCell="totalStock" let-row let-value="value">
-        <span class="inv__mono">{{ value }}</span>
-      </ng-template>
-
-      <!-- Reserved cell (mono) -->
-      <ng-template appGridCell="reserved" let-row let-value="value">
-        <span class="inv__mono">{{ value }}</span>
-      </ng-template>
-
-      <!-- Available cell (conditional coloring) -->
-      <ng-template appGridCell="available" let-row let-value="value">
-        <span class="inv__mono"
-          [class.inv__available--danger]="value === 0"
-          [class.inv__available--warning]="value > 0 && value <= 5">
-          {{ value }}
-        </span>
-      </ng-template>
-
-      <!-- Unit Cost cell (mono currency) -->
-      <ng-template appGridCell="unitCost" let-row let-value="value">
-        <span class="inv__mono">{{ value | brlCurrency }}</span>
-      </ng-template>
-
-      <!-- Stock Value cell (mono currency) -->
-      <ng-template appGridCell="stockValue" let-row let-value="value">
-        <span class="inv__mono">{{ value | brlCurrency }}</span>
-      </ng-template>
-
-      <!-- Mobile card template -->
-      <ng-template appGridCard let-row>
-        <div class="inv__card-header">
-          <span class="inv__card-name">{{ row.productName }}</span>
-          <span class="inv__card-sku">{{ row.sku }}</span>
+  <ng-template appTabPanel="movimentacoes">
+    <div class="estoque__content">
+      <!-- Filters -->
+      <div class="mov-filters">
+        <div class="mov-filters__group">
+          <label class="mov-filters__label">Tipo</label>
+          <app-select-dropdown
+            [options]="movementTypeOptions"
+            [value]="movementTypeFilter()"
+            (valueChange)="setMovementFilter($any($event))">
+          </app-select-dropdown>
         </div>
-        <div class="inv__card-body">
-          <div class="inv__card-field">
-            <span class="inv__card-label">Estoque Total</span>
-            <span class="inv__card-value inv__mono">{{ row.totalStock }}</span>
+        <div class="mov-filters__group">
+          <label class="mov-filters__label">Período</label>
+          <div class="mov-filters__dates">
+            <input type="date" class="mov-filters__date-input" value="2026-03-20" />
+            <span class="mov-filters__separator">até</span>
+            <input type="date" class="mov-filters__date-input" value="2026-03-22" />
           </div>
-          <div class="inv__card-field">
-            <span class="inv__card-label">Reservado</span>
-            <span class="inv__card-value inv__mono">{{ row.reserved }}</span>
-          </div>
-          <div class="inv__card-field">
-            <span class="inv__card-label">Disponível</span>
-            <span class="inv__card-value inv__mono"
-              [class.inv__available--danger]="row.available === 0"
-              [class.inv__available--warning]="row.available > 0 && row.available <= 5">
-              {{ row.available }}
-            </span>
-          </div>
-          <div class="inv__card-field">
-            <span class="inv__card-label">Custo Unit.</span>
-            <span class="inv__card-value inv__mono">{{ row.unitCost | brlCurrency }}</span>
-          </div>
-          <div class="inv__card-field">
-            <span class="inv__card-label">Valor Estoque</span>
-            <span class="inv__card-value inv__mono">{{ row.stockValue | brlCurrency }}</span>
-          </div>
-        </div>
-      </ng-template>
-    </app-data-grid>
-
-    <!-- Recent Movements Section -->
-    @if (!loading()) {
-      <div class="recent-movements">
-        <h2 class="recent-movements__title">Movimentações Recentes</h2>
-        <div class="recent-movements__table-wrap">
-          <table class="mov-table">
-            <thead>
-              <tr>
-                <th class="mov-table__th">Data</th>
-                <th class="mov-table__th">Produto</th>
-                <th class="mov-table__th">Tipo</th>
-                <th class="mov-table__th mov-table__th--right">Quantidade</th>
-                <th class="mov-table__th mov-table__th--right">Custo Unitário</th>
-                <th class="mov-table__th">Observação</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of recentMovements(); track $index) {
-                <tr class="mov-table__row">
-                  <td class="mov-table__td mov-table__td--mono mov-table__td--muted">{{ row.data }}</td>
-                  <td class="mov-table__td">{{ row.produto }}</td>
-                  <td class="mov-table__td">
-                    <app-badge [label]="row.tipo" [variant]="getMovementTypeVariant(row.tipo)" />
-                  </td>
-                  <td class="mov-table__td mov-table__td--mono mov-table__td--right"
-                    [class.mov-table__td--positive]="row.quantidade > 0"
-                    [class.mov-table__td--negative]="row.quantidade < 0">
-                    {{ row.quantidade > 0 ? '+' : '' }}{{ row.quantidade }}
-                  </td>
-                  <td class="mov-table__td mov-table__td--mono mov-table__td--right">
-                    @if (row.custoUnitario) {
-                      {{ row.custoUnitario | brlCurrency }}
-                    } @else {
-                      <span class="mov-table__td--muted">—</span>
-                    }
-                  </td>
-                  <td class="mov-table__td">{{ row.motivo }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
         </div>
       </div>
-    }
-  </div>
-}
 
-<!-- Movimentações Tab -->
-@if (activeTab() === 'movimentacoes') {
-  <div class="estoque__content">
-    <!-- Filters -->
-    <div class="mov-filters">
-      <div class="mov-filters__group">
-        <label class="mov-filters__label">Tipo</label>
-        <app-select-dropdown
-          [options]="movementTypeOptions"
-          [value]="movementTypeFilter()"
-          (valueChange)="setMovementFilter($any($event))">
-        </app-select-dropdown>
-      </div>
-      <div class="mov-filters__group">
-        <label class="mov-filters__label">Período</label>
-        <div class="mov-filters__dates">
-          <input type="date" class="mov-filters__date-input" value="2026-03-20" />
-          <span class="mov-filters__separator">até</span>
-          <input type="date" class="mov-filters__date-input" value="2026-03-22" />
-        </div>
-      </div>
-    </div>
+      <!-- Movements Data Grid -->
+      <app-data-grid
+        #movGrid
+        [columns]="movGridColumns"
+        [data]="movGridData()"
+        [loading]="movLoading()"
+        [hasMore]="movHasMore()"
+        [pageSize]="movPageSize()"
+        [totalCount]="movTotalCount()"
+        entityName="movimentações"
+        emptyTitle="Nenhuma movimentação encontrada"
+        emptyDescription="Tente ajustar os filtros para encontrar movimentações."
+        ariaLabel="Lista de movimentações de estoque"
+        (sortChange)="onMovSort($event)"
+        (loadMore)="onMovLoadMore()"
+      >
+        <!-- Date cell -->
+        <ng-template appGridCell="data" let-row let-value="value">
+          <span class="mov__date">{{ formatMovDate(value) }}</span>
+        </ng-template>
 
-    <!-- Movements Data Grid -->
-    <app-data-grid
-      #movGrid
-      [columns]="movGridColumns"
-      [data]="movGridData()"
-      [loading]="movLoading()"
-      [hasMore]="movHasMore()"
-      [pageSize]="movPageSize()"
-      [totalCount]="movTotalCount()"
-      entityName="movimentações"
-      emptyTitle="Nenhuma movimentação encontrada"
-      emptyDescription="Tente ajustar os filtros para encontrar movimentações."
-      ariaLabel="Lista de movimentações de estoque"
-      (sortChange)="onMovSort($event)"
-      (loadMore)="onMovLoadMore()"
-    >
-      <!-- Date cell -->
-      <ng-template appGridCell="data" let-row let-value="value">
-        <span class="mov__date">{{ formatMovDate(value) }}</span>
-      </ng-template>
+        <!-- Type cell (badge) -->
+        <ng-template appGridCell="tipo" let-row let-value="value">
+          <app-badge [label]="value" [variant]="getMovementTypeVariant(value)" />
+        </ng-template>
 
-      <!-- Type cell (badge) -->
-      <ng-template appGridCell="tipo" let-row let-value="value">
-        <app-badge [label]="value" [variant]="getMovementTypeVariant(value)" />
-      </ng-template>
+        <!-- Quantity cell (signed +/- with color) -->
+        <ng-template appGridCell="quantidade" let-row let-value="value">
+          <span class="mov__qty" [class.mov__qty--positive]="value > 0" [class.mov__qty--negative]="value < 0">
+            {{ value > 0 ? '+' : '' }}{{ value }}
+          </span>
+        </ng-template>
 
-      <!-- Quantity cell (signed +/- with color) -->
-      <ng-template appGridCell="quantidade" let-row let-value="value">
-        <span class="mov__qty" [class.mov__qty--positive]="value > 0" [class.mov__qty--negative]="value < 0">
-          {{ value > 0 ? '+' : '' }}{{ value }}
-        </span>
-      </ng-template>
+        <!-- Unit Cost cell -->
+        <ng-template appGridCell="custoUnitario" let-row let-value="value">
+          @if (value) {
+            <span class="mov__mono">{{ value | brlCurrency }}</span>
+          } @else {
+            <span class="mov__muted">—</span>
+          }
+        </ng-template>
 
-      <!-- Unit Cost cell -->
-      <ng-template appGridCell="custoUnitario" let-row let-value="value">
-        @if (value) {
-          <span class="mov__mono">{{ value | brlCurrency }}</span>
-        } @else {
-          <span class="mov__muted">—</span>
-        }
-      </ng-template>
-
-      <!-- Mobile card template -->
-      <ng-template appGridCard let-row>
-        <div class="mov__card-header">
-          <span class="mov__card-date">{{ formatMovDate(row.data) }}</span>
-          <app-badge [label]="row.tipo" [variant]="getMovementTypeVariant(row.tipo)" />
-        </div>
-        <div class="mov__card-product">{{ row.produto }}</div>
-        <div class="mov__card-body">
-          <div class="mov__card-field">
-            <span class="mov__card-label">Quantidade</span>
-            <span class="mov__card-value" [class.mov__qty--positive]="row.quantidade > 0" [class.mov__qty--negative]="row.quantidade < 0">
-              {{ row.quantidade > 0 ? '+' : '' }}{{ row.quantidade }}
-            </span>
+        <!-- Mobile card template -->
+        <ng-template appGridCard let-row>
+          <div class="mov__card-header">
+            <span class="mov__card-date">{{ formatMovDate(row.data) }}</span>
+            <app-badge [label]="row.tipo" [variant]="getMovementTypeVariant(row.tipo)" />
           </div>
-          @if (row.custoUnitario) {
+          <div class="mov__card-product">{{ row.produto }}</div>
+          <div class="mov__card-body">
             <div class="mov__card-field">
-              <span class="mov__card-label">Custo Unit.</span>
-              <span class="mov__card-value mov__mono">{{ row.custoUnitario | brlCurrency }}</span>
+              <span class="mov__card-label">Quantidade</span>
+              <span class="mov__card-value" [class.mov__qty--positive]="row.quantidade > 0" [class.mov__qty--negative]="row.quantidade < 0">
+                {{ row.quantidade > 0 ? '+' : '' }}{{ row.quantidade }}
+              </span>
             </div>
-          }
-          @if (row.motivo) {
-            <div class="mov__card-field mov__card-field--full">
-              <span class="mov__card-label">Observação</span>
-              <span class="mov__card-value">{{ row.motivo }}</span>
-            </div>
-          }
-        </div>
-      </ng-template>
-    </app-data-grid>
-  </div>
-}
+            @if (row.custoUnitario) {
+              <div class="mov__card-field">
+                <span class="mov__card-label">Custo Unit.</span>
+                <span class="mov__card-value mov__mono">{{ row.custoUnitario | brlCurrency }}</span>
+              </div>
+            }
+            @if (row.motivo) {
+              <div class="mov__card-field mov__card-field--full">
+                <span class="mov__card-label">Observação</span>
+                <span class="mov__card-value">{{ row.motivo }}</span>
+              </div>
+            }
+          </div>
+        </ng-template>
+      </app-data-grid>
+    </div>
+  </ng-template>
+</app-tab-panels>
 
 <!-- Entry Modal -->
 <app-dialog

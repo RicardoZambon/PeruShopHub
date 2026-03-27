@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
+import { buildHttpParams } from '../shared/utils';
 import { Observable, map } from 'rxjs';
 import { PagedResult } from '../models/api.models';
+import { environment } from '../../environments/environment';
 
 export interface SupplyDto {
   id: string;
@@ -30,24 +32,19 @@ export interface CreateSupplyDto {
 @Injectable({ providedIn: 'root' })
 export class SupplyService {
   private http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/supplies`;
 
   list(params: { page?: number; pageSize?: number; search?: string; sortBy?: string; sortDir?: string } = {}): Observable<SupplyDto[]> {
-    let httpParams = new HttpParams();
-    if (params.page) httpParams = httpParams.set('page', params.page);
-    if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
-    if (params.search) httpParams = httpParams.set('search', params.search);
-    if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
-    if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
-    return this.http.get<PagedResult<SupplyDto>>('/api/supplies', { params: httpParams }).pipe(
+    return this.http.get<PagedResult<SupplyDto>>(this.baseUrl, { params: buildHttpParams(params) }).pipe(
       map(result => result.items)
     );
   }
 
   create(dto: CreateSupplyDto): Observable<SupplyDto> {
-    return this.http.post<SupplyDto>('/api/supplies', dto);
+    return this.http.post<SupplyDto>(this.baseUrl, dto);
   }
 
   update(id: string, dto: Partial<CreateSupplyDto>): Observable<SupplyDto> {
-    return this.http.put<SupplyDto>(`/api/supplies/${id}`, dto);
+    return this.http.put<SupplyDto>(`${this.baseUrl}/${id}`, dto);
   }
 }

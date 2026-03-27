@@ -1,13 +1,5 @@
 <div class="po-form">
-  <!-- Header -->
-  <div class="po-form__header">
-    <div class="po-form__header-left">
-      <button class="po-form__back-btn" (click)="goBack()">
-        <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
-      </button>
-      <h1 class="po-form__title">Nova Ordem de Compra</h1>
-    </div>
-  </div>
+  <app-page-header title="Nova Ordem de Compra" (backClick)="goBack()"></app-page-header>
 
   <div class="po-form__content">
     <div class="po-form__main" [class.form-layout--saving]="saving()">

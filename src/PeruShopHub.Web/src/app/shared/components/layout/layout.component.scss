@@ -48,4 +48,8 @@ app-header {
   flex-direction: column;
   overflow-y: auto;
   min-height: 0;
+
+  > :not(router-outlet) :last-child {
+    padding-bottom: 24px;
+  }
 }

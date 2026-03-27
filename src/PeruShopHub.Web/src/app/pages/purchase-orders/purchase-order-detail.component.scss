@@ -1,65 +1,10 @@
 @use '../../../styles/mixins' as m;
 
+// PO-detail specific styles only.
+// Shared styles: .detail-section, .section-title, .detail-table, .summary-row,
+//   .summary-divider, .text-right, .mono from global _detail-page.scss
+
 .po-detail {
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-4);
-    flex-wrap: wrap;
-    gap: var(--space-3);
-  }
-
-  &__header-left {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-  }
-
-  &__back-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--neutral-300);
-    border-radius: var(--radius-md);
-    background: var(--surface);
-    color: var(--neutral-600);
-    cursor: pointer;
-    transition: border-color 150ms, background 150ms;
-    text-decoration: none;
-
-    &:hover {
-      border-color: var(--neutral-400);
-      background: var(--neutral-50);
-    }
-  }
-
-  &__header-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  &__title {
-    font-size: var(--text-2xl);
-    font-weight: 600;
-    color: var(--neutral-900);
-    margin: 0;
-  }
-
-  &__date {
-    font-size: var(--text-sm);
-    color: var(--neutral-500);
-  }
-
-  &__header-right {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-  }
-
   &__notes {
     padding: var(--space-3) var(--space-4);
     background: var(--neutral-50);
@@ -87,6 +32,8 @@
     margin-bottom: var(--space-4);
   }
 
+  // Use global .detail-section instead for the card.
+  // Keep __section for backwards-compat with template BEM classes.
   &__section {
     background: var(--surface);
     border: 1px solid var(--neutral-200);
@@ -194,7 +141,7 @@
     color: var(--neutral-500);
   }
 
-  // Summary
+  // Summary — uses global .summary-row and .summary-divider too
   &__summary {
     max-width: 400px;
   }
@@ -221,7 +168,7 @@
   }
 }
 
-// Utility classes
+// Utility classes (keep for template usage, backed by global)
 .col-right {
   text-align: right;
 }
@@ -246,4 +193,3 @@
   font-weight: 600;
   color: var(--primary);
 }
-

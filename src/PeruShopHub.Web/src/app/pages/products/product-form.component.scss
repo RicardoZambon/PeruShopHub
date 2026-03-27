@@ -85,7 +85,6 @@
   gap: var(--space-6);
   flex: 1;
   overflow: hidden;
-  margin-bottom: 8px;
 
   @include m.tablet {
     grid-template-columns: 1fr;
@@ -117,52 +116,7 @@
 }
 
 
-// Tabs Navigation (desktop/tablet)
-.tabs-nav {
-  @include m.mobile {
-    display: none;
-  }
-}
-
-// Accordion Headers (mobile only)
-.accordion-header {
-  display: none;
-  padding: var(--space-4);
-  background: var(--neutral-100);
-  border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-2);
-  cursor: pointer;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 600;
-  font-size: var(--body-size);
-  color: var(--neutral-900);
-
-  @include m.mobile {
-    display: flex;
-  }
-}
-
-// Tab Panels
-.tab-panel {
-  display: none;
-
-  &.active {
-    display: block;
-
-    @include m.mobile {
-      display: none;
-    }
-  }
-
-  @include m.mobile {
-    &.accordion-open {
-      display: block;
-      padding-bottom: var(--space-4);
-    }
-  }
-}
+// Tab panels now handled by app-tab-panels component
 
 // Form Fields
 .form-content {
@@ -170,11 +124,6 @@
   padding-right: 12px;
   padding-bottom: 24px;
   flex: 1;
-}
-
-// Ensure tab-panel does not clip dropdowns
-.tab-panel {
-  overflow: visible;
 }
 
 .field {
@@ -368,8 +317,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: var(--space-3) 24px;
-  margin: -24px;
+  padding: var(--space-3) 24px !important;
+  margin: -16px -24px -24px;
   background: var(--surface);
   border-top: 1px solid var(--neutral-200);
   box-shadow: var(--shadow-md);

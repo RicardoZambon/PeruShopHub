@@ -68,7 +68,7 @@
     color: var(--text-on-primary);
 
     &:hover:not(:disabled) {
-      background: #b71c1c;
+      filter: brightness(0.85);
     }
   }
 

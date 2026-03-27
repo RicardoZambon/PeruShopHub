@@ -12,13 +12,13 @@ import {
   PageHeaderComponent,
 } from '../../shared/components';
 import type { BadgeVariant, SelectOption, GridColumn } from '../../shared/components';
-import { ButtonComponent } from '../../shared/components/button/button.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { ProductVariantService } from '../../services/product-variant.service';
 import { ProductService } from '../../services/product.service';
 import type { CostHistoryItem } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
 import type { ProductVariant } from '../../models/product-variant.model';
+import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 
 interface ProductDetail {
   id: string;
@@ -54,7 +54,6 @@ interface ProductDetail {
     LucideAngularModule,
     KpiCardComponent,
     BadgeComponent,
-    ButtonComponent,
     BrlCurrencyPipe,
     SelectDropdownComponent,
     DataGridComponent,
@@ -343,19 +342,8 @@ export class ProductDetailComponent implements OnInit {
     });
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  formatDate(dateStr: string): string {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
+  formatBrl = formatBrlUtil;
+  formatDate = formatDateShort;
 
   getProfitClass(profit: number): string {
     return profit >= 0 ? 'value--positive' : 'value--negative';

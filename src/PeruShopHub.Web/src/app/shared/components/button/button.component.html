@@ -10,11 +10,16 @@
     loading ? 'btn--loading' : ''
   ]"
 >
-  <span *ngIf="loading" class="btn__spinner"></span>
-  <lucide-icon
-    *ngIf="icon && !loading"
-    [img]="icon"
-    [size]="variant === 'icon' || size === 'sm' ? 16 : 18"
-  ></lucide-icon>
-  <ng-content *ngIf="!iconOnly"></ng-content>
+  @if (loading) {
+    <span class="btn__spinner"></span>
+  }
+  @if (icon && !loading) {
+    <lucide-icon
+      [img]="icon"
+      [size]="variant === 'icon' || size === 'sm' ? 16 : 18"
+    ></lucide-icon>
+  }
+  @if (!iconOnly) {
+    <ng-content></ng-content>
+  }
 </button>

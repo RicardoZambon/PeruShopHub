@@ -18,6 +18,11 @@ export class PageHeaderComponent {
   @Input() actionLabel?: string;
   @Input() actionIcon?: LucideIconData;
   @Output() action = new EventEmitter<void>();
+  @Output() backClick = new EventEmitter<void>();
 
   readonly arrowLeftIcon = ArrowLeft;
+
+  get showBack(): boolean {
+    return !!this.backRoute || this.backClick.observed;
+  }
 }

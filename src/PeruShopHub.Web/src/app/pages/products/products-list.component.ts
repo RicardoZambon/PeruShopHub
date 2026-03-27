@@ -16,11 +16,10 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
+import { formatBrl as formatBrlUtil, getProductStatusVariant } from '../../shared/utils';
 import { ProductService, Product } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
 import type { Category } from '../../models/category.model';
-import type { BadgeVariant } from '../../shared/components/badge/badge.component';
-
 type ProductStatus = 'Ativo' | 'Pausado' | 'Encerrado';
 type FilterStatus = 'Todos' | ProductStatus | 'Revisão';
 
@@ -139,18 +138,9 @@ export class ProductsListComponent implements OnInit {
     }
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
-  getStatusVariant(status: string): BadgeVariant {
-    switch (status) {
-      case 'Ativo': return 'success';
-      case 'Pausado': return 'warning';
-      case 'Encerrado': return 'danger';
-      default: return 'neutral';
-    }
-  }
+  getStatusVariant = getProductStatusVariant;
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);

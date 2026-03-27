@@ -6,7 +6,8 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
-import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
+import { TabPanelsComponent, TabPanelDirective } from '../../shared/components/tab-panels/tab-panels.component';
+import type { TabItem } from '../../shared/components/tab-bar/tab-bar.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import { DialogComponent } from '../../shared/components/dialog/dialog.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
@@ -19,6 +20,7 @@ import {
   GridSortEvent,
 } from '../../shared/components/data-grid/data-grid.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
+import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 import { InventoryService } from '../../services/inventory.service';
 import type { InventoryItem, StockMovement, InventoryQueryParams } from '../../services/inventory.service';
 import { firstValueFrom } from 'rxjs';
@@ -34,7 +36,7 @@ interface ProductOption {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabBarComponent, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, DataGridComponent, GridCellDirective, GridCardDirective],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabPanelsComponent, TabPanelDirective, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, DataGridComponent, GridCellDirective, GridCardDirective],
   templateUrl: './inventory.component.html',
   styleUrl: './inventory.component.scss',
 })
@@ -155,12 +157,7 @@ export class InventoryComponent implements OnInit {
     return all.filter(m => m.tipo === filter);
   });
 
-  formatMovDate(dateStr: string | null): string {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
+  formatMovDate = formatDateShort;
 
   // Recent movements for the overview tab (latest 5)
   recentMovements = computed(() => {
@@ -375,9 +372,7 @@ export class InventoryComponent implements OnInit {
     }
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
   setMovementFilter(type: MovementType | 'all'): void {
     this.movementTypeFilter.set(type);

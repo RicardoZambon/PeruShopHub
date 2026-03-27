@@ -1,5 +1,10 @@
 @use '../../../styles/mixins' as m;
 
+// Product-detail specific styles.
+// Shared globals: .detail-section, .section-title, .detail-table, .detail-columns,
+//   .kpi-grid, .info-card, .mobile-card, .skeleton, @keyframes shimmer,
+//   .text-right, .mono, .value--positive, .value--negative, .value--warning, .text-muted
+
 :host {
   padding-bottom: var(--space-8);
 
@@ -119,7 +124,7 @@
   }
 }
 
-// Info sections
+// Info sections layout (two-column grid)
 .info-sections {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -131,55 +136,6 @@
 
   @include m.mobile {
     grid-template-columns: 1fr;
-  }
-}
-
-.info-card {
-  background: var(--surface);
-  border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-
-  &--full {
-    grid-column: 1 / -1;
-  }
-
-  &__title {
-    font-size: var(--text-base);
-    font-weight: 600;
-    color: var(--neutral-900);
-    margin: 0 0 var(--space-3) 0;
-  }
-
-  &__grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
-
-    @include m.mobile {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  &__field {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-
-    &--full {
-      grid-column: 1 / -1;
-    }
-  }
-
-  &__label {
-    font-size: var(--text-xs);
-    color: var(--neutral-500);
-    font-weight: 500;
-  }
-
-  &__value {
-    font-size: var(--text-sm);
-    color: var(--neutral-800);
   }
 }
 
@@ -205,29 +161,7 @@
   }
 }
 
-// KPI grids
-.kpi-grid {
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: repeat(3, 1fr);
-
-  @include m.tablet {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @include m.mobile {
-    grid-template-columns: 1fr;
-  }
-}
-
-.kpi-grid--3 {
-  grid-template-columns: repeat(3, 1fr);
-
-  @include m.mobile {
-    grid-template-columns: 1fr;
-  }
-}
-
+// KPI modifier for 4-column
 .kpi-grid--4 {
   grid-template-columns: repeat(4, 1fr);
 
@@ -280,106 +214,6 @@
   }
 }
 
-// Mobile cards for DataGrid
-.mobile-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-
-  &__row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: var(--text-sm);
-  }
-
-  &__label {
-    color: var(--neutral-500);
-    font-size: var(--text-xs);
-  }
-}
-
-// Tables (still used by variants)
-.detail-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-sm);
-
-  th {
-    text-align: left;
-    padding: var(--space-2) var(--space-3);
-    font-weight: 600;
-    color: var(--neutral-600);
-    border-bottom: 2px solid var(--neutral-200);
-    white-space: nowrap;
-  }
-
-  td {
-    padding: var(--space-2) var(--space-3);
-    color: var(--neutral-800);
-    border-bottom: 1px solid var(--neutral-100);
-  }
-
-  tbody tr:hover {
-    background: var(--neutral-50);
-  }
-
-  &__link {
-    color: var(--primary);
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
-
-.text-right {
-  text-align: right;
-}
-
-.mono {
-  font-family: var(--font-mono);
-}
-
-.value--positive {
-  color: var(--success);
-}
-
-.value--negative {
-  color: var(--danger);
-}
-
-.value--warning {
-  color: var(--warning);
-}
-
-.text-muted {
-  color: var(--neutral-500);
-  font-style: italic;
-}
-
-// Skeleton styles
-.skeleton {
-  background: linear-gradient(90deg, var(--neutral-100) 25%, var(--neutral-200) 50%, var(--neutral-100) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-sm);
-
-  &--text {
-    display: block;
-  }
-
-  &--rect {
-    display: block;
-  }
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
 // Variant section
 .detail-page__section-header {
   display: flex;
@@ -412,18 +246,9 @@
   border-left: 3px solid var(--warning);
 }
 
-.variant-row--warning {
-  background: var(--warning-light);
-}
-
-.variant-row--danger {
-  background: var(--danger-light);
-}
-
-.variant-row--review {
-  background: var(--warning-light);
-  border-left: 3px solid var(--warning);
-}
+.variant-row--warning { background: var(--warning-light); }
+.variant-row--danger  { background: var(--danger-light); }
+.variant-row--review  { background: var(--warning-light); border-left: 3px solid var(--warning); }
 
 // Desktop table visible, mobile hidden
 .variant-table-desktop {

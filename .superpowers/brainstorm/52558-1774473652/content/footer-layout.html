@@ -1,0 +1,111 @@
+<h2>GridFooter: Layout & Position</h2>
+<p class="subtitle">Where should the footer sit and what should it look like?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Sticky footer (always visible)</h3>
+      <p>Footer sticks to the bottom of the grid container, always visible even while scrolling through data.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">Grid with sticky footer</div>
+        <div class="mockup-body" style="padding: 0; font-family: system-ui; font-size: 13px;">
+          <!-- Header -->
+          <div style="display: flex; background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 10px 16px; font-weight: 600; color: #555;">
+            <span style="flex:2">Nome</span><span style="flex:1;text-align:right">Total</span><span style="flex:1;text-align:right">Status</span>
+          </div>
+          <!-- Rows -->
+          <div style="max-height: 120px; overflow-y: auto;">
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Alpha</span><span style="flex:1;text-align:right">R$ 1.234,00</span><span style="flex:1;text-align:right"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;">Ativo</span></span></div>
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Beta</span><span style="flex:1;text-align:right">R$ 856,50</span><span style="flex:1;text-align:right"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;">Ativo</span></span></div>
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Gamma</span><span style="flex:1;text-align:right">R$ 2.100,00</span><span style="flex:1;text-align:right"><span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:12px;font-size:11px;">Inativo</span></span></div>
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;color:#aaa"><span style="flex:2">... more rows scrolling ...</span><span style="flex:1"></span><span style="flex:1"></span></div>
+          </div>
+          <!-- Sticky footer -->
+          <div style="background: #f8f9fa; border-top: 1px solid #e0e0e0; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #666;">
+            <span>Mostrando <strong style="color:#333">20</strong> de <strong style="color:#333">147</strong> registros</span>
+            <span style="font-size: 12px; color: #999;">Página 1 de 8</span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>User always sees count info</li><li>Clear visual boundary for the grid</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Takes vertical space permanently</li><li>With infinite scroll, "page" concept is odd</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Inline footer (scrolls with content)</h3>
+      <p>Footer sits at the bottom of the data, after the last row. Scrolls naturally with the content. On infinite scroll grids, it updates as more data loads.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">Grid with inline footer</div>
+        <div class="mockup-body" style="padding: 0; font-family: system-ui; font-size: 13px;">
+          <!-- Header -->
+          <div style="display: flex; background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 10px 16px; font-weight: 600; color: #555;">
+            <span style="flex:2">Nome</span><span style="flex:1;text-align:right">Total</span><span style="flex:1;text-align:right">Status</span>
+          </div>
+          <!-- Rows -->
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Alpha</span><span style="flex:1;text-align:right">R$ 1.234,00</span><span style="flex:1;text-align:right"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;">Ativo</span></span></div>
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Beta</span><span style="flex:1;text-align:right">R$ 856,50</span><span style="flex:1;text-align:right"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;">Ativo</span></span></div>
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Gamma</span><span style="flex:1;text-align:right">R$ 2.100,00</span><span style="flex:1;text-align:right"><span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:12px;font-size:11px;">Inativo</span></span></div>
+          <!-- Inline footer - part of scroll flow -->
+          <div style="padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #888;">
+            <span>Mostrando <strong style="color:#555">20</strong> de <strong style="color:#555">147</strong> registros</span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Doesn't eat vertical space</li><li>Natural for infinite scroll — sits before the sentinel</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Not visible until user scrolls near the end</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Sticky footer — minimal (count only, no page info)</h3>
+      <p>Sticky like A, but slimmer — no "Página X de Y" since this is an infinite scroll grid, not traditional pagination. Just the count.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">Grid with minimal sticky footer</div>
+        <div class="mockup-body" style="padding: 0; font-family: system-ui; font-size: 13px;">
+          <!-- Header -->
+          <div style="display: flex; background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 10px 16px; font-weight: 600; color: #555;">
+            <span style="flex:2">Nome</span><span style="flex:1;text-align:right">Total</span><span style="flex:1;text-align:right">Status</span>
+          </div>
+          <!-- Rows -->
+          <div style="max-height: 120px; overflow-y: auto;">
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Alpha</span><span style="flex:1;text-align:right">R$ 1.234,00</span><span style="flex:1;text-align:right"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;">Ativo</span></span></div>
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Beta</span><span style="flex:1;text-align:right">R$ 856,50</span><span style="flex:1;text-align:right"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;">Ativo</span></span></div>
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Cliente Gamma</span><span style="flex:1;text-align:right">R$ 2.100,00</span><span style="flex:1;text-align:right"><span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:12px;font-size:11px;">Inativo</span></span></div>
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;color:#aaa"><span style="flex:2">... scrolling ...</span></div>
+          </div>
+          <!-- Slim sticky footer -->
+          <div style="background: #f8f9fa; border-top: 1px solid #e8e8e8; padding: 6px 16px; font-size: 12px; color: #888;">
+            Mostrando <strong style="color:#555">20</strong> de <strong style="color:#555">147</strong> registros
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Always visible, minimal footprint</li><li>No misleading "page" info on infinite scroll</li><li>Clean and unobtrusive</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Still takes some vertical space</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 24px;">
+  <h3>All-loaded state (for any option)</h3>
+  <p class="subtitle">When the user has scrolled through everything:</p>
+  <div class="mockup">
+    <div class="mockup-header">All data loaded</div>
+    <div class="mockup-body" style="padding: 16px; font-family: system-ui;">
+      <div style="background: #f8f9fa; border-top: 1px solid #e8e8e8; padding: 6px 16px; font-size: 12px; color: #888;">
+        Mostrando todos os <strong style="color:#555">147</strong> registros
+      </div>
+    </div>
+  </div>
+</div>

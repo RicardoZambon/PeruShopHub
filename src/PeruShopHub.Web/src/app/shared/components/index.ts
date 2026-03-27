@@ -26,6 +26,7 @@ export { ToggleSwitchComponent } from './toggle-switch/toggle-switch.component';
 export { RadioGroupComponent } from './radio-group/radio-group.component';
 export { TabBarComponent } from './tab-bar/tab-bar.component';
 export type { TabItem } from './tab-bar/tab-bar.component';
+export { TabPanelsComponent, TabPanelDirective } from './tab-panels/tab-panels.component';
 export { DialogComponent } from './dialog/dialog.component';
 export { FormActionsComponent } from './form-actions/form-actions.component';
 export { MarginBadgeComponent } from './margin-badge/margin-badge.component';

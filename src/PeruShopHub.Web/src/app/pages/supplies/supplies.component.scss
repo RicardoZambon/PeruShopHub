@@ -1,15 +1,6 @@
 @use '../../../styles/mixins' as m;
 
-.action-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-
-  @include m.mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
+// .action-bar is now global (styles.scss)
 
 .supplies-empty {
   display: flex;

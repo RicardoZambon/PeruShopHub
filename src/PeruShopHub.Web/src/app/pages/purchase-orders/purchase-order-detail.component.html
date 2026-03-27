@@ -2,30 +2,19 @@
   <app-page-skeleton type="detail" />
 } @else if (order(); as o) {
   <!-- Header -->
-  <div class="po-detail__header">
-    <div class="po-detail__header-left">
-      <a routerLink="/compras" class="po-detail__back-btn">
-        <lucide-icon [img]="arrowLeftIcon" [size]="20"></lucide-icon>
-      </a>
-      <div class="po-detail__header-info">
-        <h1 class="po-detail__title">{{ o.supplier || 'Sem fornecedor' }}</h1>
-        <span class="po-detail__date">Criado em {{ formatDate(o.createdAt) }}</span>
-      </div>
-    </div>
-    <div class="po-detail__header-right">
-      <app-badge [label]="o.status" [variant]="getStatusVariant(o.status)" />
-      @if (o.status === 'Rascunho') {
-        <app-button
-          variant="accent"
-          [icon]="checkCircleIcon"
-          [loading]="receiving()"
-          [disabled]="receiving()"
-          (click)="receiveStock()">
-          Receber Estoque
-        </app-button>
-      }
-    </div>
-  </div>
+  <app-page-header [title]="o.supplier || 'Sem fornecedor'" [subtitle]="'Criado em ' + formatDate(o.createdAt)" backRoute="/compras">
+    <app-badge [label]="o.status" [variant]="getStatusVariant(o.status)" />
+    @if (o.status === 'Rascunho') {
+      <app-button
+        variant="accent"
+        [icon]="checkCircleIcon"
+        [loading]="receiving()"
+        [disabled]="receiving()"
+        (click)="receiveStock()">
+        Receber Estoque
+      </app-button>
+    }
+  </app-page-header>
 
   <!-- Notes -->
   @if (o.notes) {

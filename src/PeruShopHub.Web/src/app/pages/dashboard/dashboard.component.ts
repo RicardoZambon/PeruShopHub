@@ -1,5 +1,6 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, Plugin } from 'chart.js';
 import { forkJoin } from 'rxjs';
@@ -8,6 +9,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 import { PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent } from '../../shared/components';
 import { DashboardService } from '../../services/dashboard.service';
 import type { KpiCard, ProductRow, PendingAction, ChartDataPoint, CostBreakdownItem } from '../../models/api.models';
+import { formatBrl as formatBrlUtil } from '../../shared/utils';
 
 type Period = 'hoje' | '7dias' | '30dias' | 'personalizado';
 
@@ -39,6 +41,7 @@ const COST_COLORS = [
 })
 export class DashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
+  private readonly router = inject(Router);
 
   activePeriod = signal<Period>('30dias');
   loading = signal(false);
@@ -332,16 +335,14 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
   onProductClick(id: number): void {
-    console.log('Navigate to product:', id);
+    this.router.navigate(['/produtos', id]);
   }
 
   onConnectMarketplace(): void {
-    console.log('Navigate to marketplace connection');
+    this.router.navigate(['/configuracoes']);
   }
 
   toggleEmptyState(): void {

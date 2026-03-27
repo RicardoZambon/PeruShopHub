@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { forkJoin } from 'rxjs';
+import { formatBrl as formatBrlUtil } from '../../shared/utils';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
-import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
+import { TabPanelsComponent, TabPanelDirective } from '../../shared/components/tab-panels/tab-panels.component';
+import type { TabItem } from '../../shared/components/tab-bar/tab-bar.component';
 import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ToastService } from '../../services/toast.service';
@@ -38,7 +40,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-finance',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BadgeComponent, PageHeaderComponent, ButtonComponent, TabBarComponent, MarginBadgeComponent, BaseChartDirective],
+  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BadgeComponent, PageHeaderComponent, ButtonComponent, TabPanelsComponent, TabPanelDirective, MarginBadgeComponent, BaseChartDirective],
   templateUrl: './finance.component.html',
   styleUrl: './finance.component.scss',
 })
@@ -260,9 +262,7 @@ export class FinanceComponent implements OnInit {
     return Math.min(Math.max(Math.abs(margem), 0), 60);
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
   // Conciliação tab data
   conciliacaoLoading = signal(true);
@@ -366,10 +366,6 @@ export class FinanceComponent implements OnInit {
     this.activePeriod.set(period);
     this.loadSummaryData();
     this.loadSkuData();
-  }
-
-  selectTab(tab: FinanceTab): void {
-    this.activeTab.set(tab);
   }
 
   onExport(type: 'pdf' | 'excel'): void {

@@ -1,12 +1,13 @@
 import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideAngularModule, ArrowLeft, User, Mail, Phone, MapPin } from 'lucide-angular';
+import { LucideAngularModule, User, Mail, Phone, MapPin } from 'lucide-angular';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
-import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { CustomerService } from '../../services/customer.service';
+import { formatBrl, formatDateShort, getOrderStatusVariant } from '../../shared/utils';
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
 
@@ -33,12 +34,11 @@ interface CustomerOrder {
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, KpiCardComponent, BadgeComponent, BrlCurrencyPipe],
+  imports: [CommonModule, RouterLink, LucideAngularModule, KpiCardComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent],
   templateUrl: './customer-detail.component.html',
   styleUrl: './customer-detail.component.scss',
 })
 export class CustomerDetailComponent implements OnInit {
-  readonly ArrowLeft = ArrowLeft;
   readonly UserIcon = User;
   readonly MailIcon = Mail;
   readonly PhoneIcon = Phone;
@@ -105,27 +105,8 @@ export class CustomerDetailComponent implements OnInit {
     }
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
+  formatBrl = formatBrl;
+  formatDate = formatDateShort;
 
-  formatDate(dateStr: string): string {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-
-  getStatusVariant(status: OrderStatus): BadgeVariant {
-    switch (status) {
-      case 'Pago': return 'primary';
-      case 'Enviado': return 'warning';
-      case 'Entregue': return 'success';
-      case 'Cancelado': return 'danger';
-      case 'Devolvido': return 'neutral';
-    }
-  }
+  getStatusVariant = getOrderStatusVariant;
 }

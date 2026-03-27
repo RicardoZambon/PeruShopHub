@@ -1,5 +1,3 @@
-@use '../../../styles/mixins' as m;
-
 .produtos-empty {
   display: flex;
   justify-content: center;
@@ -7,31 +5,7 @@
   flex: 1;
 }
 
-// Action bar — no wrapper div needed, host element handles flex layout
-.action-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-
-  app-search-input {
-    flex: 1;
-    min-width: 0;
-  }
-
-  app-select-dropdown {
-    flex-shrink: 0;
-  }
-
-  @include m.mobile {
-    flex-direction: column;
-    align-items: stretch;
-
-    app-search-input,
-    app-select-dropdown {
-      flex: unset;
-    }
-  }
-}
+// .action-bar is now global (styles.scss)
 
 // Thumbnail
 .thumb {
@@ -77,6 +51,7 @@
   font-weight: 600;
 }
 
+// Use global .btn-icon class in template instead of .edit-btn when possible
 .edit-btn {
   display: inline-flex;
   align-items: center;

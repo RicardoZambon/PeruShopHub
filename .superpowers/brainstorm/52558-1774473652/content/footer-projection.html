@@ -1,0 +1,98 @@
+<h2>GridFooter: Custom Content Projection</h2>
+<p class="subtitle">How should the <code>appGridFooter</code> directive work alongside the built-in count?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Replace — custom footer replaces the built-in count</h3>
+      <p>When a consumer provides <code>appGridFooter</code>, the default count disappears and only their custom content shows.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">Default (no appGridFooter)</div>
+        <div class="mockup-body" style="padding: 0; font-family: system-ui; font-size: 13px;">
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto A</span><span style="flex:1;text-align:right">R$ 45,00</span></div>
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto B</span><span style="flex:1;text-align:right">R$ 120,00</span></div>
+          <div style="background: #f8f9fa; border-top: 1px solid #e8e8e8; padding: 6px 16px; font-size: 12px; color: #888;">
+            Mostrando <strong style="color:#555">20</strong> de <strong style="color:#555">147</strong> produtos
+          </div>
+        </div>
+      </div>
+      <div class="mockup" style="margin-top: 8px;">
+        <div class="mockup-header">With appGridFooter (replaces default)</div>
+        <div class="mockup-body" style="padding: 0; font-family: system-ui; font-size: 13px;">
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto A</span><span style="flex:1;text-align:right">R$ 45,00</span></div>
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto B</span><span style="flex:1;text-align:right">R$ 120,00</span></div>
+          <div style="background: #f8f9fa; border-top: 1px solid #e8e8e8; padding: 8px 16px; font-size: 13px; color: #666; display: flex; justify-content: space-between;">
+            <span>Total em estoque: <strong style="color:#333">R$ 45.230,00</strong></span>
+            <span>Custo médio: <strong style="color:#333">R$ 32,50</strong></span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Simple mental model — one footer, one source</li><li>Full control for custom content</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Custom footer loses the count info unless they re-implement it</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Append — custom content added alongside the count</h3>
+      <p>The built-in count always shows on the left. Custom <code>appGridFooter</code> content renders on the right side.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">Default (no appGridFooter)</div>
+        <div class="mockup-body" style="padding: 0; font-family: system-ui; font-size: 13px;">
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto A</span><span style="flex:1;text-align:right">R$ 45,00</span></div>
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto B</span><span style="flex:1;text-align:right">R$ 120,00</span></div>
+          <div style="background: #f8f9fa; border-top: 1px solid #e8e8e8; padding: 6px 16px; font-size: 12px; color: #888;">
+            Mostrando <strong style="color:#555">20</strong> de <strong style="color:#555">147</strong> registros
+          </div>
+        </div>
+      </div>
+      <div class="mockup" style="margin-top: 8px;">
+        <div class="mockup-header">With appGridFooter (appended on the right)</div>
+        <div class="mockup-body" style="padding: 0; font-family: system-ui; font-size: 13px;">
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto A</span><span style="flex:1;text-align:right">R$ 45,00</span></div>
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto B</span><span style="flex:1;text-align:right">R$ 120,00</span></div>
+          <div style="background: #f8f9fa; border-top: 1px solid #e8e8e8; padding: 6px 16px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #888;">Mostrando <strong style="color:#555">20</strong> de <strong style="color:#555">147</strong> produtos</span>
+            <span style="color: #666;">Total em estoque: <strong style="color:#333">R$ 45.230,00</strong> · Custo médio: <strong style="color:#333">R$ 32,50</strong></span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Count is always visible — never lost</li><li>Custom content enriches rather than replaces</li><li>Consistent UX across all grids</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Can get crowded on mobile if custom content is long</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Two-row — custom content stacks below the count</h3>
+      <p>Built-in count on top row. Custom <code>appGridFooter</code> content in a second row below.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">With appGridFooter (stacked)</div>
+        <div class="mockup-body" style="padding: 0; font-family: system-ui; font-size: 13px;">
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto A</span><span style="flex:1;text-align:right">R$ 45,00</span></div>
+          <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;"><span style="flex:2">Produto B</span><span style="flex:1;text-align:right">R$ 120,00</span></div>
+          <div style="background: #f8f9fa; border-top: 1px solid #e8e8e8;">
+            <div style="padding: 6px 16px; font-size: 12px; color: #888; border-bottom: 1px solid #eee;">
+              Mostrando <strong style="color:#555">20</strong> de <strong style="color:#555">147</strong> produtos
+            </div>
+            <div style="padding: 8px 16px; font-size: 13px; color: #666; display: flex; justify-content: space-between;">
+              <span>Total em estoque: <strong style="color:#333">R$ 45.230,00</strong></span>
+              <span>Custo médio: <strong style="color:#333">R$ 32,50</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>No crowding — each section has its own space</li><li>Works well on mobile</li><li>Clean visual hierarchy</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Takes more vertical space when custom content exists</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

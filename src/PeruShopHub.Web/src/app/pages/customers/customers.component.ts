@@ -15,6 +15,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { RelativeDatePipe } from '../../shared/pipes/relative-date.pipe';
 import { CustomerService, type CustomerListItem } from '../../services/customer.service';
+import { formatBrl as formatBrlUtil } from '../../shared/utils';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -102,9 +103,7 @@ export class CustomersComponent implements OnInit {
     }
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);

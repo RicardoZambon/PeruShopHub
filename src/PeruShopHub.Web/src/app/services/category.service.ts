@@ -10,11 +10,12 @@ import type {
   CreateVariationFieldDto,
   UpdateVariationFieldDto,
 } from '../models/category.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/categories';
+  private readonly baseUrl = `${environment.apiUrl}/categories`;
 
   // Local cache of loaded categories (flat)
   private readonly categoriesData = signal<Category[]>([]);

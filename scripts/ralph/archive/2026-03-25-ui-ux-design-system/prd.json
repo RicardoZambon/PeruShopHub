@@ -1,0 +1,343 @@
+{
+  "project": "PeruShopHub",
+  "branchName": "ralph/backend-wiring",
+  "description": "Generic DataGridComponent with infinite scroll - Extract and generalize the table pattern into a reusable grid with declarative column API, custom cell rendering via ng-template, infinite scroll, and migrate all list pages",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Core grid component with column definitions",
+      "description": "As a developer, I want a grid component that accepts column definitions and data so I can render any tabular data without building custom table HTML.",
+      "acceptanceCriteria": [
+        "DataGridComponent created in shared/components/data-grid/",
+        "Accepts columns input — array of GridColumn objects with: key, label, align, width, sortable, sticky, headerClass, cellClass",
+        "Accepts data input — array of Record<string, any>",
+        "Renders a <table> with <thead> and <tbody> based on column definitions",
+        "Default cell rendering displays row[column.key] as text",
+        "Columns with align: 'right' right-align both header and cells",
+        "Columns with width set apply that width (e.g., '56px', '20%')",
+        "Component uses OnPush change detection strategy",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Custom cell rendering via ng-template",
+      "description": "As a developer, I want to provide custom templates for specific columns so I can render images, badges, buttons, and complex content inside grid cells.",
+      "acceptanceCriteria": [
+        "GridCellDirective created with appGridCell selector keyed by column name",
+        "Grid uses @ContentChildren(GridCellDirective) to collect custom templates",
+        "When a template is registered for a column key, it replaces default text rendering",
+        "Template receives the full row object (let-row) and cell value (let-value='value') as context",
+        "Works for any number of columns — some default, others custom",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Custom header rendering via ng-template",
+      "description": "As a developer, I want to optionally provide custom header templates for columns that need non-text headers.",
+      "acceptanceCriteria": [
+        "GridHeaderDirective created with appGridHeader selector keyed by column name",
+        "Grid uses @ContentChildren(GridHeaderDirective) to collect header templates",
+        "When a header template is registered, it replaces the default label text",
+        "Columns without custom header still render label string",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Server-side sorting",
+      "description": "As a user, I want to click column headers to sort the grid so I can find what I need quickly.",
+      "acceptanceCriteria": [
+        "Columns marked sortable: true show a sort indicator (neutral, ascending, descending)",
+        "Clicking a sortable header cycles: ascending → descending → neutral",
+        "Grid emits sortChange event with { column: string, direction: 'asc' | 'desc' | null }",
+        "Only one column sorted at a time — clicking new column resets previous",
+        "Grid does NOT sort data internally — delegates to parent",
+        "Active sort column header is visually highlighted",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Infinite scroll",
+      "description": "As a user, I want the grid to load more rows automatically as I scroll down so I don't have to click pagination buttons.",
+      "acceptanceCriteria": [
+        "Grid detects scroll near bottom using IntersectionObserver on sentinel element",
+        "Emits loadMore event when threshold reached and hasMore is true",
+        "Does NOT emit loadMore while loading is true",
+        "Shows loading spinner row at bottom while loading more",
+        "Accepts hasMore input — when false, no more loadMore events emitted",
+        "Accepts pageSize input (default 20)",
+        "Grid scroll container uses overflow-y: auto with flex: 1 height",
+        "Scroll position preserved when new rows appended",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Initial loading state with skeleton placeholders",
+      "description": "As a user, I want to see skeleton placeholders while the grid loads for the first time so the page doesn't appear broken.",
+      "acceptanceCriteria": [
+        "When loading is true AND data is empty, grid renders skeleton rows (default 8)",
+        "Skeleton rows mirror column layout: same number of cells, alignment, widths",
+        "Skeleton cells use <app-skeleton> component with appropriate dimensions",
+        "When loading is true AND data is NOT empty, skeleton rows NOT shown (spinner at bottom instead)",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Empty state",
+      "description": "As a user, I want to see a clear message when there's no data so I know it's not a loading error.",
+      "acceptanceCriteria": [
+        "When loading is false AND data is empty, grid shows empty state",
+        "Supports <ng-template appGridEmpty> for custom empty state content",
+        "If no custom template, renders default with configurable emptyTitle and emptyDescription inputs",
+        "Empty state is vertically centered within the grid container",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Mobile card layout",
+      "description": "As a user on mobile, I want data displayed as cards instead of a table so it's readable on small screens.",
+      "acceptanceCriteria": [
+        "Below 768px breakpoint, table is hidden and card list displayed",
+        "Supports <ng-template appGridCard let-row> for custom mobile card rendering",
+        "If no card template, renders default card with column label-value pairs stacked vertically",
+        "Card layout also supports infinite scroll (same loadMore behavior)",
+        "Skeleton cards shown during initial loading on mobile",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Row click events",
+      "description": "As a developer, I want the grid to emit row click events so I can navigate to detail pages.",
+      "acceptanceCriteria": [
+        "Grid emits rowClick event with full row object when row is clicked",
+        "Rows have cursor: pointer and hover highlight styling",
+        "Click events do NOT fire when user clicks interactive element inside cell (button, link, checkbox)",
+        "On mobile, card click emits same rowClick event",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Sticky header and column",
+      "description": "As a user scrolling through a long table, I want the header row to stay visible and optionally the first column to stay pinned.",
+      "acceptanceCriteria": [
+        "Table header (<thead>) is sticky at top of scroll container",
+        "Columns marked sticky: true remain pinned when scrolling horizontally",
+        "Sticky column has right border shadow to indicate scroll underneath",
+        "Custom scrollbar styling matches existing app scrollbar design",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Scroll-to-top utility",
+      "description": "As a developer, I want to programmatically scroll the grid back to the top when filters or sort change.",
+      "acceptanceCriteria": [
+        "Grid exposes public scrollToTop() method",
+        "Parent can call it via @ViewChild reference",
+        "Smooth scroll animation via CSS scroll-behavior: smooth",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Scroll-to-row for deep linking",
+      "description": "As a developer, I want to programmatically scroll to a specific row so the user sees it highlighted after create/edit.",
+      "acceptanceCriteria": [
+        "Grid exposes public scrollToRow(predicate: (row: any) => boolean) method",
+        "Scrolls matching row into view and applies brief highlight animation (1.5s fade pulse)",
+        "Returns false if row not in current data so parent can load more",
+        "Works on both desktop table and mobile card layout",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "ARIA accessibility attributes",
+      "description": "As a user with assistive technology, I want the grid to have proper ARIA attributes so screen readers can navigate correctly.",
+      "acceptanceCriteria": [
+        "Table has role='grid' and configurable aria-label input (default 'Data grid')",
+        "Header cells have role='columnheader'",
+        "Sortable headers include aria-sort attribute (ascending, descending, or none)",
+        "Body cells have role='gridcell'",
+        "Loading state announced via aria-live='polite' region",
+        "Empty state announced via aria-live='polite'",
+        "Infinite scroll spinner has aria-label='Carregando mais itens'",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Migrate Products list",
+      "description": "As a developer, I want to migrate the Products list page to use DataGridComponent to validate the component with the most complex use case.",
+      "acceptanceCriteria": [
+        "Products list uses <app-data-grid> instead of custom <table>",
+        "All 9 columns render identically: image, name, SKU, price, stock, variants, status, margin, actions",
+        "Custom cell templates for: image, stock (conditional coloring), variants (badge + review badge), status (badge), margin (margin-badge), actions (edit button)",
+        "Infinite scroll replaces pagination — loads 20 items per batch",
+        "Search and status filter still work (parent-owned, trigger grid reset + scrollToTop)",
+        "Server-side sorting works for all sortable columns",
+        "Mobile card layout matches current design",
+        "Old custom table HTML and SCSS removed from products-list component",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Migrate Sales list",
+      "description": "As a developer, I want to migrate the Sales list page to use DataGridComponent.",
+      "acceptanceCriteria": [
+        "Sales list uses <app-data-grid> with columns: ID, Date, Buyer, Items, Value, Profit, Status",
+        "Custom cell templates for: ID (mono clickable), profit (conditional green/red), status (badge)",
+        "Infinite scroll replaces pagination",
+        "Search, date range, and status filters still work (parent-owned)",
+        "Mobile card layout matches current design",
+        "Old custom table HTML and SCSS removed",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Migrate Customers list",
+      "description": "As a developer, I want to migrate the Customers list page to use DataGridComponent.",
+      "acceptanceCriteria": [
+        "Customers list uses <app-data-grid> with columns: Name, Nickname, Email, Total Orders, Total Spent, Last Purchase",
+        "Custom cell templates for: nickname (mono), total spent (currency + indicator), last purchase (relative date)",
+        "Infinite scroll replaces current load-all pattern",
+        "Search and sorting still work",
+        "Mobile card layout matches current design",
+        "Old custom table HTML and SCSS removed",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Migrate Purchase Orders list",
+      "description": "As a developer, I want to migrate the Purchase Orders list page to use DataGridComponent.",
+      "acceptanceCriteria": [
+        "Purchase Orders list uses <app-data-grid> with columns: Supplier, Status, Items, Total, Created Date, Received Date",
+        "Custom cell templates for: status (badge), total (currency mono)",
+        "Infinite scroll replaces pagination",
+        "Search and status filters still work",
+        "Mobile card layout matches current design",
+        "Old custom table HTML and SCSS removed",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Migrate Inventory Movements table",
+      "description": "As a developer, I want to migrate the Inventory movements table to use DataGridComponent.",
+      "acceptanceCriteria": [
+        "Movements table uses <app-data-grid> with columns: Date, Product, Type, Quantity, Unit Cost, Notes",
+        "Custom cell templates for: type (colored badge), quantity (signed +/- with color)",
+        "Infinite scroll replaces pagination",
+        "Type filter still works",
+        "Mobile card layout matches current design",
+        "Old custom table HTML and SCSS removed",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Migrate Inventory Overview with backend pagination",
+      "description": "As a developer, I want to migrate the Inventory overview table to use DataGridComponent with infinite scroll, including backend pagination support.",
+      "acceptanceCriteria": [
+        "Backend GET /api/inventory updated to support pagination via PagedResult<InventoryItemDto> with page and pageSize query params",
+        "Inventory overview uses <app-data-grid> with columns: SKU, Product, Total Stock, Reserved, Available, Unit Cost, Stock Value",
+        "Custom cell templates for: available (conditional warning/danger coloring for low/zero stock), costs (mono currency)",
+        "Infinite scroll replaces current load-all pattern",
+        "Row highlighting for low stock (<=5) and zero stock preserved",
+        "Mobile card layout",
+        "Old custom table HTML and SCSS removed",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": "This story includes a backend change (pagination endpoint) — implement that first, then the frontend migration."
+    },
+    {
+      "id": "US-020",
+      "title": "Remove old DataTableComponent",
+      "description": "As a developer, I want to remove the old DataTableComponent once all pages are migrated so we don't maintain two grid implementations.",
+      "acceptanceCriteria": [
+        "Verify no component imports or uses DataTableComponent",
+        "Delete shared/components/data-table/ directory",
+        "Remove from shared module exports/declarations if applicable",
+        "App builds without errors (ng build succeeds)",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

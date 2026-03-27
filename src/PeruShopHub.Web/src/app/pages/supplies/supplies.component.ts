@@ -13,6 +13,7 @@ import { FormFieldComponent } from '../../shared/components/form-field/form-fiel
 import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
 import { PageSkeletonComponent } from '../../shared/components/page-skeleton/page-skeleton.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
+import { formatBrl as formatBrlUtil } from '../../shared/utils';
 import { SupplyService, type CreateSupplyDto } from '../../services/supply.service';
 
 type SupplyCategory = 'Embalagem' | 'Etiqueta' | 'Caixa' | 'Fita' | 'Proteção' | 'Outros';
@@ -97,9 +98,7 @@ export class SuppliesComponent implements OnInit {
     this.loadSupplies();
   }
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);

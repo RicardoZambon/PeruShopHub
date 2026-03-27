@@ -11,13 +11,12 @@ import {
   GridSortEvent,
 } from '../../shared/components/data-grid/data-grid.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
-import type { BadgeVariant } from '../../shared/components/badge/badge.component';
-
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { PurchaseOrderService, type PurchaseOrderListItem } from '../../services/purchase-order.service';
+import { getPurchaseOrderStatusVariant } from '../../shared/utils';
 import { firstValueFrom } from 'rxjs';
 
 type POStatus = 'Rascunho' | 'Recebido' | 'Cancelado';
@@ -116,14 +115,7 @@ export class PurchaseOrdersListComponent implements OnInit {
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
-  getStatusVariant(status: string): BadgeVariant {
-    switch (status) {
-      case 'Rascunho': return 'neutral';
-      case 'Recebido': return 'success';
-      case 'Cancelado': return 'danger';
-      default: return 'neutral';
-    }
-  }
+  getStatusVariant = getPurchaseOrderStatusVariant;
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);

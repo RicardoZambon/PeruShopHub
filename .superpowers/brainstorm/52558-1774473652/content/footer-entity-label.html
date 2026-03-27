@@ -1,0 +1,85 @@
+<h2>GridFooter: Entity Label Strategy</h2>
+<p class="subtitle">How should the footer describe the items being shown?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Per-entity label via input</h3>
+      <p>Each consumer passes an <code>entityName</code> input like <code>"produtos"</code>, <code>"clientes"</code>, <code>"pedidos"</code>.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">Customers page</div>
+        <div class="mockup-body" style="padding: 16px; font-family: system-ui;">
+          <div style="background: #f5f5f5; border-radius: 8px; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #666;">
+            <span>Mostrando <strong style="color:#333">20</strong> de <strong style="color:#333">147</strong> clientes</span>
+            <span style="font-size: 12px; color: #999;">Página 1 de 8</span>
+          </div>
+        </div>
+      </div>
+      <div class="mockup" style="margin-top: 8px;">
+        <div class="mockup-header">Products page</div>
+        <div class="mockup-body" style="padding: 16px; font-family: system-ui;">
+          <div style="background: #f5f5f5; border-radius: 8px; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #666;">
+            <span>Mostrando <strong style="color:#333">20</strong> de <strong style="color:#333">1.250</strong> produtos</span>
+            <span style="font-size: 12px; color: #999;">Página 1 de 63</span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Contextual — feels natural in Portuguese</li><li>Each page reads correctly</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Every consumer must pass the label</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Generic "registros" default + optional override</h3>
+      <p>Footer defaults to <code>"registros"</code> but consumers CAN override with <code>entityName</code> if they want.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">Without override (default)</div>
+        <div class="mockup-body" style="padding: 16px; font-family: system-ui;">
+          <div style="background: #f5f5f5; border-radius: 8px; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #666;">
+            <span>Mostrando <strong style="color:#333">20</strong> de <strong style="color:#333">147</strong> registros</span>
+            <span style="font-size: 12px; color: #999;">Página 1 de 8</span>
+          </div>
+        </div>
+      </div>
+      <div class="mockup" style="margin-top: 8px;">
+        <div class="mockup-header">With override: entityName="produtos"</div>
+        <div class="mockup-body" style="padding: 16px; font-family: system-ui;">
+          <div style="background: #f5f5f5; border-radius: 8px; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #666;">
+            <span>Mostrando <strong style="color:#333">20</strong> de <strong style="color:#333">1.250</strong> produtos</span>
+            <span style="font-size: 12px; color: #999;">Página 1 de 63</span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Works out of the box with zero config</li><li>Consumers can opt-in to specific labels</li><li>Best of both worlds</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>"registros" is slightly less specific than the entity name</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>No entity label — just numbers</h3>
+      <p>Footer only shows counts, no noun at all.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-header">Any page</div>
+        <div class="mockup-body" style="padding: 16px; font-family: system-ui;">
+          <div style="background: #f5f5f5; border-radius: 8px; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #666;">
+            <span>Mostrando <strong style="color:#333">20</strong> de <strong style="color:#333">147</strong></span>
+            <span style="font-size: 12px; color: #999;">Página 1 de 8</span>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Zero config, always correct</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Less informative — "20 de 147" what?</li><li>Feels incomplete in Portuguese</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
