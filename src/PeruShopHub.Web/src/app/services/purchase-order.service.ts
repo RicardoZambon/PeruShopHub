@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
+import { buildHttpParams } from '../shared/utils';
 import { Observable } from 'rxjs';
 import { PagedResult } from '../models/api.models';
+import { environment } from '../../environments/environment';
 
 export interface PurchaseOrderListItem {
   id: string;
@@ -76,6 +78,7 @@ export interface CreatePurchaseOrderDto {
 @Injectable({ providedIn: 'root' })
 export class PurchaseOrderService {
   private http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/purchase-orders`;
 
   list(params: {
     page?: number;
@@ -85,42 +88,38 @@ export class PurchaseOrderService {
     sortBy?: string;
     sortDir?: string;
   } = {}): Observable<PagedResult<PurchaseOrderListItem>> {
-    let httpParams = new HttpParams();
-    if (params.page) httpParams = httpParams.set('page', params.page);
-    if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize);
-    if (params.status) httpParams = httpParams.set('status', params.status);
-    if (params.supplier) httpParams = httpParams.set('supplier', params.supplier);
-    if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
-    if (params.sortDir) httpParams = httpParams.set('sortDir', params.sortDir);
-    return this.http.get<PagedResult<PurchaseOrderListItem>>('/api/purchase-orders', { params: httpParams });
+    return this.http.get<PagedResult<PurchaseOrderListItem>>(this.baseUrl, { params: buildHttpParams(params) });
   }
 
   getById(id: string): Observable<PurchaseOrderDetail> {
-    return this.http.get<PurchaseOrderDetail>(`/api/purchase-orders/${id}`);
+    return this.http.get<PurchaseOrderDetail>(`${this.baseUrl}/${id}`);
   }
 
   create(dto: CreatePurchaseOrderDto): Observable<PurchaseOrderDetail> {
-    return this.http.post<PurchaseOrderDetail>('/api/purchase-orders', dto);
+    return this.http.post<PurchaseOrderDetail>(this.baseUrl, dto);
   }
 
   update(id: string, dto: Partial<CreatePurchaseOrderDto>): Observable<PurchaseOrderDetail> {
-    return this.http.put<PurchaseOrderDetail>(`/api/purchase-orders/${id}`, dto);
+    return this.http.put<PurchaseOrderDetail>(`${this.baseUrl}/${id}`, dto);
   }
 
   receive(id: string): Observable<PurchaseOrderDetail> {
-    return this.http.post<PurchaseOrderDetail>(`/api/purchase-orders/${id}/receive`, {});
+    return this.http.post<PurchaseOrderDetail>(`${this.baseUrl}/${id}/receive`, {});
   }
 
   addCost(poId: string, cost: { description: string; value: number; distributionMethod: string }): Observable<POCost> {
-    return this.http.post<POCost>(`/api/purchase-orders/${poId}/costs`, cost);
+    return this.http.post<POCost>(`${this.baseUrl}/${poId}/costs`, cost);
   }
 
   removeCost(poId: string, costId: string): Observable<void> {
-    return this.http.delete<void>(`/api/purchase-orders/${poId}/costs/${costId}`);
+    return this.http.delete<void>(`${this.baseUrl}/${poId}/costs/${costId}`);
   }
 
   previewCost(poId: string, value: number, method: string): Observable<CostPreview> {
-    const params = new HttpParams().set('value', value).set('method', method);
-    return this.http.get<CostPreview>(`/api/purchase-orders/${poId}/cost-preview`, { params });
+    return this.http.get<CostPreview>(`${this.baseUrl}/${poId}/cost-preview`, { params: buildHttpParams({ value, method }) });
+  }
+
+  cancel(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }

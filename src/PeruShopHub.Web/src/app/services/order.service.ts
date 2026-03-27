@@ -43,6 +43,8 @@ export interface OrderDetail {
   profit: number;
   margin: number;
   status: string;
+  isFulfilled: boolean;
+  fulfilledAt?: string;
   orderDate: string;
   shipping: { trackingNumber?: string; carrier?: string; logisticType?: string; timeline?: { status: string; timestamp?: string; description?: string }[] };
   payment: { method?: string; installments?: number; amount?: number; status?: string };
@@ -97,5 +99,9 @@ export class OrderService {
 
   recalculateCosts(orderId: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/${orderId}/recalculate-costs`, {});
+  }
+
+  fulfill(orderId: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${orderId}/fulfill`, {});
   }
 }

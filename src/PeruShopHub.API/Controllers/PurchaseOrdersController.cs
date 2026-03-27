@@ -409,6 +409,19 @@ public class PurchaseOrdersController : ControllerBase
         }
     }
 
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Cancel(Guid id)
+    {
+        var po = await _db.PurchaseOrders.FindAsync(id);
+        if (po is null) return NotFound();
+        if (po.Status != "Rascunho")
+            return BadRequest(new { message = "Apenas ordens em rascunho podem ser canceladas." });
+
+        po.Status = "Cancelado";
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     private static PurchaseOrderDetailDto MapToDetailDto(PurchaseOrder po)
     {
         return new PurchaseOrderDetailDto(
