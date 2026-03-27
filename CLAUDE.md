@@ -233,14 +233,17 @@ The project has foundational infrastructure in place: database schema with seed 
 
 ## Documentation Reference
 
-- `Docs/Sistema-Requisitos-e-Arquitetura.md` — Full requirements, architecture, data model, and development phases
-- `Docs/PeruShopHub-Roadmap.md` — Detailed sprint-by-sprint roadmap with the definitive stack
-- `Docs/PeruShopHub-Design-PreProjeto.md` — Complete data structure definitions, UI/UX navigation map, visual identity
+- `Docs/ROADMAP.md` — Main roadmap: current progress, phases, next steps, milestones
+- `Docs/Architecture.md` — Technical architecture, data model, API conventions, adapter pattern
 - `Docs/PeruShopHub-Design-System.md` — Full design system: tokens, components, screen specs, responsive patterns
-- `Docs/MercadoLivre-API-Referencia-Completa.md` — ML API reference
-- `Docs/MercadoLivre-API-Avancada-Sellers.md` — Advanced seller API operations
-- `Docs/MercadoLivre-Modelos-de-Venda.md` — ML sales models and fee structures
-- `Docs/MercadoLivre-Produtos-e-Investimento.md` — ML product listing and investment details
+- `Docs/guides/Mercado-Livre-API.md` — ML API reference (OAuth, Items, Orders, Shipping, Webhooks)
+- `Docs/guides/Mercado-Livre-Avancada.md` — Fulfillment, Advertising, Billing, Catalog APIs
+- `Docs/guides/Mercado-Livre-Modelos.md` — Full vs envio proprio, commissions, reputation
+- `Docs/guides/Mercado-Livre-Produtos.md` — Product categories, investment strategy, suppliers
+- `Docs/guides/Stock-Management.md` — Inventory architecture, ML sync, reconciliation
+- `Docs/guides/Financial-Model.md` — Cost decomposition, profitability engine, ABC curve
+- `Docs/guides/Multi-Tenancy.md` — Shared DB, query filters, tenant middleware, roles
+- `Docs/guides/Authentication.md` — JWT, refresh tokens, RBAC, tenant switching
 
 ## Language Note
 
