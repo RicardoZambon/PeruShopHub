@@ -1,11 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Products;
-using PeruShopHub.Core.Entities;
-using PeruShopHub.Core.Interfaces;
-using PeruShopHub.Infrastructure.Persistence;
+using PeruShopHub.Application.Services;
 
 namespace PeruShopHub.API.Controllers;
 
@@ -14,15 +11,11 @@ namespace PeruShopHub.API.Controllers;
 [Authorize]
 public class ProductsController : ControllerBase
 {
-    private readonly PeruShopHubDbContext _db;
-    private readonly ICacheService _cache;
-    private readonly INotificationDispatcher _dispatcher;
+    private readonly IProductService _productService;
 
-    public ProductsController(PeruShopHubDbContext db, ICacheService cache, INotificationDispatcher dispatcher)
+    public ProductsController(IProductService productService)
     {
-        _db = db;
-        _cache = cache;
-        _dispatcher = dispatcher;
+        _productService = productService;
     }
 
     [HttpGet]
@@ -36,357 +29,46 @@ public class ProductsController : ControllerBase
         [FromQuery] string sortDir = "asc",
         CancellationToken ct = default)
     {
-        var cacheKey = $"products:list:{page}:{pageSize}:{search}:{status}:{categoryId}:{sortBy}:{sortDir}";
-        var cached = await _cache.GetAsync<PagedResult<ProductListDto>>(cacheKey, ct);
-        if (cached is not null) return Ok(cached);
-
-        var query = _db.Products.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var term = search.ToLower();
-            query = query.Where(p =>
-                p.Name.ToLower().Contains(term) ||
-                p.Sku.ToLower().Contains(term));
-        }
-
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            query = query.Where(p => p.Status == status);
-        }
-
-        if (categoryId.HasValue)
-        {
-            // Get all descendant category IDs recursively
-            var categoryIds = new List<Guid> { categoryId.Value };
-            var toCheck = new Queue<Guid>();
-            toCheck.Enqueue(categoryId.Value);
-            while (toCheck.Count > 0)
-            {
-                var parentId = toCheck.Dequeue();
-                var childIds = await _db.Categories
-                    .AsNoTracking()
-                    .Where(c => c.ParentId == parentId)
-                    .Select(c => c.Id)
-                    .ToListAsync(ct);
-                foreach (var childId in childIds)
-                {
-                    categoryIds.Add(childId);
-                    toCheck.Enqueue(childId);
-                }
-            }
-            var categoryIdStrings = categoryIds.Select(id => id.ToString()).ToList();
-            query = query.Where(p => p.CategoryId != null && categoryIdStrings.Contains(p.CategoryId));
-        }
-
-        var totalCount = await query.CountAsync();
-
-        query = sortBy.ToLower() switch
-        {
-            "sku" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-                ? query.OrderByDescending(p => p.Sku)
-                : query.OrderBy(p => p.Sku),
-            "price" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-                ? query.OrderByDescending(p => p.Price)
-                : query.OrderBy(p => p.Price),
-            "status" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-                ? query.OrderByDescending(p => p.Status)
-                : query.OrderBy(p => p.Status),
-            "createdat" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-                ? query.OrderByDescending(p => p.CreatedAt)
-                : query.OrderBy(p => p.CreatedAt),
-            "stock" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-                ? query.OrderByDescending(p => p.Variants.Sum(v => v.Stock))
-                : query.OrderBy(p => p.Variants.Sum(v => v.Stock)),
-            "margin" => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-                ? query.OrderByDescending(p => p.Price > 0 ? (p.Price - p.PurchaseCost - p.PackagingCost) / p.Price * 100 : 0)
-                : query.OrderBy(p => p.Price > 0 ? (p.Price - p.PurchaseCost - p.PackagingCost) / p.Price * 100 : 0),
-            _ => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-                ? query.OrderByDescending(p => p.Name)
-                : query.OrderBy(p => p.Name),
-        };
-
-        var products = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(p => new ProductListDto(
-                p.Id,
-                p.Sku,
-                p.Name,
-                p.Price,
-                p.PurchaseCost,
-                p.PackagingCost,
-                p.Status,
-                p.NeedsReview,
-                p.IsActive,
-                p.Variants.Count,
-                p.Variants.Sum(v => v.Stock),
-                p.Price > 0
-                    ? (p.Price - p.PurchaseCost - p.PackagingCost) / p.Price * 100m
-                    : (decimal?)null,
-                _db.FileUploads
-                    .Where(f => f.EntityType == "product" && f.EntityId == p.Id)
-                    .OrderBy(f => f.SortOrder)
-                    .Select(f => f.StoragePath)
-                    .FirstOrDefault(),
-                p.CreatedAt))
-            .ToListAsync(ct);
-
-        var result = new PagedResult<ProductListDto>
-        {
-            Items = products,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
-        await _cache.SetAsync(cacheKey, result, TimeSpan.FromSeconds(60), ct);
+        var result = await _productService.GetListAsync(page, pageSize, search, status, categoryId, sortBy, sortDir, ct);
         return Ok(result);
     }
 
     [HttpGet("next-sku")]
     public async Task<ActionResult> GetNextSku([FromQuery] Guid? categoryId)
     {
-        if (!categoryId.HasValue)
-            return Ok(new { suggestedSku = (string?)null });
-
-        var category = await _db.Categories
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == categoryId.Value);
-
-        if (category?.SkuPrefix is null or "")
-            return Ok(new { suggestedSku = (string?)null });
-
-        var prefix = category.SkuPrefix;
-        var pattern = $"{prefix}-";
-
-        // Find the max existing SKU with this prefix
-        var maxSku = await _db.Products
-            .AsNoTracking()
-            .Where(p => p.Sku.StartsWith(pattern))
-            .Select(p => p.Sku)
-            .OrderByDescending(s => s)
-            .FirstOrDefaultAsync();
-
-        int nextNumber = 1;
-        if (maxSku is not null)
-        {
-            var suffix = maxSku[(pattern.Length)..];
-            if (int.TryParse(suffix, out var parsed))
-            {
-                nextNumber = parsed + 1;
-            }
-        }
-
-        var suggestedSku = $"{prefix}-{nextNumber:D3}";
+        var suggestedSku = await _productService.GetNextSkuAsync(categoryId);
         return Ok(new { suggestedSku });
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ProductDetailDto>> GetProduct(Guid id)
+    public async Task<ActionResult<ProductDetailDto>> GetProduct(Guid id, CancellationToken ct = default)
     {
-        var product = await _db.Products
-            .AsNoTracking()
-            .Include(p => p.Variants)
-            .Where(p => p.Id == id)
-            .FirstOrDefaultAsync();
-
-        if (product is null)
-            return NotFound();
-
-        var photoUrls = await _db.FileUploads
-            .AsNoTracking()
-            .Where(f => f.EntityType == "product" && f.EntityId == id)
-            .OrderBy(f => f.SortOrder)
-            .Select(f => f.StoragePath)
-            .ToListAsync();
-
-        var dto = new ProductDetailDto(
-            product.Id,
-            product.Sku,
-            product.Name,
-            product.Description,
-            product.CategoryId,
-            product.Price,
-            product.PurchaseCost,
-            product.PackagingCost,
-            product.Supplier,
-            product.Status,
-            product.NeedsReview,
-            product.IsActive,
-            product.Weight,
-            product.Height,
-            product.Width,
-            product.Length,
-            product.CreatedAt,
-            product.UpdatedAt,
-            product.Variants.Select(v => new ProductVariantDto(
-                v.Id,
-                v.Sku,
-                v.Attributes,
-                v.Price,
-                v.Stock,
-                v.IsActive,
-                v.NeedsReview,
-                v.PurchaseCost,
-                v.Weight,
-                v.Height,
-                v.Width,
-                v.Length)).ToList(),
-            photoUrls);
-
-        return Ok(dto);
+        var result = await _productService.GetByIdAsync(id, ct);
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}/variants")]
-    public async Task<ActionResult<IReadOnlyList<ProductVariantDto>>> GetVariants(Guid id)
+    public async Task<ActionResult<IReadOnlyList<ProductVariantDto>>> GetVariants(Guid id, CancellationToken ct = default)
     {
-        var productExists = await _db.Products.AsNoTracking().AnyAsync(p => p.Id == id);
-        if (!productExists)
-            return NotFound();
-
-        var variants = await _db.ProductVariants
-            .AsNoTracking()
-            .Where(v => v.ProductId == id)
-            .Select(v => new ProductVariantDto(
-                v.Id,
-                v.Sku,
-                v.Attributes,
-                v.Price,
-                v.Stock,
-                v.IsActive,
-                v.NeedsReview,
-                v.PurchaseCost,
-                v.Weight,
-                v.Height,
-                v.Width,
-                v.Length))
-            .ToListAsync();
-
-        return Ok(variants);
+        var result = await _productService.GetVariantsAsync(id, ct);
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<ProductDetailDto>> CreateProduct(CreateProductDto dto)
+    public async Task<ActionResult<ProductDetailDto>> CreateProduct(CreateProductDto dto, CancellationToken ct = default)
     {
-        // Auto-generate SKU if not provided
-        var sku = dto.Sku;
-        if (string.IsNullOrWhiteSpace(sku))
-        {
-            if (!string.IsNullOrWhiteSpace(dto.CategoryId))
-            {
-                var catId = Guid.TryParse(dto.CategoryId, out var cid) ? cid : (Guid?)null;
-                if (catId.HasValue)
-                {
-                    var cat = await _db.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == catId.Value);
-                    if (!string.IsNullOrWhiteSpace(cat?.SkuPrefix))
-                    {
-                        var prefix = cat.SkuPrefix;
-                        var maxSku = await _db.Products.AsNoTracking()
-                            .Where(p => p.Sku.StartsWith(prefix + "-"))
-                            .Select(p => p.Sku)
-                            .OrderByDescending(s => s)
-                            .FirstOrDefaultAsync();
-                        var nextNumber = 1;
-                        if (maxSku != null)
-                        {
-                            var suffix = maxSku[(prefix.Length + 1)..];
-                            if (int.TryParse(suffix, out var parsed)) nextNumber = parsed + 1;
-                        }
-                        sku = $"{prefix}-{nextNumber:D3}";
-                    }
-                }
-            }
-            sku ??= $"PRD-{DateTime.UtcNow:yyyyMMddHHmmss}";
-        }
-
-        var product = new Product
-        {
-            Id = Guid.NewGuid(),
-            Sku = sku,
-            Name = dto.Name,
-            Description = dto.Description,
-            CategoryId = dto.CategoryId,
-            Price = dto.Price,
-            PurchaseCost = dto.PurchaseCost,
-            PackagingCost = dto.PackagingCost,
-            Supplier = dto.Supplier,
-            Weight = dto.Weight,
-            Height = dto.Height,
-            Width = dto.Width,
-            Length = dto.Length,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _db.Products.Add(product);
-        await _db.SaveChangesAsync();
-
-        await _dispatcher.BroadcastDataChangeAsync("product", "created", product.Id.ToString(), default);
-
-        var createResult = new ProductDetailDto(
-            product.Id,
-            product.Sku,
-            product.Name,
-            product.Description,
-            product.CategoryId,
-            product.Price,
-            product.PurchaseCost,
-            product.PackagingCost,
-            product.Supplier,
-            product.Status,
-            product.NeedsReview,
-            product.IsActive,
-            product.Weight,
-            product.Height,
-            product.Width,
-            product.Length,
-            product.CreatedAt,
-            product.UpdatedAt,
-            Array.Empty<ProductVariantDto>(),
-            Array.Empty<string>());
-
-        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, createResult);
+        var result = await _productService.CreateAsync(dto, ct);
+        return CreatedAtAction(nameof(GetProduct), new { id = result.Id }, result);
     }
 
     [HttpGet("{id:guid}/cost-history")]
     public async Task<ActionResult<PagedResult<ProductCostHistoryDto>>> GetCostHistory(
         Guid id,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
     {
-        var productExists = await _db.Products.AsNoTracking().AnyAsync(p => p.Id == id);
-        if (!productExists)
-            return NotFound();
-
-        var query = _db.ProductCostHistories
-            .AsNoTracking()
-            .Where(h => h.ProductId == id);
-
-        var totalCount = await query.CountAsync();
-
-        var items = await query
-            .OrderByDescending(h => h.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(h => new ProductCostHistoryDto(
-                h.Id,
-                h.CreatedAt,
-                h.PreviousCost,
-                h.NewCost,
-                h.Quantity,
-                h.UnitCostPaid,
-                h.PurchaseOrderId,
-                h.Reason))
-            .ToListAsync();
-
-        var result = new PagedResult<ProductCostHistoryDto>
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
-
+        var result = await _productService.GetCostHistoryAsync(id, page, pageSize, ct);
         return Ok(result);
     }
 
@@ -396,74 +78,8 @@ public class ProductsController : ControllerBase
         [FromQuery] int days = 30,
         CancellationToken ct = default)
     {
-        var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
-        if (product is null)
-            return NotFound();
-
-        var now = DateTime.UtcNow;
-        var currentStart = now.AddDays(-days);
-        var previousStart = now.AddDays(-days * 2);
-
-        // Current period
-        var currentItems = await _db.OrderItems
-            .AsNoTracking()
-            .Where(oi => oi.ProductId == id)
-            .Join(_db.Orders.AsNoTracking(),
-                oi => oi.OrderId,
-                o => o.Id,
-                (oi, o) => new { oi, o })
-            .Where(x => x.o.CreatedAt >= currentStart && x.o.CreatedAt < now)
-            .Select(x => new
-            {
-                x.oi.Quantity,
-                x.oi.UnitPrice,
-                x.oi.Subtotal
-            })
-            .ToListAsync(ct);
-
-        var currentSales = currentItems.Sum(x => x.Quantity);
-        var currentRevenue = currentItems.Sum(x => x.Subtotal);
-        var currentProfit = currentItems.Sum(x => (x.UnitPrice - product.PurchaseCost - product.PackagingCost) * x.Quantity);
-        var currentMargin = currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : (decimal?)null;
-
-        // Previous period
-        var previousItems = await _db.OrderItems
-            .AsNoTracking()
-            .Where(oi => oi.ProductId == id)
-            .Join(_db.Orders.AsNoTracking(),
-                oi => oi.OrderId,
-                o => o.Id,
-                (oi, o) => new { oi, o })
-            .Where(x => x.o.CreatedAt >= previousStart && x.o.CreatedAt < currentStart)
-            .Select(x => new
-            {
-                x.oi.Quantity,
-                x.oi.UnitPrice,
-                x.oi.Subtotal
-            })
-            .ToListAsync(ct);
-
-        var previousSales = previousItems.Sum(x => x.Quantity);
-        var previousRevenue = previousItems.Sum(x => x.Subtotal);
-        var previousProfit = previousItems.Sum(x => (x.UnitPrice - product.PurchaseCost - product.PackagingCost) * x.Quantity);
-        var previousMargin = previousRevenue > 0 ? (previousProfit / previousRevenue) * 100 : (decimal?)null;
-
-        decimal? CalcChange(decimal current, decimal previous) =>
-            previous != 0 ? ((current - previous) / Math.Abs(previous)) * 100 : null;
-
-        var dto = new ProductAnalyticsDto(
-            currentSales,
-            currentRevenue,
-            currentProfit,
-            currentMargin,
-            CalcChange(currentSales, previousSales),
-            CalcChange(currentRevenue, previousRevenue),
-            CalcChange(currentProfit, previousProfit),
-            currentMargin.HasValue && previousMargin.HasValue
-                ? currentMargin.Value - previousMargin.Value
-                : null);
-
-        return Ok(dto);
+        var result = await _productService.GetAnalyticsAsync(id, days, ct);
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}/recent-orders")]
@@ -474,228 +90,42 @@ public class ProductsController : ControllerBase
         [FromQuery] int pageSize = 10,
         CancellationToken ct = default)
     {
-        var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
-        if (product is null)
-            return NotFound();
-
-        var cutoff = DateTime.UtcNow.AddDays(-days);
-
-        var query = _db.OrderItems
-            .AsNoTracking()
-            .Where(oi => oi.ProductId == id)
-            .Join(_db.Orders.AsNoTracking(),
-                oi => oi.OrderId,
-                o => o.Id,
-                (oi, o) => new { oi, o })
-            .Where(x => x.o.CreatedAt >= cutoff);
-
-        var totalCount = await query.CountAsync(ct);
-
-        // Materialize first, then compute profit in memory (product cost is a captured variable)
-        var rawItems = await query
-            .OrderByDescending(x => x.o.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(x => new
-            {
-                OrderId = x.o.Id,
-                Date = x.o.CreatedAt,
-                x.oi.Quantity,
-                x.oi.UnitPrice,
-                x.oi.Subtotal
-            })
-            .ToListAsync(ct);
-
-        var items = rawItems.Select(x => new ProductRecentOrderDto(
-            x.OrderId,
-            x.Date,
-            x.Quantity,
-            x.UnitPrice,
-            x.Subtotal,
-            (x.UnitPrice - product.PurchaseCost - product.PackagingCost) * x.Quantity))
-            .ToList();
-
-        var result = new PagedResult<ProductRecentOrderDto>
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
-
+        var result = await _productService.GetRecentOrdersAsync(id, days, page, pageSize, ct);
         return Ok(result);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<ProductDetailDto>> UpdateProduct(Guid id, UpdateProductDto dto)
+    public async Task<ActionResult<ProductDetailDto>> UpdateProduct(Guid id, UpdateProductDto dto, CancellationToken ct = default)
     {
-        var product = await _db.Products
-            .Include(p => p.Variants)
-            .FirstOrDefaultAsync(p => p.Id == id);
-
-        if (product is null)
-            return NotFound();
-
-        if (dto.Sku is not null) product.Sku = dto.Sku;
-        if (dto.Name is not null) product.Name = dto.Name;
-        if (dto.Description is not null) product.Description = dto.Description;
-        if (dto.CategoryId is not null) product.CategoryId = dto.CategoryId;
-        if (dto.Price.HasValue) product.Price = dto.Price.Value;
-        if (dto.PurchaseCost.HasValue) product.PurchaseCost = dto.PurchaseCost.Value;
-        if (dto.PackagingCost.HasValue) product.PackagingCost = dto.PackagingCost.Value;
-        if (dto.Supplier is not null) product.Supplier = dto.Supplier;
-        if (dto.Status is not null) product.Status = dto.Status;
-        if (dto.IsActive.HasValue) product.IsActive = dto.IsActive.Value;
-        if (dto.Weight.HasValue) product.Weight = dto.Weight.Value;
-        if (dto.Height.HasValue) product.Height = dto.Height.Value;
-        if (dto.Width.HasValue) product.Width = dto.Width.Value;
-        if (dto.Length.HasValue) product.Length = dto.Length.Value;
-
-        product.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-
-        await _dispatcher.BroadcastDataChangeAsync("product", "updated", product.Id.ToString(), default);
-
-        var photoUrls = await _db.FileUploads
-            .AsNoTracking()
-            .Where(f => f.EntityType == "product" && f.EntityId == id)
-            .OrderBy(f => f.SortOrder)
-            .Select(f => f.StoragePath)
-            .ToListAsync();
-
-        var result = new ProductDetailDto(
-            product.Id,
-            product.Sku,
-            product.Name,
-            product.Description,
-            product.CategoryId,
-            product.Price,
-            product.PurchaseCost,
-            product.PackagingCost,
-            product.Supplier,
-            product.Status,
-            product.NeedsReview,
-            product.IsActive,
-            product.Weight,
-            product.Height,
-            product.Width,
-            product.Length,
-            product.CreatedAt,
-            product.UpdatedAt,
-            product.Variants.Select(v => new ProductVariantDto(
-                v.Id,
-                v.Sku,
-                v.Attributes,
-                v.Price,
-                v.Stock,
-                v.IsActive,
-                v.NeedsReview,
-                v.PurchaseCost,
-                v.Weight,
-                v.Height,
-                v.Width,
-                v.Length)).ToList(),
-            photoUrls);
-
+        var result = await _productService.UpdateAsync(id, dto, ct);
         return Ok(result);
     }
 
     [HttpPost("{id:guid}/variants")]
-    public async Task<ActionResult<ProductVariantDto>> CreateVariant(Guid id, CreateProductVariantDto dto)
+    public async Task<ActionResult<ProductVariantDto>> CreateVariant(Guid id, CreateProductVariantDto dto, CancellationToken ct = default)
     {
-        var product = await _db.Products.FindAsync(id);
-        if (product is null) return NotFound();
-
-        var variant = new ProductVariant
-        {
-            Id = Guid.NewGuid(),
-            ProductId = id,
-            Sku = dto.Sku,
-            Attributes = dto.Attributes,
-            Price = dto.Price,
-            Stock = 0,
-            IsActive = dto.IsActive,
-        };
-
-        _db.ProductVariants.Add(variant);
-        await _db.SaveChangesAsync();
-
-        return Ok(MapToVariantDto(variant));
+        var result = await _productService.CreateVariantAsync(id, dto, ct);
+        return Ok(result);
     }
 
     [HttpPut("{id:guid}/variants/{variantId:guid}")]
-    public async Task<ActionResult<ProductVariantDto>> UpdateVariant(Guid id, Guid variantId, UpdateProductVariantDto dto)
+    public async Task<ActionResult<ProductVariantDto>> UpdateVariant(Guid id, Guid variantId, UpdateProductVariantDto dto, CancellationToken ct = default)
     {
-        var variant = await _db.ProductVariants.FirstOrDefaultAsync(v => v.Id == variantId && v.ProductId == id);
-        if (variant is null) return NotFound();
-
-        if (dto.Sku is not null) variant.Sku = dto.Sku;
-        if (dto.Price.HasValue) variant.Price = dto.Price;
-        if (dto.IsActive.HasValue) variant.IsActive = dto.IsActive.Value;
-        if (dto.PurchaseCost.HasValue) variant.PurchaseCost = dto.PurchaseCost;
-        if (dto.Weight.HasValue) variant.Weight = dto.Weight;
-        if (dto.Height.HasValue) variant.Height = dto.Height;
-        if (dto.Width.HasValue) variant.Width = dto.Width;
-        if (dto.Length.HasValue) variant.Length = dto.Length;
-
-        await _db.SaveChangesAsync();
-        return Ok(MapToVariantDto(variant));
+        var result = await _productService.UpdateVariantAsync(id, variantId, dto, ct);
+        return Ok(result);
     }
 
     [HttpDelete("{id:guid}/variants/{variantId:guid}")]
-    public async Task<IActionResult> DeleteVariant(Guid id, Guid variantId)
+    public async Task<IActionResult> DeleteVariant(Guid id, Guid variantId, CancellationToken ct = default)
     {
-        var variant = await _db.ProductVariants.FirstOrDefaultAsync(v => v.Id == variantId && v.ProductId == id);
-        if (variant is null) return NotFound();
-
-        _db.ProductVariants.Remove(variant);
-        await _db.SaveChangesAsync();
+        await _productService.DeleteVariantAsync(id, variantId, ct);
         return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> DeleteProduct(Guid id)
+    public async Task<IActionResult> DeleteProduct(Guid id, CancellationToken ct = default)
     {
-        var product = await _db.Products
-            .Include(p => p.Variants)
-            .FirstOrDefaultAsync(p => p.Id == id);
-
-        if (product is null)
-            return NotFound();
-
-        // Check if product has order history
-        var hasOrders = await _db.OrderItems.AnyAsync(oi => oi.ProductId == id);
-
-        if (hasOrders)
-        {
-            // Soft delete: deactivate and set status
-            product.IsActive = false;
-            product.Status = "Excluído";
-            product.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
-        }
-        else
-        {
-            // Hard delete: remove product and its variants
-            _db.Products.Remove(product);
-            await _db.SaveChangesAsync();
-        }
-
-        await _dispatcher.BroadcastDataChangeAsync("product", "deleted", id.ToString(), default);
+        await _productService.DeleteAsync(id, ct);
         return NoContent();
     }
-
-    private static ProductVariantDto MapToVariantDto(ProductVariant v) => new(
-        v.Id,
-        v.Sku,
-        v.Attributes,
-        v.Price,
-        v.Stock,
-        v.IsActive,
-        v.NeedsReview,
-        v.PurchaseCost,
-        v.Weight,
-        v.Height,
-        v.Width,
-        v.Length);
 }

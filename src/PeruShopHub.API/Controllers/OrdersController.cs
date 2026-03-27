@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Orders;
-using PeruShopHub.Core.Interfaces;
-using PeruShopHub.Infrastructure.Persistence;
+using PeruShopHub.Application.Services;
 
 namespace PeruShopHub.API.Controllers;
 
@@ -13,13 +11,11 @@ namespace PeruShopHub.API.Controllers;
 [Authorize]
 public class OrdersController : ControllerBase
 {
-    private readonly PeruShopHubDbContext _db;
-    private readonly ICostCalculationService _costService;
+    private readonly IOrderService _orderService;
 
-    public OrdersController(PeruShopHubDbContext db, ICostCalculationService costService)
+    public OrdersController(IOrderService orderService)
     {
-        _db = db;
-        _costService = costService;
+        _orderService = orderService;
     }
 
     [HttpGet]
@@ -31,244 +27,52 @@ public class OrdersController : ControllerBase
         [FromQuery] DateTime? dateFrom = null,
         [FromQuery] DateTime? dateTo = null,
         [FromQuery] string sortBy = "orderDate",
-        [FromQuery] string sortDir = "desc")
+        [FromQuery] string sortDir = "desc",
+        CancellationToken ct = default)
     {
-        var query = _db.Orders.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var term = search.Trim().ToLower();
-            query = query.Where(o =>
-                o.ExternalOrderId.ToLower().Contains(term) ||
-                o.BuyerName.ToLower().Contains(term));
-        }
-
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            query = query.Where(o => o.Status == status);
-        }
-
-        if (dateFrom.HasValue)
-        {
-            query = query.Where(o => o.OrderDate >= dateFrom.Value);
-        }
-
-        if (dateTo.HasValue)
-        {
-            query = query.Where(o => o.OrderDate <= dateTo.Value);
-        }
-
-        query = sortBy.ToLower() switch
-        {
-            "externalorderid" => sortDir == "asc" ? query.OrderBy(o => o.ExternalOrderId) : query.OrderByDescending(o => o.ExternalOrderId),
-            "buyername" => sortDir == "asc" ? query.OrderBy(o => o.BuyerName) : query.OrderByDescending(o => o.BuyerName),
-            "totalamount" => sortDir == "asc" ? query.OrderBy(o => o.TotalAmount) : query.OrderByDescending(o => o.TotalAmount),
-            "profit" => sortDir == "asc" ? query.OrderBy(o => o.Profit) : query.OrderByDescending(o => o.Profit),
-            "status" => sortDir == "asc" ? query.OrderBy(o => o.Status) : query.OrderByDescending(o => o.Status),
-            _ => sortDir == "asc" ? query.OrderBy(o => o.OrderDate) : query.OrderByDescending(o => o.OrderDate),
-        };
-
-        var totalCount = await query.CountAsync();
-
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(o => new OrderListDto(
-                o.Id,
-                o.ExternalOrderId,
-                o.BuyerName,
-                o.ItemCount,
-                o.TotalAmount,
-                o.Profit,
-                o.Status,
-                o.IsFulfilled,
-                o.OrderDate,
-                o.TrackingNumber))
-            .ToListAsync();
-
-        return Ok(new PagedResult<OrderListDto>
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        });
+        var result = await _orderService.GetListAsync(page, pageSize, search, status, dateFrom, dateTo, sortBy, sortDir, ct);
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<OrderDetailDto>> GetOrder(Guid id)
+    public async Task<ActionResult<OrderDetailDto>> GetOrder(Guid id, CancellationToken ct = default)
     {
-        var order = await _db.Orders
-            .AsNoTracking()
-            .Include(o => o.Items)
-            .Include(o => o.Costs)
-            .Include(o => o.Customer)
-            .FirstOrDefaultAsync(o => o.Id == id);
-
-        if (order is null)
-            return NotFound();
-
-        var buyer = new BuyerDto(
-            order.BuyerName,
-            order.BuyerNickname,
-            order.BuyerEmail,
-            order.BuyerPhone);
-
-        var timeline = BuildTimeline(order.Status, order.OrderDate);
-
-        var shipping = new ShippingInfoDto(
-            order.TrackingNumber,
-            order.Carrier,
-            order.LogisticType,
-            timeline);
-
-        var paymentStatus = DerivePaymentStatus(order.Status);
-
-        var payment = new PaymentInfoDto(
-            order.PaymentMethod,
-            order.Installments,
-            order.PaymentAmount,
-            paymentStatus);
-
-        var items = order.Items.Select(i => new OrderItemDto(
-            i.Id,
-            i.ProductId,
-            i.Name,
-            i.Sku,
-            i.Variation,
-            i.Quantity,
-            i.UnitPrice,
-            i.Subtotal)).ToList();
-
-        var costs = order.Costs.Select(c => new OrderCostDto(
-            c.Id,
-            c.Category,
-            c.Description,
-            c.Value,
-            c.Source)).ToList();
-
-        var revenue = order.TotalAmount;
-        var totalCosts = order.Costs.Sum(c => c.Value);
-        var profit = revenue - totalCosts;
-        var margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-
-        var detail = new OrderDetailDto(
-            order.Id,
-            order.ExternalOrderId,
-            buyer,
-            order.ItemCount,
-            order.TotalAmount,
-            revenue,
-            totalCosts,
-            profit,
-            margin,
-            order.Status,
-            order.IsFulfilled,
-            order.FulfilledAt,
-            order.OrderDate,
-            shipping,
-            payment,
-            items,
-            costs);
-
+        var detail = await _orderService.GetByIdAsync(id, ct);
         return Ok(detail);
     }
 
     [HttpPost("{id:guid}/costs")]
-    public async Task<ActionResult<OrderCostDto>> AddCost(Guid id, [FromBody] CreateOrderCostRequest request)
+    public async Task<ActionResult<OrderCostDto>> AddCost(Guid id, [FromBody] CreateOrderCostRequest request, CancellationToken ct = default)
     {
-        var order = await _db.Orders.FindAsync(id);
-        if (order is null) return NotFound();
-
-        var cost = new Core.Entities.OrderCost
-        {
-            Id = Guid.NewGuid(),
-            OrderId = id,
-            Category = request.Category,
-            Description = request.Description,
-            Value = request.Value,
-            Source = "Manual"
-        };
-
-        _db.OrderCosts.Add(cost);
-        await _db.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetOrder), new { id },
-            new OrderCostDto(cost.Id, cost.Category, cost.Description, cost.Value, cost.Source));
+        var cost = await _orderService.AddCostAsync(id, request, ct);
+        return CreatedAtAction(nameof(GetOrder), new { id }, cost);
     }
 
     [HttpPut("{id:guid}/costs/{costId:guid}")]
-    public async Task<ActionResult<OrderCostDto>> UpdateCost(Guid id, Guid costId, [FromBody] UpdateOrderCostRequest request)
+    public async Task<ActionResult<OrderCostDto>> UpdateCost(Guid id, Guid costId, [FromBody] UpdateOrderCostRequest request, CancellationToken ct = default)
     {
-        var cost = await _db.OrderCosts.FirstOrDefaultAsync(c => c.Id == costId && c.OrderId == id);
-        if (cost is null) return NotFound();
-
-        cost.Category = request.Category;
-        cost.Description = request.Description;
-        cost.Value = request.Value;
-        await _db.SaveChangesAsync();
-
-        return Ok(new OrderCostDto(cost.Id, cost.Category, cost.Description, cost.Value, cost.Source));
+        var cost = await _orderService.UpdateCostAsync(id, costId, request, ct);
+        return Ok(cost);
     }
 
     [HttpDelete("{id:guid}/costs/{costId:guid}")]
-    public async Task<IActionResult> DeleteCost(Guid id, Guid costId)
+    public async Task<IActionResult> DeleteCost(Guid id, Guid costId, CancellationToken ct = default)
     {
-        var cost = await _db.OrderCosts.FirstOrDefaultAsync(c => c.Id == costId && c.OrderId == id);
-        if (cost is null) return NotFound();
-
-        _db.OrderCosts.Remove(cost);
-        await _db.SaveChangesAsync();
-
+        await _orderService.DeleteCostAsync(id, costId, ct);
         return NoContent();
     }
 
     [HttpPost("{id:guid}/fulfill")]
-    public async Task<IActionResult> FulfillOrder(Guid id, CancellationToken ct)
+    public async Task<IActionResult> FulfillOrder(Guid id, CancellationToken ct = default)
     {
-        try
-        {
-            await _costService.FulfillOrderAsync(id, ct);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
-    [HttpPost("{id:guid}/recalculate-costs")]
-    public async Task<IActionResult> RecalculateCosts(Guid id, CancellationToken ct)
-    {
-        var order = await _db.Orders.FindAsync([id], ct);
-        if (order is null) return NotFound();
-        await _costService.RecalculateOrderCostsAsync(id, ct);
+        await _orderService.FulfillAsync(id, ct);
         return NoContent();
     }
 
-    private static IReadOnlyList<TimelineStepDto> BuildTimeline(string status, DateTime orderDate)
+    [HttpPost("{id:guid}/recalculate-costs")]
+    public async Task<IActionResult> RecalculateCosts(Guid id, CancellationToken ct = default)
     {
-        var isNotCancelled = status != "Cancelado";
-        var isShippedOrDelivered = status == "Enviado" || status == "Entregue";
-        var isDelivered = status == "Entregue";
-
-        return new List<TimelineStepDto>
-        {
-            new("Pedido realizado", orderDate, isNotCancelled ? "Concluido" : "Concluido"),
-            new("Pagamento aprovado", isNotCancelled ? orderDate : null, isNotCancelled ? "Concluido" : "Cancelado"),
-            new("Enviado", isShippedOrDelivered ? (DateTime?)null : null, isShippedOrDelivered ? "Concluido" : "Pendente"),
-            new("Entregue", isDelivered ? (DateTime?)null : null, isDelivered ? "Concluido" : "Pendente"),
-        };
-    }
-
-    private static string DerivePaymentStatus(string orderStatus)
-    {
-        return orderStatus switch
-        {
-            "Pago" or "Enviado" or "Entregue" => "Aprovado",
-            "Cancelado" => "Cancelado",
-            "Devolvido" => "Devolvido",
-            _ => "Pendente"
-        };
+        await _orderService.RecalculateCostsAsync(id, ct);
+        return NoContent();
     }
 }

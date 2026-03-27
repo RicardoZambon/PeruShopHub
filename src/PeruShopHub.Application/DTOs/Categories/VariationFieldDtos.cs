@@ -21,3 +21,14 @@ public record UpdateVariationFieldDto(
     string[]? Options,
     bool? Required,
     int? Order);
+
+public record InheritedVariationFieldDto(
+    Guid Id,
+    Guid CategoryId,
+    string Name,
+    string Type,
+    string[] Options,
+    bool Required,
+    int Order,
+    string InheritedFrom,
+    Guid InheritedFromId);
