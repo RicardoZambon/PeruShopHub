@@ -91,12 +91,13 @@ export class CategoryDetailComponent implements OnChanges {
     this.saving.set(true);
     try {
       const skuPrefixValue = this.form.value.skuPrefix?.trim() || null;
-      const dto: UpdateCategoryDto = {
+      const dto = {
         name: this.form.value.name,
         slug: this.form.value.slug,
         icon: this.editIcon(),
         isActive: this.form.value.isActive,
         skuPrefix: skuPrefixValue,
+        version: this.category.version ?? 0,
       };
       const updated = await this.categoryService.update(this.category.id, dto);
       if (updated) {

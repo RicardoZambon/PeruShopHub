@@ -29,6 +29,7 @@ export interface Product {
   variantCount: number;
   needsReview: boolean;
   variants?: any[];
+  version: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -91,7 +92,7 @@ export class ProductService {
     );
   }
 
-  async update(id: string, dto: Partial<Product>): Promise<Product> {
+  async update(id: string, dto: Partial<Product> & { version: number }): Promise<Product> {
     return firstValueFrom(
       this.http.put<Product>(`${this.baseUrl}/${id}`, dto),
     );

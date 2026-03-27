@@ -320,3 +320,27 @@ Started: Wed Mar 25 04:14:54 AM UTC 2026
   - Before deleting a shared component, grep for its selector (`app-data-table`), class name (`DataTableComponent`), and exported types (`DataTableColumn`, `SortEvent`, `PageEvent`) to confirm no remaining usage
   - Barrel index cleanup: remove both the component export and type exports when deleting a component
 ---
+
+## 2026-03-27 14:55 UTC - US-012
+- Added HTTP 409 conflict handling to error interceptor with Portuguese toast message
+- Added `version: number` field to Product, Category, SupplyDto, and PurchaseOrderDetail TypeScript interfaces
+- Updated all service `update()` methods to require `version` in the request body (product.service, category.service, supply.service, purchase-order.service)
+- Updated product-form.component.ts to store `productVersion` signal, pass it in both toggleActive and onSave update calls, and update it from the response
+- Updated category-detail.component.ts and category-form-dialog.component.ts to pass `version` from the category object in update calls
+- Files changed:
+  - `src/PeruShopHub.Web/src/app/interceptors/error.interceptor.ts`
+  - `src/PeruShopHub.Web/src/app/services/product.service.ts`
+  - `src/PeruShopHub.Web/src/app/services/category.service.ts`
+  - `src/PeruShopHub.Web/src/app/services/supply.service.ts`
+  - `src/PeruShopHub.Web/src/app/services/purchase-order.service.ts`
+  - `src/PeruShopHub.Web/src/app/models/category.model.ts`
+  - `src/PeruShopHub.Web/src/app/pages/products/product-form.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/categories/category-detail.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/categories/category-form-dialog.component.ts`
+- **Learnings for future iterations:**
+  - The error interceptor uses functional `HttpInterceptorFn` pattern (not class-based) — add new status checks before the generic `>= 400` catch-all
+  - Product interface is defined inline in `product.service.ts`, Category interface in `models/category.model.ts`, Supply in `supply.service.ts`, PO in `purchase-order.service.ts` — no single models directory
+  - Category update is called from two places: `category-detail.component.ts` (inline edit) and `category-form-dialog.component.ts` (modal edit) — both need version passthrough
+  - Supply and PO update methods exist in services but aren't called from any component yet — version param added for when they are used
+  - Product form stores loaded product data across multiple signals (`productName`, `isActive`, `productVersion`) rather than keeping the full Product object — follow this pattern for new fields
+---

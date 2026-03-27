@@ -119,7 +119,7 @@ export class CategoryService {
     return created;
   }
 
-  async update(id: string, dto: UpdateCategoryDto): Promise<Category> {
+  async update(id: string, dto: UpdateCategoryDto & { version: number }): Promise<Category> {
     const updated = await firstValueFrom(
       this.http.put<Category>(`${this.baseUrl}/${id}`, dto),
     );

@@ -149,7 +149,7 @@ export class CategoryFormDialogComponent implements OnInit {
       const skuPrefixValue = skuPrefix?.trim() || null;
 
       if (this.isEditMode && this.category) {
-        const dto: UpdateCategoryDto = { name, slug, parentId, icon: iconValue, isActive, skuPrefix: skuPrefixValue };
+        const dto = { name, slug, parentId, icon: iconValue, isActive, skuPrefix: skuPrefixValue, version: this.category.version ?? 0 };
         const updated = await this.categoryService.update(this.category.id, dto);
         if (updated) {
           this.saved.emit(updated);

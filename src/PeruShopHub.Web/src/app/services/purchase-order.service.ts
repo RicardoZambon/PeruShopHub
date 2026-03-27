@@ -23,6 +23,7 @@ export interface PurchaseOrderDetail {
   subtotal: number;
   additionalCosts: number;
   total: number;
+  version: number;
   createdAt: string;
   receivedAt: string | null;
   items: POItem[];
@@ -99,7 +100,7 @@ export class PurchaseOrderService {
     return this.http.post<PurchaseOrderDetail>(this.baseUrl, dto);
   }
 
-  update(id: string, dto: Partial<CreatePurchaseOrderDto>): Observable<PurchaseOrderDetail> {
+  update(id: string, dto: Partial<CreatePurchaseOrderDto> & { version: number }): Observable<PurchaseOrderDetail> {
     return this.http.put<PurchaseOrderDetail>(`${this.baseUrl}/${id}`, dto);
   }
 

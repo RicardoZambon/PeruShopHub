@@ -65,6 +65,7 @@ export class ProductFormComponent {
   isEditMode = signal(false);
   productName = signal('');
   productId = signal('');
+  productVersion = signal(0);
   loading = signal(false);
   isActive = signal(true);
   categoryTree = signal<Category[]>([]);
@@ -137,6 +138,7 @@ export class ProductFormComponent {
     try {
       const product = await this.productService.getById(id);
       this.productName.set(product.name);
+      this.productVersion.set(product.version ?? 0);
       this.isActive.set(product.isActive ?? true);
       this.form.patchValue({
         sku: product.sku,
@@ -218,9 +220,11 @@ export class ProductFormComponent {
     if (!confirmed) return;
 
     try {
-      await this.productService.update(this.productId(), {
+      const updated = await this.productService.update(this.productId(), {
         isActive: !currentlyActive,
+        version: this.productVersion(),
       });
+      this.productVersion.set(updated.version ?? 0);
       this.isActive.set(!currentlyActive);
       this.confirmDialog.done();
       this.toast.show(
@@ -312,7 +316,8 @@ export class ProductFormComponent {
 
       let productId: string;
       if (this.isEditMode()) {
-        await this.productService.update(this.productId(), dto);
+        const updated = await this.productService.update(this.productId(), { ...dto, version: this.productVersion() });
+        this.productVersion.set(updated.version ?? 0);
         productId = this.productId();
       } else {
         const created = await this.productService.create(dto);

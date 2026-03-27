@@ -16,6 +16,7 @@ export interface SupplyDto {
   fornecedor: string;
   status: string;
   observacao?: string;
+  version: number;
 }
 
 export interface CreateSupplyDto {
@@ -44,7 +45,7 @@ export class SupplyService {
     return this.http.post<SupplyDto>(this.baseUrl, dto);
   }
 
-  update(id: string, dto: Partial<CreateSupplyDto>): Observable<SupplyDto> {
+  update(id: string, dto: Partial<CreateSupplyDto> & { version: number }): Observable<SupplyDto> {
     return this.http.put<SupplyDto>(`${this.baseUrl}/${id}`, dto);
   }
 }

@@ -183,7 +183,7 @@
         ".NET build passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "May need to add IsActive field to SystemUser entity. BCrypt.Net-Next is the recommended bcrypt library for .NET."
     },
     {
@@ -203,7 +203,7 @@
         ".NET build passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Uses [Authorize(Roles = \"Admin\")] and [Authorize(Roles = \"Admin,Manager\")] attributes."
     },
     {
@@ -223,7 +223,7 @@
         ".NET build passes"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Run migration after adding Version properties. Existing rows get version=0."
     },
     {
@@ -238,7 +238,7 @@
         "Angular build passes (ng build --configuration=development)"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "Small frontend story — only changes needed for optimistic locking support."
     }
   ]
