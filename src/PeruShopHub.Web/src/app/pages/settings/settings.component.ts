@@ -109,6 +109,7 @@ export class SettingsComponent implements OnInit {
     this.userForm = this.fb.group({
       nome: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
+      password: [''],
       role: ['Viewer', Validators.required],
       ativo: [true],
     });
@@ -188,15 +189,20 @@ export class SettingsComponent implements OnInit {
 
   openNewUserModal(): void {
     this.editingUser.set(null);
-    this.userForm.reset({ nome: '', email: '', role: 'Viewer', ativo: true });
+    this.userForm.reset({ nome: '', email: '', password: '', role: 'Viewer', ativo: true });
+    this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
+    this.userForm.get('password')?.updateValueAndValidity();
     this.showUserModal.set(true);
   }
 
   openEditUserModal(user: UserRow): void {
     this.editingUser.set(user);
+    this.userForm.get('password')?.clearValidators();
+    this.userForm.get('password')?.updateValueAndValidity();
     this.userForm.patchValue({
       nome: user.nome,
       email: user.email,
+      password: '',
       role: user.role,
       ativo: user.ativo,
     });
@@ -209,23 +215,58 @@ export class SettingsComponent implements OnInit {
   }
 
   saveUser(): void {
-    if (!this.userForm.valid) return;
+    if (!this.userForm.valid) {
+      this.userForm.markAllAsTouched();
+      return;
+    }
 
     this.saving.set(true);
     const formValue = this.userForm.value;
     const editing = this.editingUser();
 
     if (editing) {
-      this.users.update(users =>
-        users.map(u => u.id === editing.id ? { ...u, ...formValue } : u)
-      );
+      const updateData = { name: formValue.nome, email: formValue.email, role: formValue.role };
+      this.tenantService.updateMember(String(editing.id), updateData).subscribe({
+        next: (updated) => {
+          this.saving.set(false);
+          this.users.update(users =>
+            users.map(u => u.id === editing.id ? {
+              id: parseInt(updated.id, 10) || editing.id,
+              nome: updated.name,
+              email: updated.email,
+              role: updated.role,
+              ativo: updated.isActive,
+            } : u)
+          );
+          this.closeUserModal();
+          this.toastService.show('Usuário atualizado', 'success');
+        },
+        error: () => {
+          this.saving.set(false);
+          this.toastService.show('Erro ao atualizar usuário', 'danger');
+        },
+      });
     } else {
-      const newId = Math.max(...this.users().map(u => u.id)) + 1;
-      this.users.update(users => [...users, { id: newId, ...formValue }]);
+      const inviteData = { name: formValue.nome, email: formValue.email, password: formValue.password, role: formValue.role };
+      this.tenantService.inviteMember(inviteData).subscribe({
+        next: (created) => {
+          this.saving.set(false);
+          this.users.update(users => [...users, {
+            id: parseInt(created.id, 10) || 0,
+            nome: created.name,
+            email: created.email,
+            role: created.role,
+            ativo: created.isActive,
+          }]);
+          this.closeUserModal();
+          this.toastService.show('Usuário convidado', 'success');
+        },
+        error: () => {
+          this.saving.set(false);
+          this.toastService.show('Erro ao convidar usuário', 'danger');
+        },
+      });
     }
-
-    this.saving.set(false);
-    this.closeUserModal();
   }
 
   async deleteUser(user: UserRow): Promise<void> {
@@ -236,8 +277,18 @@ export class SettingsComponent implements OnInit {
       variant: 'danger',
     });
     if (!confirmed) return;
-    this.users.update(users => users.filter(u => u.id !== user.id));
-    this.confirmDialog.done();
+
+    this.tenantService.removeMember(String(user.id)).subscribe({
+      next: () => {
+        this.confirmDialog.done();
+        this.users.update(users => users.filter(u => u.id !== user.id));
+        this.toastService.show('Usuário removido', 'success');
+      },
+      error: () => {
+        this.confirmDialog.done();
+        this.toastService.show('Erro ao remover usuário', 'danger');
+      },
+    });
   }
 
   onModalBackdropClick(event: MouseEvent): void {

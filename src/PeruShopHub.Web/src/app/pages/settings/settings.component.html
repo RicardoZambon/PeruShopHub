@@ -458,6 +458,17 @@
         placeholder="email&#64;exemplo.com" />
     </app-form-field>
 
+    @if (!editingUser()) {
+      <app-form-field label="Senha"
+        [error]="userForm.get('password')?.invalid && userForm.get('password')?.touched ? 'Senha é obrigatória (mínimo 6 caracteres)' : ''">
+        <input
+          class="form-field__input"
+          type="password"
+          formControlName="password"
+          placeholder="Senha do usuário" />
+      </app-form-field>
+    }
+
     <app-form-field label="Perfil">
       <select class="form-field__select" formControlName="role">
         <option value="Admin">Admin</option>

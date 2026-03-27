@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { tenantGuard } from './guards/tenant.guard';
 import { unsavedChangesGuard } from './guards/unsaved-changes.guard';
 import { superAdminGuard } from './guards/super-admin.guard';
 
@@ -18,7 +19,7 @@ export const routes: Routes = [
     path: '',
     loadComponent: () =>
       import('./shared/components/layout/layout.component').then(m => m.LayoutComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, tenantGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
