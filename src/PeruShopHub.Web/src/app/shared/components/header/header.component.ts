@@ -1,7 +1,8 @@
-import { Component, inject, signal, HostListener, ElementRef } from '@angular/core';
+import { Component, inject, signal, computed, HostListener, ElementRef } from '@angular/core';
 import { ThemeService } from '../../../services/theme.service';
 import { SidebarService } from '../../../services/sidebar.service';
 import { NotificationService } from '../../../services/notification.service';
+import { AuthService } from '../../../services/auth.service';
 import { RouterLink } from '@angular/router';
 import {
   LucideAngularModule,
@@ -30,7 +31,23 @@ export class HeaderComponent {
   readonly theme = inject(ThemeService);
   readonly sidebar = inject(SidebarService);
   readonly notifications = inject(NotificationService);
+  readonly auth = inject(AuthService);
   private readonly el = inject(ElementRef);
+
+  readonly userName = computed(() => this.auth.currentUser()?.name ?? 'Usuário');
+  readonly userEmail = computed(() => this.auth.currentUser()?.email ?? '');
+  readonly userRole = computed(() => {
+    const role = this.auth.currentUser()?.role;
+    if (role === 'admin') return 'Administrador';
+    if (role === 'manager') return 'Gerente';
+    return 'Visualizador';
+  });
+  readonly userInitials = computed(() => {
+    const name = this.userName();
+    const parts = name.split(' ').filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  });
 
   readonly userMenuOpen = signal(false);
   readonly notificationPanelOpen = signal(false);
@@ -88,6 +105,11 @@ export class HeaderComponent {
 
   closeNotificationPanel(): void {
     this.notificationPanelOpen.set(false);
+  }
+
+  logout(): void {
+    this.closeUserMenu();
+    this.auth.logout();
   }
 
   @HostListener('document:click', ['$event'])
