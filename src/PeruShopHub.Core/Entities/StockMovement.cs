@@ -1,7 +1,10 @@
+using PeruShopHub.Core.Interfaces;
+
 namespace PeruShopHub.Core.Entities;
 
-public class StockMovement
+public class StockMovement : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
     public Guid? VariantId { get; set; }

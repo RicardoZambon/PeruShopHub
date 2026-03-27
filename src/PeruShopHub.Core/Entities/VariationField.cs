@@ -1,7 +1,10 @@
+using PeruShopHub.Core.Interfaces;
+
 namespace PeruShopHub.Core.Entities;
 
-public class VariationField
+public class VariationField : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public Guid CategoryId { get; set; }
     public string Name { get; set; } = string.Empty;

@@ -1,7 +1,10 @@
+using PeruShopHub.Core.Interfaces;
+
 namespace PeruShopHub.Core.Entities;
 
-public class PurchaseOrder
+public class PurchaseOrder : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public string? Supplier { get; set; }
     public string Status { get; set; } = "Rascunho";

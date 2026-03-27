@@ -1,7 +1,10 @@
+using PeruShopHub.Core.Interfaces;
+
 namespace PeruShopHub.Core.Entities;
 
-public class Product
+public class Product : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public string Sku { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;

@@ -1,7 +1,10 @@
+using PeruShopHub.Core.Interfaces;
+
 namespace PeruShopHub.Core.Entities;
 
-public class OrderCost
+public class OrderCost : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public Guid OrderId { get; set; }
     public string Category { get; set; } = string.Empty;

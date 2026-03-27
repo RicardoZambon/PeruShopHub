@@ -1,7 +1,10 @@
+using PeruShopHub.Core.Interfaces;
+
 namespace PeruShopHub.Core.Entities;
 
-public class CommissionRule
+public class CommissionRule : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public string MarketplaceId { get; set; } = "mercadolivre";
     public string? CategoryPattern { get; set; }

@@ -1,7 +1,10 @@
+using PeruShopHub.Core.Interfaces;
+
 namespace PeruShopHub.Core.Entities;
 
-public class MarketplaceConnection
+public class MarketplaceConnection : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public string MarketplaceId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;

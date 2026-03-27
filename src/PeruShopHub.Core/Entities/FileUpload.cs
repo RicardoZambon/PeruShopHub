@@ -1,7 +1,10 @@
+using PeruShopHub.Core.Interfaces;
+
 namespace PeruShopHub.Core.Entities;
 
-public class FileUpload
+public class FileUpload : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public string EntityType { get; set; } = string.Empty;
     public Guid EntityId { get; set; }

@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using PeruShopHub.Core.Interfaces;
 
 namespace PeruShopHub.Core.Entities;
 
-public class Category
+public class Category : ITenantScoped
 {
+    public Guid TenantId { get; set; }
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
