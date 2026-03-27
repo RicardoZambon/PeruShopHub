@@ -1,0 +1,20 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+COPY src/PeruShopHub.Core/*.csproj PeruShopHub.Core/
+COPY src/PeruShopHub.Application/*.csproj PeruShopHub.Application/
+COPY src/PeruShopHub.Infrastructure/*.csproj PeruShopHub.Infrastructure/
+COPY src/PeruShopHub.API/*.csproj PeruShopHub.API/
+RUN dotnet restore PeruShopHub.API/PeruShopHub.API.csproj
+
+COPY src/PeruShopHub.Core/ PeruShopHub.Core/
+COPY src/PeruShopHub.Application/ PeruShopHub.Application/
+COPY src/PeruShopHub.Infrastructure/ PeruShopHub.Infrastructure/
+COPY src/PeruShopHub.API/ PeruShopHub.API/
+RUN dotnet publish PeruShopHub.API/PeruShopHub.API.csproj -c Release -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
+WORKDIR /app
+COPY --from=build /app .
+EXPOSE 5000
+ENV ASPNETCORE_URLS=http://+:5000
+ENTRYPOINT ["dotnet", "PeruShopHub.API.dll"]

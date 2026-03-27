@@ -1,0 +1,18 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+COPY src/PeruShopHub.Core/*.csproj PeruShopHub.Core/
+COPY src/PeruShopHub.Application/*.csproj PeruShopHub.Application/
+COPY src/PeruShopHub.Infrastructure/*.csproj PeruShopHub.Infrastructure/
+COPY src/PeruShopHub.Worker/*.csproj PeruShopHub.Worker/
+RUN dotnet restore PeruShopHub.Worker/PeruShopHub.Worker.csproj
+
+COPY src/PeruShopHub.Core/ PeruShopHub.Core/
+COPY src/PeruShopHub.Application/ PeruShopHub.Application/
+COPY src/PeruShopHub.Infrastructure/ PeruShopHub.Infrastructure/
+COPY src/PeruShopHub.Worker/ PeruShopHub.Worker/
+RUN dotnet publish PeruShopHub.Worker/PeruShopHub.Worker.csproj -c Release -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
+WORKDIR /app
+COPY --from=build /app .
+ENTRYPOINT ["dotnet", "PeruShopHub.Worker.dll"]
