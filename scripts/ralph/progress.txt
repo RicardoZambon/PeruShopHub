@@ -16,6 +16,12 @@ Started: Wed Mar 25 04:14:54 AM UTC 2026
 - GridColumn keys should match property names on the data objects (no rename mapping needed)
 - Template file convention: separate `.html` file with `templateUrl`
 - Style file convention: separate `.scss` file with `styleUrl` (singular, not `styleUrls`)
+- **Service layer pattern**: All business logic in Application/Services, controllers are thin HTTP adapters
+- **Exception pattern**: NotFoundException (404), AppValidationException (400 with errors dict), ConflictException (409) — caught by GlobalExceptionFilter
+- **Validation pattern**: Collect all errors into `Dictionary<string, List<string>>` before throwing AppValidationException
+- **Optimistic locking**: Version property + ConcurrencyToken on Product, Category, PurchaseOrder, Supply — set OriginalValue, increment, catch DbUpdateConcurrencyException
+- **Role-based auth**: Admin for Settings, Admin/Manager for mutations, any authenticated for reads
+- **Build command**: `dotnet build src/PeruShopHub.API/PeruShopHub.API.csproj /nodeReuse:false /p:UseSharedCompilation=false -o /tmp/perushophub-build` (VS Code locks default bin/)
 
 ---
 
@@ -319,6 +325,28 @@ Started: Wed Mar 25 04:14:54 AM UTC 2026
 - **Learnings for future iterations:**
   - Before deleting a shared component, grep for its selector (`app-data-table`), class name (`DataTableComponent`), and exported types (`DataTableColumn`, `SortEvent`, `PageEvent`) to confirm no remaining usage
   - Barrel index cleanup: remove both the component export and type exports when deleting a component
+---
+
+## 2026-03-27 13:30 UTC - US-001 through US-011 (Backend Hardening Sprint)
+- **US-001**: Created NotFoundException, AppValidationException, ConflictException in Application/Exceptions. GlobalExceptionFilter maps to 404/400/409/403/500.
+- **US-002**: Scaffolded 11 service interfaces + implementations with DependencyInjection.cs AddApplicationServices(). Application project now references Infrastructure.
+- **US-003**: Extracted CategoryService — hierarchy queries, tree traversal, variation field CRUD with inheritance, validation (name, slug uniqueness, circular ref detection).
+- **US-004**: Extracted ProductService — pagination with category descendant filtering, SKU auto-gen, analytics, variant CRUD, cache integration, validation.
+- **US-005**: Extracted OrderService — list/detail, cost CRUD with validation, fulfillment, timeline building, payment status derivation.
+- **US-006**: Extracted PurchaseOrderService — full CRUD, cost allocation (by_value/by_quantity), status management, receive/cancel. NEW: PUT /purchase-orders/{id}/costs/{costId}.
+- **US-007**: Extracted DashboardService + FinanceService — KPI calculations, charts, SKU profitability, ABC curve, reconciliation, cache.
+- **US-008**: Extracted Customer, Supply (NEW: detail/delete endpoints, IsActive soft-delete), Inventory, File, Search, Notification services. Added ISearchService and INotificationService interfaces.
+- **US-009**: UserService with bcrypt, full user CRUD, change-password endpoint. DTOs: UserDetailDto, CreateUserRequest, UpdateUserRequest, ResetPasswordRequest, ChangePasswordRequest.
+- **US-010**: Role-based auth on all controllers — Admin for Settings, Manager+ for mutations, Viewer for reads. JWT already includes role claim.
+- **US-011**: Version property + ConcurrencyToken on Product, Category, PurchaseOrder, Supply. Update methods catch DbUpdateConcurrencyException → ConflictException.
+- All 11 controllers are now thin HTTP adapters — zero EF queries in controller layer.
+- Both .NET and Angular builds pass with 0 errors.
+- **Learnings for future iterations:**
+  - Application project needs explicit EF Core 9.* package reference due to version resolution issues with transitive dependencies
+  - VS Code C# extension locks API/bin DLLs — use `-o /tmp/...` for build verification
+  - Services throw typed exceptions; GlobalExceptionFilter handles all HTTP status mapping
+  - Pattern for optimistic locking: set OriginalValue from DTO, increment Version, catch DbUpdateConcurrencyException
+  - BCrypt.Net-Next already referenced in Infrastructure project
 ---
 
 ## 2026-03-27 14:55 UTC - US-012
