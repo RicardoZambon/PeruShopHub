@@ -32,7 +32,7 @@ public class VariationFieldsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<VariationFieldDto>> CreateField(
         Guid categoryId, CreateVariationFieldDto dto)
     {
@@ -41,7 +41,7 @@ public class VariationFieldsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<VariationFieldDto>> UpdateField(
         Guid categoryId, Guid id, UpdateVariationFieldDto dto)
     {
@@ -50,7 +50,7 @@ public class VariationFieldsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<IActionResult> DeleteField(Guid categoryId, Guid id)
     {
         await _categoryService.DeleteVariationFieldAsync(categoryId, id);

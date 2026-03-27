@@ -55,7 +55,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<ProductDetailDto>> CreateProduct(CreateProductDto dto, CancellationToken ct = default)
     {
         var result = await _productService.CreateAsync(dto, ct);
@@ -96,7 +96,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<ProductDetailDto>> UpdateProduct(Guid id, UpdateProductDto dto, CancellationToken ct = default)
     {
         var result = await _productService.UpdateAsync(id, dto, ct);
@@ -104,7 +104,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/variants")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<ProductVariantDto>> CreateVariant(Guid id, CreateProductVariantDto dto, CancellationToken ct = default)
     {
         var result = await _productService.CreateVariantAsync(id, dto, ct);
@@ -112,7 +112,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:guid}/variants/{variantId:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<ProductVariantDto>> UpdateVariant(Guid id, Guid variantId, UpdateProductVariantDto dto, CancellationToken ct = default)
     {
         var result = await _productService.UpdateVariantAsync(id, variantId, dto, ct);
@@ -120,7 +120,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/variants/{variantId:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<IActionResult> DeleteVariant(Guid id, Guid variantId, CancellationToken ct = default)
     {
         await _productService.DeleteVariantAsync(id, variantId, ct);
@@ -128,7 +128,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<IActionResult> DeleteProduct(Guid id, CancellationToken ct = default)
     {
         await _productService.DeleteAsync(id, ct);

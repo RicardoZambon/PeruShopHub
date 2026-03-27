@@ -42,7 +42,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/costs")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<OrderCostDto>> AddCost(Guid id, [FromBody] CreateOrderCostRequest request, CancellationToken ct = default)
     {
         var cost = await _orderService.AddCostAsync(id, request, ct);
@@ -50,7 +50,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPut("{id:guid}/costs/{costId:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<OrderCostDto>> UpdateCost(Guid id, Guid costId, [FromBody] UpdateOrderCostRequest request, CancellationToken ct = default)
     {
         var cost = await _orderService.UpdateCostAsync(id, costId, request, ct);
@@ -58,7 +58,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/costs/{costId:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<IActionResult> DeleteCost(Guid id, Guid costId, CancellationToken ct = default)
     {
         await _orderService.DeleteCostAsync(id, costId, ct);
@@ -66,7 +66,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/fulfill")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<IActionResult> FulfillOrder(Guid id, CancellationToken ct = default)
     {
         await _orderService.FulfillAsync(id, ct);
@@ -74,7 +74,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/recalculate-costs")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<IActionResult> RecalculateCosts(Guid id, CancellationToken ct = default)
     {
         await _orderService.RecalculateCostsAsync(id, ct);

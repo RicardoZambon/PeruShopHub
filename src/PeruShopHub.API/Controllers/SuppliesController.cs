@@ -41,7 +41,7 @@ public class SuppliesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<SupplyListDto>> Create([FromBody] CreateSupplyDto dto, CancellationToken ct = default)
     {
         var result = await _supplyService.CreateAsync(dto, ct);
@@ -49,7 +49,7 @@ public class SuppliesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<ActionResult<SupplyListDto>> Update(Guid id, [FromBody] UpdateSupplyDto dto, CancellationToken ct = default)
     {
         var result = await _supplyService.UpdateAsync(id, dto, ct);
@@ -57,7 +57,7 @@ public class SuppliesController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
     {
         await _supplyService.DeleteAsync(id, ct);
