@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PeruShopHub.Application.DTOs.Auth;
+using PeruShopHub.Application.DTOs.Settings;
+using PeruShopHub.Application.Services;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
@@ -17,11 +19,13 @@ public class AuthController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;
     private readonly IConfiguration _config;
+    private readonly IUserService _userService;
 
-    public AuthController(PeruShopHubDbContext db, IConfiguration config)
+    public AuthController(PeruShopHubDbContext db, IConfiguration config, IUserService userService)
     {
         _db = db;
         _config = config;
+        _userService = userService;
     }
 
     [AllowAnonymous]
@@ -101,6 +105,15 @@ public class AuthController : ControllerBase
             User.FindFirstValue("name") ?? "",
             User.FindFirstValue(ClaimTypes.Email) ?? "",
             User.FindFirstValue(ClaimTypes.Role) ?? "viewer"));
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _userService.ChangePasswordAsync(userId, request, ct);
+        return NoContent();
     }
 
     private string GenerateAccessToken(Core.Entities.SystemUser user)

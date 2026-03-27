@@ -40,6 +40,7 @@ public class PurchaseOrdersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<PurchaseOrderDetailDto>> Create([FromBody] CreatePurchaseOrderDto dto, CancellationToken ct = default)
     {
         var created = await _service.CreateAsync(dto, ct);
@@ -47,6 +48,7 @@ public class PurchaseOrdersController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<PurchaseOrderDetailDto>> Update(Guid id, [FromBody] CreatePurchaseOrderDto dto, CancellationToken ct = default)
     {
         var updated = await _service.UpdateAsync(id, dto, ct);
@@ -54,6 +56,7 @@ public class PurchaseOrdersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/receive")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<PurchaseOrderDetailDto>> Receive(Guid id, CancellationToken ct = default)
     {
         var received = await _service.ReceiveAsync(id, ct);
@@ -61,6 +64,7 @@ public class PurchaseOrdersController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct = default)
     {
         await _service.CancelAsync(id, ct);
@@ -68,6 +72,7 @@ public class PurchaseOrdersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/costs")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<PurchaseOrderDetailDto>> AddCost(Guid id, [FromBody] CreatePurchaseOrderCostDto dto, CancellationToken ct = default)
     {
         var result = await _service.AddCostAsync(id, dto, ct);
@@ -75,6 +80,7 @@ public class PurchaseOrdersController : ControllerBase
     }
 
     [HttpPut("{id:guid}/costs/{costId:guid}")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<PurchaseOrderDetailDto>> UpdateCost(Guid id, Guid costId, [FromBody] CreatePurchaseOrderCostDto dto, CancellationToken ct = default)
     {
         var result = await _service.UpdateCostAsync(id, costId, dto, ct);
@@ -82,6 +88,7 @@ public class PurchaseOrdersController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/costs/{costId:guid}")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<PurchaseOrderDetailDto>> RemoveCost(Guid id, Guid costId, CancellationToken ct = default)
     {
         var result = await _service.RemoveCostAsync(id, costId, ct);

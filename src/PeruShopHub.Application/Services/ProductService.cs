@@ -189,6 +189,8 @@ public class ProductService : IProductService
 
         await ValidateUpdateAsync(id, dto, ct);
 
+        _db.Entry(product).Property(p => p.Version).OriginalValue = dto.Version;
+
         if (dto.Sku is not null) product.Sku = dto.Sku;
         if (dto.Name is not null) product.Name = dto.Name;
         if (dto.Description is not null) product.Description = dto.Description;
@@ -205,7 +207,16 @@ public class ProductService : IProductService
         if (dto.Length.HasValue) product.Length = dto.Length.Value;
 
         product.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        product.Version++;
+
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException();
+        }
 
         await _dispatcher.BroadcastDataChangeAsync("product", "updated", product.Id.ToString(), ct);
         await InvalidateListCacheAsync(ct);
@@ -695,7 +706,8 @@ public class ProductService : IProductService
             product.CreatedAt,
             product.UpdatedAt,
             (product.Variants ?? Array.Empty<ProductVariant>()).Select(v => MapToVariantDto(v)).ToList(),
-            photoUrls);
+            photoUrls,
+            product.Version);
     }
 
     private static ProductVariantDto MapToVariantDto(ProductVariant v) => new(

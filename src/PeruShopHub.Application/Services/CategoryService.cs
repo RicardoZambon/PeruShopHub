@@ -177,7 +177,8 @@ public class CategoryService : ICategoryService
             category.CreatedAt,
             category.UpdatedAt,
             childrenWithFlag,
-            category.SkuPrefix);
+            category.SkuPrefix,
+            category.Version);
     }
 
     public async Task<CategoryDetailDto> CreateAsync(CreateCategoryDto dto, CancellationToken ct = default)
@@ -247,7 +248,8 @@ public class CategoryService : ICategoryService
             category.CreatedAt,
             category.UpdatedAt,
             Array.Empty<CategoryListDto>(),
-            category.SkuPrefix);
+            category.SkuPrefix,
+            category.Version);
     }
 
     public async Task<CategoryDetailDto> UpdateAsync(Guid id, UpdateCategoryDto dto, CancellationToken ct = default)
@@ -324,6 +326,8 @@ public class CategoryService : ICategoryService
         if (errors.Count > 0)
             throw new AppValidationException(errors);
 
+        _db.Entry(category).Property(c => c.Version).OriginalValue = dto.Version;
+
         if (dto.Name is not null) category.Name = dto.Name;
         if (dto.Slug is not null) category.Slug = dto.Slug;
         if (dto.ParentId is not null) category.ParentId = dto.ParentId;
@@ -333,7 +337,16 @@ public class CategoryService : ICategoryService
         if (dto.SkuPrefix is not null) category.SkuPrefix = dto.SkuPrefix;
 
         category.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        category.Version++;
+
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException();
+        }
 
         string? parentName = null;
         if (category.ParentId.HasValue)
@@ -374,7 +387,8 @@ public class CategoryService : ICategoryService
             category.CreatedAt,
             category.UpdatedAt,
             children,
-            category.SkuPrefix);
+            category.SkuPrefix,
+            category.Version);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)

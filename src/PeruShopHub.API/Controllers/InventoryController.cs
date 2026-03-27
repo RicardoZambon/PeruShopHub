@@ -46,6 +46,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost("adjust")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<StockMovementDto>> Adjust([FromBody] StockAdjustmentDto dto, CancellationToken ct = default)
     {
         var result = await _inventoryService.CreateMovementAsync(dto, ct);

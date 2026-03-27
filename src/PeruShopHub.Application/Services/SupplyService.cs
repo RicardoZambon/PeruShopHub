@@ -78,7 +78,8 @@ public class SupplyService : ISupplyService
             supply.Id, supply.Name, supply.Sku, supply.Category,
             supply.UnitCost, supply.Stock, supply.MinimumStock,
             supply.Supplier, supply.Status, supply.IsActive,
-            supply.CreatedAt, supply.UpdatedAt);
+            supply.CreatedAt, supply.UpdatedAt,
+            supply.Version);
     }
 
     public async Task<SupplyListDto> CreateAsync(CreateSupplyDto dto, CancellationToken ct = default)
@@ -119,6 +120,8 @@ public class SupplyService : ISupplyService
 
         ValidateUpdate(dto);
 
+        _db.Entry(supply).Property(s => s.Version).OriginalValue = dto.Version;
+
         if (dto.Name is not null) supply.Name = dto.Name;
         if (dto.Sku is not null) supply.Sku = dto.Sku;
         if (dto.Category is not null) supply.Category = dto.Category;
@@ -128,8 +131,16 @@ public class SupplyService : ISupplyService
         if (dto.Supplier is not null) supply.Supplier = dto.Supplier;
         if (dto.Status is not null) supply.Status = dto.Status;
         supply.UpdatedAt = DateTime.UtcNow;
+        supply.Version++;
 
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException();
+        }
 
         await _dispatcher.BroadcastDataChangeAsync("supply", "updated", supply.Id.ToString(), ct);
 

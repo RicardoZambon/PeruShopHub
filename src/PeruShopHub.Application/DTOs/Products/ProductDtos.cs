@@ -36,7 +36,8 @@ public record ProductDetailDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     IReadOnlyList<ProductVariantDto> Variants,
-    IReadOnlyList<string> PhotoUrls);
+    IReadOnlyList<string> PhotoUrls,
+    int Version);
 
 public record ProductVariantDto(
     Guid Id,
@@ -80,7 +81,8 @@ public record UpdateProductDto(
     decimal? Weight,
     decimal? Height,
     decimal? Width,
-    decimal? Length);
+    decimal? Length,
+    int Version);
 
 public record CreateProductVariantDto(
     string Sku,

@@ -154,6 +154,9 @@ public class PurchaseOrderService : IPurchaseOrderService
         if (po.Status != "Rascunho")
             throw new ConflictException("Somente pedidos com status 'Rascunho' podem ser editados.");
 
+        if (dto.Version.HasValue)
+            _db.Entry(po).Property(p => p.Version).OriginalValue = dto.Version.Value;
+
         po.Supplier = dto.Supplier;
         po.Notes = dto.Notes;
 
@@ -202,7 +205,16 @@ public class PurchaseOrderService : IPurchaseOrderService
 
         RecalculateAllocations(po);
 
-        await _db.SaveChangesAsync(ct);
+        po.Version++;
+
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException();
+        }
 
         var updated = await _db.PurchaseOrders.AsNoTracking()
             .Include(p => p.Items).ThenInclude(i => i.Product)
@@ -521,6 +533,7 @@ public class PurchaseOrderService : IPurchaseOrderService
                 i.Quantity, i.UnitCost, i.TotalCost,
                 i.AllocatedAdditionalCost, i.EffectiveUnitCost)).ToList(),
             po.Costs.Select(c => new PurchaseOrderCostDto(
-                c.Id, c.Description, c.Value, c.DistributionMethod)).ToList());
+                c.Id, c.Description, c.Value, c.DistributionMethod)).ToList(),
+            po.Version);
     }
 }

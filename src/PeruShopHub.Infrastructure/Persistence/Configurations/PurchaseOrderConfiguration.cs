@@ -17,5 +17,7 @@ public class PurchaseOrderConfiguration : IEntityTypeConfiguration<PurchaseOrder
         builder.Property(po => po.Subtotal).HasPrecision(18, 4);
         builder.Property(po => po.AdditionalCosts).HasPrecision(18, 4);
         builder.Property(po => po.Total).HasPrecision(18, 4);
+
+        builder.Property(po => po.Version).IsConcurrencyToken();
     }
 }

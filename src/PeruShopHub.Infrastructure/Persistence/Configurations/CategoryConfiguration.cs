@@ -16,6 +16,8 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.Property(c => c.Icon).HasMaxLength(100);
 
+        builder.Property(c => c.Version).IsConcurrencyToken();
+
         builder.HasOne(c => c.Parent)
             .WithMany(c => c.Children)
             .HasForeignKey(c => c.ParentId)

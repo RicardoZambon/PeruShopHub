@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Settings;
+using PeruShopHub.Application.Services;
 using PeruShopHub.Core.Entities;
 using PeruShopHub.Infrastructure.Persistence;
 
@@ -9,31 +10,67 @@ namespace PeruShopHub.API.Controllers;
 
 [ApiController]
 [Route("api/settings")]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class SettingsController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly IUserService _userService;
 
     private static decimal _taxRate = 6.0m;
 
-    public SettingsController(PeruShopHubDbContext db)
+    public SettingsController(PeruShopHubDbContext db, IUserService userService)
     {
         _db = db;
+        _userService = userService;
     }
+
+    // --- Users ---
 
     [HttpGet("users")]
-    public async Task<ActionResult<IReadOnlyList<SystemUserDto>>> GetUsers()
+    public async Task<ActionResult<IReadOnlyList<UserDetailDto>>> GetUsers(CancellationToken ct)
     {
-        var users = await _db.SystemUsers
-            .AsNoTracking()
-            .OrderBy(u => u.Name)
-            .Select(u => new SystemUserDto(
-                u.Id, u.Email, u.Name, u.Role,
-                u.IsActive, u.LastLogin, u.CreatedAt))
-            .ToListAsync();
-
+        var users = await _userService.GetListAsync(ct);
         return Ok(users);
     }
+
+    [HttpGet("users/{id:guid}")]
+    public async Task<ActionResult<UserDetailDto>> GetUser(Guid id, CancellationToken ct)
+    {
+        var user = await _userService.GetByIdAsync(id, ct);
+        if (user is null)
+            return NotFound();
+        return Ok(user);
+    }
+
+    [HttpPost("users")]
+    public async Task<ActionResult<UserDetailDto>> CreateUser([FromBody] CreateUserRequest request, CancellationToken ct)
+    {
+        var user = await _userService.CreateAsync(request, ct);
+        return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+    }
+
+    [HttpPut("users/{id:guid}")]
+    public async Task<ActionResult<UserDetailDto>> UpdateUser(Guid id, [FromBody] UpdateUserRequest request, CancellationToken ct)
+    {
+        var user = await _userService.UpdateAsync(id, request, ct);
+        return Ok(user);
+    }
+
+    [HttpDelete("users/{id:guid}")]
+    public async Task<IActionResult> DeactivateUser(Guid id, CancellationToken ct)
+    {
+        await _userService.DeactivateAsync(id, ct);
+        return NoContent();
+    }
+
+    [HttpPost("users/{id:guid}/reset-password")]
+    public async Task<IActionResult> ResetPassword(Guid id, [FromBody] ResetPasswordRequest request, CancellationToken ct)
+    {
+        await _userService.ResetPasswordAsync(id, request, ct);
+        return NoContent();
+    }
+
+    // --- Integrations ---
 
     [HttpGet("integrations")]
     public async Task<ActionResult<IReadOnlyList<IntegrationDto>>> GetIntegrations()
@@ -48,6 +85,8 @@ public class SettingsController : ControllerBase
 
         return Ok(integrations);
     }
+
+    // --- Costs ---
 
     [HttpGet("costs")]
     public ActionResult<object> GetCosts()

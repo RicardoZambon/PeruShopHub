@@ -118,7 +118,7 @@
         ".NET build passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Includes the new PO cost update endpoint."
     },
     {
@@ -140,7 +140,7 @@
         ".NET build passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Two services in one story since they share similar financial calculation patterns."
     },
     {
@@ -162,7 +162,7 @@
         ".NET build passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Batch extraction of simpler services. Includes new Supply endpoints."
     },
     {

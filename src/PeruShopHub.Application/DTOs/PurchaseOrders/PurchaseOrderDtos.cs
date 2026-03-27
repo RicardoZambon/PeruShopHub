@@ -7,7 +7,8 @@ public record PurchaseOrderDetailDto(
     decimal Subtotal, decimal AdditionalCosts, decimal Total,
     DateTime CreatedAt, DateTime? ReceivedAt,
     IReadOnlyList<PurchaseOrderItemDto> Items,
-    IReadOnlyList<PurchaseOrderCostDto> Costs);
+    IReadOnlyList<PurchaseOrderCostDto> Costs,
+    int Version);
 
 public record PurchaseOrderItemDto(
     Guid Id, Guid ProductId, Guid VariantId, string ProductName, string Sku,
@@ -16,7 +17,7 @@ public record PurchaseOrderItemDto(
 
 public record PurchaseOrderCostDto(Guid Id, string Description, decimal Value, string DistributionMethod);
 
-public record CreatePurchaseOrderDto(string? Supplier, string? Notes, List<CreatePurchaseOrderItemDto> Items, List<CreatePurchaseOrderCostDto>? Costs);
+public record CreatePurchaseOrderDto(string? Supplier, string? Notes, List<CreatePurchaseOrderItemDto> Items, List<CreatePurchaseOrderCostDto>? Costs, int? Version = null);
 public record CreatePurchaseOrderItemDto(Guid ProductId, Guid VariantId, int Quantity, decimal UnitCost);
 public record CreatePurchaseOrderCostDto(string Description, decimal Value, string DistributionMethod);
 

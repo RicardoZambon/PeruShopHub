@@ -25,7 +25,8 @@ public record CategoryDetailDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     IReadOnlyList<CategoryListDto> Children,
-    string? SkuPrefix);
+    string? SkuPrefix,
+    int Version);
 
 public record CreateCategoryDto(
     string Name,
@@ -42,4 +43,5 @@ public record UpdateCategoryDto(
     string? Icon,
     bool? IsActive,
     int? Order,
-    string? SkuPrefix);
+    string? SkuPrefix,
+    int Version);

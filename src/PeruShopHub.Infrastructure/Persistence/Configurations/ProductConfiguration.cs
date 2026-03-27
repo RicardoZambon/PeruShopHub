@@ -27,6 +27,8 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Width).HasPrecision(18, 4);
         builder.Property(p => p.Length).HasPrecision(18, 4);
 
+        builder.Property(p => p.Version).IsConcurrencyToken();
+
         builder.HasMany(p => p.Variants)
             .WithOne(v => v.Product)
             .HasForeignKey(v => v.ProductId)

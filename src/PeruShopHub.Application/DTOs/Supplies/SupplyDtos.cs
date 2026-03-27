@@ -32,7 +32,8 @@ public record SupplyDetailDto(
     string Status,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    int Version);
 
 public record UpdateSupplyDto(
     string? Name,
@@ -42,4 +43,5 @@ public record UpdateSupplyDto(
     int? Stock,
     int? MinimumStock,
     string? Supplier,
-    string? Status);
+    string? Status,
+    int Version);

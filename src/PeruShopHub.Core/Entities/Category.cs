@@ -16,6 +16,7 @@ public class Category
     public string? SkuPrefix { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public int Version { get; set; }
     public Category? Parent { get; set; }
     public ICollection<Category> Children { get; set; } = new List<Category>();
 }

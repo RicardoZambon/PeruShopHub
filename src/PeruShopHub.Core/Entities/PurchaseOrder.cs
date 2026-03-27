@@ -11,6 +11,7 @@ public class PurchaseOrder
     public decimal Total { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ReceivedAt { get; set; }
+    public int Version { get; set; }
     public ICollection<PurchaseOrderItem> Items { get; set; } = new List<PurchaseOrderItem>();
     public ICollection<PurchaseOrderCost> Costs { get; set; } = new List<PurchaseOrderCost>();
 }
