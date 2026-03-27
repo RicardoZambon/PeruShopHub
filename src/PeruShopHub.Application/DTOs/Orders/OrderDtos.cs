@@ -8,6 +8,7 @@ public record OrderListDto(
     decimal TotalAmount,
     decimal Profit,
     string Status,
+    bool IsFulfilled,
     DateTime OrderDate,
     string? TrackingNumber);
 
@@ -22,6 +23,8 @@ public record OrderDetailDto(
     decimal Profit,
     decimal Margin,
     string Status,
+    bool IsFulfilled,
+    DateTime? FulfilledAt,
     DateTime OrderDate,
     ShippingInfoDto Shipping,
     PaymentInfoDto Payment,

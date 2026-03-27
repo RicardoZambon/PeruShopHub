@@ -81,6 +81,7 @@ public class OrdersController : ControllerBase
                 o.TotalAmount,
                 o.Profit,
                 o.Status,
+                o.IsFulfilled,
                 o.OrderDate,
                 o.TrackingNumber))
             .ToListAsync();
@@ -162,6 +163,8 @@ public class OrdersController : ControllerBase
             profit,
             margin,
             order.Status,
+            order.IsFulfilled,
+            order.FulfilledAt,
             order.OrderDate,
             shipping,
             payment,
@@ -218,6 +221,20 @@ public class OrdersController : ControllerBase
         await _db.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    [HttpPost("{id:guid}/fulfill")]
+    public async Task<IActionResult> FulfillOrder(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _costService.FulfillOrderAsync(id, ct);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("{id:guid}/recalculate-costs")]

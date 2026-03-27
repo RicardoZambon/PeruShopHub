@@ -312,6 +312,70 @@ public class CostCalculationService : ICostCalculationService
         }
     }
 
+    public async Task FulfillOrderAsync(Guid orderId, CancellationToken ct = default)
+    {
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+
+        try
+        {
+            var order = await _db.Orders
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == orderId, ct)
+                ?? throw new InvalidOperationException($"Order {orderId} not found.");
+
+            if (order.IsFulfilled)
+                throw new InvalidOperationException($"Order {orderId} is already fulfilled.");
+
+            // Look up variants by SKU for stock deduction
+            var skus = order.Items.Select(i => i.Sku).Distinct().ToList();
+            var variants = await _db.ProductVariants
+                .Where(v => skus.Contains(v.Sku))
+                .ToListAsync(ct);
+            var variantBySku = variants
+                .GroupBy(v => v.Sku)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            foreach (var item in order.Items)
+            {
+                if (!variantBySku.TryGetValue(item.Sku, out var variant))
+                {
+                    _logger.LogWarning("No variant found for SKU {Sku} in order {OrderId}. Skipping stock deduction.", item.Sku, orderId);
+                    continue;
+                }
+
+                variant.Stock = Math.Max(0, variant.Stock - item.Quantity);
+
+                _db.StockMovements.Add(new StockMovement
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = item.ProductId ?? variant.ProductId,
+                    VariantId = variant.Id,
+                    Type = "Saída",
+                    Quantity = item.Quantity,
+                    UnitCost = variant.PurchaseCost ?? 0m,
+                    OrderId = orderId,
+                    Reason = $"Venda #{order.ExternalOrderId}",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            order.IsFulfilled = true;
+            order.FulfilledAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            _logger.LogInformation("Order {OrderId} fulfilled. {ItemCount} items stock deducted.", orderId, order.Items.Count);
+
+            await _notifications.BroadcastDataChangeAsync("Order", "fulfilled", orderId.ToString(), ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
+    }
+
     private async Task<decimal> ResolveCommissionRateAsync(Order order, CancellationToken ct)
     {
         // Try to determine category and listing type from the first item's product
