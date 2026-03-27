@@ -1,8 +1,6 @@
 @use '../../../styles/mixins' as m;
 
-:host {
-  padding-bottom: 80px; // space for sticky bottom bar
-}
+// No padding-bottom needed — bottom-bar is now in-flow
 
 // More actions menu (header overflow)
 .header-menu {
@@ -85,6 +83,9 @@
   display: grid;
   grid-template-columns: 1fr 400px;
   gap: var(--space-6);
+  flex: 1;
+  overflow: hidden;
+  margin-bottom: 8px;
 
   @include m.tablet {
     grid-template-columns: 1fr;
@@ -97,7 +98,10 @@
 
 .form-panel {
   min-width: 0; // prevent grid blowout
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: var(--space-6);
 }
 
 .gallery-panel {
@@ -115,8 +119,6 @@
 
 // Tabs Navigation (desktop/tablet)
 .tabs-nav {
-  margin-bottom: var(--space-6);
-
   @include m.mobile {
     display: none;
   }
@@ -165,7 +167,9 @@
 // Form Fields
 .form-content {
   max-width: 720px;
-  overflow: visible;
+  overflow-y: auto;
+  padding-right: 12px;
+  flex: 1;
 }
 
 // Ensure tab-panel does not clip dropdowns
@@ -359,23 +363,25 @@
   font-weight: 700;
 }
 
-// Sticky Bottom Bar
+// Bottom Bar — in-flow, negative margin to stretch to edges
 .bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-3) 24px;
+  margin: 0 -24px;
   background: var(--surface);
   border-top: 1px solid var(--neutral-200);
   box-shadow: var(--shadow-md);
-  z-index: 50;
+
+  @include m.tablet {
+    padding: var(--space-3) 16px;
+    margin: 0 -16px;
+  }
 
   @include m.mobile {
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-3) 12px;
+    margin: 0 -12px;
   }
 }
 
