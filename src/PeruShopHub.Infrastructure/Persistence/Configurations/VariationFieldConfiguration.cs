@@ -31,5 +31,8 @@ public class VariationFieldConfiguration : IEntityTypeConfiguration<VariationFie
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(v => v.CategoryId);
+
+        builder.Property(v => v.TenantId).IsRequired();
+        builder.HasIndex(v => v.TenantId);
     }
 }

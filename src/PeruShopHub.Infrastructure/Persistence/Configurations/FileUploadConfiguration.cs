@@ -16,5 +16,8 @@ public class FileUploadConfiguration : IEntityTypeConfiguration<FileUpload>
         builder.Property(f => f.ContentType).HasMaxLength(100).IsRequired();
 
         builder.HasIndex(f => new { f.EntityType, f.EntityId });
+
+        builder.Property(f => f.TenantId).IsRequired();
+        builder.HasIndex(f => f.TenantId);
     }
 }

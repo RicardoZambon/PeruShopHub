@@ -19,5 +19,8 @@ public class PurchaseOrderCostConfiguration : IEntityTypeConfiguration<PurchaseO
             .WithMany(po => po.Costs)
             .HasForeignKey(c => c.PurchaseOrderId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Property(c => c.TenantId).IsRequired();
+        builder.HasIndex(c => c.TenantId);
     }
 }

@@ -35,5 +35,8 @@ public class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement
             .WithMany()
             .HasForeignKey(m => m.OrderId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Property(m => m.TenantId).IsRequired();
+        builder.HasIndex(m => m.TenantId);
     }
 }

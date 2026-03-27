@@ -17,5 +17,8 @@ public class CommissionRuleConfiguration : IEntityTypeConfiguration<CommissionRu
         builder.Property(r => r.Rate).HasPrecision(18, 4);
 
         builder.HasIndex(r => new { r.MarketplaceId, r.CategoryPattern, r.ListingType });
+
+        builder.Property(r => r.TenantId).IsRequired();
+        builder.HasIndex(r => r.TenantId);
     }
 }

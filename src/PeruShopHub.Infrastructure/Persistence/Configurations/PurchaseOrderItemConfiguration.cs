@@ -29,5 +29,8 @@ public class PurchaseOrderItemConfiguration : IEntityTypeConfiguration<PurchaseO
             .WithMany()
             .HasForeignKey(i => i.VariantId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(i => i.TenantId).IsRequired();
+        builder.HasIndex(i => i.TenantId);
     }
 }

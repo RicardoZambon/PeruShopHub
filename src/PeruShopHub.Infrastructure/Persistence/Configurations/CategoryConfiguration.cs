@@ -22,5 +22,8 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .WithMany(c => c.Children)
             .HasForeignKey(c => c.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(c => c.TenantId).IsRequired();
+        builder.HasIndex(c => c.TenantId);
     }
 }

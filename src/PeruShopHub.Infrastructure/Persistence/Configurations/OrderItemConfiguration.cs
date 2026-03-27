@@ -16,5 +16,8 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
 
         builder.Property(i => i.UnitPrice).HasPrecision(18, 4);
         builder.Property(i => i.Subtotal).HasPrecision(18, 4);
+
+        builder.Property(i => i.TenantId).IsRequired();
+        builder.HasIndex(i => i.TenantId);
     }
 }

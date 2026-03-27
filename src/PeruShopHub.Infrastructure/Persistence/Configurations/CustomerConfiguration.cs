@@ -17,5 +17,8 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.Phone).HasMaxLength(50);
 
         builder.Property(c => c.TotalSpent).HasPrecision(18, 4);
+
+        builder.Property(c => c.TenantId).IsRequired();
+        builder.HasIndex(c => c.TenantId);
     }
 }

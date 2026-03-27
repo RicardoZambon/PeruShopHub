@@ -42,5 +42,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             .WithOne(c => c.Order)
             .HasForeignKey(c => c.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Property(o => o.TenantId).IsRequired();
+        builder.HasIndex(o => o.TenantId);
     }
 }

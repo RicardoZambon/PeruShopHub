@@ -15,5 +15,8 @@ public class OrderCostConfiguration : IEntityTypeConfiguration<OrderCost>
         builder.Property(c => c.Source).HasMaxLength(50).IsRequired();
 
         builder.Property(c => c.Value).HasPrecision(18, 4);
+
+        builder.Property(c => c.TenantId).IsRequired();
+        builder.HasIndex(c => c.TenantId);
     }
 }

@@ -21,5 +21,8 @@ public class ProductVariantConfiguration : IEntityTypeConfiguration<ProductVaria
         builder.Property(v => v.Height).HasPrecision(18, 4);
         builder.Property(v => v.Width).HasPrecision(18, 4);
         builder.Property(v => v.Length).HasPrecision(18, 4);
+
+        builder.Property(v => v.TenantId).IsRequired();
+        builder.HasIndex(v => v.TenantId);
     }
 }

@@ -21,5 +21,8 @@ public class SupplyConfiguration : IEntityTypeConfiguration<Supply>
         builder.Property(s => s.IsActive).HasDefaultValue(true);
 
         builder.Property(s => s.Version).IsConcurrencyToken();
+
+        builder.Property(s => s.TenantId).IsRequired();
+        builder.HasIndex(s => s.TenantId);
     }
 }

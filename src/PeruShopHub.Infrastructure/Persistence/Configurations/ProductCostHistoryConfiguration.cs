@@ -30,5 +30,8 @@ public class ProductCostHistoryConfiguration : IEntityTypeConfiguration<ProductC
             .WithMany()
             .HasForeignKey(h => h.PurchaseOrderId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Property(h => h.TenantId).IsRequired();
+        builder.HasIndex(h => h.TenantId);
     }
 }
