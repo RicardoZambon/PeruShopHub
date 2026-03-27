@@ -1,8 +1,8 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
-import { environment } from '../environments/environment';
-import { DataChangeEvent } from '../models/api.models';
+import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface SignalRNotification {
   id: string;
@@ -14,8 +14,15 @@ export interface SignalRNotification {
   navigationTarget?: string;
 }
 
+export interface DataChangeEvent {
+  entity: string;
+  action: string;
+  id?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SignalRService {
+  private readonly auth = inject(AuthService);
   private connection: signalR.HubConnection | null = null;
   private readonly _notifications$ = new Subject<any>();
   private readonly _dataChanged$ = new Subject<DataChangeEvent>();
@@ -26,8 +33,12 @@ export class SignalRService {
 
   start(): void {
     if (this.connection) return;
+    if (!this.auth.isAuthenticated) return;
+
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(environment.hubUrl)
+      .withUrl(environment.hubUrl, {
+        accessTokenFactory: () => this.auth.accessToken ?? '',
+      })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .build();
 

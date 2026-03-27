@@ -1,7 +1,8 @@
-import { Injectable, inject, signal, computed, OnDestroy } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 import { SignalRService, type SignalRNotification } from './signalr.service';
 
 export interface Notification {
@@ -17,6 +18,7 @@ export interface Notification {
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
   private readonly signalRService = inject(SignalRService);
   private readonly baseUrl = `${environment.apiUrl}/notifications`;
   private signalRSub: Subscription | null = null;
@@ -25,8 +27,18 @@ export class NotificationService {
   readonly unreadCount = computed(() => this.notifications().filter(n => !n.isRead).length);
 
   constructor() {
-    this.loadNotifications();
-    this.signalRService.start();
+    // Only load notifications and start SignalR when authenticated
+    effect(() => {
+      const user = this.auth.currentUser();
+      if (user) {
+        this.loadNotifications();
+        this.signalRService.start();
+      } else {
+        this.signalRService.stop();
+        this.notifications.set([]);
+      }
+    });
+
     this.signalRSub = this.signalRService.notifications$.subscribe((n: SignalRNotification) => {
       const notification: Notification = {
         id: n.id,
