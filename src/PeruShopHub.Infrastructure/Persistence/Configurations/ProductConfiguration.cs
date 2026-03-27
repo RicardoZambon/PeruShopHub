@@ -11,7 +11,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.Sku).HasMaxLength(100).IsRequired();
-        builder.HasIndex(p => p.Sku).IsUnique();
+        builder.HasIndex(p => new { p.TenantId, p.Sku }).IsUnique();
 
         builder.Property(p => p.Name).HasMaxLength(500).IsRequired();
         builder.Property(p => p.Description).HasMaxLength(5000);

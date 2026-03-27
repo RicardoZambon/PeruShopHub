@@ -11,7 +11,7 @@ public class MarketplaceConnectionConfiguration : IEntityTypeConfiguration<Marke
         builder.HasKey(m => m.Id);
 
         builder.Property(m => m.MarketplaceId).HasMaxLength(100).IsRequired();
-        builder.HasIndex(m => m.MarketplaceId).IsUnique();
+        builder.HasIndex(m => new { m.TenantId, m.MarketplaceId }).IsUnique();
         builder.Property(m => m.Name).HasMaxLength(200).IsRequired();
         builder.Property(m => m.Logo).HasMaxLength(500);
         builder.Property(m => m.SellerNickname).HasMaxLength(200);

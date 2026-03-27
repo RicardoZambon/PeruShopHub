@@ -11,7 +11,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasKey(o => o.Id);
 
         builder.Property(o => o.ExternalOrderId).HasMaxLength(100).IsRequired();
-        builder.HasIndex(o => o.ExternalOrderId).IsUnique();
+        builder.HasIndex(o => new { o.TenantId, o.ExternalOrderId }).IsUnique();
 
         builder.Property(o => o.BuyerName).HasMaxLength(300).IsRequired();
         builder.Property(o => o.BuyerNickname).HasMaxLength(200);
