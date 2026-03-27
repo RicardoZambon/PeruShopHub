@@ -1,9 +1,10 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import {
-  LucideAngularModule, ArrowLeft, Package, Copy, Truck, CreditCard,
+  LucideAngularModule, Package, Copy, Truck, CreditCard,
   User, MapPin, Clock, Check, Circle, Plus, Lock, Unlock, Pencil,
   Trash2, X, Search, ChevronDown, RefreshCw
 } from 'lucide-angular';
@@ -11,20 +12,23 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
 import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
-import { OrderService } from '../../services/order.service';
+import { OrderService, OrderDetail as ApiOrderDetail } from '../../services/order.service';
 import { ToastService } from '../../services/toast.service';
+import { formatBrl as formatBrlUtil, formatDate as formatDateUtil } from '../../shared/utils';
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
 type LogisticType = 'Full' | 'Coleta' | 'Agência';
 type CostSource = 'API' | 'Manual' | 'Calculado';
 
 interface OrderItem {
-  productId: string;
+  id?: string;
+  productId?: string;
   name: string;
   sku: string;
-  variation: string;
+  variation?: string;
   quantity: number;
   unitPrice: number;
   subtotal: number;
@@ -70,7 +74,7 @@ interface CostItem {
   source: CostSource;
 }
 
-interface OrderDetail {
+interface OrderDetailView {
   id: string;
   date: string;
   status: OrderStatus;
@@ -121,81 +125,106 @@ const MOCK_SUPPLIES: Supply[] = [
   { id: 'sup-007', name: 'Papel kraft (folha)', unitCost: 0.60 },
 ];
 
-const MOCK_ORDER: OrderDetail = {
-  id: '2087654321',
-  date: '2026-03-22T14:30:00',
-  status: 'Enviado',
-  statusVariant: 'warning',
-  items: [
-    {
-      productId: 'MLB-001',
-      name: 'Fone Bluetooth TWS Pro Max',
-      sku: 'FN-BT-PRO-001',
-      variation: 'Preto',
-      quantity: 1,
-      unitPrice: 159.90,
-      subtotal: 159.90,
+function mapStatusToVariant(status: string): BadgeVariant {
+  const map: Record<string, BadgeVariant> = {
+    'Pago': 'success',
+    'Enviado': 'warning',
+    'Entregue': 'success',
+    'Cancelado': 'danger',
+    'Devolvido': 'danger',
+  };
+  return map[status] ?? 'neutral';
+}
+
+function mapPaymentStatusToVariant(status: string | undefined): BadgeVariant {
+  if (!status) return 'neutral';
+  const s = status.toLowerCase();
+  if (s === 'aprovado' || s === 'approved') return 'success';
+  if (s === 'pendente' || s === 'pending') return 'warning';
+  if (s === 'rejeitado' || s === 'rejected') return 'danger';
+  return 'neutral';
+}
+
+function mapCostCategory(category: string): { label: string; key: string; color: string } {
+  const found = COST_CATEGORIES.find(c => c.value === category || c.label.toLowerCase() === category.toLowerCase());
+  if (found) return { label: found.label, key: found.value, color: found.color };
+  return { label: category, key: category, color: '#BDBDBD' };
+}
+
+function mapApiToView(api: ApiOrderDetail): OrderDetailView {
+  const statusStr = api.status as OrderStatus;
+
+  // Map shipping timeline
+  const timeline: TimelineStep[] = (api.shipping?.timeline ?? []).map(t => ({
+    label: t.status ?? t.description ?? '',
+    date: t.timestamp ? formatDateUtil(t.timestamp, true) : null,
+    completed: !!t.timestamp,
+  }));
+
+  // Map costs
+  const costs: CostItem[] = (api.costs ?? []).map(c => {
+    const mapped = mapCostCategory(c.category);
+    return {
+      id: c.id,
+      category: mapped.label,
+      categoryKey: mapped.key,
+      description: c.description,
+      value: c.value,
+      color: mapped.color,
+      source: c.source as CostSource,
+    };
+  });
+
+  return {
+    id: api.externalOrderId || api.id,
+    date: api.orderDate,
+    status: statusStr,
+    statusVariant: mapStatusToVariant(api.status),
+    items: (api.items ?? []).map(item => ({
+      id: item.id,
+      productId: item.productId,
+      name: item.name,
+      sku: item.sku,
+      variation: item.variation,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      subtotal: item.subtotal,
+    })),
+    buyer: {
+      name: api.buyer?.name ?? '',
+      nickname: api.buyer?.nickname ?? '',
+      email: api.buyer?.email ?? '',
+      phone: api.buyer?.phone ?? '',
+      totalOrders: 0,
+      totalSpent: 0,
     },
-    {
-      productId: 'MLB-002',
-      name: 'Capa Protetora Case Slim',
-      sku: 'CP-SL-001',
-      variation: 'Transparente',
-      quantity: 2,
-      unitPrice: 29.90,
-      subtotal: 59.80,
+    shipping: {
+      trackingNumber: api.shipping?.trackingNumber ?? '',
+      carrier: api.shipping?.carrier ?? '',
+      logisticType: (api.shipping?.logisticType as LogisticType) ?? 'Coleta',
+      timeline,
     },
-  ],
-  buyer: {
-    name: 'Maria Silva Santos',
-    nickname: 'MARI.SILVA',
-    email: 'mar***@gmail.com',
-    phone: '(11) 9****-4567',
-    totalOrders: 8,
-    totalSpent: 2340.60,
-  },
-  shipping: {
-    trackingNumber: 'BR123456789ML',
-    carrier: 'Mercado Envios - CORREIOS',
-    logisticType: 'Coleta',
-    timeline: [
-      { label: 'Pedido criado', date: '22/03/2026, 14:30', completed: true },
-      { label: 'Pagamento aprovado', date: '22/03/2026, 14:32', completed: true },
-      { label: 'Enviado', date: '22/03/2026, 18:45', completed: true },
-      { label: 'Entregue', date: null, completed: false },
-    ],
-  },
-  payment: {
-    method: 'Cartão de Crédito',
-    installments: 3,
-    amount: 219.70,
-    status: 'Aprovado',
-    statusVariant: 'success',
-  },
-  revenue: 159.90,
-  costs: [
-    { category: 'Comissão ML', value: 17.59, color: '#5C6BC0', source: 'API' },
-    { category: 'Taxa fixa', value: 6.00, color: '#7986CB', source: 'API' },
-    { category: 'Frete vendedor', value: 18.90, color: '#42A5F5', source: 'API' },
-    { category: 'Taxa de pagamento', value: 7.52, color: '#64B5F6', source: 'API' },
-    { category: 'Custo do produto', value: 45.00, color: '#66BB6A', source: 'Manual' },
-    { category: 'Embalagem', value: 3.50, color: '#FFA726', source: 'Manual' },
-    { category: 'Impostos', value: 9.59, color: '#EF5350', source: 'Calculado' },
-    { category: 'Armazenagem', value: 2.40, color: '#AB47BC', source: 'Calculado' },
-    { category: 'Advertising', value: 8.00, color: '#26C6DA', source: 'Manual' },
-  ],
-};
+    payment: {
+      method: api.payment?.method ?? '',
+      installments: api.payment?.installments ?? 1,
+      amount: api.payment?.amount ?? api.totalAmount ?? 0,
+      status: api.payment?.status ?? '',
+      statusVariant: mapPaymentStatusToVariant(api.payment?.status),
+    },
+    revenue: api.revenue ?? api.totalAmount ?? 0,
+    costs,
+  };
+}
 
 @Component({
   selector: 'app-sale-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, BadgeComponent, ButtonComponent, FormFieldComponent, FormActionsComponent, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, LucideAngularModule, BadgeComponent, ButtonComponent, FormFieldComponent, FormActionsComponent, PageHeaderComponent, FormsModule, ReactiveFormsModule],
   templateUrl: './sale-detail.component.html',
   styleUrl: './sale-detail.component.scss',
 })
-export class SaleDetailComponent implements OnInit {
+export class SaleDetailComponent implements OnInit, OnDestroy {
   // Icons
-  readonly arrowLeftIcon = ArrowLeft;
   readonly packageIcon = Package;
   readonly copyIcon = Copy;
   readonly truckIcon = Truck;
@@ -226,18 +255,22 @@ export class SaleDetailComponent implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly confirmDialog = inject(ConfirmDialogService);
 
+  // Subscriptions
+  private subscriptions = new Subscription();
+
   // Core state
   loading = signal(true);
-  order = signal<OrderDetail | null>(null);
+  order = signal<OrderDetailView | null>(null);
+  private apiOrderId = ''; // The internal API id for API calls
   copySuccess = signal(false);
   recalculating = signal(false);
   orderId = '';
 
-  // US-056: Manual cost CRUD
-  manualCosts = signal<CostItem[]>([]);
+  // US-056: Manual cost CRUD — costs are now managed within order().costs
   showCostForm = signal(false);
   editingCostId = signal<string | null>(null);
   costForm!: FormGroup;
+  savingCost = signal(false);
 
   // US-057: Lock after "Enviado"
   isLocked = computed(() => {
@@ -247,7 +280,6 @@ export class SaleDetailComponent implements OnInit {
     return lockedStatuses.includes(o.status) && !this.lockOverridden();
   });
   lockOverridden = signal(false);
-  showUnlockConfirm = signal(false);
 
   // US-061: Supplies
   saleSupplies = signal<SaleSupply[]>([]);
@@ -267,19 +299,16 @@ export class SaleDetailComponent implements OnInit {
     return this.saleSupplies().reduce((sum, s) => sum + s.total, 0);
   });
 
-  // Combined costs: order costs + manual costs + supplies packaging adjustment
+  // Combined costs: order costs + supplies packaging adjustment
   allCosts = computed(() => {
     const o = this.order();
     if (!o) return [];
-    const baseCosts = [...o.costs];
-    const manual = this.manualCosts();
+    const baseCosts: CostItem[] = [...o.costs];
     const suppliesCost = this.totalSuppliesCost();
-
-    const combined = [...baseCosts, ...manual];
 
     // Add supplies cost as packaging line if > 0
     if (suppliesCost > 0) {
-      combined.push({
+      baseCosts.push({
         id: '__supplies_packaging__',
         category: 'Suprimentos (embalagem)',
         categoryKey: 'packaging',
@@ -289,7 +318,7 @@ export class SaleDetailComponent implements OnInit {
       });
     }
 
-    return combined;
+    return baseCosts;
   });
 
   // Computeds using allCosts
@@ -350,27 +379,39 @@ export class SaleDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.orderId = this.route.snapshot.paramMap.get('id') ?? '';
-    setTimeout(() => {
-      this.order.set({ ...MOCK_ORDER, id: this.orderId || MOCK_ORDER.id });
+    if (this.orderId) {
+      this.loadOrder(this.orderId);
+    } else {
       this.loading.set(false);
-    }, 600);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  private loadOrder(id: string): void {
+    this.loading.set(true);
+    const sub = this.orderService.getById(id).subscribe({
+      next: (apiOrder) => {
+        this.apiOrderId = apiOrder.id;
+        this.order.set(mapApiToView(apiOrder));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.toastService.show('Erro ao carregar detalhes do pedido', 'danger');
+      },
+    });
+    this.subscriptions.add(sub);
   }
 
   // --- Formatting helpers ---
 
-  formatBrl(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  formatBrl = formatBrlUtil;
 
   formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateUtil(dateStr, true);
   }
 
   getLogisticVariant(type: LogisticType): BadgeVariant {
@@ -440,35 +481,88 @@ export class SaleDetailComponent implements OnInit {
   }
 
   saveCost(): void {
-    if (this.costForm.invalid) return;
+    if (this.costForm.invalid || !this.apiOrderId) return;
 
     const { categoryKey, description, value } = this.costForm.value;
-    const category = COST_CATEGORIES.find(c => c.value === categoryKey);
-
-    const costItem: CostItem = {
-      id: this.editingCostId() ?? `manual-${Date.now()}`,
-      category: category?.label ?? categoryKey,
-      categoryKey,
-      description,
-      value: Number(value),
-      color: category?.color ?? '#BDBDBD',
-      source: 'Manual',
-    };
-
-    const current = this.manualCosts();
     const editId = this.editingCostId();
 
-    if (editId) {
-      this.manualCosts.set(current.map(c => c.id === editId ? costItem : c));
-    } else {
-      this.manualCosts.set([...current, costItem]);
-    }
+    this.savingCost.set(true);
 
-    this.cancelCostForm();
+    if (editId) {
+      // Update existing cost via API
+      const sub = this.orderService.updateCost(this.apiOrderId, editId, {
+        category: categoryKey,
+        description,
+        value: Number(value),
+      }).subscribe({
+        next: (response) => {
+          const mapped = mapCostCategory(response.category);
+          const updatedCost: CostItem = {
+            id: response.id,
+            category: mapped.label,
+            categoryKey: mapped.key,
+            description: response.description,
+            value: response.value,
+            color: mapped.color,
+            source: response.source as CostSource,
+          };
+          const current = this.order();
+          if (current) {
+            this.order.set({
+              ...current,
+              costs: current.costs.map(c => c.id === editId ? updatedCost : c),
+            });
+          }
+          this.savingCost.set(false);
+          this.cancelCostForm();
+        },
+        error: () => {
+          this.savingCost.set(false);
+          this.toastService.show('Erro ao atualizar custo', 'danger');
+        },
+      });
+      this.subscriptions.add(sub);
+    } else {
+      // Add new cost via API
+      const sub = this.orderService.addCost(this.apiOrderId, {
+        category: categoryKey,
+        description,
+        value: Number(value),
+      }).subscribe({
+        next: (response) => {
+          const mapped = mapCostCategory(response.category);
+          const newCost: CostItem = {
+            id: response.id,
+            category: mapped.label,
+            categoryKey: mapped.key,
+            description: response.description,
+            value: response.value,
+            color: mapped.color,
+            source: response.source as CostSource,
+          };
+          const current = this.order();
+          if (current) {
+            this.order.set({
+              ...current,
+              costs: [...current.costs, newCost],
+            });
+          }
+          this.savingCost.set(false);
+          this.cancelCostForm();
+        },
+        error: () => {
+          this.savingCost.set(false);
+          this.toastService.show('Erro ao adicionar custo', 'danger');
+        },
+      });
+      this.subscriptions.add(sub);
+    }
   }
 
   async deleteCost(costId: string): Promise<void> {
-    const cost = this.manualCosts().find(c => c.id === costId);
+    const currentOrder = this.order();
+    if (!currentOrder) return;
+    const cost = currentOrder.costs.find(c => c.id === costId);
     const confirmed = await this.confirmDialog.confirm({
       title: 'Excluir custo',
       message: `Deseja remover o custo "${cost?.description || cost?.category || ''}"?`,
@@ -476,27 +570,43 @@ export class SaleDetailComponent implements OnInit {
       variant: 'danger',
     });
     if (!confirmed) return;
-    this.manualCosts.set(this.manualCosts().filter(c => c.id !== costId));
-    this.confirmDialog.done();
+
+    const sub = this.orderService.deleteCost(this.apiOrderId, costId).subscribe({
+      next: () => {
+        const current = this.order();
+        if (current) {
+          this.order.set({
+            ...current,
+            costs: current.costs.filter(c => c.id !== costId),
+          });
+        }
+        this.confirmDialog.done();
+      },
+      error: () => {
+        this.confirmDialog.done();
+        this.toastService.show('Erro ao excluir custo', 'danger');
+      },
+    });
+    this.subscriptions.add(sub);
   }
 
   isManualCost(cost: CostItem): boolean {
-    return cost.source === 'Manual' && !!cost.id && cost.id.startsWith('manual-');
+    return cost.source === 'Manual';
   }
 
   // --- US-057: Lock ---
 
-  requestUnlock(): void {
-    this.showUnlockConfirm.set(true);
-  }
-
-  confirmUnlock(): void {
-    this.lockOverridden.set(true);
-    this.showUnlockConfirm.set(false);
-  }
-
-  cancelUnlock(): void {
-    this.showUnlockConfirm.set(false);
+  async requestUnlock(): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Desbloquear edição?',
+      message: 'Você está prestes a desbloquear uma venda já enviada. Alterações manuais podem causar inconsistências com os dados do marketplace.',
+      confirmLabel: 'Confirmar desbloqueio',
+      variant: 'danger',
+    });
+    if (confirmed) {
+      this.lockOverridden.set(true);
+    }
+    this.confirmDialog.done();
   }
 
   // --- US-061: Supplies ---
@@ -596,24 +706,30 @@ export class SaleDetailComponent implements OnInit {
   // --- Recalculate Costs ---
 
   recalculateCosts(): void {
-    if (this.recalculating() || !this.orderId) return;
+    if (this.recalculating() || !this.apiOrderId) return;
 
     this.recalculating.set(true);
-    this.orderService.recalculateCosts(this.orderId).subscribe({
+    const sub = this.orderService.recalculateCosts(this.apiOrderId).subscribe({
       next: () => {
-        // Reload order detail (mock for now — in real app this would refetch from API)
-        this.loading.set(true);
-        setTimeout(() => {
-          this.order.set({ ...MOCK_ORDER, id: this.orderId || MOCK_ORDER.id });
-          this.loading.set(false);
-          this.recalculating.set(false);
-          this.toastService.show('Custos recalculados com sucesso', 'success');
-        }, 600);
+        // Re-fetch order detail from API to get updated costs
+        this.orderService.getById(this.orderId).subscribe({
+          next: (apiOrder) => {
+            this.apiOrderId = apiOrder.id;
+            this.order.set(mapApiToView(apiOrder));
+            this.recalculating.set(false);
+            this.toastService.show('Custos recalculados com sucesso', 'success');
+          },
+          error: () => {
+            this.recalculating.set(false);
+            this.toastService.show('Custos recalculados, mas erro ao recarregar', 'warning');
+          },
+        });
       },
       error: () => {
         this.recalculating.set(false);
         this.toastService.show('Erro ao recalcular custos', 'danger');
       },
     });
+    this.subscriptions.add(sub);
   }
 }

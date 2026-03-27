@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
+import { buildHttpParams } from '../shared/utils';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -31,20 +32,67 @@ export interface OrderListParams {
   pageSize?: number;
 }
 
+export interface OrderDetail {
+  id: string;
+  externalOrderId: string;
+  buyer: { name: string; nickname?: string; email?: string; phone?: string };
+  itemCount: number;
+  totalAmount: number;
+  revenue: number;
+  totalCosts: number;
+  profit: number;
+  margin: number;
+  status: string;
+  orderDate: string;
+  shipping: { trackingNumber?: string; carrier?: string; logisticType?: string; timeline?: { status: string; timestamp?: string; description?: string }[] };
+  payment: { method?: string; installments?: number; amount?: number; status?: string };
+  items: { id: string; productId?: string; name: string; sku: string; variation?: string; quantity: number; unitPrice: number; subtotal: number }[];
+  costs: { id: string; category: string; description?: string; value: number; source: string }[];
+}
+
+export interface CreateCostRequest {
+  category: string;
+  description?: string;
+  value: number;
+}
+
+export interface UpdateCostRequest {
+  category: string;
+  description?: string;
+  value: number;
+}
+
+export interface OrderCostResponse {
+  id: string;
+  category: string;
+  description?: string;
+  value: number;
+  source: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/orders`;
 
   list(params: OrderListParams = {}): Observable<OrderListResponse> {
-    let httpParams = new HttpParams();
-    if (params.search) httpParams = httpParams.set('search', params.search);
-    if (params.status) httpParams = httpParams.set('status', params.status);
-    if (params.dateFrom) httpParams = httpParams.set('dateFrom', params.dateFrom);
-    if (params.dateTo) httpParams = httpParams.set('dateTo', params.dateTo);
-    if (params.page) httpParams = httpParams.set('page', params.page.toString());
-    if (params.pageSize) httpParams = httpParams.set('pageSize', params.pageSize.toString());
-    return this.http.get<OrderListResponse>(this.baseUrl, { params: httpParams });
+    return this.http.get<OrderListResponse>(this.baseUrl, { params: buildHttpParams(params) });
+  }
+
+  getById(id: string): Observable<OrderDetail> {
+    return this.http.get<OrderDetail>(`${this.baseUrl}/${id}`);
+  }
+
+  addCost(orderId: string, request: CreateCostRequest): Observable<OrderCostResponse> {
+    return this.http.post<OrderCostResponse>(`${this.baseUrl}/${orderId}/costs`, request);
+  }
+
+  updateCost(orderId: string, costId: string, request: UpdateCostRequest): Observable<OrderCostResponse> {
+    return this.http.put<OrderCostResponse>(`${this.baseUrl}/${orderId}/costs/${costId}`, request);
+  }
+
+  deleteCost(orderId: string, costId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${orderId}/costs/${costId}`);
   }
 
   recalculateCosts(orderId: string): Observable<any> {
