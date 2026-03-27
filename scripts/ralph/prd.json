@@ -1,343 +1,245 @@
 {
   "project": "PeruShopHub",
   "branchName": "ralph/backend-wiring",
-  "description": "Generic DataGridComponent with infinite scroll - Extract and generalize the table pattern into a reusable grid with declarative column API, custom cell rendering via ng-template, infinite scroll, and migrate all list pages",
+  "description": "Backend Hardening Sprint — Extract service layer from fat controllers, add missing CRUD endpoints, implement input validation with consistent error responses, add role-based authorization, and introduce optimistic locking on key entities.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Core grid component with column definitions",
-      "description": "As a developer, I want a grid component that accepts column definitions and data so I can render any tabular data without building custom table HTML.",
+      "title": "Typed exceptions and global exception filter",
+      "description": "As a developer, I want a global exception handling mechanism so all controllers return consistent error responses without repetitive try/catch blocks.",
       "acceptanceCriteria": [
-        "DataGridComponent created in shared/components/data-grid/",
-        "Accepts columns input — array of GridColumn objects with: key, label, align, width, sortable, sticky, headerClass, cellClass",
-        "Accepts data input — array of Record<string, any>",
-        "Renders a <table> with <thead> and <tbody> based on column definitions",
-        "Default cell rendering displays row[column.key] as text",
-        "Columns with align: 'right' right-align both header and cells",
-        "Columns with width set apply that width (e.g., '56px', '20%')",
-        "Component uses OnPush change detection strategy",
-        "Typecheck passes"
+        "NotFoundException class created in Application/Exceptions/ — takes entity name and ID",
+        "ValidationException class created — takes Dictionary<string, List<string>> of field errors",
+        "ConflictException class created — takes message string",
+        "GlobalExceptionFilter created in API/Filters/ implementing IExceptionFilter",
+        "Filter catches NotFoundException → 404 with { error: message }",
+        "Filter catches ValidationException → 400 with { errors: { field: [messages] } }",
+        "Filter catches ConflictException → 409 with { error: message }",
+        "Filter catches UnauthorizedAccessException → 403 with { error: 'Acesso negado' }",
+        "Filter registered globally in Program.cs via AddControllers(o => o.Filters.Add<GlobalExceptionFilter>())",
+        "Unhandled exceptions still return 500 with generic message (no stack trace in response)",
+        ".NET build passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Foundation for all other stories — every service will use these exceptions."
     },
     {
       "id": "US-002",
-      "title": "Custom cell rendering via ng-template",
-      "description": "As a developer, I want to provide custom templates for specific columns so I can render images, badges, buttons, and complex content inside grid cells.",
+      "title": "DI registration and service base pattern",
+      "description": "As a developer, I want a consistent pattern for registering application services so adding new services is mechanical.",
       "acceptanceCriteria": [
-        "GridCellDirective created with appGridCell selector keyed by column name",
-        "Grid uses @ContentChildren(GridCellDirective) to collect custom templates",
-        "When a template is registered for a column key, it replaces default text rendering",
-        "Template receives the full row object (let-row) and cell value (let-value='value') as context",
-        "Works for any number of columns — some default, others custom",
-        "Typecheck passes"
+        "AddApplicationServices() extension method created on IServiceCollection in Application project",
+        "Method registers all service interfaces to implementations as Scoped",
+        "Called from Program.cs after AddInfrastructureServices()",
+        "At minimum, register placeholder interfaces and implementations for: ProductService, CategoryService, OrderService, PurchaseOrderService, CustomerService, SupplyService, DashboardService, FinanceService, InventoryService, UserService, FileService",
+        "Each service takes AppDbContext via constructor injection",
+        "Each interface file created with a single placeholder method (e.g., Task<T> GetByIdAsync(Guid id))",
+        ".NET build passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Creates the scaffolding. Subsequent stories fill in the implementations."
     },
     {
       "id": "US-003",
-      "title": "Custom header rendering via ng-template",
-      "description": "As a developer, I want to optionally provide custom header templates for columns that need non-text headers.",
+      "title": "Extract CategoryService from controller",
+      "description": "As a developer, I want category business logic in a service so it is testable and controllers are thin HTTP adapters.",
       "acceptanceCriteria": [
-        "GridHeaderDirective created with appGridHeader selector keyed by column name",
-        "Grid uses @ContentChildren(GridHeaderDirective) to collect header templates",
-        "When a header template is registered, it replaces the default label text",
-        "Columns without custom header still render label string",
-        "Typecheck passes"
+        "ICategoryService defines: GetByParentAsync, GetByIdAsync, GetTreeAsync, CreateAsync, UpdateAsync, DeleteAsync",
+        "CategoryService implements all methods, moving logic from CategoriesController",
+        "Parent-child hierarchy queries moved to service",
+        "Breadth-first tree traversal moved to service",
+        "Validation: Name required, Slug required+unique, ParentId must reference existing category, no circular refs",
+        "ValidationException thrown with all errors collected (not fail-on-first)",
+        "NotFoundException thrown when category not found",
+        "CategoriesController refactored to delegate to ICategoryService — no EF queries in controller",
+        "All existing category endpoints still work identically (same request/response shapes)",
+        ".NET build passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Categories are simpler than Products — good first extraction to establish the pattern."
     },
     {
       "id": "US-004",
-      "title": "Server-side sorting",
-      "description": "As a user, I want to click column headers to sort the grid so I can find what I need quickly.",
+      "title": "Extract ProductService from controller",
+      "description": "As a developer, I want product business logic in a service so SKU generation, analytics, and variant management are testable.",
       "acceptanceCriteria": [
-        "Columns marked sortable: true show a sort indicator (neutral, ascending, descending)",
-        "Clicking a sortable header cycles: ascending → descending → neutral",
-        "Grid emits sortChange event with { column: string, direction: 'asc' | 'desc' | null }",
-        "Only one column sorted at a time — clicking new column resets previous",
-        "Grid does NOT sort data internally — delegates to parent",
-        "Active sort column header is visually highlighted",
-        "Typecheck passes"
+        "IProductService defines: GetListAsync, GetByIdAsync, CreateAsync, UpdateAsync, DeleteAsync, GetVariantsAsync, CreateVariantAsync, UpdateVariantAsync, DeleteVariantAsync, GetAnalyticsAsync, GetRecentOrdersAsync",
+        "ProductService implements all methods, moving logic from ProductsController",
+        "SKU auto-generation logic moved to service",
+        "Category descendant recursion for filtering moved to service",
+        "Product analytics calculations moved to service",
+        "Profit distribution in recent orders moved to service",
+        "Cache key generation and invalidation logic moved to service (inject ICacheService)",
+        "Validation: Name required (max 200), SKU unique, Price >= 0, Cost >= 0, CategoryId must exist, Weight/dimensions >= 0",
+        "ProductsController refactored to thin adapter — no EF queries, no business logic",
+        "All existing product endpoints still work identically",
+        ".NET build passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Largest extraction — includes SKU generation, analytics, cache, variants."
     },
     {
       "id": "US-005",
-      "title": "Infinite scroll",
-      "description": "As a user, I want the grid to load more rows automatically as I scroll down so I don't have to click pagination buttons.",
+      "title": "Extract OrderService from controller",
+      "description": "As a developer, I want order business logic in a service so timeline building, cost management, and fulfillment are testable.",
       "acceptanceCriteria": [
-        "Grid detects scroll near bottom using IntersectionObserver on sentinel element",
-        "Emits loadMore event when threshold reached and hasMore is true",
-        "Does NOT emit loadMore while loading is true",
-        "Shows loading spinner row at bottom while loading more",
-        "Accepts hasMore input — when false, no more loadMore events emitted",
-        "Accepts pageSize input (default 20)",
-        "Grid scroll container uses overflow-y: auto with flex: 1 height",
-        "Scroll position preserved when new rows appended",
-        "Typecheck passes"
+        "IOrderService defines: GetListAsync, GetByIdAsync, GetCostsAsync, AddCostAsync, UpdateCostAsync, DeleteCostAsync, FulfillAsync, CancelAsync",
+        "OrderService implements all methods, moving logic from OrdersController",
+        "Timeline building logic moved to service",
+        "Payment status derivation moved to service",
+        "Order cost CRUD moved to service with validation (value > 0, valid category)",
+        "Fulfillment with auto stock deduction moved to service",
+        "Cancellation logic moved to service",
+        "OrdersController refactored to thin adapter",
+        "All existing order endpoints still work identically",
+        ".NET build passes"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Initial loading state with skeleton placeholders",
-      "description": "As a user, I want to see skeleton placeholders while the grid loads for the first time so the page doesn't appear broken.",
+      "title": "Extract PurchaseOrderService from controller",
+      "description": "As a developer, I want purchase order business logic in a service so cost allocation and status management are testable.",
       "acceptanceCriteria": [
-        "When loading is true AND data is empty, grid renders skeleton rows (default 8)",
-        "Skeleton rows mirror column layout: same number of cells, alignment, widths",
-        "Skeleton cells use <app-skeleton> component with appropriate dimensions",
-        "When loading is true AND data is NOT empty, skeleton rows NOT shown (spinner at bottom instead)",
-        "Typecheck passes"
+        "IPurchaseOrderService defines: GetListAsync, GetByIdAsync, CreateAsync, UpdateAsync, DeleteAsync, AddItemAsync, UpdateItemAsync, DeleteItemAsync, AddCostAsync, UpdateCostAsync, DeleteCostAsync, ReceiveAsync, CancelAsync",
+        "PurchaseOrderService implements all methods, moving logic from PurchaseOrdersController",
+        "Cost allocation logic (by_value, by_quantity distribution) moved to service",
+        "Status-based access controls (edit only if Rascunho) enforced in service",
+        "Validation: Supplier required, items must reference valid ProductId/VariantId, quantities > 0, unitCost >= 0",
+        "NEW: PUT /api/purchase-orders/{id}/costs/{costId} endpoint added via controller + service",
+        "PurchaseOrdersController refactored to thin adapter",
+        "All existing PO endpoints still work identically",
+        ".NET build passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Includes the new PO cost update endpoint."
     },
     {
       "id": "US-007",
-      "title": "Empty state",
-      "description": "As a user, I want to see a clear message when there's no data so I know it's not a loading error.",
+      "title": "Extract DashboardService and FinanceService from controllers",
+      "description": "As a developer, I want financial aggregation logic in services so dashboard and finance calculations are testable.",
       "acceptanceCriteria": [
-        "When loading is false AND data is empty, grid shows empty state",
-        "Supports <ng-template appGridEmpty> for custom empty state content",
-        "If no custom template, renders default with configurable emptyTitle and emptyDescription inputs",
-        "Empty state is vertically centered within the grid container",
-        "Typecheck passes"
+        "IDashboardService defines: GetSummaryAsync, GetRevenueChartAsync, GetCostBreakdownAsync, GetTopProductsAsync, GetLeastProfitableAsync, GetPendingActionsAsync",
+        "DashboardService implements all methods, moving logic from DashboardController",
+        "Top products ranking with profit distribution moved to service",
+        "Period parsing moved to service",
+        "IFinanceService defines: GetSummaryAsync, GetRevenueChartAsync, GetMarginChartAsync, GetSkuProfitabilityAsync, GetReconciliationAsync, GetAbcCurveAsync",
+        "FinanceService implements all methods, moving logic from FinanceController",
+        "SKU profitability aggregation moved to service",
+        "ABC curve classification moved to service",
+        "Monthly reconciliation logic moved to service",
+        "Both controllers refactored to thin adapters",
+        "All existing dashboard and finance endpoints still work identically",
+        ".NET build passes"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Two services in one story since they share similar financial calculation patterns."
     },
     {
       "id": "US-008",
-      "title": "Mobile card layout",
-      "description": "As a user on mobile, I want data displayed as cards instead of a table so it's readable on small screens.",
+      "title": "Extract remaining services (Customer, Supply, Inventory, File, Search, Notification)",
+      "description": "As a developer, I want all remaining controllers refactored to use services.",
       "acceptanceCriteria": [
-        "Below 768px breakpoint, table is hidden and card list displayed",
-        "Supports <ng-template appGridCard let-row> for custom mobile card rendering",
-        "If no card template, renders default card with column label-value pairs stacked vertically",
-        "Card layout also supports infinite scroll (same loadMore behavior)",
-        "Skeleton cards shown during initial loading on mobile",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "ICustomerService + CustomerService: GetListAsync, GetByIdAsync",
+        "ISupplyService + SupplyService: GetListAsync, GetByIdAsync (NEW), CreateAsync, UpdateAsync, DeleteAsync (NEW soft-delete)",
+        "IInventoryService + InventoryService: GetOverviewAsync, GetMovementsAsync, CreateMovementAsync",
+        "IFileService + FileService: UploadAsync, GetByEntityAsync, DeleteAsync",
+        "ISearchService + SearchService: SearchAsync",
+        "INotificationService + NotificationService: GetListAsync, MarkReadAsync, MarkAllReadAsync",
+        "NEW: GET /api/supplies/{id} endpoint returns full supply detail",
+        "NEW: DELETE /api/supplies/{id} sets IsActive=false (add IsActive to Supply entity if missing)",
+        "Supply validation: Name required (max 200), CurrentStock >= 0, MinimumStock >= 0, UnitCost >= 0",
+        "All 6 controllers refactored to thin adapters",
+        "All existing endpoints still work identically",
+        ".NET build passes"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Batch extraction of simpler services. Includes new Supply endpoints."
     },
     {
       "id": "US-009",
-      "title": "Row click events",
-      "description": "As a developer, I want the grid to emit row click events so I can navigate to detail pages.",
+      "title": "User management service and endpoints",
+      "description": "As an admin, I want to manage system users so I can create accounts, assign roles, and reset passwords.",
       "acceptanceCriteria": [
-        "Grid emits rowClick event with full row object when row is clicked",
-        "Rows have cursor: pointer and hover highlight styling",
-        "Click events do NOT fire when user clicks interactive element inside cell (button, link, checkbox)",
-        "On mobile, card click emits same rowClick event",
-        "Typecheck passes"
+        "IUserService defines: GetListAsync, GetByIdAsync, CreateAsync, UpdateAsync, DeactivateAsync, ResetPasswordAsync, ChangePasswordAsync",
+        "UserService implements all methods with bcrypt password hashing (BCrypt.Net-Next NuGet)",
+        "GET /api/settings/users/{id} returns user detail (no password hash)",
+        "POST /api/settings/users creates user — validates: Name required, Email required+valid+unique, Password min 8 chars, Role in [Admin,Manager,Viewer]",
+        "PUT /api/settings/users/{id} updates profile and role — validates same rules minus password",
+        "DELETE /api/settings/users/{id} deactivates user (soft-delete via IsActive flag)",
+        "POST /api/settings/users/{id}/reset-password — admin sets new password for user",
+        "POST /api/auth/change-password — self-service, requires current password verification",
+        "Password never returned in any DTO",
+        "SettingsController user endpoints delegate to IUserService",
+        ".NET build passes"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "May need to add IsActive field to SystemUser entity. BCrypt.Net-Next is the recommended bcrypt library for .NET."
     },
     {
       "id": "US-010",
-      "title": "Sticky header and column",
-      "description": "As a user scrolling through a long table, I want the header row to stay visible and optionally the first column to stay pinned.",
+      "title": "Role-based authorization on all endpoints",
+      "description": "As an admin, I want role-based access control so viewers cannot modify data and only admins can manage settings.",
       "acceptanceCriteria": [
-        "Table header (<thead>) is sticky at top of scroll container",
-        "Columns marked sticky: true remain pinned when scrolling horizontally",
-        "Sticky column has right border shadow to indicate scroll underneath",
-        "Custom scrollbar styling matches existing app scrollbar design",
-        "Typecheck passes"
+        "JWT token generation includes role claim: new Claim(ClaimTypes.Role, user.Role)",
+        "AuthController login response includes user role",
+        "All Settings endpoints (users, integrations, costs) require Admin role",
+        "All POST/PUT/DELETE on Products, Categories, Supplies, POs require Manager or Admin role",
+        "All POST/PUT/DELETE on Orders (costs, fulfillment, cancel) require Manager or Admin role",
+        "All GET endpoints require any authenticated user (Viewer+)",
+        "Auth endpoints (login, refresh) remain anonymous",
+        "Change-password requires authenticated user (any role, self only)",
+        "Unauthorized role access returns 403 Forbidden",
+        ".NET build passes"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Uses [Authorize(Roles = \"Admin\")] and [Authorize(Roles = \"Admin,Manager\")] attributes."
     },
     {
       "id": "US-011",
-      "title": "Scroll-to-top utility",
-      "description": "As a developer, I want to programmatically scroll the grid back to the top when filters or sort change.",
+      "title": "Optimistic locking on key entities",
+      "description": "As a user, I want to be notified when someone else has modified a record I am editing so I don't lose their changes.",
       "acceptanceCriteria": [
-        "Grid exposes public scrollToTop() method",
-        "Parent can call it via @ViewChild reference",
-        "Smooth scroll animation via CSS scroll-behavior: smooth",
-        "Typecheck passes"
+        "Version property (int) added to Product, Category, PurchaseOrder, Supply entities",
+        "EF Core config: .Property(e => e.Version).IsConcurrencyToken() for all 4 entities",
+        "EF migration created adding version column (INTEGER NOT NULL DEFAULT 0) to 4 tables",
+        "All update DTOs for these entities include Version field (required)",
+        "Services check version match before saving; EF throws DbUpdateConcurrencyException on mismatch",
+        "DbUpdateConcurrencyException caught in services → throws ConflictException with Portuguese message",
+        "API returns 409 Conflict with message: 'Este registro foi modificado por outro usuário. Recarregue e tente novamente.'",
+        "All GET detail endpoints return Version in response DTO",
+        "Migration applies cleanly",
+        ".NET build passes"
       ],
       "priority": 11,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Run migration after adding Version properties. Existing rows get version=0."
     },
     {
       "id": "US-012",
-      "title": "Scroll-to-row for deep linking",
-      "description": "As a developer, I want to programmatically scroll to a specific row so the user sees it highlighted after create/edit.",
+      "title": "Frontend 409 handling and version passthrough",
+      "description": "As a frontend developer, I want the Angular app to handle optimistic locking conflicts gracefully.",
       "acceptanceCriteria": [
-        "Grid exposes public scrollToRow(predicate: (row: any) => boolean) method",
-        "Scrolls matching row into view and applies brief highlight animation (1.5s fade pulse)",
-        "Returns false if row not in current data so parent can load more",
-        "Works on both desktop table and mobile card layout",
-        "Typecheck passes"
+        "Error interceptor detects 409 status and shows specific toast: 'Este registro foi modificado por outro usuário. Recarregue a página.'",
+        "Product, Category, Supply, PurchaseOrder TypeScript interfaces include version: number field",
+        "All update service calls (product.service, category.service, supply.service, purchase-order.service) include version in PUT request body",
+        "After successful update, local state updated with new version from response",
+        "Angular build passes (ng build --configuration=development)"
       ],
       "priority": 12,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-013",
-      "title": "ARIA accessibility attributes",
-      "description": "As a user with assistive technology, I want the grid to have proper ARIA attributes so screen readers can navigate correctly.",
-      "acceptanceCriteria": [
-        "Table has role='grid' and configurable aria-label input (default 'Data grid')",
-        "Header cells have role='columnheader'",
-        "Sortable headers include aria-sort attribute (ascending, descending, or none)",
-        "Body cells have role='gridcell'",
-        "Loading state announced via aria-live='polite' region",
-        "Empty state announced via aria-live='polite'",
-        "Infinite scroll spinner has aria-label='Carregando mais itens'",
-        "Typecheck passes"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-014",
-      "title": "Migrate Products list",
-      "description": "As a developer, I want to migrate the Products list page to use DataGridComponent to validate the component with the most complex use case.",
-      "acceptanceCriteria": [
-        "Products list uses <app-data-grid> instead of custom <table>",
-        "All 9 columns render identically: image, name, SKU, price, stock, variants, status, margin, actions",
-        "Custom cell templates for: image, stock (conditional coloring), variants (badge + review badge), status (badge), margin (margin-badge), actions (edit button)",
-        "Infinite scroll replaces pagination — loads 20 items per batch",
-        "Search and status filter still work (parent-owned, trigger grid reset + scrollToTop)",
-        "Server-side sorting works for all sortable columns",
-        "Mobile card layout matches current design",
-        "Old custom table HTML and SCSS removed from products-list component",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-015",
-      "title": "Migrate Sales list",
-      "description": "As a developer, I want to migrate the Sales list page to use DataGridComponent.",
-      "acceptanceCriteria": [
-        "Sales list uses <app-data-grid> with columns: ID, Date, Buyer, Items, Value, Profit, Status",
-        "Custom cell templates for: ID (mono clickable), profit (conditional green/red), status (badge)",
-        "Infinite scroll replaces pagination",
-        "Search, date range, and status filters still work (parent-owned)",
-        "Mobile card layout matches current design",
-        "Old custom table HTML and SCSS removed",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-016",
-      "title": "Migrate Customers list",
-      "description": "As a developer, I want to migrate the Customers list page to use DataGridComponent.",
-      "acceptanceCriteria": [
-        "Customers list uses <app-data-grid> with columns: Name, Nickname, Email, Total Orders, Total Spent, Last Purchase",
-        "Custom cell templates for: nickname (mono), total spent (currency + indicator), last purchase (relative date)",
-        "Infinite scroll replaces current load-all pattern",
-        "Search and sorting still work",
-        "Mobile card layout matches current design",
-        "Old custom table HTML and SCSS removed",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-017",
-      "title": "Migrate Purchase Orders list",
-      "description": "As a developer, I want to migrate the Purchase Orders list page to use DataGridComponent.",
-      "acceptanceCriteria": [
-        "Purchase Orders list uses <app-data-grid> with columns: Supplier, Status, Items, Total, Created Date, Received Date",
-        "Custom cell templates for: status (badge), total (currency mono)",
-        "Infinite scroll replaces pagination",
-        "Search and status filters still work",
-        "Mobile card layout matches current design",
-        "Old custom table HTML and SCSS removed",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-018",
-      "title": "Migrate Inventory Movements table",
-      "description": "As a developer, I want to migrate the Inventory movements table to use DataGridComponent.",
-      "acceptanceCriteria": [
-        "Movements table uses <app-data-grid> with columns: Date, Product, Type, Quantity, Unit Cost, Notes",
-        "Custom cell templates for: type (colored badge), quantity (signed +/- with color)",
-        "Infinite scroll replaces pagination",
-        "Type filter still works",
-        "Mobile card layout matches current design",
-        "Old custom table HTML and SCSS removed",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 18,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-019",
-      "title": "Migrate Inventory Overview with backend pagination",
-      "description": "As a developer, I want to migrate the Inventory overview table to use DataGridComponent with infinite scroll, including backend pagination support.",
-      "acceptanceCriteria": [
-        "Backend GET /api/inventory updated to support pagination via PagedResult<InventoryItemDto> with page and pageSize query params",
-        "Inventory overview uses <app-data-grid> with columns: SKU, Product, Total Stock, Reserved, Available, Unit Cost, Stock Value",
-        "Custom cell templates for: available (conditional warning/danger coloring for low/zero stock), costs (mono currency)",
-        "Infinite scroll replaces current load-all pattern",
-        "Row highlighting for low stock (<=5) and zero stock preserved",
-        "Mobile card layout",
-        "Old custom table HTML and SCSS removed",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 19,
-      "passes": true,
-      "notes": "This story includes a backend change (pagination endpoint) — implement that first, then the frontend migration."
-    },
-    {
-      "id": "US-020",
-      "title": "Remove old DataTableComponent",
-      "description": "As a developer, I want to remove the old DataTableComponent once all pages are migrated so we don't maintain two grid implementations.",
-      "acceptanceCriteria": [
-        "Verify no component imports or uses DataTableComponent",
-        "Delete shared/components/data-table/ directory",
-        "Remove from shared module exports/declarations if applicable",
-        "App builds without errors (ng build succeeds)",
-        "Typecheck passes"
-      ],
-      "priority": 20,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Small frontend story — only changes needed for optimistic locking support."
     }
   ]
 }
