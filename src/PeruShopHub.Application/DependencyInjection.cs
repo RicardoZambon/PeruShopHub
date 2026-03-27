@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<ITenantService, TenantService>();
 
         return services;
     }
