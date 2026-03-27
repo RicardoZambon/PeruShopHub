@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, HostListener, ElementRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../../services/theme.service';
 import { SidebarService } from '../../../services/sidebar.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -36,10 +37,13 @@ export class HeaderComponent {
 
   readonly userName = computed(() => this.auth.currentUser()?.name ?? 'Usuário');
   readonly userEmail = computed(() => this.auth.currentUser()?.email ?? '');
+  readonly tenantName = computed(() => this.auth.tenantName());
   readonly userRole = computed(() => {
-    const role = this.auth.currentUser()?.role;
-    if (role === 'admin') return 'Administrador';
-    if (role === 'manager') return 'Gerente';
+    const user = this.auth.currentUser();
+    if (user?.isSuperAdmin) return 'Super Admin';
+    const role = user?.tenantRole;
+    if (role === 'Admin') return 'Administrador';
+    if (role === 'Manager') return 'Gerente';
     return 'Visualizador';
   });
   readonly userInitials = computed(() => {

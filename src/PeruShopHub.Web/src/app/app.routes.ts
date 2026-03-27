@@ -1,12 +1,18 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { unsavedChangesGuard } from './guards/unsaved-changes.guard';
+import { superAdminGuard } from './guards/super-admin.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () =>
       import('./pages/login/login.component').then(m => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./pages/register/register.component').then(m => m.RegisterComponent),
   },
   {
     path: '',
@@ -111,6 +117,12 @@ export const routes: Routes = [
         path: 'configuracoes',
         loadComponent: () =>
           import('./pages/settings/settings.component').then(m => m.SettingsComponent),
+      },
+      {
+        path: 'admin/tenants',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/admin/admin-tenants.component').then(m => m.AdminTenantsComponent),
       },
       {
         path: '**',

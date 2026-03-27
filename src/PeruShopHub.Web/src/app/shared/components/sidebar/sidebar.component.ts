@@ -1,4 +1,4 @@
-import { Component, inject, HostListener } from '@angular/core';
+import { Component, inject, computed, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { LucideAngularModule, LucideIconData } from 'lucide-angular';
 import {
@@ -17,8 +17,10 @@ import {
   Megaphone,
   PackageOpen,
   ClipboardList,
+  Shield,
 } from 'lucide-angular';
 import { SidebarService } from '../../../services/sidebar.service';
+import { AuthService } from '../../../services/auth.service';
 
 interface NavItem {
   label: string;
@@ -41,6 +43,11 @@ interface NavGroup {
 })
 export class SidebarComponent {
   readonly sidebar = inject(SidebarService);
+  private readonly auth = inject(AuthService);
+
+  readonly shopName = computed(() => this.auth.tenantName() || 'PeruShopHub');
+  readonly isSuperAdmin = computed(() => this.auth.isSuperAdmin());
+  readonly adminIcon = Shield;
 
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: LayoutDashboard },

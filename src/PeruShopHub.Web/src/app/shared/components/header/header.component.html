@@ -48,6 +48,9 @@
             <span class="header__dropdown-name">{{ userName() }}</span>
             <span class="header__dropdown-email">{{ userEmail() }}</span>
             <span class="header__dropdown-role">{{ userRole() }}</span>
+            @if (tenantName()) {
+              <span class="header__dropdown-tenant">{{ tenantName() }}</span>
+            }
           </div>
           <div class="header__dropdown-divider"></div>
           <a routerLink="/configuracoes" class="header__dropdown-item" (click)="closeUserMenu()">

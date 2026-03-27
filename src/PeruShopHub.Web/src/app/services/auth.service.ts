@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -8,6 +8,16 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  tenantRole: string | null;
+  tenantId: string | null;
+  tenantName: string | null;
+  isSuperAdmin: boolean;
+}
+
+export interface TenantSummary {
+  id: string;
+  name: string;
+  slug: string;
   role: string;
 }
 
@@ -28,6 +38,11 @@ export class AuthService {
   private readonly baseUrl = `${environment.apiUrl}/auth`;
 
   readonly currentUser = signal<AuthUser | null>(this.loadStoredUser());
+
+  readonly isSuperAdmin = computed(() => this.currentUser()?.isSuperAdmin ?? false);
+  readonly tenantName = computed(() => this.currentUser()?.tenantName ?? '');
+  readonly tenantRole = computed(() => this.currentUser()?.tenantRole ?? '');
+  readonly hasTenant = computed(() => !!this.currentUser()?.tenantId);
 
   private refreshPromise: Promise<string> | null = null;
 
@@ -51,8 +66,29 @@ export class AuthService {
     return res.user;
   }
 
+  async register(shopName: string, name: string, email: string, password: string): Promise<AuthUser> {
+    const res = await firstValueFrom(
+      this.http.post<AuthResponse>(`${this.baseUrl}/register`, { shopName, name, email, password })
+    );
+    this.storeTokens(res);
+    return res.user;
+  }
+
+  async getMyTenants(): Promise<TenantSummary[]> {
+    return await firstValueFrom(
+      this.http.get<TenantSummary[]>(`${this.baseUrl}/tenants`)
+    );
+  }
+
+  async switchTenant(tenantId: string): Promise<AuthUser> {
+    const res = await firstValueFrom(
+      this.http.post<AuthResponse>(`${this.baseUrl}/switch-tenant`, { tenantId })
+    );
+    this.storeTokens(res);
+    return res.user;
+  }
+
   async refreshAccessToken(): Promise<string> {
-    // Deduplicate concurrent refresh calls
     if (this.refreshPromise) return this.refreshPromise;
 
     const token = this.refreshToken;
@@ -79,7 +115,6 @@ export class AuthService {
   logout(): void {
     const token = this.accessToken;
     if (token) {
-      // Fire-and-forget server logout
       this.http.post(`${this.baseUrl}/logout`, {}).subscribe({ error: () => {} });
     }
     localStorage.removeItem(TOKEN_KEY);

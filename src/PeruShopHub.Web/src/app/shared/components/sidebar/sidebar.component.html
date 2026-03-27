@@ -11,9 +11,9 @@
   <!-- Logo -->
   <div class="sidebar-logo">
     @if (sidebar.collapsed() && !sidebar.mobileOpen()) {
-      <span class="logo-icon">P</span>
+      <span class="logo-icon">{{ shopName().charAt(0) }}</span>
     } @else {
-      <span class="logo-full">PeruShopHub</span>
+      <span class="logo-full">{{ shopName() }}</span>
     }
     <!-- Mobile close button -->
     <button class="mobile-close" (click)="sidebar.closeMobile()">
@@ -48,6 +48,28 @@
           </a>
         </li>
       }
+    }
+
+    @if (isSuperAdmin()) {
+      @if (!sidebar.collapsed() || sidebar.mobileOpen()) {
+        <li class="nav-group-label">ADMINISTRAÇÃO</li>
+      } @else {
+        <li class="nav-group-divider"></li>
+      }
+      <li>
+        <a
+          class="nav-item"
+          routerLink="/admin/tenants"
+          routerLinkActive="active"
+          [title]="sidebar.collapsed() ? 'Lojas' : ''"
+          (click)="onNavClick()"
+        >
+          <lucide-angular [img]="adminIcon" [size]="20" class="nav-icon" />
+          @if (!sidebar.collapsed() || sidebar.mobileOpen()) {
+            <span class="nav-label">Lojas</span>
+          }
+        </a>
+      </li>
     }
   </ul>
 

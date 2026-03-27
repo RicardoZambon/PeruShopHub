@@ -14,6 +14,7 @@ import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/tog
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
 import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule } from '../../services/settings.service';
+import { TenantService, type TenantMember } from '../../services/tenant.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
 
@@ -44,6 +45,7 @@ interface AlertConfig {
 export class SettingsComponent implements OnInit {
   private readonly themeService = inject(ThemeService);
   private readonly settingsService = inject(SettingsService);
+  private readonly tenantService = inject(TenantService);
   private readonly toastService = inject(ToastService);
   private readonly confirmDialog = inject(ConfirmDialogService);
 
@@ -425,9 +427,18 @@ export class SettingsComponent implements OnInit {
   }
 
   private loadUsers(): void {
-    this.settingsService.getUsers().subscribe({
-      next: (data) => this.users.set(data),
-      error: (err) => console.error('Failed to load users:', err),
+    this.tenantService.getMembers().subscribe({
+      next: (members) => {
+        const mapped: UserRow[] = members.map(m => ({
+          id: parseInt(m.id, 10) || 0,
+          nome: m.name,
+          email: m.email,
+          role: m.role,
+          ativo: m.isActive,
+        }));
+        this.users.set(mapped);
+      },
+      error: (err) => console.error('Failed to load members:', err),
     });
   }
 
