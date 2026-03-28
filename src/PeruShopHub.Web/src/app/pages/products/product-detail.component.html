@@ -277,6 +277,159 @@
       </div>
     </div>
 
+    <!-- Precificação section -->
+    <div class="section-block">
+      <h2 class="section-block__title">Precificação</h2>
+      <div class="pricing-section">
+        <!-- Calculator form -->
+        <div class="pricing-form">
+          <div class="pricing-form__row">
+            <div class="pricing-form__field">
+              <label class="pricing-form__label">Marketplace</label>
+              <app-select-dropdown
+                [options]="marketplaceOptions"
+                [value]="pricingMarketplace()"
+                (valueChange)="onMarketplaceChange($event)"
+              ></app-select-dropdown>
+            </div>
+            <div class="pricing-form__field">
+              <label class="pricing-form__label">Tipo de Anúncio</label>
+              <app-select-dropdown
+                [options]="listingTypeOptions"
+                [value]="pricingListingType() ?? ''"
+                (valueChange)="onListingTypeChange($event)"
+              ></app-select-dropdown>
+            </div>
+            <div class="pricing-form__field">
+              <label class="pricing-form__label">Margem Desejada (%)</label>
+              <input
+                type="number"
+                class="pricing-form__input"
+                [value]="pricingMargin()"
+                (input)="onMarginInput($event)"
+                min="1"
+                max="99"
+                step="0.5"
+              />
+            </div>
+            <div class="pricing-form__field pricing-form__field--action">
+              <button
+                class="btn btn--primary"
+                (click)="calculatePrice()"
+                [disabled]="pricingCalculating()"
+              >
+                {{ pricingCalculating() ? 'Calculando...' : 'Calcular Preço' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        @if (pricingResult(); as result) {
+          <div class="pricing-results">
+            <div class="pricing-results__summary">
+              <div class="pricing-result-card pricing-result-card--highlight">
+                <span class="pricing-result-card__label">Preço Sugerido</span>
+                <span class="pricing-result-card__value mono">{{ result.suggestedPrice | brlCurrency }}</span>
+              </div>
+              <div class="pricing-result-card">
+                <span class="pricing-result-card__label">Lucro por Venda</span>
+                <span class="pricing-result-card__value mono" [ngClass]="getMarginColorClass(result.actualMarginPercent)">
+                  {{ result.profitAmount | brlCurrency }}
+                </span>
+              </div>
+              <div class="pricing-result-card">
+                <span class="pricing-result-card__label">Margem Real</span>
+                <span class="pricing-result-card__value mono" [ngClass]="getMarginColorClass(result.actualMarginPercent)">
+                  {{ result.actualMarginPercent.toFixed(1) }}%
+                </span>
+              </div>
+              <div class="pricing-result-card">
+                <span class="pricing-result-card__label">Custos Totais</span>
+                <span class="pricing-result-card__value mono">{{ result.totalCosts | brlCurrency }}</span>
+              </div>
+            </div>
+
+            <!-- Cost breakdown chart -->
+            @if (pricingChartConfig(); as chartCfg) {
+              <div class="pricing-chart-container">
+                <h3 class="pricing-chart-title">Composição do Preço</h3>
+                <div class="pricing-chart-wrap">
+                  <canvas baseChart
+                    [type]="chartCfg.type"
+                    [data]="chartCfg.data"
+                    [options]="chartCfg.options">
+                  </canvas>
+                </div>
+              </div>
+            }
+
+            <!-- Detailed breakdown table -->
+            <div class="pricing-breakdown">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Componente</th>
+                    <th class="text-right">Valor</th>
+                    <th class="text-right">% do Preço</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of result.costBreakdown; track item.label) {
+                    <tr>
+                      <td>
+                        <span class="pricing-breakdown__color" [style.background]="item.color"></span>
+                        {{ item.label }}
+                      </td>
+                      <td class="text-right mono">{{ item.amount | brlCurrency }}</td>
+                      <td class="text-right mono">{{ item.percentage.toFixed(1) }}%</td>
+                    </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td><strong>Total (Preço de Venda)</strong></td>
+                    <td class="text-right mono"><strong>{{ result.suggestedPrice | brlCurrency }}</strong></td>
+                    <td class="text-right mono"><strong>100%</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Save rule button -->
+            <div class="pricing-actions">
+              <button
+                class="btn btn--primary"
+                (click)="savePricingRule()"
+                [disabled]="pricingSaving()"
+              >
+                {{ pricingSaving() ? 'Salvando...' : 'Salvar como Regra' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Saved rules -->
+        @if (pricingRules().length > 0) {
+          <div class="pricing-rules">
+            <h3 class="pricing-rules__title">Regras Salvas</h3>
+            <div class="pricing-rules__list">
+              @for (rule of pricingRules(); track rule.id) {
+                <div class="pricing-rule-item">
+                  <div class="pricing-rule-item__info">
+                    <span class="pricing-rule-item__marketplace">{{ rule.marketplaceId }}</span>
+                    <span class="pricing-rule-item__margin mono">Margem: {{ rule.targetMarginPercent.toFixed(1) }}%</span>
+                    <span class="pricing-rule-item__price mono">Preço: {{ rule.suggestedPrice | brlCurrency }}</span>
+                  </div>
+                  <button class="btn btn--ghost btn--sm" (click)="deletePricingRule(rule.id)">Remover</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- Variant section -->
     @if (hasVariants()) {
       <div class="section-block">

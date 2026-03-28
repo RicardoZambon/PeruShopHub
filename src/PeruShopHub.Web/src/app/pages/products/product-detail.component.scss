@@ -319,6 +319,250 @@
   }
 }
 
+// Pricing section
+.pricing-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pricing-form {
+  background: var(--surface);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: var(--space-3);
+    align-items: end;
+
+    @include m.tablet {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    @include m.mobile {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  &__field--action {
+    display: flex;
+    align-items: flex-end;
+  }
+
+  &__label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  &__input {
+    padding: 8px 12px;
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-family: var(--font-mono);
+    background: var(--surface);
+    color: var(--neutral-900);
+    width: 100%;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
+    }
+  }
+}
+
+.pricing-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  &__summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+
+    @include m.tablet {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include m.mobile {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.pricing-result-card {
+  background: var(--surface);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  &--highlight {
+    border-color: var(--primary);
+    background: rgba(26, 35, 126, 0.04);
+  }
+
+  &__label {
+    font-size: var(--text-xs);
+    color: var(--neutral-500);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__value {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--neutral-900);
+  }
+}
+
+.pricing-chart-container {
+  background: var(--surface);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.pricing-chart-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--neutral-900);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.pricing-chart-wrap {
+  height: 240px;
+
+  @include m.mobile {
+    height: 200px;
+  }
+}
+
+.pricing-breakdown {
+  background: var(--surface);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+
+  &__color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: var(--space-2);
+    vertical-align: middle;
+  }
+
+  tfoot tr {
+    background: var(--neutral-50);
+    border-top: 2px solid var(--neutral-200);
+  }
+}
+
+.pricing-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pricing-rules {
+  background: var(--surface);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+
+  &__title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin: 0 0 var(--space-3) 0;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+}
+
+.pricing-rule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  gap: var(--space-3);
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  &__marketplace {
+    font-weight: 500;
+    color: var(--neutral-900);
+  }
+
+  &__margin,
+  &__price {
+    font-size: var(--text-sm);
+    color: var(--neutral-600);
+  }
+}
+
+// Button styles
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &--primary {
+    background: var(--primary);
+    color: white;
+
+    &:hover:not(:disabled) { opacity: 0.9; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--neutral-600);
+
+    &:hover { background: var(--neutral-100); }
+  }
+
+  &--sm {
+    padding: 4px 10px;
+    font-size: var(--text-xs);
+  }
+}
+
 .cost-chart-container {
   height: 280px;
   margin-bottom: var(--space-4);

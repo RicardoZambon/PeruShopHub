@@ -1,5 +1,6 @@
 import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Package, Edit } from 'lucide-angular';
 import { BaseChartDirective } from 'ng2-charts';
@@ -19,6 +20,8 @@ import { ProductVariantService } from '../../services/product-variant.service';
 import { ProductService } from '../../services/product.service';
 import type { CostHistoryItem } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
+import { PricingService } from '../../services/pricing.service';
+import type { PriceCalculationResult, PricingRule } from '../../services/pricing.service';
 import type { ProductVariant } from '../../models/product-variant.model';
 import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 
@@ -52,6 +55,7 @@ interface ProductDetail {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
     LucideAngularModule,
     KpiCardComponent,
@@ -253,6 +257,69 @@ export class ProductDetailComponent implements OnInit {
     return this.variants().some(v => v.needsReview);
   });
 
+  // Pricing calculator state
+  pricingMargin = signal(20);
+  pricingMarketplace = signal('mercadolivre');
+  pricingListingType = signal<string | null>(null);
+  pricingCalculating = signal(false);
+  pricingResult = signal<PriceCalculationResult | null>(null);
+  pricingRules = signal<PricingRule[]>([]);
+  pricingSaving = signal(false);
+
+  marketplaceOptions: SelectOption[] = [
+    { value: 'mercadolivre', label: 'Mercado Livre' },
+  ];
+
+  listingTypeOptions: SelectOption[] = [
+    { value: '', label: 'Padrão' },
+    { value: 'classic', label: 'Clássico' },
+    { value: 'premium', label: 'Premium' },
+  ];
+
+  pricingChartConfig = computed<ChartConfiguration<'bar'> | null>(() => {
+    const result = this.pricingResult();
+    if (!result) return null;
+
+    const breakdown = result.costBreakdown;
+    return {
+      type: 'bar',
+      data: {
+        labels: breakdown.map(c => c.label),
+        datasets: [{
+          data: breakdown.map(c => c.amount),
+          backgroundColor: breakdown.map(c => c.color),
+          borderRadius: 4,
+          barPercentage: 0.7,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const val = ctx.parsed.x ?? 0;
+                const pct = breakdown[ctx.dataIndex]?.percentage ?? 0;
+                return `R$ ${val.toFixed(2).replace('.', ',')} (${pct.toFixed(1)}%)`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => `R$ ${Number(value).toFixed(0)}`,
+            },
+          },
+        },
+      },
+    };
+  });
+
   private productId = '';
 
   constructor(
@@ -261,6 +328,7 @@ export class ProductDetailComponent implements OnInit {
     private variantService: ProductVariantService,
     private productService: ProductService,
     private categoryService: CategoryService,
+    private pricingService: PricingService,
   ) {}
 
   onEdit(): void {
@@ -321,8 +389,9 @@ export class ProductDetailComponent implements OnInit {
       // Load variants
       this.variantService.getByProductId(this.productId).then(v => this.variants.set(v));
 
-      // Load analytics
+      // Load analytics and pricing rules
       this.loadAnalytics();
+      this.loadPricingRules();
     } catch (err) {
       console.error('Failed to load product', err);
     } finally {
@@ -413,5 +482,92 @@ export class ProductDetailComponent implements OnInit {
     if (variant.stock === 0) return 'variant-row--danger';
     if (variant.stock > 0 && variant.stock <= 5) return 'variant-row--warning';
     return '';
+  }
+
+  // Pricing methods
+  onMarginInput(event: Event): void {
+    const value = parseFloat((event.target as HTMLInputElement).value);
+    if (!isNaN(value) && value >= 0 && value <= 99) {
+      this.pricingMargin.set(value);
+    }
+  }
+
+  onMarketplaceChange(value: string): void {
+    this.pricingMarketplace.set(value);
+    this.pricingResult.set(null);
+  }
+
+  onListingTypeChange(value: string): void {
+    this.pricingListingType.set(value || null);
+    this.pricingResult.set(null);
+  }
+
+  async calculatePrice(): Promise<void> {
+    if (!this.productId || this.pricingCalculating()) return;
+    this.pricingCalculating.set(true);
+    try {
+      const result = await this.pricingService.calculate({
+        productId: this.productId,
+        targetMarginPercent: this.pricingMargin(),
+        marketplaceId: this.pricingMarketplace(),
+        listingType: this.pricingListingType(),
+      });
+      this.pricingResult.set(result);
+    } catch (err: any) {
+      console.error('Pricing calculation failed', err);
+      this.pricingResult.set(null);
+    } finally {
+      this.pricingCalculating.set(false);
+    }
+  }
+
+  async savePricingRule(): Promise<void> {
+    if (!this.productId || !this.pricingResult() || this.pricingSaving()) return;
+    this.pricingSaving.set(true);
+    try {
+      // Check if rule already exists for this product+marketplace
+      const existing = this.pricingRules().find(
+        r => r.productId === this.productId && r.marketplaceId === this.pricingMarketplace()
+      );
+      if (existing) {
+        await this.pricingService.updateRule(existing.id, this.pricingMargin());
+      } else {
+        await this.pricingService.createRule({
+          productId: this.productId,
+          marketplaceId: this.pricingMarketplace(),
+          listingType: this.pricingListingType(),
+          targetMarginPercent: this.pricingMargin(),
+        });
+      }
+      await this.loadPricingRules();
+    } catch (err: any) {
+      console.error('Failed to save pricing rule', err);
+    } finally {
+      this.pricingSaving.set(false);
+    }
+  }
+
+  async deletePricingRule(id: string): Promise<void> {
+    try {
+      await this.pricingService.deleteRule(id);
+      this.pricingRules.update(rules => rules.filter(r => r.id !== id));
+    } catch (err: any) {
+      console.error('Failed to delete pricing rule', err);
+    }
+  }
+
+  private async loadPricingRules(): Promise<void> {
+    try {
+      const rules = await this.pricingService.getRules(this.productId);
+      this.pricingRules.set(rules);
+    } catch {
+      this.pricingRules.set([]);
+    }
+  }
+
+  getMarginColorClass(margin: number): string {
+    if (margin >= 20) return 'value--positive';
+    if (margin >= 10) return 'value--warning';
+    return 'value--negative';
   }
 }

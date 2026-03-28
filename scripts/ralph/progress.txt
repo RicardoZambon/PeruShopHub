@@ -828,3 +828,23 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Settings component at 800+ lines — new feature tabs should be separate components/routes rather than expanding it further
   - AuditLog entity uses JSONB columns for OldValue/NewValue — flexible schema for varying audit data shapes
 ---
+
+## 2026-03-28 - US-030
+- Implemented Target-Margin Pricing Rules: backwards price calculator and saved rules CRUD
+- Backend: PricingRule entity, EF migration, PricingService (calculate + CRUD), PricingController (5 endpoints)
+- Price formula: Price = (ProductCost + PackagingCost) / (1 - targetMargin - commission - tax - paymentFee)
+- Resolves commission from CommissionRule table, tax from TaxProfile table, payment fee from PaymentFeeRule table
+- Frontend: Precificação section on Product Detail page with marketplace/listing type/margin inputs
+- Horizontal bar chart showing price composition (cost, packaging, commission, tax, payment fee, profit)
+- Breakdown table with per-component amounts and percentages
+- Save as Rule / manage saved rules per product per marketplace
+- Files changed:
+  - New: PricingRule.cs, PricingRuleConfiguration.cs, PricingDtos.cs, IPricingService.cs, PricingService.cs, PricingController.cs, pricing.service.ts
+  - Modified: PeruShopHubDbContext.cs, DependencyInjection.cs, product-detail.component.ts/html/scss
+  - Migration: 20260328194744_AddPricingRules
+- **Learnings for future iterations:**
+  - CommissionRule.Rate is stored as decimal fraction (0.11 = 11%), TaxProfile.AliquotPercentage and PaymentFeeRule.FeePercentage are stored as percentage values (6.0 = 6%) — be careful with unit conversions
+  - The product detail page uses section blocks (not tabs) — new features add new `section-block` divs rather than a tab system
+  - PricingRule has unique constraint on (TenantId, ProductId, MarketplaceId) — one rule per product per marketplace
+  - Default fallbacks: commission 11%, tax 6% (Simples Nacional), payment fee 4.99% (ML single payment)
+---
