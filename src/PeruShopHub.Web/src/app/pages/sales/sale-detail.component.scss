@@ -208,9 +208,34 @@
   }
 }
 
+// US-022b: Cost visualization row (bar + pie)
+.cost-viz-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+
+  @include m.mobile {
+    flex-direction: column;
+  }
+}
+
+.cost-pie-container {
+  width: 200px;
+  height: 200px;
+  flex-shrink: 0;
+
+  @include m.mobile {
+    width: 180px;
+    height: 180px;
+    align-self: center;
+  }
+}
+
 // Cost Breakdown
 .cost-bar-container {
-  margin-bottom: 20px;
+  flex: 1;
+  min-width: 0;
 }
 
 .cost-bar {

@@ -8,6 +8,8 @@ import {
   User, MapPin, Clock, Check, Circle, Plus, Lock, Unlock, Pencil,
   Trash2, X, Search, ChevronDown, RefreshCw
 } from 'lucide-angular';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartData, Plugin } from 'chart.js';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
@@ -219,7 +221,7 @@ function mapApiToView(api: ApiOrderDetail): OrderDetailView {
 @Component({
   selector: 'app-sale-detail',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, BadgeComponent, ButtonComponent, FormFieldComponent, FormActionsComponent, PageHeaderComponent, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, LucideAngularModule, BaseChartDirective, BadgeComponent, ButtonComponent, FormFieldComponent, FormActionsComponent, PageHeaderComponent, FormsModule, ReactiveFormsModule],
   templateUrl: './sale-detail.component.html',
   styleUrl: './sale-detail.component.scss',
 })
@@ -299,7 +301,7 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
     return this.saleSupplies().reduce((sum, s) => sum + s.total, 0);
   });
 
-  // Combined costs: order costs + supplies packaging adjustment
+  // Combined costs: order costs + supplies packaging adjustment (filtered: no zero-value costs)
   allCosts = computed(() => {
     const o = this.order();
     if (!o) return [];
@@ -318,7 +320,8 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
       });
     }
 
-    return baseCosts;
+    // US-022b: Filter out zero-value costs
+    return baseCosts.filter(c => c.value > 0);
   });
 
   // Computeds using allCosts
@@ -365,6 +368,78 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
     }
     return segments;
   });
+
+  // US-022b: Pie chart for cost breakdown
+  costPieChartData = computed<ChartData<'doughnut'>>(() => {
+    const costs = this.allCosts();
+    return {
+      labels: costs.map(c => c.category),
+      datasets: [{
+        data: costs.map(c => c.value),
+        backgroundColor: costs.map(c => c.color),
+        borderWidth: 0,
+        hoverOffset: 6,
+      }],
+    };
+  });
+
+  costPieTotal = computed(() => this.totalCosts());
+
+  costPieCenterPlugin: Plugin<'doughnut'> = {
+    id: 'costPieCenterText',
+    afterDraw: (chart) => {
+      const { ctx, width, height } = chart;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      ctx.font = '500 12px Inter';
+      ctx.fillStyle = '#757575';
+      ctx.fillText('Total Custos', centerX, centerY - 12);
+
+      const formatted = this.costPieTotal().toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      });
+      ctx.font = '700 16px Roboto Mono';
+      ctx.fillStyle = '#212121';
+      ctx.fillText(formatted, centerX, centerY + 12);
+
+      ctx.restore();
+    },
+  };
+
+  costPieChartOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: {
+        display: false, // We already have the table as legend
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { family: 'Inter', size: 13 },
+        bodyFont: { family: 'Roboto Mono', size: 12 },
+        padding: 12,
+        callbacks: {
+          label: (ctx) => {
+            const value = ctx.parsed ?? 0;
+            const total = (ctx.dataset.data as number[]).reduce((sum, v) => sum + v, 0);
+            const pct = ((value / total) * 100).toFixed(1);
+            const formatted = value.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            });
+            return `${formatted} (${pct}%)`;
+          },
+        },
+      },
+    },
+  };
 
   constructor(
     private route: ActivatedRoute,

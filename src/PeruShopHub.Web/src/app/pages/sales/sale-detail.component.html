@@ -90,26 +90,42 @@
           </app-button>
         </div>
 
-        <!-- Stacked Horizontal Bar -->
-        <div class="cost-bar-container">
-          <div class="cost-bar">
-            @for (seg of costBarSegments(); track seg.category) {
-              <div
-                class="cost-bar-segment"
-                [style.width.%]="seg.pct"
-                [style.background]="seg.color"
-                [title]="seg.category + ': ' + formatBrl(seg.value) + ' (' + seg.pct.toFixed(1) + '%)'"
-              ></div>
-            }
+        <!-- US-022b: Cost Visualization (Bar + Pie Chart) -->
+        <div class="cost-viz-row">
+          <!-- Stacked Horizontal Bar -->
+          <div class="cost-bar-container">
+            <div class="cost-bar">
+              @for (seg of costBarSegments(); track seg.category) {
+                <div
+                  class="cost-bar-segment"
+                  [style.width.%]="seg.pct"
+                  [style.background]="seg.color"
+                  [title]="seg.category + ': ' + formatBrl(seg.value) + ' (' + seg.pct.toFixed(1) + '%)'"
+                ></div>
+              }
+            </div>
+            <div class="cost-bar-legend">
+              @for (seg of costBarSegments(); track seg.category) {
+                <div class="legend-item">
+                  <span class="legend-dot" [style.background]="seg.color"></span>
+                  <span class="legend-label">{{ seg.category }}</span>
+                </div>
+              }
+            </div>
           </div>
-          <div class="cost-bar-legend">
-            @for (seg of costBarSegments(); track seg.category) {
-              <div class="legend-item">
-                <span class="legend-dot" [style.background]="seg.color"></span>
-                <span class="legend-label">{{ seg.category }}</span>
-              </div>
-            }
-          </div>
+
+          <!-- Pie Chart -->
+          @if (allCosts().length > 0) {
+            <div class="cost-pie-container">
+              <canvas
+                baseChart
+                type="doughnut"
+                [data]="costPieChartData()"
+                [options]="costPieChartOptions"
+                [plugins]="[costPieCenterPlugin]">
+              </canvas>
+            </div>
+          }
         </div>
 
         <!-- Cost Breakdown Table -->
