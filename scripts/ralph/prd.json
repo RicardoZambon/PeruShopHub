@@ -72,7 +72,7 @@
         ".NET build passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 0.5. Depends on US-003."
     },
     {

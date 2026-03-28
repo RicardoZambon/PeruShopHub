@@ -27,6 +27,9 @@ Started: Fri Mar 28 2026
 - **Integration test pattern**: Use `[Collection("Integration")]` attribute + `IntegrationTestBase` base class. `CustomWebApplicationFactory` provides PostgreSQL 16 + Redis 7 via TestContainers, auto-migrates DB
 - **Program class accessibility**: `public partial class Program { }` at end of `Program.cs` enables `WebApplicationFactory<Program>` in tests
 - **TestContainers builder pattern**: Use `new PostgreSqlBuilder("postgres:16-alpine")` (image in constructor, not `.WithImage()`)
+- **Unit test DB pattern**: Use SQLite in-memory (`SqliteConnection("DataSource=:memory:")`) with `EnsureCreated()` for unit tests. Provide `ITenantContext` mock with `IsSuperAdmin=true` to bypass query filters
+- **SQLite + EF Core gotcha**: SQLite DELETE in batch with INSERT/UPDATE on same table causes `DbUpdateConcurrencyException`. Workaround: test delete logic separately or test the underlying calculation methods directly
+- **CostCalculationService testing**: Service uses DbContext directly (not repository), so tests need real DB (SQLite in-memory). Mock `INotificationDispatcher` and `ILogger`. Use `IConfiguration` in-memory collection for tax rate
 
 ---
 
@@ -78,4 +81,24 @@ Started: Fri Mar 28 2026
   - SignalR Redis backplane services are hard to cleanly remove from DI — simplest approach is to remove Redis-related SignalR descriptors and re-add plain SignalR
   - Integration tests can't run without Docker — CI on `ubuntu-latest` has Docker, local dev may not
   - xUnit collection fixtures (`ICollectionFixture<T>`) share a single instance across all tests in the collection — ideal for TestContainers to avoid spinning up containers per test class
+---
+
+## 2026-03-28 - US-004
+- Created 33 unit tests for `CostCalculationService` covering all financial calculation logic
+- Tests organized in `tests/PeruShopHub.UnitTests/Services/CostCalculationServiceTests.cs`
+- Added `Microsoft.EntityFrameworkCore.Sqlite` package for in-memory database testing
+- Test categories:
+  - `CalculateOrderCostsAsync`: product_cost (3 tests), packaging (1), commission resolution (4: specific, category fallback, default fallback, hardcoded 13%), fixed_fee brackets (10 Theory cases + 1 quantity multiplier), tax (2: configured + default 6%), all categories returned (1), profit calculation (1)
+  - `RecalculateOrderCostsAsync`: preserves manual costs while refreshing calculated costs (1)
+  - `ReceivePurchaseOrderAsync`: weighted average cost (2: existing stock + zero stock), cost distribution by_value (1), cost distribution by_quantity (1), status gating (1), creates history + stock movements (1), zero quantity edge case (1), product-level cost update (1)
+  - Edge cases: zero price order (1)
+- All 34 tests pass (33 new + 1 pre-existing smoke test), .NET build passes (0 errors)
+- Files changed: `tests/PeruShopHub.UnitTests/Services/CostCalculationServiceTests.cs` (new), `tests/PeruShopHub.UnitTests/PeruShopHub.UnitTests.csproj` (added SQLite package), `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- **Learnings for future iterations:**
+  - SQLite in-memory requires keeping the `SqliteConnection` open for the test lifetime — use `IDisposable` to clean up
+  - Must provide `ITenantContext` mock with `IsSuperAdmin=true` when constructing `PeruShopHubDbContext` for tests — otherwise the tenant query filter causes NullReferenceException in queries
+  - SQLite + EF Core has issues with batch DELETE+INSERT on the same table — causes `DbUpdateConcurrencyException`. When testing methods that delete and re-add entities (like `RecalculateOrderCostsAsync`), test the underlying calculation logic separately
+  - `ChangeTracker.Clear()` is essential between setup and test execution to avoid stale tracking state
+  - `IConfiguration.GetValue<decimal>()` with in-memory collection works well for configuring tax rate in tests
+  - Commission resolution tests need careful setup of `CommissionRule` entities with correct MarketplaceId, CategoryPattern, and ListingType combinations
 ---
