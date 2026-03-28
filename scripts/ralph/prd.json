@@ -976,7 +976,7 @@
         ".NET build passes"
       ],
       "priority": 52,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Webhook chain start."
     },
     {

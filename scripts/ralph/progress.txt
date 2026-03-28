@@ -3,6 +3,8 @@ Started: Fri Mar 28 2026
 ---
 
 ## Codebase Patterns
+- **Redis queue pattern**: Use `IConnectionMultiplexer` + `ListLeftPushAsync` for Redis LIST operations (queues). `IDistributedCache`/`ICacheService` only supports key-value, not lists
+- **Webhook skip paths**: New unauthenticated endpoints must be added to skip lists in BOTH `TenantMiddleware` AND `TenantRateLimitMiddleware`
 - **Marketplace adapter pattern**: `IMarketplaceAdapter` in Core/Interfaces, implementations in Infrastructure/Marketplace. Keyed DI: `AddKeyedScoped<IMarketplaceAdapter, XAdapter>("key")`. Named HttpClient per marketplace
 - **ML API DTOs**: Use `[JsonPropertyName("snake_case")]` on ML response models — ML API uses snake_case, not camelCase
 - All components are **standalone** (no NgModules) with `standalone: true`
@@ -1236,4 +1238,32 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - The route and sidebar entry for `/anuncios` were already set up in a previous iteration
   - Use `Include(ml => ml.Product)` in EF Core query to join product name for the grid
   - Sync status is derived: ProductId != null → "Sincronizado", null → "Não vinculado"
+---
+
+## 2026-03-28 - US-045
+- Implemented ML webhook receiver at POST /api/webhooks/mercadolivre
+- No authentication required (ML webhooks are unauthenticated)
+- Validates structure: topic, resource, user_id, application_id
+- IP validation with configurable allowlist + CIDR support (Webhooks:MercadoLivre:AllowedIPs)
+- Returns 200 OK immediately after validate + enqueue
+- Payload enqueued to Redis list `ml:webhooks:{topic}` via IWebhookQueueService
+- Duplicate detection: Redis key `ml:webhooks:seen:{id}` with 24h TTL
+- Logging: topic, resource, userId, processing time in ms
+- Added webhook path to TenantMiddleware + TenantRateLimitMiddleware skip lists
+- Registered IConnectionMultiplexer and IWebhookQueueService in DI
+- Files changed:
+  - `src/PeruShopHub.Core/Interfaces/IWebhookQueueService.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Cache/RedisWebhookQueueService.cs` (new)
+  - `src/PeruShopHub.Application/DTOs/Webhooks/MercadoLivreWebhookDto.cs` (new)
+  - `src/PeruShopHub.API/Controllers/WebhooksController.cs` (new)
+  - `src/PeruShopHub.API/Middleware/TenantMiddleware.cs` (updated skip paths)
+  - `src/PeruShopHub.API/Middleware/TenantRateLimitMiddleware.cs` (updated skip paths)
+  - `src/PeruShopHub.API/Program.cs` (registered IConnectionMultiplexer + IWebhookQueueService)
+  - `src/PeruShopHub.API/appsettings.json` (added Webhooks config section)
+- **Learnings for future iterations:**
+  - IDistributedCache (used by RedisCacheService) doesn't support Redis LIST operations — need IConnectionMultiplexer directly for LPUSH/RPOP queue patterns
+  - Webhook endpoints need to be added to BOTH TenantMiddleware AND TenantRateLimitMiddleware skip lists
+  - ML webhooks are unauthenticated — use [AllowAnonymous] + IP allowlist, not JWT
+  - Empty AllowedIPs array = allow all (dev mode); production should have ML IP ranges configured
+  - ML webhook DTO uses snake_case field names via [JsonPropertyName] — consistent with ML API patterns
 ---
