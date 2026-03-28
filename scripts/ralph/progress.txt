@@ -56,6 +56,7 @@ Started: Fri Mar 28 2026
 - **IEmailService**: Stub `NoOpEmailService` registered in both API and Worker. When US-059 adds real provider, swap in both `Program.cs` files
 - **Worker cross-tenant queries**: Use `IgnoreQueryFilters()` in workers since there's no tenant context — filter by TenantId manually
 - **Post-query enrichment pattern**: For data from materialized views/cross-entity lookups, fetch the main query first, then batch-lookup supplementary data and merge with `record with { }` syntax
+- **Worker marketplace API access**: Worker needs its own DataProtection + ITokenEncryptionService + HttpClient("MercadoLivre") + keyed IMarketplaceAdapter registration (separate from API Program.cs). Add `Microsoft.AspNetCore.DataProtection` package to Worker .csproj
 
 ---
 
@@ -1016,4 +1017,28 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Unit tests using `IDataProtectionProvider` need the same package reference
   - `TokenEncryptionService` is registered as singleton since `IDataProtectionProvider` is thread-safe
   - The old purpose string was `"PeruShopHub.OAuth.Tokens"` — now standardized to `"MarketplaceTokens"` per acceptance criteria
+---
+
+## 2026-03-28T21:10 - US-036
+- Implemented TokenRenewalWorker background service that runs every 15 minutes
+- Added RefreshErrorCount field to MarketplaceConnection entity
+- Worker queries Active connections with tokens expiring within 30 minutes
+- Uses IMarketplaceAdapter (keyed DI) to call RefreshTokenAsync
+- Success: updates encrypted tokens, resets error count to 0
+- Failure: increments RefreshErrorCount; after 3 consecutive failures, sets Status='Error' and creates notification
+- Notification text: "Sua conexão com o Mercado Livre precisa ser reconectada"
+- Registered DataProtection, ITokenEncryptionService, HttpClient("MercadoLivre"), and keyed IMarketplaceAdapter in Worker/Program.cs
+- Added Microsoft.AspNetCore.DataProtection package to Worker project
+- EF migration AddRefreshErrorCountToMarketplaceConnection adds integer column with default 0
+- Files changed:
+  - src/PeruShopHub.Core/Entities/MarketplaceConnection.cs (added RefreshErrorCount)
+  - src/PeruShopHub.Worker/Workers/TokenRenewalWorker.cs (new)
+  - src/PeruShopHub.Worker/Program.cs (DI registrations + AddHostedService)
+  - src/PeruShopHub.Worker/PeruShopHub.Worker.csproj (DataProtection package)
+  - src/PeruShopHub.Infrastructure/Migrations/ (new migration + snapshot)
+- **Learnings for future iterations:**
+  - Worker project needs its own DataProtection + ITokenEncryptionService registration (separate from API)
+  - Worker needs HttpClient + keyed adapter registration to call marketplace APIs
+  - Worker BackgroundService pattern: interval from config, IgnoreQueryFilters(), CreateScope per iteration, individual try-catch per connection
+  - Microsoft.AspNetCore.DataProtection package needed for non-web host projects
 ---
