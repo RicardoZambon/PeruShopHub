@@ -246,3 +246,17 @@ Started: Fri Mar 28 2026
   - Sentry SDK is no-op when DSN is null/empty — safe to reference `SentrySdk.CaptureException` even when Sentry is not initialized
   - `SentryUser` has `Id`, `Email`, `Username`, `IpAddress` properties — only set what's needed
 ---
+
+## 2026-03-28 - US-011
+- Implemented health check dashboard with three endpoints: `/health` (aggregated), `/health/ready` (PostgreSQL + Redis + disk), `/health/live` (liveness probe)
+- Added Health Check UI at `/health-ui` with in-memory storage
+- Each check has 5-second timeout, configurable evaluation interval (default 30s) via `HealthChecks:EvaluationIntervalSeconds`
+- Response includes individual check results with duration via UIResponseWriter
+- Files changed: `src/PeruShopHub.API/Program.cs`, `src/PeruShopHub.API/PeruShopHub.API.csproj`, `src/PeruShopHub.API/appsettings.json`, `scripts/ralph/prd.json`
+- **Learnings for future iterations:**
+  - Health check packages: `AspNetCore.HealthChecks.Redis`, `AspNetCore.HealthChecks.System` (disk), `AspNetCore.HealthChecks.UI` + `.Client` + `.InMemory.Storage`
+  - Use `UIResponseWriter.WriteHealthCheckUIResponse` for JSON responses with individual check details
+  - Liveness probe uses `Predicate = _ => false` to skip all checks (just returns 200 if process is alive)
+  - Readiness probe filters by tag `"ready"` to check only infrastructure dependencies
+  - `AddDiskStorageHealthCheck` requires a drive path (use `/` on Linux)
+---

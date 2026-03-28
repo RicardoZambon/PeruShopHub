@@ -17,6 +17,9 @@ using PeruShopHub.Infrastructure.Storage;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using StackExchange.Redis;
 
 // ── Bootstrap Logger (captures startup errors) ──────────────
@@ -177,8 +180,36 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // ── Health Checks ─────────────────────────────────────────
+var healthCheckInterval = builder.Configuration.GetValue("HealthChecks:EvaluationIntervalSeconds", 30);
+
 builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!);
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "postgresql",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: ["ready"],
+        timeout: TimeSpan.FromSeconds(5))
+    .AddRedis(
+        builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379",
+        name: "redis",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: ["ready"],
+        timeout: TimeSpan.FromSeconds(5))
+    .AddDiskStorageHealthCheck(
+        setup => setup.AddDrive("/", minimumFreeMegabytes: 512),
+        name: "disk-space",
+        failureStatus: HealthStatus.Degraded,
+        tags: ["ready"],
+        timeout: TimeSpan.FromSeconds(5));
+
+builder.Services
+    .AddHealthChecksUI(setup =>
+    {
+        setup.SetEvaluationTimeInSeconds(healthCheckInterval);
+        setup.MaximumHistoryEntriesPerEndpoint(50);
+        setup.AddHealthCheckEndpoint("PeruShopHub API", "/health");
+    })
+    .AddInMemoryStorage();
 
 var app = builder.Build();
 
@@ -201,7 +232,34 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
-app.MapHealthChecks("/health");
+
+// ── Health Check Endpoints ──────────────────────────────
+// Aggregated status: returns Healthy/Degraded/Unhealthy with individual check results
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Readiness probe: checks PostgreSQL, Redis, disk space
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Liveness probe: returns 200 if process is running (no dependency checks)
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Health Check UI
+app.MapHealthChecksUI(options =>
+{
+    options.UIPath = "/health-ui";
+    options.ApiPath = "/health-ui-api";
+});
 
 app.Run();
 
