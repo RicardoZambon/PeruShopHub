@@ -57,6 +57,7 @@ Started: Fri Mar 28 2026
 - **Worker cross-tenant queries**: Use `IgnoreQueryFilters()` in workers since there's no tenant context — filter by TenantId manually
 - **Post-query enrichment pattern**: For data from materialized views/cross-entity lookups, fetch the main query first, then batch-lookup supplementary data and merge with `record with { }` syntax
 - **Worker marketplace API access**: Worker needs its own DataProtection + ITokenEncryptionService + HttpClient("MercadoLivre") + keyed IMarketplaceAdapter registration (separate from API Program.cs). Add `Microsoft.AspNetCore.DataProtection` package to Worker .csproj
+- **ML API resilience**: `Microsoft.Extensions.Http.Resilience` (Polly v8) via `.AddMercadoLivreResilience()` on the named HttpClient. Chain: Rate Limiter → Retry → Circuit Breaker. Extension in `Infrastructure/Marketplace/MercadoLivreResilienceExtensions.cs`
 
 ---
 
@@ -1041,4 +1042,17 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Worker needs HttpClient + keyed adapter registration to call marketplace APIs
   - Worker BackgroundService pattern: interval from config, IgnoreQueryFilters(), CreateScope per iteration, individual try-catch per connection
   - Microsoft.AspNetCore.DataProtection package needed for non-web host projects
+---
+
+## 2026-03-28 - US-037
+- Added `Microsoft.Extensions.Http.Resilience` (v9.*) to Infrastructure project — brings Polly v8 ResiliencePipeline API
+- Created `MercadoLivreResilienceExtensions.cs` with `.AddMercadoLivreResilience()` extension method
+- Policy chain (outer to inner): Rate Limiter (300 req/min sliding window) → Retry (3 retries, exponential 1s/2s/4s, 5xx+timeout only) → Circuit Breaker (opens after 5 failures in 30s, 30s break)
+- Wired resilience handler into both `API/Program.cs` and `Worker/Program.cs` via `.AddMercadoLivreResilience()` on the named HttpClient
+- Files changed: `Infrastructure.csproj`, `MercadoLivreResilienceExtensions.cs`, `API/Program.cs`, `Worker/Program.cs`
+- **Learnings for future iterations:**
+  - `Microsoft.Extensions.Http.Resilience` is the recommended .NET 8+ way to use Polly v8 with HttpClientFactory — it integrates via `AddResilienceHandler()` on `IHttpClientBuilder`
+  - Circuit breaker `MinimumThroughput` acts as the "failure count before open" — set `FailureRatio=1.0` + `MinimumThroughput=5` to mean "5 consecutive failures opens the circuit"
+  - Rate limiter is in-memory (single-instance); for multi-instance deployment, would need distributed rate limiting
+  - The resilience handler name ("MercadoLivreResilience") must be unique per HttpClient registration
 ---
