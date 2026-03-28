@@ -86,6 +86,17 @@ export interface ImportJobStatus {
   errors: string[] | null;
 }
 
+export interface OrderSyncStatus {
+  status: 'None' | 'Queued' | 'Running' | 'Completed' | 'Failed';
+  totalFound: number;
+  processed: number;
+  skipped: number;
+  errorCount: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  errors: string[] | null;
+}
+
 export interface AlertRule {
   id: string;
   type: string;
@@ -216,5 +227,17 @@ export class SettingsService {
 
   getMlImportStatus(): Observable<ImportJobStatus> {
     return this.http.get<ImportJobStatus>(`${environment.apiUrl}/integrations/mercadolivre/import/status`);
+  }
+
+  // ML Order Sync
+  triggerOrderSync(dateFrom?: string, dateTo?: string): Observable<OrderSyncStatus> {
+    const params: Record<string, string> = {};
+    if (dateFrom) params['dateFrom'] = dateFrom;
+    if (dateTo) params['dateTo'] = dateTo;
+    return this.http.post<OrderSyncStatus>(`${environment.apiUrl}/integrations/mercadolivre/sync-orders`, {}, { params });
+  }
+
+  getOrderSyncStatus(): Observable<OrderSyncStatus> {
+    return this.http.get<OrderSyncStatus>(`${environment.apiUrl}/integrations/mercadolivre/sync-orders/status`);
   }
 }

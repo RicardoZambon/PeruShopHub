@@ -1,8 +1,8 @@
-import { Component, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Search, ShoppingCart, Eye } from 'lucide-angular';
+import { LucideAngularModule, Search, ShoppingCart, Eye, Download } from 'lucide-angular';
 import {
   DataGridComponent,
   GridCellDirective,
@@ -19,6 +19,7 @@ import { ButtonComponent } from '../../shared/components/button/button.component
 import { formatBrl as formatBrlUtil, formatDateShort, getOrderStatusVariant } from '../../shared/utils';
 import { OrderService, type OrderListItem } from '../../services/order.service';
 import { FinanceService } from '../../services/finance.service';
+import { SettingsService, type OrderSyncStatus } from '../../services/settings.service';
 import { ToastService } from '../../services/toast.service';
 import { firstValueFrom } from 'rxjs';
 
@@ -31,14 +32,18 @@ type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
   templateUrl: './sales-list.component.html',
   styleUrl: './sales-list.component.scss',
 })
-export class SalesListComponent implements OnInit {
+export class SalesListComponent implements OnInit, OnDestroy {
   private readonly orderService = inject(OrderService);
   private readonly financeService = inject(FinanceService);
+  private readonly settingsService = inject(SettingsService);
   private readonly toastService = inject(ToastService);
 
   readonly searchIcon = Search;
   readonly cartIcon = ShoppingCart;
   readonly eyeIcon = Eye;
+  readonly downloadIcon = Download;
+
+  private syncPollTimer: ReturnType<typeof setInterval> | null = null;
 
   @ViewChild('grid') gridRef!: DataGridComponent;
 
@@ -65,6 +70,18 @@ export class SalesListComponent implements OnInit {
   readonly pageSize = signal(20);
   readonly sortBy = signal<string | null>(null);
   readonly sortDirection = signal<'asc' | 'desc'>('asc');
+
+  // Order sync state
+  readonly syncStatus = signal<OrderSyncStatus | null>(null);
+  readonly isSyncing = computed(() => {
+    const s = this.syncStatus();
+    return s?.status === 'Queued' || s?.status === 'Running';
+  });
+  readonly syncProgress = computed(() => {
+    const s = this.syncStatus();
+    if (!s || s.totalFound === 0) return 0;
+    return Math.round(((s.processed + s.skipped) / s.totalFound) * 100);
+  });
 
   readonly gridColumns: GridColumn[] = [
     { key: 'id', label: 'ID', width: '100px' },
@@ -93,6 +110,11 @@ export class SalesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadOrders(true);
+    this.checkSyncStatus();
+  }
+
+  ngOnDestroy(): void {
+    this.stopSyncPolling();
   }
 
   async loadOrders(reset = false): Promise<void> {
@@ -206,6 +228,66 @@ export class SalesListComponent implements OnInit {
         this.toastService.show('Erro ao gerar Excel', 'danger');
       },
     });
+  }
+
+  onSyncOrders(): void {
+    if (this.isSyncing()) return;
+
+    this.settingsService.triggerOrderSync().subscribe({
+      next: (status) => {
+        this.syncStatus.set(status);
+        this.toastService.show('Sincronização de pedidos iniciada', 'success');
+        this.startSyncPolling();
+      },
+      error: () => {
+        this.toastService.show('Erro ao iniciar sincronização', 'danger');
+      },
+    });
+  }
+
+  private checkSyncStatus(): void {
+    this.settingsService.getOrderSyncStatus().subscribe({
+      next: (status) => {
+        if (status && status.status !== 'None') {
+          this.syncStatus.set(status as OrderSyncStatus);
+          if (status.status === 'Queued' || status.status === 'Running') {
+            this.startSyncPolling();
+          }
+        }
+      },
+    });
+  }
+
+  private startSyncPolling(): void {
+    this.stopSyncPolling();
+    this.syncPollTimer = setInterval(() => {
+      this.settingsService.getOrderSyncStatus().subscribe({
+        next: (status) => {
+          if (status && status.status !== 'None') {
+            this.syncStatus.set(status as OrderSyncStatus);
+            if (status.status === 'Completed' || status.status === 'Failed') {
+              this.stopSyncPolling();
+              if (status.status === 'Completed') {
+                this.toastService.show(
+                  `Sincronização concluída: ${(status as OrderSyncStatus).processed} pedidos importados`,
+                  'success'
+                );
+                this.loadOrders(true);
+              } else {
+                this.toastService.show('Sincronização falhou', 'danger');
+              }
+            }
+          }
+        },
+      });
+    }, 3000);
+  }
+
+  private stopSyncPolling(): void {
+    if (this.syncPollTimer) {
+      clearInterval(this.syncPollTimer);
+      this.syncPollTimer = null;
+    }
   }
 
   private downloadBlob(blob: Blob, fileName: string): void {

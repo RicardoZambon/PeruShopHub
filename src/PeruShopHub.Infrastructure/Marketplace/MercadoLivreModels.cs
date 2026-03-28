@@ -88,6 +88,9 @@ public class MlOrderSearchResponse
 {
     [JsonPropertyName("results")]
     public List<MlOrderResponse> Results { get; set; } = [];
+
+    [JsonPropertyName("paging")]
+    public MlPaging? Paging { get; set; }
 }
 
 public class MlOrderResponse

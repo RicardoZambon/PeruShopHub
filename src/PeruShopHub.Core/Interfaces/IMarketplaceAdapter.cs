@@ -19,6 +19,9 @@ public interface IMarketplaceAdapter
     Task<MarketplaceOrderDetails> GetOrderDetailsAsync(string orderId, CancellationToken ct = default);
     Task<IReadOnlyList<MarketplaceFee>> GetOrderFeesAsync(string orderId, CancellationToken ct = default);
 
+    /// <summary>Search orders with offset-based pagination. ML uses offset/limit.</summary>
+    Task<MarketplaceOrderSearchResult> SearchOrdersPagedAsync(DateTimeOffset from, DateTimeOffset to, int offset, int limit, CancellationToken ct = default);
+
     /// <summary>Scroll-paginate through all seller items. Pass null scrollId for first page.</summary>
     Task<MarketplaceItemSearchResult> SearchSellerItemsAsync(string sellerId, string? scrollId, int limit = 50, CancellationToken ct = default);
 
@@ -72,6 +75,14 @@ public record MarketplaceFee(
     string Type,
     decimal Amount,
     string CurrencyId);
+
+// ── Order search (paginated) ────────────────────────────────
+
+public record MarketplaceOrderSearchResult(
+    IReadOnlyList<MarketplaceOrder> Orders,
+    int Total,
+    int Offset,
+    int Limit);
 
 // ── Item search / import DTOs ───────────────────────────────
 

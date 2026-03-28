@@ -63,8 +63,10 @@ builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IMlPhotoSyncService, MlPhotoSyncService>();
 builder.Services.AddScoped<IMlListingImportService, MlListingImportService>();
 builder.Services.AddScoped<IProductSyncService, ProductSyncService>();
+builder.Services.AddScoped<IOrderSyncService, OrderSyncService>();
 
 builder.Services.AddHostedService<MlListingImportWorker>();
+builder.Services.AddHostedService<OrderSyncWorker>();
 builder.Services.AddHostedService<StockAlertWorker>();
 builder.Services.AddHostedService<NotificationCleanupWorker>();
 builder.Services.AddHostedService<SkuProfitabilityRefreshWorker>();

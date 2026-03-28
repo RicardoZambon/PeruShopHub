@@ -40,7 +40,32 @@
     ></app-select-dropdown>
     <app-button variant="outline" (click)="onExportPdf()">Exportar PDF</app-button>
     <app-button variant="outline" (click)="onExportExcel()">Exportar Excel</app-button>
+    <app-button
+      variant="accent"
+      [disabled]="isSyncing()"
+      (click)="onSyncOrders()"
+    >
+      {{ isSyncing() ? 'Importando...' : 'Importar Histórico ML' }}
+    </app-button>
   </div>
+
+  <!-- Order Sync Progress -->
+  @if (isSyncing() && syncStatus()) {
+    <div class="vendas__sync-progress">
+      <div class="vendas__sync-info">
+        <span class="vendas__sync-label">Importando pedidos do Mercado Livre...</span>
+        <span class="vendas__sync-counts">
+          {{ syncStatus()!.processed }} importados, {{ syncStatus()!.skipped }} existentes
+          @if (syncStatus()!.totalFound > 0) {
+            / {{ syncStatus()!.totalFound }} encontrados
+          }
+        </span>
+      </div>
+      <div class="vendas__sync-bar">
+        <div class="vendas__sync-bar-fill" [style.width.%]="syncProgress()"></div>
+      </div>
+    </div>
+  }
 
   <!-- Data Grid -->
   <app-data-grid

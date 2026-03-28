@@ -142,6 +142,30 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
             o.TotalAmount)).ToList();
     }
 
+    public async Task<MarketplaceOrderSearchResult> SearchOrdersPagedAsync(
+        DateTimeOffset from, DateTimeOffset to, int offset, int limit, CancellationToken ct = default)
+    {
+        var fromStr = from.ToString("yyyy-MM-ddTHH:mm:ss.fffzzz");
+        var toStr = to.ToString("yyyy-MM-ddTHH:mm:ss.fffzzz");
+        var url = $"/orders/search?seller=me" +
+                  $"&order.date_created.from={Uri.EscapeDataString(fromStr)}" +
+                  $"&order.date_created.to={Uri.EscapeDataString(toStr)}" +
+                  $"&offset={offset}&limit={limit}" +
+                  $"&sort=date_desc";
+
+        var result = await SendAsync<MlOrderSearchResponse>(HttpMethod.Get, url, null, ct);
+
+        var orders = result.Results.Select(o => new MarketplaceOrder(
+            o.Id.ToString(),
+            o.Status,
+            o.DateCreated,
+            o.TotalAmount)).ToList();
+
+        var total = result.Paging?.Total ?? orders.Count;
+
+        return new MarketplaceOrderSearchResult(orders, total, offset, limit);
+    }
+
     public async Task<MarketplaceOrderDetails> GetOrderDetailsAsync(string orderId, CancellationToken ct = default)
     {
         var order = await SendAsync<MlOrderResponse>(HttpMethod.Get, $"/orders/{orderId}", null, ct);

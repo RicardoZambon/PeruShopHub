@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IMarketplaceListingService, MarketplaceListingService>();
         services.AddScoped<IMlPhotoSyncService, MlPhotoSyncService>();
         services.AddScoped<IProductSyncService, ProductSyncService>();
+        services.AddScoped<IOrderSyncService, OrderSyncService>();
 
         return services;
     }

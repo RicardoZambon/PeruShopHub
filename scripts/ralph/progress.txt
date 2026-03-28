@@ -3,6 +3,8 @@ Started: Fri Mar 28 2026
 ---
 
 ## Codebase Patterns
+- **ButtonComponent variants**: 'accent' | 'ghost' | 'outline' | 'danger' | 'icon' — no 'primary' variant. Use 'accent' for primary actions
+- **On-demand sync pattern**: Redis cache key for queue (`prefix:queue:{tenantId}`), polling worker checks for queued requests, status tracked via cache with TTL. Same pattern for listing import and order sync
 - **Redis queue pattern**: Use `IConnectionMultiplexer` + `ListLeftPushAsync` for Redis LIST operations (queues). `IDistributedCache`/`ICacheService` only supports key-value, not lists
 - **Webhook skip paths**: New unauthenticated endpoints must be added to skip lists in BOTH `TenantMiddleware` AND `TenantRateLimitMiddleware`
 - **Marketplace adapter pattern**: `IMarketplaceAdapter` in Core/Interfaces, implementations in Infrastructure/Marketplace. Keyed DI: `AddKeyedScoped<IMarketplaceAdapter, XAdapter>("key")`. Named HttpClient per marketplace
@@ -1285,4 +1287,34 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - MarketplaceListing.ExternalId links ML items to internal products — use this for OrderItem.ProductId resolution
   - CostCalculationService depends on INotificationDispatcher — must register a dispatcher implementation in Worker
   - Worker needs IConnectionMultiplexer (for RPOP) separately from IDistributedCache (for key-value). Both needed for webhook processing
+---
+
+## 2026-03-28 - US-047
+- Implemented Historical Order Sync: POST /api/integrations/mercadolivre/sync-orders triggers async order import
+- Added `SearchOrdersPagedAsync` to `IMarketplaceAdapter` + `MercadoLivreAdapter` with offset/limit pagination
+- Created `OrderSyncService` (Application layer) with enqueue/status/execute pattern following `MlListingImportService` pattern
+- Created `OrderSyncWorker` (Worker project) polling Redis queue for sync requests
+- Added sync-orders + sync-orders/status endpoints to `IntegrationsController`
+- Frontend: "Importar Histórico ML" button on Sales page with progress bar (polling every 3s)
+- Configurable date range (default 90 days), batches of 50, skips existing orders
+- Progress tracking: totalFound, processed, skipped, errorCount
+- Reuses same order mapping logic as WebhookProcessingWorker (MapOrderDetails, MapOrderItems, MergeApiFeeCosts, FindOrCreateCustomer)
+- Files changed:
+  - `src/PeruShopHub.Core/Interfaces/IMarketplaceAdapter.cs` — added `SearchOrdersPagedAsync` + `MarketplaceOrderSearchResult`
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreAdapter.cs` — implemented `SearchOrdersPagedAsync`
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreModels.cs` — added `Paging` to `MlOrderSearchResponse`
+  - `src/PeruShopHub.Application/Services/OrderSyncService.cs` — NEW: full order sync service
+  - `src/PeruShopHub.Application/DependencyInjection.cs` — registered `IOrderSyncService`
+  - `src/PeruShopHub.Worker/Workers/OrderSyncWorker.cs` — NEW: background worker
+  - `src/PeruShopHub.Worker/Program.cs` — registered `IOrderSyncService` + `OrderSyncWorker`
+  - `src/PeruShopHub.API/Controllers/IntegrationsController.cs` — added sync-orders endpoints
+  - `src/PeruShopHub.Web/src/app/services/settings.service.ts` — added `OrderSyncStatus` + sync methods
+  - `src/PeruShopHub.Web/src/app/pages/sales/sales-list.component.ts` — added sync button + progress polling
+  - `src/PeruShopHub.Web/src/app/pages/sales/sales-list.component.html` — added sync button + progress bar
+  - `src/PeruShopHub.Web/src/app/pages/sales/sales-list.component.scss` — added sync progress styles
+- **Learnings for future iterations:**
+  - ButtonComponent variants: 'accent' | 'ghost' | 'outline' | 'danger' | 'icon' — no 'primary' variant
+  - Order sync follows the same queue pattern as MlListingImport: Redis cache key for queue, polling worker, status tracking via cache
+  - The mapping logic (MapOrderDetails, MapOrderItems, etc.) is duplicated between WebhookProcessingWorker and OrderSyncService — US-048 should extract this to a shared service
+  - ML `/orders/search` supports `offset` and `limit` query params for pagination, plus `paging` in response
 ---

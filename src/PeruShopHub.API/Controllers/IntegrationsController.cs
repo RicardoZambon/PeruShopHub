@@ -16,6 +16,7 @@ public class IntegrationsController : ControllerBase
 {
     private readonly IIntegrationService _integrationService;
     private readonly IMlListingImportService _importService;
+    private readonly IOrderSyncService _orderSyncService;
     private readonly IMarketplaceListingService _listingService;
     private readonly ITenantContext _tenantContext;
     private readonly PeruShopHubDbContext _db;
@@ -23,12 +24,14 @@ public class IntegrationsController : ControllerBase
     public IntegrationsController(
         IIntegrationService integrationService,
         IMlListingImportService importService,
+        IOrderSyncService orderSyncService,
         IMarketplaceListingService listingService,
         ITenantContext tenantContext,
         PeruShopHubDbContext db)
     {
         _integrationService = integrationService;
         _importService = importService;
+        _orderSyncService = orderSyncService;
         _listingService = listingService;
         _tenantContext = tenantContext;
         _db = db;
@@ -98,6 +101,32 @@ public class IntegrationsController : ControllerBase
             return Unauthorized();
 
         var status = await _importService.GetImportStatusAsync(_tenantContext.TenantId.Value, ct);
+        if (status is null)
+            return Ok(new { status = "None" });
+
+        return Ok(status);
+    }
+
+    [HttpPost("mercadolivre/sync-orders")]
+    public async Task<ActionResult<OrderSyncStatus>> TriggerOrderSync(
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        CancellationToken ct = default)
+    {
+        if (_tenantContext.TenantId is null)
+            return Unauthorized();
+
+        var status = await _orderSyncService.EnqueueSyncAsync(_tenantContext.TenantId.Value, dateFrom, dateTo, ct);
+        return Accepted(status);
+    }
+
+    [HttpGet("mercadolivre/sync-orders/status")]
+    public async Task<ActionResult<OrderSyncStatus>> GetOrderSyncStatus(CancellationToken ct)
+    {
+        if (_tenantContext.TenantId is null)
+            return Unauthorized();
+
+        var status = await _orderSyncService.GetSyncStatusAsync(_tenantContext.TenantId.Value, ct);
         if (status is null)
             return Ok(new { status = "None" });
 
