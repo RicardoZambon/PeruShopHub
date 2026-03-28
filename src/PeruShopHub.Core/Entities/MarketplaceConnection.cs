@@ -21,4 +21,5 @@ public class MarketplaceConnection : ITenantScoped
     public DateTime? TokenExpiresAt { get; set; }
     public string? ExternalUserId { get; set; }
     public string Status { get; set; } = "Disconnected"; // Disconnected, Active, Expired, Error
+    public int RefreshErrorCount { get; set; }
 }
