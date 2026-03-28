@@ -991,3 +991,29 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Store `code_verifier` in Redis (not cookies) — server-side PKCE state is more secure
   - `Marketplaces:MercadoLivre:ClientId/ClientSecret/RedirectUri` config pattern for marketplace credentials
 ---
+
+## 2026-03-28 - US-035
+- Created `ITokenEncryptionService` interface in Core/Interfaces with `Encrypt(plainText)` and `Decrypt(cipherText)` methods
+- Created `TokenEncryptionService` in Infrastructure/Security using `IDataProtectionProvider` with purpose `"MarketplaceTokens"`
+- Configured Data Protection with persistent key directory (configurable via `DataProtection:KeysPath`) and `SetApplicationName("PeruShopHub")`
+- Refactored `IntegrationService` to use `ITokenEncryptionService` instead of direct `IDataProtectionProvider`
+- Registered `ITokenEncryptionService` as singleton in DI
+- Added `Microsoft.AspNetCore.DataProtection` package to Infrastructure project
+- 10 unit tests: encrypt/decrypt roundtrip, special chars, long tokens, null/empty validation, key rotation
+- 1 integration test: save connection with encrypted tokens → reload from DB → decrypt correctly
+- Files changed:
+  - `src/PeruShopHub.Core/Interfaces/ITokenEncryptionService.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Security/TokenEncryptionService.cs` (new)
+  - `src/PeruShopHub.Infrastructure/PeruShopHub.Infrastructure.csproj` (added DataProtection package)
+  - `src/PeruShopHub.Application/Services/IntegrationService.cs` (refactored to use ITokenEncryptionService)
+  - `src/PeruShopHub.API/Program.cs` (configured key persistence + registered service)
+  - `tests/PeruShopHub.UnitTests/Services/TokenEncryptionServiceTests.cs` (new)
+  - `tests/PeruShopHub.UnitTests/PeruShopHub.UnitTests.csproj` (added DataProtection package)
+  - `tests/PeruShopHub.IntegrationTests/TokenEncryptionIntegrationTests.cs` (new)
+- **Learnings for future iterations:**
+  - `PersistKeysToFileSystem` requires `using Microsoft.AspNetCore.DataProtection;` in Program.cs — not auto-imported
+  - Infrastructure project needs explicit `Microsoft.AspNetCore.DataProtection` package since it's not a Web SDK project
+  - Unit tests using `IDataProtectionProvider` need the same package reference
+  - `TokenEncryptionService` is registered as singleton since `IDataProtectionProvider` is thread-safe
+  - The old purpose string was `"PeruShopHub.OAuth.Tokens"` — now standardized to `"MarketplaceTokens"` per acceptance criteria
+---
