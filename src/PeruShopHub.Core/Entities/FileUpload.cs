@@ -13,5 +13,7 @@ public class FileUpload : ITenantScoped
     public string ContentType { get; set; } = string.Empty;
     public long SizeBytes { get; set; }
     public int SortOrder { get; set; }
+    public string? ExternalUrl { get; set; }
+    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

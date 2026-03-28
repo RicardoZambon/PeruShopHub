@@ -7,6 +7,7 @@ using PeruShopHub.Infrastructure.Email;
 using PeruShopHub.Infrastructure.Marketplace;
 using PeruShopHub.Infrastructure.Persistence;
 using PeruShopHub.Infrastructure.Security;
+using PeruShopHub.Infrastructure.Storage;
 using PeruShopHub.Worker.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -40,7 +41,11 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
+// File Storage (needed for photo sync during import)
+builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+
 // ML Listing Import
+builder.Services.AddScoped<IMlPhotoSyncService, MlPhotoSyncService>();
 builder.Services.AddScoped<IMlListingImportService, MlListingImportService>();
 
 builder.Services.AddHostedService<MlListingImportWorker>();

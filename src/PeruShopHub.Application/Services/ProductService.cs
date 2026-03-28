@@ -78,7 +78,7 @@ public class ProductService : IProductService
                     ? (p.Price - p.PurchaseCost - p.PackagingCost) / p.Price * 100m
                     : (decimal?)null,
                 _db.FileUploads
-                    .Where(f => f.EntityType == "product" && f.EntityId == p.Id)
+                    .Where(f => f.EntityType == "product" && f.EntityId == p.Id && f.IsActive)
                     .OrderBy(f => f.SortOrder)
                     .Select(f => f.StoragePath)
                     .FirstOrDefault(),
@@ -741,7 +741,7 @@ public class ProductService : IProductService
     {
         return await _db.FileUploads
             .AsNoTracking()
-            .Where(f => f.EntityType == "product" && f.EntityId == productId)
+            .Where(f => f.EntityType == "product" && f.EntityId == productId && f.IsActive)
             .OrderBy(f => f.SortOrder)
             .Select(f => f.StoragePath)
             .ToListAsync(ct);

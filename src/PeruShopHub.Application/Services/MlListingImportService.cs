@@ -30,6 +30,7 @@ public class MlListingImportService : IMlListingImportService
     private readonly PeruShopHubDbContext _db;
     private readonly ICacheService _cache;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IMlPhotoSyncService _photoSync;
     private readonly ILogger<MlListingImportService> _logger;
 
     private const string ImportStatusPrefix = "import:ml:";
@@ -41,11 +42,13 @@ public class MlListingImportService : IMlListingImportService
         PeruShopHubDbContext db,
         ICacheService cache,
         IServiceProvider serviceProvider,
+        IMlPhotoSyncService photoSync,
         ILogger<MlListingImportService> logger)
     {
         _db = db;
         _cache = cache;
         _serviceProvider = serviceProvider;
+        _photoSync = photoSync;
         _logger = logger;
     }
 
@@ -236,12 +239,14 @@ public class MlListingImportService : IMlListingImportService
             if (existing.ProductId.HasValue)
             {
                 await UpdateLinkedProductAsync(tenantId, existing.ProductId.Value, details, ct);
+                await SyncPhotosAsync(tenantId, existing.ProductId.Value, details.Pictures, ct);
             }
         }
         else
         {
             // Create new listing + product
             var product = await CreateProductFromListingAsync(tenantId, details, ct);
+            await SyncPhotosAsync(tenantId, product.Id, details.Pictures, ct);
 
             var listing = new MarketplaceListing
             {
@@ -421,6 +426,22 @@ public class MlListingImportService : IMlListingImportService
     private async Task SetStatusAsync(Guid tenantId, ImportJobStatus status, CancellationToken ct)
     {
         await _cache.SetAsync($"{ImportStatusPrefix}{tenantId}", status, StatusTtl, ct);
+    }
+
+    private async Task SyncPhotosAsync(
+        Guid tenantId, Guid productId,
+        IReadOnlyList<MarketplaceItemPicture> pictures,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (pictures.Count > 0)
+                await _photoSync.SyncProductPhotosAsync(tenantId, productId, pictures, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "Photo sync failed for product {ProductId}, continuing import", productId);
+        }
     }
 
     private static string MapMlStatusToInternal(string mlStatus) => mlStatus switch

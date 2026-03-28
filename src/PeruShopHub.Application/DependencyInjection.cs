@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IIntegrationService, IntegrationService>();
         services.AddScoped<IMlListingImportService, MlListingImportService>();
         services.AddScoped<IMarketplaceListingService, MarketplaceListingService>();
+        services.AddScoped<IMlPhotoSyncService, MlPhotoSyncService>();
 
         return services;
     }

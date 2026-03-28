@@ -14,6 +14,7 @@ public class FileUploadConfiguration : IEntityTypeConfiguration<FileUpload>
         builder.Property(f => f.FileName).HasMaxLength(500).IsRequired();
         builder.Property(f => f.StoragePath).HasMaxLength(1000).IsRequired();
         builder.Property(f => f.ContentType).HasMaxLength(100).IsRequired();
+        builder.Property(f => f.ExternalUrl).HasMaxLength(2000);
 
         builder.HasIndex(f => new { f.EntityType, f.EntityId });
 

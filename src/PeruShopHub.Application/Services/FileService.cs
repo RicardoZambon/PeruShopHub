@@ -68,7 +68,7 @@ public class FileService : IFileService
         CancellationToken ct = default)
     {
         return await _db.FileUploads
-            .Where(f => f.EntityType == entityType && f.EntityId == entityId)
+            .Where(f => f.EntityType == entityType && f.EntityId == entityId && f.IsActive)
             .OrderBy(f => f.SortOrder)
             .Select(f => new FileUploadDto(
                 f.Id, _storage.GetPublicUrl(f.StoragePath),
