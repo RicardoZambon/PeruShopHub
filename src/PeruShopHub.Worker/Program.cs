@@ -64,6 +64,7 @@ builder.Services.AddScoped<IMlPhotoSyncService, MlPhotoSyncService>();
 builder.Services.AddScoped<IMlListingImportService, MlListingImportService>();
 builder.Services.AddScoped<IProductSyncService, ProductSyncService>();
 builder.Services.AddScoped<IOrderSyncService, OrderSyncService>();
+builder.Services.AddSingleton<IMlOrderMapper, MlOrderMapper>();
 
 builder.Services.AddHostedService<MlListingImportWorker>();
 builder.Services.AddHostedService<OrderSyncWorker>();

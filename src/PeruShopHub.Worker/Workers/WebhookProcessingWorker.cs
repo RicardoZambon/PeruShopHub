@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Webhooks;
 using PeruShopHub.Core.Entities;
+using PeruShopHub.Application.Services;
 using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Persistence;
 
@@ -132,8 +133,10 @@ public class WebhookProcessingWorker : BackgroundService
 
     private async Task ProcessOrderWebhookAsync(IServiceProvider sp, MercadoLivreWebhookDto webhook, CancellationToken ct)
     {
+        var mapper = sp.GetRequiredService<IMlOrderMapper>();
+
         // Extract order ID from resource (e.g., "/orders/123456789")
-        var orderId = ExtractIdFromResource(webhook.Resource);
+        var orderId = mapper.ExtractOrderIdFromResource(webhook.Resource);
         if (orderId is null)
         {
             _logger.LogWarning("Could not extract order ID from resource: {Resource}", webhook.Resource);
@@ -202,7 +205,7 @@ public class WebhookProcessingWorker : BackgroundService
         };
 
         // Map ML order details to internal Order
-        MapOrderDetails(order, orderDetails, tenantId);
+        mapper.MapOrderDetails(order, orderDetails, tenantId);
 
         // Find or create customer
         var customerId = await FindOrCreateCustomerAsync(db, tenantId, orderDetails.Buyer, ct);
@@ -223,7 +226,7 @@ public class WebhookProcessingWorker : BackgroundService
         var calculatedCosts = await costService.CalculateOrderCostsAsync(order, ct);
 
         // Merge API-sourced fee costs (override calculated ones for the same category)
-        await MergeApiFeeCostsAsync(db, order, fees, tenantId, ct);
+        await MergeApiFeeCostsAsync(db, mapper, order, fees, tenantId, ct);
 
         // Recalculate profit
         var totalCosts = await db.OrderCosts
@@ -233,7 +236,7 @@ public class WebhookProcessingWorker : BackgroundService
         order.Profit = order.TotalAmount - totalCosts;
 
         // Handle stock decrement for fulfilled orders
-        if (IsFulfilledStatus(orderDetails.Status) && !order.IsFulfilled)
+        if (mapper.IsFulfilledStatus(orderDetails.Status) && !order.IsFulfilled)
         {
             order.IsFulfilled = true;
             order.FulfilledAt = DateTime.UtcNow;
@@ -270,36 +273,6 @@ public class WebhookProcessingWorker : BackgroundService
             action, orderId, order.Id, tenantId, order.TotalAmount);
     }
 
-    private static void MapOrderDetails(Order order, MarketplaceOrderDetails details, Guid tenantId)
-    {
-        order.TenantId = tenantId;
-        order.BuyerName = details.Buyer.Nickname;
-        order.BuyerNickname = details.Buyer.Nickname;
-        order.BuyerEmail = details.Buyer.Email;
-        order.TotalAmount = details.TotalAmount;
-        order.ItemCount = details.Items.Count;
-        order.OrderDate = details.DateCreated.UtcDateTime;
-        order.Status = MapOrderStatus(details.Status);
-        order.LogisticType = details.Shipping is not null ? "mercadolivre" : null;
-    }
-
-    private static string MapOrderStatus(string mlStatus) => mlStatus.ToLowerInvariant() switch
-    {
-        "paid" => "Pago",
-        "confirmed" => "Pago",
-        "payment_required" => "Aguardando Pagamento",
-        "payment_in_process" => "Aguardando Pagamento",
-        "cancelled" => "Cancelado",
-        "invalid" => "Cancelado",
-        _ => "Pago"
-    };
-
-    private static bool IsFulfilledStatus(string mlStatus) => mlStatus.ToLowerInvariant() switch
-    {
-        "paid" => true,
-        "confirmed" => true,
-        _ => false
-    };
 
     private async Task<Guid?> FindOrCreateCustomerAsync(
         PeruShopHubDbContext db, Guid tenantId, MarketplaceBuyer buyer, CancellationToken ct)
@@ -376,14 +349,14 @@ public class WebhookProcessingWorker : BackgroundService
     }
 
     private async Task MergeApiFeeCostsAsync(
-        PeruShopHubDbContext db, Order order, IReadOnlyList<MarketplaceFee> fees,
+        PeruShopHubDbContext db, IMlOrderMapper mapper, Order order, IReadOnlyList<MarketplaceFee> fees,
         Guid tenantId, CancellationToken ct)
     {
         if (fees.Count == 0) return;
 
         foreach (var fee in fees)
         {
-            var category = MapFeeTypeToCategory(fee.Type);
+            var category = mapper.MapFeeTypeToCategory(fee.Type);
 
             // Check if an API cost for this category already exists
             var existing = await db.OrderCosts
@@ -425,21 +398,4 @@ public class WebhookProcessingWorker : BackgroundService
         await db.SaveChangesAsync(ct);
     }
 
-    private static string MapFeeTypeToCategory(string feeType) => feeType.ToLowerInvariant() switch
-    {
-        "sale_fee" or "marketplace_fee" => "marketplace_commission",
-        "shipping" or "shipping_fee" => "shipping_seller",
-        "financing_fee" or "financing" => "payment_fee",
-        "fixed_fee" => "fixed_fee",
-        _ => feeType.ToLowerInvariant()
-    };
-
-    private static string? ExtractIdFromResource(string? resource)
-    {
-        if (string.IsNullOrWhiteSpace(resource)) return null;
-
-        // Resource format: "/orders/123456789"
-        var parts = resource.TrimStart('/').Split('/');
-        return parts.Length >= 2 ? parts[^1] : null;
-    }
 }

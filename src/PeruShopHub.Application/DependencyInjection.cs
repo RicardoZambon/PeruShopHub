@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IMlPhotoSyncService, MlPhotoSyncService>();
         services.AddScoped<IProductSyncService, ProductSyncService>();
         services.AddScoped<IOrderSyncService, OrderSyncService>();
+        services.AddSingleton<IMlOrderMapper, MlOrderMapper>();
 
         return services;
     }

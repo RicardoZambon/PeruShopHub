@@ -1030,7 +1030,7 @@
         ".NET build passes"
       ],
       "priority": 55,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Depends on US-046. Used by US-046 and US-047."
     },
     {

@@ -34,6 +34,7 @@ public class OrderSyncService : IOrderSyncService
     private readonly PeruShopHubDbContext _db;
     private readonly ICacheService _cache;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IMlOrderMapper _mapper;
     private readonly ILogger<OrderSyncService> _logger;
 
     private const string SyncStatusPrefix = "ordersync:ml:";
@@ -45,11 +46,13 @@ public class OrderSyncService : IOrderSyncService
         PeruShopHubDbContext db,
         ICacheService cache,
         IServiceProvider serviceProvider,
+        IMlOrderMapper mapper,
         ILogger<OrderSyncService> logger)
     {
         _db = db;
         _cache = cache;
         _serviceProvider = serviceProvider;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -225,7 +228,7 @@ public class OrderSyncService : IOrderSyncService
         };
 
         // Map ML order details to internal Order
-        MapOrderDetails(order, orderDetails, tenantId);
+        _mapper.MapOrderDetails(order, orderDetails, tenantId);
 
         // Find or create customer
         var customerId = await FindOrCreateCustomerAsync(tenantId, orderDetails.Buyer, ct);
@@ -253,7 +256,7 @@ public class OrderSyncService : IOrderSyncService
         order.Profit = order.TotalAmount - totalCosts;
 
         // Handle stock for fulfilled orders
-        if (IsFulfilledStatus(orderDetails.Status))
+        if (_mapper.IsFulfilledStatus(orderDetails.Status))
         {
             order.IsFulfilled = true;
             order.FulfilledAt = orderDetails.DateCreated.UtcDateTime;
@@ -274,36 +277,6 @@ public class OrderSyncService : IOrderSyncService
             orderId, order.Id, tenantId);
     }
 
-    private static void MapOrderDetails(Order order, MarketplaceOrderDetails details, Guid tenantId)
-    {
-        order.TenantId = tenantId;
-        order.BuyerName = details.Buyer.Nickname;
-        order.BuyerNickname = details.Buyer.Nickname;
-        order.BuyerEmail = details.Buyer.Email;
-        order.TotalAmount = details.TotalAmount;
-        order.ItemCount = details.Items.Count;
-        order.OrderDate = details.DateCreated.UtcDateTime;
-        order.Status = MapOrderStatus(details.Status);
-        order.LogisticType = details.Shipping is not null ? "mercadolivre" : null;
-    }
-
-    private static string MapOrderStatus(string mlStatus) => mlStatus.ToLowerInvariant() switch
-    {
-        "paid" => "Pago",
-        "confirmed" => "Pago",
-        "payment_required" => "Aguardando Pagamento",
-        "payment_in_process" => "Aguardando Pagamento",
-        "cancelled" => "Cancelado",
-        "invalid" => "Cancelado",
-        _ => "Pago"
-    };
-
-    private static bool IsFulfilledStatus(string mlStatus) => mlStatus.ToLowerInvariant() switch
-    {
-        "paid" => true,
-        "confirmed" => true,
-        _ => false
-    };
 
     private async Task<Guid?> FindOrCreateCustomerAsync(
         Guid tenantId, MarketplaceBuyer buyer, CancellationToken ct)
@@ -375,7 +348,7 @@ public class OrderSyncService : IOrderSyncService
 
         foreach (var fee in fees)
         {
-            var category = MapFeeTypeToCategory(fee.Type);
+            var category = _mapper.MapFeeTypeToCategory(fee.Type);
 
             var existing = await _db.OrderCosts
                 .IgnoreQueryFilters()
@@ -415,14 +388,6 @@ public class OrderSyncService : IOrderSyncService
         await _db.SaveChangesAsync(ct);
     }
 
-    private static string MapFeeTypeToCategory(string feeType) => feeType.ToLowerInvariant() switch
-    {
-        "sale_fee" or "marketplace_fee" => "marketplace_commission",
-        "shipping" or "shipping_fee" => "shipping_seller",
-        "financing_fee" or "financing" => "payment_fee",
-        "fixed_fee" => "fixed_fee",
-        _ => feeType.ToLowerInvariant()
-    };
 
     private async Task SetStatusAsync(Guid tenantId, OrderSyncStatus status, CancellationToken ct)
     {

@@ -1318,3 +1318,25 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - The mapping logic (MapOrderDetails, MapOrderItems, etc.) is duplicated between WebhookProcessingWorker and OrderSyncService — US-048 should extract this to a shared service
   - ML `/orders/search` supports `offset` and `limit` query params for pagination, plus `paging` in response
 ---
+
+## 2026-03-28 - US-048
+- Created `MlOrderMapper` service (`IMlOrderMapper` + `MlOrderMapper`) in Application/Services consolidating duplicated mapping logic from `WebhookProcessingWorker` and `OrderSyncService`
+- Mapper handles: order details, items, status mapping, fulfilled status, fee→cost mapping, buyer→customer, resource extraction, profit calculation
+- Added `partially_refunded` → "Reembolso Parcial" status mapping
+- Cancelled/invalid orders now explicitly reset `IsFulfilled=false` and `FulfilledAt=null`
+- Shipping info now populates `TrackingNumber` from `ExternalShippingId`
+- Registered `IMlOrderMapper` as singleton in both API (via DI extension) and Worker Program.cs
+- Refactored `WebhookProcessingWorker` and `OrderSyncService` to use `IMlOrderMapper` — removed 6 duplicated static methods
+- 44 unit tests covering all mapper methods (15 test methods, 29 theory data rows)
+- Files changed:
+  - `src/PeruShopHub.Application/Services/MlOrderMapper.cs` (new)
+  - `src/PeruShopHub.Application/DependencyInjection.cs`
+  - `src/PeruShopHub.Application/Services/OrderSyncService.cs`
+  - `src/PeruShopHub.Worker/Program.cs`
+  - `src/PeruShopHub.Worker/Workers/WebhookProcessingWorker.cs`
+  - `tests/PeruShopHub.UnitTests/Services/MlOrderMapperTests.cs` (new)
+- **Learnings for future iterations:**
+  - The mapper is stateless/pure (no DB dependency) so it's registered as singleton — future mappers for other marketplaces should follow same pattern
+  - `MapOrderDetails` now sets `ExternalOrderId` from details — callers should still set it on new Order creation for the initial save
+  - When adding new ML status values, update both `MapOrderStatus` and `IsFulfilledStatus` in the mapper
+---
