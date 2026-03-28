@@ -541,3 +541,18 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - The `RecalculateOrderCostsAsync` pattern of removing Calculated costs and re-adding could cause duplicates when API costs exist for the same category — the API override pattern (`apiCostCategories.Contains(cost.Category)`) prevents this
   - When order costs come from external APIs (ML Billing), they use `Source = "API"` which takes priority over `Source = "Calculated"`
 ---
+
+## 2026-03-28 - US-020
+- Created TaxProfile entity (TenantId, TaxRegime, AliquotPercentage, State) with ITenantScoped
+- Created EF configuration with unique TenantId index (one profile per tenant)
+- Migration adds TaxProfiles table with NUMERIC(18,4) for aliquot
+- Added GET/PUT /api/settings/tax-profile endpoints with validation
+- Updated CostCalculationService to query tenant's TaxProfile from DB instead of hardcoded config
+- Added Fiscal tab to frontend Settings page with regime selector, aliquot input, and state dropdown
+- Files changed: TaxProfile.cs, TaxProfileConfiguration.cs, PeruShopHubDbContext.cs, CostCalculationService.cs, SettingsController.cs, settings.component.ts/html/scss, settings.service.ts, migration files
+- **Learnings for future iterations:**
+  - TaxProfile uses unique TenantId index since each tenant has exactly one tax profile
+  - CostCalculationService now queries DB for tax rate via ResolveTaxRateAsync — falls back to 6% if no profile exists
+  - The SettingsController handles upsert pattern: GET returns default if no row exists, PUT creates-or-updates
+  - Frontend Fiscal tab uses savingTaxProfile signal separate from global saving to avoid interfering with other forms
+---
