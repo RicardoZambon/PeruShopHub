@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Dashboard;
 using PeruShopHub.Application.DTOs.Finance;
+using PeruShopHub.Core.Entities;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.Application.Services;
@@ -116,9 +117,83 @@ public class FinanceService : IFinanceService
     }
 
     public async Task<PagedResult<SkuProfitabilityDetailDto>> GetSkuProfitabilityAsync(
-        int page, int pageSize, string sortBy, string sortDir, CancellationToken ct = default)
+        int page, int pageSize, string sortBy, string sortDir,
+        string? search = null, decimal? minMargin = null, decimal? maxMargin = null,
+        DateTime? dateFrom = null, DateTime? dateTo = null,
+        CancellationToken ct = default)
     {
-        var itemsWithCosts = await _db.OrderItems
+        // When date filters are applied, compute from source tables instead of materialized view
+        if (dateFrom.HasValue || dateTo.HasValue)
+        {
+            return await GetSkuProfitabilityFromSourceAsync(
+                page, pageSize, sortBy, sortDir, search, minMargin, maxMargin,
+                dateFrom, dateTo, ct);
+        }
+
+        // Use materialized view for non-date-filtered queries (fast path)
+        var query = _db.SkuProfitabilityViews.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.ToLower();
+            query = query.Where(v => v.Sku.ToLower().Contains(term) || v.Name.ToLower().Contains(term));
+        }
+
+        if (minMargin.HasValue)
+            query = query.Where(v => v.AvgMargin >= minMargin.Value);
+
+        if (maxMargin.HasValue)
+            query = query.Where(v => v.AvgMargin <= maxMargin.Value);
+
+        var ordered = ApplySkuSorting(query, sortBy, sortDir);
+
+        var totalCount = await query.CountAsync(ct);
+        var items = await ordered
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(v => new SkuProfitabilityDetailDto(
+                v.ProductId ?? Guid.Empty,
+                v.Sku,
+                v.Name,
+                v.TotalUnits,
+                Math.Round(v.TotalRevenue, 4),
+                Math.Round(v.CostCmv, 4),
+                Math.Round(v.CostCommissions, 4),
+                Math.Round(v.CostShipping, 4),
+                Math.Round(v.CostTaxes, 4),
+                Math.Round(v.TotalCosts, 4),
+                Math.Round(v.TotalProfit, 4),
+                v.AvgMargin))
+            .ToListAsync(ct);
+
+        return new PagedResult<SkuProfitabilityDetailDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task RefreshSkuProfitabilityAsync(CancellationToken ct = default)
+    {
+        await _db.Database.ExecuteSqlRawAsync("REFRESH MATERIALIZED VIEW CONCURRENTLY sku_profitability;", ct);
+    }
+
+    private async Task<PagedResult<SkuProfitabilityDetailDto>> GetSkuProfitabilityFromSourceAsync(
+        int page, int pageSize, string sortBy, string sortDir,
+        string? search, decimal? minMargin, decimal? maxMargin,
+        DateTime? dateFrom, DateTime? dateTo,
+        CancellationToken ct)
+    {
+        var itemsQuery = _db.OrderItems.AsQueryable();
+
+        if (dateFrom.HasValue)
+            itemsQuery = itemsQuery.Where(oi => oi.Order.OrderDate >= dateFrom.Value);
+        if (dateTo.HasValue)
+            itemsQuery = itemsQuery.Where(oi => oi.Order.OrderDate < dateTo.Value);
+
+        var itemsWithCosts = await itemsQuery
             .Include(oi => oi.Order)
                 .ThenInclude(o => o.Costs)
             .ToListAsync(ct);
@@ -185,20 +260,21 @@ public class FinanceService : IFinanceService
             })
             .ToList();
 
-        var sorted = (sortBy.ToLowerInvariant(), sortDir.ToLowerInvariant()) switch
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            ("margin", "asc") => skuGroups.OrderBy(s => s.Margin),
-            ("margin", _) => skuGroups.OrderByDescending(s => s.Margin),
-            ("profit", "asc") => skuGroups.OrderBy(s => s.Profit),
-            ("profit", _) => skuGroups.OrderByDescending(s => s.Profit),
-            ("revenue", "asc") => skuGroups.OrderBy(s => s.Revenue),
-            ("revenue", _) => skuGroups.OrderByDescending(s => s.Revenue),
-            ("unitssold", "asc") => skuGroups.OrderBy(s => s.UnitsSold),
-            ("unitssold", _) => skuGroups.OrderByDescending(s => s.UnitsSold),
-            ("sku", "asc") => skuGroups.OrderBy(s => s.Sku),
-            ("sku", _) => skuGroups.OrderByDescending(s => s.Sku),
-            _ => skuGroups.OrderByDescending(s => s.Margin)
-        };
+            var term = search.ToLower();
+            skuGroups = skuGroups
+                .Where(s => s.Sku.ToLower().Contains(term) || s.Name.ToLower().Contains(term))
+                .ToList();
+        }
+
+        if (minMargin.HasValue)
+            skuGroups = skuGroups.Where(s => s.Margin >= minMargin.Value).ToList();
+
+        if (maxMargin.HasValue)
+            skuGroups = skuGroups.Where(s => s.Margin <= maxMargin.Value).ToList();
+
+        var sorted = ApplySkuSortingInMemory(skuGroups, sortBy, sortDir);
 
         var totalCount = skuGroups.Count;
         var items = sorted
@@ -212,6 +288,52 @@ public class FinanceService : IFinanceService
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize
+        };
+    }
+
+    private static IQueryable<SkuProfitabilityView> ApplySkuSorting(
+        IQueryable<SkuProfitabilityView> query, string sortBy, string sortDir)
+    {
+        return (sortBy.ToLowerInvariant(), sortDir.ToLowerInvariant()) switch
+        {
+            ("margin", "asc") => query.OrderBy(s => s.AvgMargin),
+            ("margin", _) => query.OrderByDescending(s => s.AvgMargin),
+            ("profit", "asc") => query.OrderBy(s => s.TotalProfit),
+            ("profit", _) => query.OrderByDescending(s => s.TotalProfit),
+            ("revenue", "asc") => query.OrderBy(s => s.TotalRevenue),
+            ("revenue", _) => query.OrderByDescending(s => s.TotalRevenue),
+            ("unitssold", "asc") => query.OrderBy(s => s.TotalUnits),
+            ("unitssold", _) => query.OrderByDescending(s => s.TotalUnits),
+            ("totalcosts", "asc") => query.OrderBy(s => s.TotalCosts),
+            ("totalcosts", _) => query.OrderByDescending(s => s.TotalCosts),
+            ("sku", "asc") => query.OrderBy(s => s.Sku),
+            ("sku", _) => query.OrderByDescending(s => s.Sku),
+            ("name", "asc") => query.OrderBy(s => s.Name),
+            ("name", _) => query.OrderByDescending(s => s.Name),
+            _ => query.OrderByDescending(s => s.AvgMargin)
+        };
+    }
+
+    private static IEnumerable<SkuProfitabilityDetailDto> ApplySkuSortingInMemory(
+        IEnumerable<SkuProfitabilityDetailDto> items, string sortBy, string sortDir)
+    {
+        return (sortBy.ToLowerInvariant(), sortDir.ToLowerInvariant()) switch
+        {
+            ("margin", "asc") => items.OrderBy(s => s.Margin),
+            ("margin", _) => items.OrderByDescending(s => s.Margin),
+            ("profit", "asc") => items.OrderBy(s => s.Profit),
+            ("profit", _) => items.OrderByDescending(s => s.Profit),
+            ("revenue", "asc") => items.OrderBy(s => s.Revenue),
+            ("revenue", _) => items.OrderByDescending(s => s.Revenue),
+            ("unitssold", "asc") => items.OrderBy(s => s.UnitsSold),
+            ("unitssold", _) => items.OrderByDescending(s => s.UnitsSold),
+            ("totalcosts", "asc") => items.OrderBy(s => s.TotalCosts),
+            ("totalcosts", _) => items.OrderByDescending(s => s.TotalCosts),
+            ("sku", "asc") => items.OrderBy(s => s.Sku),
+            ("sku", _) => items.OrderByDescending(s => s.Sku),
+            ("name", "asc") => items.OrderBy(s => s.Name),
+            ("name", _) => items.OrderByDescending(s => s.Name),
+            _ => items.OrderByDescending(s => s.Margin)
         };
     }
 

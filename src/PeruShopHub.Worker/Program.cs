@@ -9,6 +9,7 @@ builder.Services.AddDbContext<PeruShopHubDbContext>(options =>
 
 builder.Services.AddHostedService<StockAlertWorker>();
 builder.Services.AddHostedService<NotificationCleanupWorker>();
+builder.Services.AddHostedService<SkuProfitabilityRefreshWorker>();
 
 var host = builder.Build();
 host.Run();

@@ -604,3 +604,39 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Dashboard already has a doughnut chart with center text plugin — reusable pattern for any donut chart
   - Cost visualization already existed (stacked bar, table with percentages, source badges) — US-022b only needed pie chart + zero-value filtering
 ---
+
+## 2026-03-28 - US-023
+- Implemented materialized view `sku_profitability` for pre-computed SKU profitability aggregation
+- Created `SkuProfitabilityView` entity mapped to materialized view via `.ToView("sku_profitability")`
+- EF Core migration `20260328180000_AddSkuProfitabilityMaterializedView` creates the view with raw SQL
+- Materialized view aggregates OrderItems + OrderCosts with proportional cost allocation per SKU
+- Created unique index on (TenantId, Sku) to support `REFRESH MATERIALIZED VIEW CONCURRENTLY`
+- Created `SkuProfitabilityRefreshWorker` background service (every 60 minutes, configurable)
+- Updated `FinanceService.GetSkuProfitabilityAsync` to read from materialized view (fast path) or source tables (when date filters applied)
+- Added filters: search, minMargin, maxMargin, dateFrom, dateTo
+- Added sorting by any column via `ApplySkuSorting` (IQueryable) and `ApplySkuSortingInMemory` (fallback)
+- Added `POST /api/finance/sku-profitability/refresh` endpoint (Admin only) for manual refresh
+- Frontend: added search input, margin range filters, and "Atualizar dados" button to Lucratividade tab
+- Frontend: added loading skeleton while SKU data loads
+- Files changed:
+  - `src/PeruShopHub.Core/Entities/SkuProfitabilityView.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs`
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/SkuProfitabilityViewConfiguration.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Migrations/20260328180000_AddSkuProfitabilityMaterializedView.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Migrations/20260328180000_AddSkuProfitabilityMaterializedView.Designer.cs` (new)
+  - `src/PeruShopHub.Worker/Program.cs`
+  - `src/PeruShopHub.Worker/Workers/SkuProfitabilityRefreshWorker.cs` (new)
+  - `src/PeruShopHub.Application/Services/IFinanceService.cs`
+  - `src/PeruShopHub.Application/Services/FinanceService.cs`
+  - `src/PeruShopHub.API/Controllers/FinanceController.cs`
+  - `src/PeruShopHub.Web/src/app/services/finance.service.ts`
+  - `src/PeruShopHub.Web/src/app/pages/finance/finance.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/finance/finance.component.html`
+  - `src/PeruShopHub.Web/src/app/pages/finance/finance.component.scss`
+- **Learnings for future iterations:**
+  - PostgreSQL materialized views need a UNIQUE INDEX to support `REFRESH CONCURRENTLY`
+  - EF Core `.ToView()` prevents EF from creating/migrating the view as a table — the view must be created manually via raw SQL migration
+  - When a materialized view doesn't support certain filters (like date ranges), use a dual-path approach: fast path via view, fallback to source tables for filtered queries
+  - Designer files for SQL-only migrations can be copied from the previous migration with only the migration name/class updated
+  - The `SkuProfitabilityView` entity uses `gen_random_uuid()` to generate IDs since materialized views need a primary key for EF Core mapping
+---

@@ -1,5 +1,6 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { forkJoin } from 'rxjs';
@@ -40,7 +41,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-finance',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent, SkeletonComponent, BadgeComponent, PageHeaderComponent, ButtonComponent, TabPanelsComponent, TabPanelDirective, MarginBadgeComponent, BaseChartDirective],
+  imports: [CommonModule, FormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, PageHeaderComponent, ButtonComponent, TabPanelsComponent, TabPanelDirective, MarginBadgeComponent, BaseChartDirective],
   templateUrl: './finance.component.html',
   styleUrl: './finance.component.scss',
 })
@@ -229,6 +230,11 @@ export class FinanceComponent implements OnInit {
 
   // SKU Profitability tab data
   private skuData = signal<SkuProfitability[]>([]);
+  skuLoading = signal(false);
+  skuSearch = signal('');
+  skuMinMargin = signal<number | null>(null);
+  skuMaxMargin = signal<number | null>(null);
+  refreshing = signal(false);
 
   skuSortField = signal<SortField>('lucro');
   skuSortDir = signal<SortDir>('desc');
@@ -375,6 +381,39 @@ export class FinanceComponent implements OnInit {
     );
   }
 
+  onSkuSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.skuSearch.set(value);
+    this.loadSkuData();
+  }
+
+  onMinMarginChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.skuMinMargin.set(value ? parseFloat(value) : null);
+    this.loadSkuData();
+  }
+
+  onMaxMarginChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.skuMaxMargin.set(value ? parseFloat(value) : null);
+    this.loadSkuData();
+  }
+
+  refreshSkuProfitability(): void {
+    this.refreshing.set(true);
+    this.financeService.refreshSkuProfitability().subscribe({
+      next: () => {
+        this.toastService.show('Dados de lucratividade atualizados', 'success');
+        this.refreshing.set(false);
+        this.loadSkuData();
+      },
+      error: () => {
+        this.toastService.show('Erro ao atualizar dados', 'danger');
+        this.refreshing.set(false);
+      },
+    });
+  }
+
   private loadSummaryData(): void {
     this.loading.set(true);
     const period = this.activePeriod();
@@ -399,12 +438,25 @@ export class FinanceComponent implements OnInit {
   }
 
   private loadSkuData(): void {
+    this.skuLoading.set(true);
     const period = this.activePeriod();
     const effectivePeriod = period === 'personalizado' ? '30dias' : period;
 
-    this.financeService.getSkuProfitability({ period: effectivePeriod }).subscribe({
+    const params: Record<string, any> = { period: effectivePeriod };
+    const search = this.skuSearch();
+    if (search) params['search'] = search;
+    const minMargin = this.skuMinMargin();
+    if (minMargin !== null) params['minMargin'] = minMargin;
+    const maxMargin = this.skuMaxMargin();
+    if (maxMargin !== null) params['maxMargin'] = maxMargin;
+
+    this.financeService.getSkuProfitability(params).subscribe({
       next: (data) => {
         this.skuData.set(data);
+        this.skuLoading.set(false);
+      },
+      error: () => {
+        this.skuLoading.set(false);
       },
     });
   }

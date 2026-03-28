@@ -85,6 +85,58 @@
 
   <ng-template appTabPanel="lucratividade">
     <div class="financeiro__content">
+      <div class="sku-toolbar">
+        <div class="sku-toolbar__search">
+          <input
+            type="text"
+            class="sku-toolbar__input"
+            placeholder="Buscar SKU ou produto..."
+            (input)="onSkuSearch($event)"
+          />
+        </div>
+        <div class="sku-toolbar__filters">
+          <label class="sku-toolbar__label">
+            Margem mín:
+            <input
+              type="number"
+              class="sku-toolbar__input sku-toolbar__input--small"
+              placeholder="%"
+              (input)="onMinMarginChange($event)"
+            />
+          </label>
+          <label class="sku-toolbar__label">
+            Margem máx:
+            <input
+              type="number"
+              class="sku-toolbar__input sku-toolbar__input--small"
+              placeholder="%"
+              (input)="onMaxMarginChange($event)"
+            />
+          </label>
+        </div>
+        <app-button
+          variant="ghost"
+          size="sm"
+          [disabled]="refreshing()"
+          (clicked)="refreshSkuProfitability()"
+        >
+          {{ refreshing() ? 'Atualizando...' : 'Atualizar dados' }}
+        </app-button>
+      </div>
+      @if (skuLoading()) {
+        <div class="sku-skeleton">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="sku-skeleton__row">
+              <app-skeleton type="text" width="80px" height="16px" />
+              <app-skeleton type="text" width="150px" height="16px" />
+              <app-skeleton type="text" width="60px" height="16px" />
+              <app-skeleton type="text" width="100px" height="16px" />
+              <app-skeleton type="text" width="80px" height="16px" />
+              <app-skeleton type="text" width="80px" height="16px" />
+            </div>
+          }
+        </div>
+      } @else {
       <div class="sku-table-wrapper">
         <table class="sku-table">
           <thead>
@@ -163,6 +215,7 @@
           </tbody>
         </table>
       </div>
+      }
     </div>
   </ng-template>
 

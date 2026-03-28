@@ -52,10 +52,24 @@ public class FinanceController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string sortBy = "margin",
         [FromQuery] string sortDir = "desc",
+        [FromQuery] string? search = null,
+        [FromQuery] decimal? minMargin = null,
+        [FromQuery] decimal? maxMargin = null,
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
         CancellationToken ct = default)
     {
-        var result = await _financeService.GetSkuProfitabilityAsync(page, pageSize, sortBy, sortDir, ct);
+        var result = await _financeService.GetSkuProfitabilityAsync(
+            page, pageSize, sortBy, sortDir, search, minMargin, maxMargin, dateFrom, dateTo, ct);
         return Ok(result);
+    }
+
+    [HttpPost("sku-profitability/refresh")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RefreshSkuProfitability(CancellationToken ct = default)
+    {
+        await _financeService.RefreshSkuProfitabilityAsync(ct);
+        return Ok(new { message = "Materialized view refreshed successfully" });
     }
 
     [HttpGet("reconciliation")]

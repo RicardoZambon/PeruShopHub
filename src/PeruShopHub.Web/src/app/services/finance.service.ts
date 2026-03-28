@@ -22,8 +22,17 @@ export class FinanceService {
     return this.http.get<ChartDataPoint[]>(`${this.baseUrl}/chart/margin`, { params: buildHttpParams({ days }) });
   }
 
-  getSkuProfitability(params: { period?: string; page?: number; pageSize?: number; search?: string; sortBy?: string; sortDir?: string } = {}): Observable<SkuProfitability[]> {
+  getSkuProfitability(params: {
+    period?: string; page?: number; pageSize?: number;
+    search?: string; sortBy?: string; sortDir?: string;
+    minMargin?: number; maxMargin?: number;
+    dateFrom?: string; dateTo?: string;
+  } = {}): Observable<SkuProfitability[]> {
     return this.http.get<SkuProfitability[]>(`${this.baseUrl}/sku-profitability`, { params: buildHttpParams(params) });
+  }
+
+  refreshSkuProfitability(): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/sku-profitability/refresh`, {});
   }
 
   getReconciliation(year: number): Observable<ReconciliationRow[]> {

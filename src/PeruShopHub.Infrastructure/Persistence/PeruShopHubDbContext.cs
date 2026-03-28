@@ -39,6 +39,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<StockAllocation> StockAllocations => Set<StockAllocation>();
     public DbSet<TaxProfile> TaxProfiles => Set<TaxProfile>();
     public DbSet<PaymentFeeRule> PaymentFeeRules => Set<PaymentFeeRule>();
+    public DbSet<SkuProfitabilityView> SkuProfitabilityViews => Set<SkuProfitabilityView>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
