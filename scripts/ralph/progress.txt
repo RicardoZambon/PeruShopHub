@@ -556,3 +556,22 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - The SettingsController handles upsert pattern: GET returns default if no row exists, PUT creates-or-updates
   - Frontend Fiscal tab uses savingTaxProfile signal separate from global saving to avoid interfering with other forms
 ---
+
+## 2026-03-28 - US-021
+- Created PaymentFeeRule entity (Core) with InstallmentMin/Max, FeePercentage, IsDefault
+- Created PaymentFeeRuleConfiguration (precision 18,4), migration + seed data migration
+- Seed: ML default payment fees (1x: 4.99%, 2x: 7.49%, 3x: 9.99%, 4-6x: 12.49%, 7-12x: 16.99%, default: 4.99%)
+- Added ResolvePaymentFeeRateAsync to CostCalculationService — matches installment count against rules, falls back to default rule, then hardcoded 4.99%
+- Added payment_fee cost block in CalculateOrderCostsInternalAsync (after tax)
+- Added CRUD endpoints in SettingsController: GET/POST/PUT/DELETE /api/settings/payment-fee-rules
+- Added PaymentFeeRule interface + service methods in settings.service.ts
+- Added "Taxas de Pagamento" section in Settings (custos-fixos tab) with table + modal for CRUD
+- Order detail already had payment_fee in COST_CATEGORIES and Installments display — no changes needed
+- Fixed 5 failing unit tests: updated cost category count (6→7), total costs expectations, and fixed Tax_UsesConfiguredRate test to seed TaxProfile (was reading from DB since US-020, not config)
+- Files changed: PaymentFeeRule.cs, PaymentFeeRuleConfiguration.cs, SeedPaymentFeeRules.sql, PeruShopHubDbContext.cs, .csproj, CostCalculationService.cs, SettingsController.cs, settings.service.ts, settings.component.ts/html, CostCalculationServiceTests.cs, 2 migrations
+- **Learnings for future iterations:**
+  - Order.Installments (int?) already existed — no new field needed for "InstallmentCount"
+  - payment_fee was already mapped in sale-detail COST_CATEGORIES — the frontend was prepared
+  - Tax_UsesConfiguredRate test was broken since US-020 (TaxProfile migration) — ResolveTaxRateAsync reads from DB, not config. Tests need to seed TaxProfile for custom rates
+  - Seed migration Designer.cs can be copied from the schema migration and name-patched
+---
