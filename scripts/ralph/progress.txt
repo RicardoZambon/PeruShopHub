@@ -672,3 +672,29 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - QuestPDF Community License must be set via `QuestPDF.Settings.License = LicenseType.Community` before any PDF generation
   - BRL formatting in C# (non-locale): `$"R$ {value:N2}".Replace(",", "X").Replace(".", ",").Replace("X", ".")` handles the comma-as-decimal pattern
 ---
+
+## 2026-03-28 - US-025
+- Implemented Excel export with ClosedXML for profitability, orders, and inventory reports
+- Added 3 new methods to IReportService: ExportProfitabilityToExcelAsync, ExportOrdersToExcelAsync, ExportInventoryToExcelAsync
+- Implemented all 3 in ReportService using ClosedXML with formatted headers, BRL number formatting, column auto-width, and auto-filters
+- Added 3 new endpoints to ReportsController: profitability/excel, orders/excel, inventory/excel
+- Added frontend service methods: exportProfitabilityExcel, exportOrdersExcel, exportInventoryExcel
+- Wired Finance page "Exportar Excel" button to real backend endpoint (was showing "em desenvolvimento" toast)
+- Added "Exportar Excel" button to Sales page alongside existing PDF button
+- Extracted downloadBlob() helper in both finance and sales components
+- Filenames follow convention: `lucratividade_2026-03-01_2026-03-31.xlsx`
+- Files changed:
+  - `src/PeruShopHub.Application/Services/IReportService.cs`
+  - `src/PeruShopHub.Application/Services/ReportService.cs`
+  - `src/PeruShopHub.API/Controllers/ReportsController.cs`
+  - `src/PeruShopHub.Web/src/app/services/finance.service.ts`
+  - `src/PeruShopHub.Web/src/app/pages/finance/finance.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/sales/sales-list.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/sales/sales-list.component.html`
+- **Learnings for future iterations:**
+  - ClosedXML is already in Application.csproj — no package install needed
+  - Existing Excel export pattern in InventoryService.ExportMovementsToExcelAsync() — follow same header styling (XLColor.FromHtml("#1A237E"), white text, bold)
+  - Use `ws.Range().SetAutoFilter()` for column filters in Excel
+  - Frontend blob download pattern: `responseType: 'blob'` + `URL.createObjectURL(blob)` + `a.download = filename`
+  - ExcelContentType constant: `"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"`
+---
