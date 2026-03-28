@@ -472,3 +472,31 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - ProductCostHistory.VariantId is nullable — use `h.VariantId!.Value` when filtering (variant cost entries always have VariantId)
   - Cost history API returns descending order — reverse for chronological chart display
 ---
+
+## 2026-03-28 - US-018
+- Added `StorageCostDaily` (nullable decimal) to Product entity, DTOs (Create/Update/Detail/List), and ProductService CRUD + validation
+- Created EF Core migration `AddStorageCostDailyToProduct` adding nullable numeric column to Products table
+- Updated CostCalculationService to compute `storage_daily` cost: `StorageCostDaily × AverageDaysInStorage × quantity` per item
+- Added `CostSettings:AverageDaysInStorage` config (default: 30) in appsettings.Development.json
+- Updated Angular product form with "Custo de embalagem (R$)" and "Custo de armazenagem diário (R$)" fields in the Price tab
+- Fixed form to actually send `packagingCost` from user input (was hardcoded to 0)
+- Updated margin calculation in form to include packaging cost: `(price - purchaseCost - packagingCost) / price`
+- Updated Angular Product interface with `storageCostDaily` field
+- Fixed all unit tests (155 pass) and integration test DTO constructors for the new parameter
+- Files changed:
+  - `src/PeruShopHub.Core/Entities/Product.cs`
+  - `src/PeruShopHub.Application/DTOs/Products/ProductDtos.cs`
+  - `src/PeruShopHub.Application/Services/ProductService.cs`
+  - `src/PeruShopHub.Infrastructure/Services/CostCalculationService.cs`
+  - `src/PeruShopHub.Infrastructure/Migrations/20260328163652_AddStorageCostDailyToProduct.cs`
+  - `src/PeruShopHub.API/appsettings.Development.json`
+  - `src/PeruShopHub.Web/src/app/pages/products/product-form.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/products/product-form.component.html`
+  - `src/PeruShopHub.Web/src/app/services/product.service.ts`
+  - Tests: ProductServiceTests, CostCalculationServiceTests, ConcurrencyTests, OrdersControllerTests, ProductsControllerTests, TenantIsolationTests
+- **Learnings for future iterations:**
+  - Adding a positional parameter to a C# record breaks ALL callers — must update both unit and integration tests
+  - The product form was hardcoding `packagingCost: 0` — any new cost field in the form needs to also be wired in `loadProduct()` and `onSave()` DTO mapping
+  - CostCalculationService now returns 6 cost categories (was 5) — any test asserting exact count needs updating
+  - StorageCostDaily is nullable on the entity but defaults to 0 in cost calc when null (so products without storage cost configured won't have incorrect charges)
+---
