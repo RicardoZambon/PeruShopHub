@@ -97,16 +97,26 @@ export interface ReconciliationRow {
   status: string;
 }
 
+export interface AbcProductApi {
+  productId: string;
+  sku: string;
+  name: string;
+  revenue: number;
+  profit: number;
+  margin: number;
+  cumulativePercentage: number;
+  classification: 'A' | 'B' | 'C';
+}
+
 export interface AbcProduct {
   rank: number;
   sku: string;
   nome: string;
   produto: string;
-  vendas: number;
   receita: number;
   lucro: number;
+  margem: number;
   percentLucro: number;
-  percentual: number;
   acumulado: number;
   classificacao: 'A' | 'B' | 'C';
 }

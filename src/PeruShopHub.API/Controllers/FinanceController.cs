@@ -83,9 +83,11 @@ public class FinanceController : ControllerBase
 
     [HttpGet("abc-curve")]
     public async Task<ActionResult<IReadOnlyList<AbcProductDto>>> GetAbcCurve(
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
         CancellationToken ct = default)
     {
-        var data = await _financeService.GetAbcCurveAsync(ct);
+        var data = await _financeService.GetAbcCurveAsync(dateFrom, dateTo, ct);
         return Ok(data);
     }
 }

@@ -367,57 +367,85 @@ public class FinanceService : IFinanceService
         return result;
     }
 
-    public async Task<IReadOnlyList<AbcProductDto>> GetAbcCurveAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<AbcProductDto>> GetAbcCurveAsync(
+        DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default)
     {
-        var itemsWithOrders = await _db.OrderItems
-            .Include(oi => oi.Order)
-            .ToListAsync(ct);
+        List<(Guid ProductId, string Sku, string Name, decimal Revenue, decimal Profit)> products;
 
-        var products = itemsWithOrders
-            .GroupBy(oi => new { oi.Sku, oi.Name, oi.ProductId })
-            .Select(g =>
-            {
-                var revenue = g.Sum(oi => oi.Subtotal);
-                var profit = g.Sum(oi =>
-                {
-                    var orderTotal = oi.Order.TotalAmount;
-                    return orderTotal != 0
-                        ? oi.Subtotal / orderTotal * oi.Order.Profit
-                        : 0m;
-                });
-                return new
-                {
-                    g.Key.ProductId,
-                    g.Key.Sku,
-                    g.Key.Name,
-                    Revenue = revenue,
-                    Profit = profit
-                };
-            })
-            .OrderByDescending(p => p.Profit)
-            .ToList();
+        if (dateFrom is null && dateTo is null)
+        {
+            // Fast path: use materialized view
+            var viewData = await _db.SkuProfitabilityViews
+                .Select(v => new { v.ProductId, v.Sku, v.Name, v.TotalRevenue, v.TotalProfit })
+                .ToListAsync(ct);
+            products = viewData
+                .Select(v => (v.ProductId ?? Guid.Empty, v.Sku, v.Name, v.TotalRevenue, v.TotalProfit))
+                .ToList();
+        }
+        else
+        {
+            // Date-filtered: query source tables
+            var query = _db.OrderItems.Include(oi => oi.Order).AsQueryable();
 
-        var totalProfit = products.Sum(p => p.Profit);
+            if (dateFrom.HasValue)
+                query = query.Where(oi => oi.Order.OrderDate >= dateFrom.Value);
+            if (dateTo.HasValue)
+                query = query.Where(oi => oi.Order.OrderDate < dateTo.Value.AddDays(1));
+
+            var items = await query.ToListAsync(ct);
+
+            products = items
+                .GroupBy(oi => new { oi.Sku, oi.Name, oi.ProductId })
+                .Select(g =>
+                {
+                    var revenue = g.Sum(oi => oi.Subtotal);
+                    var profit = g.Sum(oi =>
+                    {
+                        var orderTotal = oi.Order.TotalAmount;
+                        return orderTotal != 0
+                            ? oi.Subtotal / orderTotal * oi.Order.Profit
+                            : 0m;
+                    });
+                    return (
+                        ProductId: g.Key.ProductId ?? Guid.Empty,
+                        Sku: g.Key.Sku,
+                        Name: g.Key.Name,
+                        Revenue: revenue,
+                        Profit: profit
+                    );
+                })
+                .ToList();
+        }
+
+        // Sort by revenue descending for ABC classification
+        products = products.OrderByDescending(p => p.Revenue).ToList();
+
+        var totalRevenue = products.Sum(p => p.Revenue);
         var cumulative = 0m;
         var result = new List<AbcProductDto>();
 
         foreach (var p in products)
         {
-            cumulative += p.Profit;
-            var cumulativePct = totalProfit != 0
-                ? Math.Round(cumulative / totalProfit * 100, 2)
+            cumulative += p.Revenue;
+            var cumulativePct = totalRevenue != 0
+                ? Math.Round(cumulative / totalRevenue * 100, 2)
                 : 0m;
 
             var classification = cumulativePct <= 80 ? "A"
                 : cumulativePct <= 95 ? "B"
                 : "C";
 
+            var margin = p.Revenue != 0
+                ? Math.Round(p.Profit / p.Revenue * 100, 2)
+                : 0m;
+
             result.Add(new AbcProductDto(
-                p.ProductId ?? Guid.Empty,
+                p.ProductId,
                 p.Sku,
                 p.Name,
                 Math.Round(p.Revenue, 4),
                 Math.Round(p.Profit, 4),
+                margin,
                 cumulativePct,
                 classification));
         }

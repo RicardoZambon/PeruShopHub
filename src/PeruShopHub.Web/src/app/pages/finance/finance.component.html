@@ -296,7 +296,7 @@
       } @else {
         <!-- ABC Chart -->
         <div class="chart-card">
-          <h2 class="chart-card__title">Curva ABC — Contribuição ao Lucro</h2>
+          <h2 class="chart-card__title">Curva ABC — Contribuição à Receita</h2>
           <div class="chart-card__body">
             <canvas
               baseChart
@@ -315,9 +315,12 @@
                 <th class="abc-table__th abc-table__th--center">Rank</th>
                 <th class="abc-table__th">Produto</th>
                 <th class="abc-table__th abc-table__th--mono">SKU</th>
+                <th class="abc-table__th abc-table__th--right">Receita</th>
                 <th class="abc-table__th abc-table__th--right">Lucro</th>
-                <th class="abc-table__th abc-table__th--right">% do Lucro Total</th>
-                <th class="abc-table__th abc-table__th--center">Classificação</th>
+                <th class="abc-table__th abc-table__th--right">Margem</th>
+                <th class="abc-table__th abc-table__th--right">% da Receita</th>
+                <th class="abc-table__th abc-table__th--right">% Acum.</th>
+                <th class="abc-table__th abc-table__th--center">Classe</th>
               </tr>
             </thead>
             <tbody>
@@ -326,8 +329,13 @@
                   <td class="abc-table__td abc-table__td--center abc-table__td--mono">{{ row.rank }}</td>
                   <td class="abc-table__td">{{ row.produto }}</td>
                   <td class="abc-table__td abc-table__td--mono">{{ row.sku }}</td>
+                  <td class="abc-table__td abc-table__td--mono abc-table__td--right">{{ formatBrl(row.receita) }}</td>
                   <td class="abc-table__td abc-table__td--mono abc-table__td--right abc-table__td--profit">{{ formatBrl(row.lucro) }}</td>
+                  <td class="abc-table__td abc-table__td--margin">
+                    <app-margin-badge [margin]="row.margem"></app-margin-badge>
+                  </td>
                   <td class="abc-table__td abc-table__td--mono abc-table__td--right">{{ row.percentLucro.toFixed(1) }}%</td>
+                  <td class="abc-table__td abc-table__td--mono abc-table__td--right">{{ row.acumulado.toFixed(1) }}%</td>
                   <td class="abc-table__td abc-table__td--center">
                     <app-badge [label]="row.classificacao" [variant]="getAbcVariant(row.classificacao)" />
                   </td>

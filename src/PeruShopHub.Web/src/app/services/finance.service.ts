@@ -2,7 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { buildHttpParams } from '../shared/utils';
 import { Observable } from 'rxjs';
-import { KpiCard, ChartDataPoint, SkuProfitability, ReconciliationRow, AbcProduct } from '../models/api.models';
+import { map } from 'rxjs/operators';
+import { KpiCard, ChartDataPoint, SkuProfitability, ReconciliationRow, AbcProduct, AbcProductApi } from '../models/api.models';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -39,8 +40,26 @@ export class FinanceService {
     return this.http.get<ReconciliationRow[]>(`${this.baseUrl}/reconciliation`, { params: buildHttpParams({ year }) });
   }
 
-  getAbcCurve(): Observable<AbcProduct[]> {
-    return this.http.get<AbcProduct[]>(`${this.baseUrl}/abc-curve`);
+  getAbcCurve(params: { dateFrom?: string; dateTo?: string } = {}): Observable<AbcProduct[]> {
+    return this.http.get<AbcProductApi[]>(`${this.baseUrl}/abc-curve`, {
+      params: buildHttpParams(params),
+    }).pipe(
+      map((items) => {
+        const totalRevenue = items.reduce((sum, i) => sum + i.revenue, 0);
+        return items.map((item, index) => ({
+          rank: index + 1,
+          sku: item.sku,
+          nome: item.name,
+          produto: item.name,
+          receita: item.revenue,
+          lucro: item.profit,
+          margem: item.margin,
+          percentLucro: totalRevenue > 0 ? (item.revenue / totalRevenue) * 100 : 0,
+          acumulado: item.cumulativePercentage,
+          classificacao: item.classification,
+        }));
+      }),
+    );
   }
 
   exportProfitabilityPdf(dateFrom?: string, dateTo?: string): Observable<Blob> {

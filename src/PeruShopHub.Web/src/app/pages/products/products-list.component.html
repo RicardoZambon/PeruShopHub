@@ -107,6 +107,15 @@
       <app-margin-badge [margin]="value"></app-margin-badge>
     </ng-template>
 
+    <!-- ABC Class cell -->
+    <ng-template appGridCell="abcClass" let-row let-value="value">
+      @if (value) {
+        <app-badge [label]="value" [variant]="getAbcVariant(value)"></app-badge>
+      } @else {
+        <span class="cell-mono">—</span>
+      }
+    </ng-template>
+
     <!-- Actions cell -->
     <ng-template appGridCell="actions" let-row>
       <button class="edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', row.id, 'editar'])">
@@ -151,6 +160,12 @@
           <span class="card-label">Margem</span>
           <app-margin-badge [margin]="row.margin"></app-margin-badge>
         </div>
+        @if (row.abcClass) {
+          <div class="card-field">
+            <span class="card-label">ABC</span>
+            <app-badge [label]="row.abcClass" [variant]="getAbcVariant(row.abcClass)"></app-badge>
+          </div>
+        }
       </div>
     </ng-template>
   </app-data-grid>

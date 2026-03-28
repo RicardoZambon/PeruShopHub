@@ -39,6 +39,7 @@ public record AbcProductDto(
     string Name,
     decimal Revenue,
     decimal Profit,
+    decimal Margin,
     decimal CumulativePercentage,
     string Classification);
 

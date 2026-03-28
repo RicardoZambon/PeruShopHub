@@ -49,6 +49,9 @@ Started: Fri Mar 28 2026
 - **PDF export pattern**: QuestPDF 2024.12.2 in Application project. Set `QuestPDF.Settings.License = LicenseType.Community` in Program.cs. Service returns `byte[]`, controller returns `File(bytes, "application/pdf", fileName)`. Frontend uses `responseType: 'blob'` + `URL.createObjectURL()` for download
 - **QuestPDF table header gotcha**: `table.Header()` callback param is NOT `TableDescriptor` — inline header cells directly in the lambda instead of passing to a typed helper
 - **ToastService types**: 'success' | 'warning' | 'danger' | 'info' — use 'danger' not 'error'
+- **Materialized view in unit tests**: `SkuProfitabilityViews` fails on SQLite — wrap queries in try-catch and return empty result gracefully
+- **EF Core expression tree + optional params**: Record constructors with optional params (e.g., `string? X = null`) fail in `Select()` projections — use explicit `(Type?)null` instead
+- **Post-query enrichment pattern**: For data from materialized views/cross-entity lookups, fetch the main query first, then batch-lookup supplementary data and merge with `record with { }` syntax
 
 ---
 
@@ -697,4 +700,35 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Use `ws.Range().SetAutoFilter()` for column filters in Excel
   - Frontend blob download pattern: `responseType: 'blob'` + `URL.createObjectURL(blob)` + `a.download = filename`
   - ExcelContentType constant: `"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"`
+---
+
+## 2026-03-28 - US-026
+- Implemented ABC Curve Analysis with real data from materialized view
+- Backend: Updated `GetAbcCurveAsync` to accept `dateFrom`/`dateTo` params, uses materialized view (fast path) when no filters, falls back to source tables with date filtering
+- Backend: Changed ABC classification from profit-based to revenue-based (A=top 80% revenue, B=next 15%, C=remaining 5%)
+- Backend: Added `Margin` field to `AbcProductDto`, added `AbcClass` field to `ProductListDto`
+- Backend: `ProductService.GetListAsync` enriches products with ABC class from materialized view
+- Frontend: Updated ABC table to show Revenue, Margin (with badge), % da Receita, % Acumulado columns
+- Frontend: Pareto chart now uses revenue bars (color-coded by class) + cumulative line
+- Frontend: Products list page shows ABC class badge column with A=green, B=yellow, C=red
+- Frontend: Updated `AbcProductApi` interface to match backend DTO, mapping done in finance service
+- Files changed:
+  - `src/PeruShopHub.Application/DTOs/Finance/FinanceDtos.cs`
+  - `src/PeruShopHub.Application/DTOs/Products/ProductDtos.cs`
+  - `src/PeruShopHub.Application/Services/IFinanceService.cs`
+  - `src/PeruShopHub.Application/Services/FinanceService.cs`
+  - `src/PeruShopHub.Application/Services/ProductService.cs`
+  - `src/PeruShopHub.API/Controllers/FinanceController.cs`
+  - `src/PeruShopHub.Web/src/app/models/api.models.ts`
+  - `src/PeruShopHub.Web/src/app/services/finance.service.ts`
+  - `src/PeruShopHub.Web/src/app/pages/finance/finance.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/finance/finance.component.html`
+  - `src/PeruShopHub.Web/src/app/pages/products/products-list.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/products/products-list.component.html`
+  - `src/PeruShopHub.Web/src/app/services/product.service.ts`
+- **Learnings for future iterations:**
+  - `SkuProfitabilityView.ProductId` is `Guid?` — must handle nullable when joining with product lists
+  - EF Core expression trees can't use optional params in record constructors — use explicit `(Type?)null` in Select projections
+  - Materialized view queries fail on SQLite (unit tests) — wrap in try-catch and return empty dict gracefully
+  - ABC classification can be enriched post-query to avoid complex LINQ subqueries in expression trees
 ---

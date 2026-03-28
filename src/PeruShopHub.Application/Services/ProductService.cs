@@ -82,18 +82,66 @@ public class ProductService : IProductService
                     .FirstOrDefault(),
                 p.CreatedAt,
                 p.MinStock,
-                p.MaxStock))
+                p.MaxStock,
+                (string?)null))
             .ToListAsync(ct);
+
+        // Enrich with ABC classification from materialized view
+        var productIds = products.Select(p => p.Id).ToList();
+        var abcLookup = await GetAbcClassificationsAsync(productIds, ct);
+        var enriched = products.Select(p =>
+            p with { AbcClass = abcLookup.GetValueOrDefault(p.Id) }).ToList();
 
         var result = new PagedResult<ProductListDto>
         {
-            Items = products,
+            Items = enriched,
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize
         };
         await _cache.SetAsync(cacheKey, result, TimeSpan.FromSeconds(60), ct);
         return result;
+    }
+
+    private async Task<Dictionary<Guid, string>> GetAbcClassificationsAsync(
+        List<Guid> productIds, CancellationToken ct)
+    {
+        if (productIds.Count == 0) return new();
+
+        try
+        {
+            // Get all SKU profitability data to compute ABC (materialized view)
+            var allSkus = await _db.SkuProfitabilityViews
+                .OrderByDescending(v => v.TotalRevenue)
+                .Select(v => new { v.ProductId, v.TotalRevenue })
+                .ToListAsync(ct);
+
+            var totalRevenue = allSkus.Sum(v => v.TotalRevenue);
+            if (totalRevenue == 0) return new();
+
+            var cumulative = 0m;
+            var classifications = new Dictionary<Guid, string>();
+
+            foreach (var sku in allSkus)
+            {
+                if (sku.ProductId is null) continue;
+                var pid = sku.ProductId.Value;
+
+                cumulative += sku.TotalRevenue;
+                var pct = cumulative / totalRevenue * 100m;
+                var cls = pct <= 80 ? "A" : pct <= 95 ? "B" : "C";
+
+                if (productIds.Contains(pid) && !classifications.ContainsKey(pid))
+                    classifications[pid] = cls;
+            }
+
+            return classifications;
+        }
+        catch
+        {
+            // Materialized view may not exist (e.g., in test environments)
+            return new();
+        }
     }
 
     public async Task<ProductDetailDto> GetByIdAsync(Guid id, CancellationToken ct = default)

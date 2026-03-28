@@ -29,6 +29,7 @@ export interface Product {
   margin: number | null;
   variantCount: number;
   needsReview: boolean;
+  abcClass?: string | null;
   minStock?: number | null;
   maxStock?: number | null;
   variants?: any[];

@@ -16,8 +16,9 @@ public record ProductListDto(
     decimal? Margin,
     string? PhotoUrl,
     DateTime CreatedAt,
-    int? MinStock = null,
-    int? MaxStock = null);
+    int? MinStock,
+    int? MaxStock,
+    string? AbcClass);
 
 public record ProductDetailDto(
     Guid Id,

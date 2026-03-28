@@ -314,7 +314,7 @@ export class FinanceComponent implements OnInit {
           label: (ctx) => {
             if (ctx.datasetIndex === 0) {
               const value = (ctx.parsed.y ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-              return `Lucro: ${value}`;
+              return `Receita: ${value}`;
             }
             return `% Acumulado: ${ctx.parsed.y}%`;
           },
@@ -576,20 +576,13 @@ export class FinanceComponent implements OnInit {
   }
 
   private updateAbcChart(products: AbcProduct[]): void {
-    const totalLucro = products.reduce((sum, p) => sum + p.lucro, 0);
-    let cumulative = 0;
-    const cumulativeData = products.map(p => {
-      cumulative += p.lucro;
-      return Math.round((cumulative / totalLucro) * 1000) / 10;
-    });
-
     this.abcMixedChartData.set({
       labels: products.map(p => p.sku),
       datasets: [
         {
           type: 'bar',
-          label: 'Lucro (R$)',
-          data: products.map(p => p.lucro),
+          label: 'Receita (R$)',
+          data: products.map(p => p.receita),
           backgroundColor: products.map(p =>
             p.classificacao === 'A' ? '#2E7D32' : p.classificacao === 'B' ? '#F9A825' : '#EF5350'
           ),
@@ -601,7 +594,7 @@ export class FinanceComponent implements OnInit {
         {
           type: 'line',
           label: '% Acumulado',
-          data: cumulativeData,
+          data: products.map(p => p.acumulado),
           borderColor: '#1A237E',
           backgroundColor: 'rgba(26, 35, 126, 0.08)',
           borderWidth: 2,

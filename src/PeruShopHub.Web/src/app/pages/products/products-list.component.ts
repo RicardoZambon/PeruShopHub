@@ -17,6 +17,7 @@ import { SearchInputComponent } from '../../shared/components/search-input/searc
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
 import { formatBrl as formatBrlUtil, getProductStatusVariant } from '../../shared/utils';
+import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ProductService, Product } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
 import type { Category } from '../../models/category.model';
@@ -72,6 +73,7 @@ export class ProductsListComponent implements OnInit {
     { key: 'variantCount', label: 'Variantes', align: 'center' },
     { key: 'status', label: 'Status' },
     { key: 'margin', label: 'Margem', align: 'right', sortable: true },
+    { key: 'abcClass', label: 'ABC', align: 'center', width: '56px' },
     { key: 'actions', label: 'Ações', align: 'center', width: '56px' },
   ];
 
@@ -86,6 +88,7 @@ export class ProductsListComponent implements OnInit {
       stock: p.stock,
       status: p.status,
       margin: p.margin,
+      abcClass: p.abcClass ?? null,
       variantCount: p.variantCount,
       needsReview: p.needsReview,
     }));
@@ -141,6 +144,12 @@ export class ProductsListComponent implements OnInit {
   formatBrl = formatBrlUtil;
 
   getStatusVariant = getProductStatusVariant;
+
+  getAbcVariant(cls: string | null): BadgeVariant {
+    if (cls === 'A') return 'success';
+    if (cls === 'B') return 'warning';
+    return 'danger';
+  }
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);

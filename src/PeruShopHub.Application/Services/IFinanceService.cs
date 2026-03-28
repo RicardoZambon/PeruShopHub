@@ -16,5 +16,5 @@ public interface IFinanceService
         CancellationToken ct = default);
     Task RefreshSkuProfitabilityAsync(CancellationToken ct = default);
     Task<IReadOnlyList<MonthlyReconciliationDto>> GetReconciliationAsync(int year, CancellationToken ct = default);
-    Task<IReadOnlyList<AbcProductDto>> GetAbcCurveAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<AbcProductDto>> GetAbcCurveAsync(DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
 }
