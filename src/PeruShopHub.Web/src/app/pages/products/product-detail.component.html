@@ -461,6 +461,9 @@
                 <th class="text-right">Preço</th>
                 <th class="text-right">Estoque</th>
                 <th>SKU</th>
+                @if (hasMlMapping()) {
+                  <th>ID ML</th>
+                }
                 <th>Status</th>
               </tr>
             </thead>
@@ -479,6 +482,9 @@
                   </td>
                   <td class="text-right">{{ variant.stock }}</td>
                   <td class="mono">{{ variant.sku }}</td>
+                  @if (hasMlMapping()) {
+                    <td class="mono">{{ variant.externalId ?? '—' }}</td>
+                  }
                   <td>
                     <app-badge [label]="variant.isActive ? 'Ativo' : 'Inativo'" [variant]="variant.isActive ? 'success' : 'neutral'"></app-badge>
                   </td>
@@ -519,6 +525,12 @@
                   <span class="variant-card-mobile__label">SKU</span>
                   <span class="variant-card-mobile__value mono">{{ variant.sku }}</span>
                 </div>
+                @if (variant.externalId) {
+                  <div class="variant-card-mobile__field">
+                    <span class="variant-card-mobile__label">ID ML</span>
+                    <span class="variant-card-mobile__value mono">{{ variant.externalId }}</span>
+                  </div>
+                }
               </div>
             </div>
           }

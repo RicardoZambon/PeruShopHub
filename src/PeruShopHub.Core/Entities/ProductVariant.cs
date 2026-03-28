@@ -19,5 +19,7 @@ public class ProductVariant : ITenantScoped
     public decimal? Height { get; set; }
     public decimal? Width { get; set; }
     public decimal? Length { get; set; }
+    public string? ExternalId { get; set; }
+    public string? PictureIds { get; set; } // JSON array of ML picture IDs
     public Product Product { get; set; } = null!;
 }

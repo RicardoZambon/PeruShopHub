@@ -58,6 +58,7 @@ Started: Fri Mar 28 2026
 - **Post-query enrichment pattern**: For data from materialized views/cross-entity lookups, fetch the main query first, then batch-lookup supplementary data and merge with `record with { }` syntax
 - **Worker marketplace API access**: Worker needs its own DataProtection + ITokenEncryptionService + HttpClient("MercadoLivre") + keyed IMarketplaceAdapter registration (separate from API Program.cs). Add `Microsoft.AspNetCore.DataProtection` package to Worker .csproj
 - **ML API resilience**: `Microsoft.Extensions.Http.Resilience` (Polly v8) via `.AddMercadoLivreResilience()` on the named HttpClient. Chain: Rate Limiter → Retry → Circuit Breaker. Extension in `Infrastructure/Marketplace/MercadoLivreResilienceExtensions.cs`
+- **ProductVariantDto dual mapping**: `ProductVariantDto` is mapped in TWO places in `ProductService` — `GetVariantsAsync` (LINQ Select) AND `MapToVariantDto` helper. When adding new fields to ProductVariant, update BOTH.
 
 ---
 
@@ -1148,4 +1149,33 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Linking is done through the existing `MarketplaceListing` table, not by adding fields to `Product`
   - The `ConflictException` class exists in Application/Exceptions for 409 responses
   - Product list already enriches with `HasMarketplaceListing` via post-query lookup, so no DTO changes needed for the badge
+---
+
+## 2026-03-28 - US-041
+- Implemented ML variation sync to internal ProductVariant
+- Added `ExternalId` (ML variation ID) and `PictureIds` (JSON array of ML picture IDs) fields to ProductVariant entity
+- Added `PictureIds` to `MarketplaceItemVariation` adapter DTO and `MercadoLivreAdapter`
+- Updated `MlListingImportService.CreateProductFromListingAsync` to set ExternalId and PictureIds on new variants
+- Updated `MlListingImportService.UpdateLinkedProductAsync` to: match by ExternalId (fallback to SKU), set PictureIds, mark deleted ML variations as inactive
+- Updated `ProductVariantDto` and both mapping locations in `ProductService` to include ExternalId and PictureIds
+- Updated EF configuration with index on (TenantId, ExternalId) and jsonb column for PictureIds
+- Created EF migration `AddVariantExternalIdAndPictureIds`
+- Frontend: added externalId/pictureIds to ProductVariant model, added "ID ML" column to variant table (desktop + mobile)
+- Files changed:
+  - `src/PeruShopHub.Core/Entities/ProductVariant.cs`
+  - `src/PeruShopHub.Core/Interfaces/IMarketplaceAdapter.cs`
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreAdapter.cs`
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/ProductVariantConfiguration.cs`
+  - `src/PeruShopHub.Infrastructure/Migrations/20260328221850_AddVariantExternalIdAndPictureIds.cs`
+  - `src/PeruShopHub.Application/DTOs/Products/ProductDtos.cs`
+  - `src/PeruShopHub.Application/Services/MlListingImportService.cs`
+  - `src/PeruShopHub.Application/Services/ProductService.cs`
+  - `src/PeruShopHub.Web/src/app/models/product-variant.model.ts`
+  - `src/PeruShopHub.Web/src/app/pages/products/product-detail.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/products/product-detail.component.html`
+- **Learnings for future iterations:**
+  - `ProductVariantDto` is mapped in TWO places in `ProductService`: `GetVariantsAsync` (line ~346 with LINQ Select) and `MapToVariantDto` helper (used by `MapToDetailDto`). Both must be updated when adding new fields.
+  - ML variation matching should prefer ExternalId over SKU since seller_custom_field is optional and may not be set
+  - `MarketplaceItemVariation` record uses optional param with default value for backward compatibility when adding new fields
+  - No test projects exist in the repo yet — tests pass vacuously for .NET, 57 Angular tests pass via vitest
 ---

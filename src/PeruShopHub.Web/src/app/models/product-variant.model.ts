@@ -7,6 +7,8 @@ export interface ProductVariant {
   stock: number;
   isActive: boolean;
   needsReview: boolean;
+  externalId: string | null;           // ML variation ID
+  pictureIds: string | null;           // JSON array of ML picture IDs linked to this variation
   costs?: VariantCosts;
   shipping?: VariantShipping;
 }

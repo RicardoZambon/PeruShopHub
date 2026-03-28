@@ -257,6 +257,10 @@ export class ProductDetailComponent implements OnInit {
     return this.variants().some(v => v.needsReview);
   });
 
+  hasMlMapping = computed(() => {
+    return this.variants().some(v => v.externalId);
+  });
+
   // Pricing calculator state
   pricingMargin = signal(20);
   pricingMarketplace = signal('mercadolivre');

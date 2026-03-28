@@ -223,7 +223,8 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
                 v.SellerCustomField,
                 v.Price,
                 v.AvailableQuantity,
-                v.AttributeCombinations.ToDictionary(a => a.Name, a => a.ValueName ?? string.Empty)
+                v.AttributeCombinations.ToDictionary(a => a.Name, a => a.ValueName ?? string.Empty),
+                v.PictureIds
             )).ToList();
 
         return new MarketplaceItemDetails(

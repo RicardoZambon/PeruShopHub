@@ -100,4 +100,5 @@ public record MarketplaceItemVariation(
     string? Sku,
     decimal? Price,
     int AvailableQuantity,
-    IReadOnlyDictionary<string, string> Attributes);
+    IReadOnlyDictionary<string, string> Attributes,
+    IReadOnlyList<string>? PictureIds = null);

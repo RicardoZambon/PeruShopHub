@@ -59,7 +59,9 @@ public record ProductVariantDto(
     decimal? Weight,
     decimal? Height,
     decimal? Width,
-    decimal? Length);
+    decimal? Length,
+    string? ExternalId = null,
+    string? PictureIds = null);
 
 public record CreateProductDto(
     string? Sku,

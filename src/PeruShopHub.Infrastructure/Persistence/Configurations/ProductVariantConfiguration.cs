@@ -22,7 +22,11 @@ public class ProductVariantConfiguration : IEntityTypeConfiguration<ProductVaria
         builder.Property(v => v.Width).HasPrecision(18, 4);
         builder.Property(v => v.Length).HasPrecision(18, 4);
 
+        builder.Property(v => v.ExternalId).HasMaxLength(100);
+        builder.Property(v => v.PictureIds).HasColumnType("jsonb");
+
         builder.Property(v => v.TenantId).IsRequired();
         builder.HasIndex(v => v.TenantId);
+        builder.HasIndex(v => new { v.TenantId, v.ExternalId });
     }
 }

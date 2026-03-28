@@ -301,6 +301,10 @@ public class MlListingImportService : IMlListingImportService
                     IsActive = true,
                     NeedsReview = true,
                     Attributes = JsonSerializer.Serialize(variation.Attributes),
+                    ExternalId = variation.ExternalVariationId,
+                    PictureIds = variation.PictureIds is { Count: > 0 }
+                        ? JsonSerializer.Serialize(variation.PictureIds)
+                        : null,
                 };
                 _db.ProductVariants.Add(variant);
             }
@@ -344,22 +348,37 @@ public class MlListingImportService : IMlListingImportService
         // Update variants if listing has variations
         if (details.Variations.Count > 0)
         {
+            // Track which existing variants are matched to detect deletions
+            var matchedVariantIds = new HashSet<Guid>();
+
             foreach (var variation in details.Variations)
             {
                 var sku = !string.IsNullOrEmpty(variation.Sku)
                     ? variation.Sku
                     : $"ML-{details.ExternalId}-{variation.ExternalVariationId}";
 
-                var existingVariant = product.Variants.FirstOrDefault(v => v.Sku == sku);
+                // Match by ExternalId first, then fall back to SKU
+                var existingVariant = product.Variants.FirstOrDefault(
+                    v => v.ExternalId == variation.ExternalVariationId)
+                    ?? product.Variants.FirstOrDefault(v => v.Sku == sku);
+
+                var pictureIds = variation.PictureIds is { Count: > 0 }
+                    ? JsonSerializer.Serialize(variation.PictureIds)
+                    : null;
+
                 if (existingVariant is not null)
                 {
                     existingVariant.Price = variation.Price;
                     existingVariant.Stock = variation.AvailableQuantity;
                     existingVariant.Attributes = JsonSerializer.Serialize(variation.Attributes);
+                    existingVariant.ExternalId = variation.ExternalVariationId;
+                    existingVariant.PictureIds = pictureIds;
+                    existingVariant.IsActive = true;
+                    matchedVariantIds.Add(existingVariant.Id);
                 }
                 else
                 {
-                    _db.ProductVariants.Add(new ProductVariant
+                    var newVariant = new ProductVariant
                     {
                         Id = Guid.NewGuid(),
                         TenantId = tenantId,
@@ -370,7 +389,20 @@ public class MlListingImportService : IMlListingImportService
                         IsActive = true,
                         NeedsReview = true,
                         Attributes = JsonSerializer.Serialize(variation.Attributes),
-                    });
+                        ExternalId = variation.ExternalVariationId,
+                        PictureIds = pictureIds,
+                    };
+                    _db.ProductVariants.Add(newVariant);
+                    matchedVariantIds.Add(newVariant.Id);
+                }
+            }
+
+            // Mark variants not in ML response as inactive (deleted from ML)
+            foreach (var variant in product.Variants)
+            {
+                if (!matchedVariantIds.Contains(variant.Id) && variant.ExternalId is not null)
+                {
+                    variant.IsActive = false;
                 }
             }
         }

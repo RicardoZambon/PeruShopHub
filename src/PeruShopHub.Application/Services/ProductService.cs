@@ -346,7 +346,8 @@ public class ProductService : IProductService
             .Select(v => new ProductVariantDto(
                 v.Id, v.Sku, v.Attributes, v.Price, v.Stock,
                 v.IsActive, v.NeedsReview, v.PurchaseCost,
-                v.Weight, v.Height, v.Width, v.Length))
+                v.Weight, v.Height, v.Width, v.Length,
+                v.ExternalId, v.PictureIds))
             .ToListAsync(ct);
     }
 
@@ -803,7 +804,8 @@ public class ProductService : IProductService
     private static ProductVariantDto MapToVariantDto(ProductVariant v) => new(
         v.Id, v.Sku, v.Attributes, v.Price, v.Stock,
         v.IsActive, v.NeedsReview, v.PurchaseCost,
-        v.Weight, v.Height, v.Width, v.Length);
+        v.Weight, v.Height, v.Width, v.Length,
+        v.ExternalId, v.PictureIds);
 
     private static void AddError(Dictionary<string, List<string>> errors, string field, string message)
     {
