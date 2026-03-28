@@ -157,7 +157,7 @@
         ".NET build passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 0.5. Independent."
     },
     {

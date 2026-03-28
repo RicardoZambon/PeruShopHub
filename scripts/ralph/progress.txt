@@ -41,6 +41,7 @@ Started: Fri Mar 28 2026
 - **jsdom missing APIs**: Mock `IntersectionObserver` with `vi.stubGlobal()` — jsdom doesn't provide it
 - **HttpTestingController URL matching**: In jsdom, relative URLs like `/api/auth/login` resolve to `http://localhost:5000/api/auth/login`. Use `req => req.url.endsWith('/auth/login')` predicate instead of string match
 - **Angular test script**: `npm test` runs `vitest run` (not `ng test`). CI uses `npx vitest run`
+- **Rate limiting middleware**: `TenantRateLimitMiddleware` uses `IDistributedCache` (Redis) for per-tenant counters. Placed after TenantMiddleware in pipeline. Config in `RateLimiting:RequestsPerMinute`
 
 ---
 
@@ -179,4 +180,22 @@ Started: Fri Mar 28 2026
   - Angular `HttpClient` in jsdom resolves relative URLs to full `http://localhost:5000/...` — use URL predicate matching in `httpMock.expectOne()`
   - `@analogjs/vite-plugin-angular` must be installed separately (peer dep of `@analogjs/vitest-angular`)
   - Use `--legacy-peer-deps` when installing Angular 21 testing dependencies due to peer version conflicts
+---
+
+## 2026-03-28 - US-008
+- Implemented per-tenant rate limiting middleware (`TenantRateLimitMiddleware`)
+- Uses `IDistributedCache` (Redis) for distributed rate limit counters with fixed window (60s)
+- 100 requests/minute per tenant (configurable via `RateLimiting:RequestsPerMinute` in appsettings)
+- Response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+- 429 Too Many Requests with `Retry-After` header when limit exceeded
+- Super-admins exempt from rate limiting
+- Fail-open: if Redis is unavailable, requests are allowed through (logged as error)
+- Skips unauthenticated endpoints, SignalR hubs, Swagger, and health checks
+- Files changed: `src/PeruShopHub.API/Middleware/TenantRateLimitMiddleware.cs` (new), `src/PeruShopHub.API/Program.cs` (wired middleware), `src/PeruShopHub.API/appsettings.json` (added RateLimiting section)
+- **Learnings for future iterations:**
+  - `IDistributedCache` is already registered via `AddStackExchangeRedisCache` — no new packages needed for Redis-backed rate limiting
+  - Middleware placement matters: rate limiter goes after TenantMiddleware (needs auth context) but uses JWT claims directly
+  - Fixed window with `DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 60` provides simple per-minute bucketing
+  - `BitConverter.GetBytes(int)` / `BitConverter.ToInt32(bytes, 0)` is an efficient way to store counters in distributed cache
+  - `context.Response.OnStarting()` is the correct way to add response headers that should appear even on successful responses
 ---
