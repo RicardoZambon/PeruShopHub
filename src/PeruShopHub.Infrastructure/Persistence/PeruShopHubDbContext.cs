@@ -43,6 +43,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<ReportSchedule> ReportSchedules => Set<ReportSchedule>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<PricingRule> PricingRules => Set<PricingRule>();
+    public DbSet<AlertRule> AlertRules => Set<AlertRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

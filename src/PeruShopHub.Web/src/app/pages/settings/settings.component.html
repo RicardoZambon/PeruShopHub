@@ -455,39 +455,104 @@
     <!-- Alertas Tab -->
     @if (activeTab() === 'alertas') {
       <div class="settings__section">
-        <h2 class="settings__section-title">Alertas</h2>
-        <div class="alerts-grid">
-          @for (alert of alerts(); track alert.id) {
-            <div class="alert-card" [class.alert-card--enabled]="alert.enabled">
-              <div class="alert-card__header">
-                <div class="alert-card__info">
-                  <h3 class="alert-card__label">{{ alert.label }}</h3>
-                  <p class="alert-card__description">{{ alert.description }}</p>
-                </div>
-                <app-toggle-switch
-                  [checked]="alert.enabled"
-                  (checkedChange)="toggleAlert(alert.id)">
-                </app-toggle-switch>
-              </div>
-              @if (alert.enabled) {
-                <div class="alert-card__threshold">
-                  <label class="form-field__label">Limite</label>
-                  <div class="form-field__prefix-group">
-                    <input
-                      class="form-field__input form-field__input--mono form-field__input--with-suffix alert-card__input"
-                      type="number"
-                      step="1"
-                      min="0"
-                      [value]="alert.threshold"
-                      (input)="updateAlertThreshold(alert.id, $event)" />
-                    <span class="form-field__suffix">{{ alert.unit }}</span>
-                  </div>
-                </div>
-              }
-            </div>
-          }
+        <h2 class="settings__section-title">Regras de Alerta</h2>
+        <p class="settings__section-description">Configure alertas automáticos para margem, custos e estoque. O sistema verifica as regras a cada hora.</p>
+
+        <div class="settings__section-header">
+          <h3 class="settings__subsection-title">Regras</h3>
+          <app-button variant="accent" (click)="openNewAlertRuleModal()">Nova Regra</app-button>
         </div>
+
+        @if (alertRules().length === 0) {
+          <div class="settings__empty-state">
+            <p>Nenhuma regra de alerta configurada.</p>
+            <p>Crie regras para ser notificado quando a margem cair, custos subirem ou estoque ficar baixo.</p>
+          </div>
+        } @else {
+          <div class="commission-rules-table-wrapper">
+            <table class="commission-rules-table">
+              <thead>
+                <tr>
+                  <th class="commission-rules-table__th">Tipo</th>
+                  <th class="commission-rules-table__th">Limite</th>
+                  <th class="commission-rules-table__th">Produto</th>
+                  <th class="commission-rules-table__th">Ativo</th>
+                  <th class="commission-rules-table__th commission-rules-table__th--actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (rule of alertRules(); track rule.id) {
+                  <tr>
+                    <td class="commission-rules-table__td">{{ alertTypeLabel(rule.type) }}</td>
+                    <td class="commission-rules-table__td commission-rules-table__td--mono">{{ rule.threshold }}{{ alertTypeUnit(rule.type) }}</td>
+                    <td class="commission-rules-table__td">{{ rule.productName || 'Todos' }}</td>
+                    <td class="commission-rules-table__td">
+                      <app-toggle-switch
+                        [checked]="rule.isActive"
+                        (checkedChange)="toggleAlertRuleActive(rule)">
+                      </app-toggle-switch>
+                    </td>
+                    <td class="commission-rules-table__td commission-rules-table__td--actions">
+                      <button class="icon-btn" title="Editar" (click)="openEditAlertRuleModal(rule)">
+                        <lucide-angular [img]="pencilIcon" [size]="16"></lucide-angular>
+                      </button>
+                      <button class="icon-btn icon-btn--danger" title="Remover" (click)="deleteAlertRule(rule)">
+                        <lucide-angular [img]="trashIcon" [size]="16"></lucide-angular>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
+
+      <!-- Alert Rule Modal -->
+      @if (showAlertRuleModal()) {
+        <app-dialog
+          [title]="editingAlertRule() ? 'Editar Regra de Alerta' : 'Nova Regra de Alerta'"
+          (close)="closeAlertRuleModal()">
+          <form [formGroup]="alertRuleForm" (ngSubmit)="saveAlertRule()" class="form-layout" [class.form-layout--saving]="savingAlertRule()">
+            @if (!editingAlertRule()) {
+              <app-form-field label="Tipo de Alerta"
+                [error]="alertRuleForm.get('type')?.invalid && alertRuleForm.get('type')?.touched ? 'Tipo é obrigatório' : ''">
+                <select class="form-field__input" formControlName="type">
+                  <option value="MarginBelow">Margem abaixo do limite</option>
+                  <option value="CostIncrease">Aumento de custo</option>
+                  <option value="StockLow">Estoque baixo</option>
+                </select>
+              </app-form-field>
+            }
+
+            <app-form-field label="Limite"
+              [error]="alertRuleForm.get('threshold')?.invalid && alertRuleForm.get('threshold')?.touched ? 'Limite deve ser maior ou igual a 0' : ''">
+              <input
+                class="form-field__input form-field__input--mono"
+                type="number"
+                step="0.1"
+                min="0"
+                formControlName="threshold" />
+            </app-form-field>
+
+            @if (!editingAlertRule()) {
+              <app-form-field label="Produto (opcional)">
+                <input
+                  class="form-field__input"
+                  type="text"
+                  formControlName="productId"
+                  placeholder="ID do produto (deixe vazio para todos)" />
+              </app-form-field>
+            }
+
+            <app-form-actions
+              [saving]="savingAlertRule()"
+              saveLabel="Salvar"
+              (cancel)="closeAlertRuleModal()">
+            </app-form-actions>
+          </form>
+        </app-dialog>
+      }
     }
 
     <!-- Relatórios Tab -->

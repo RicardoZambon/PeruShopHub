@@ -63,6 +63,16 @@ export interface ReportSchedule {
   createdAt: string;
 }
 
+export interface AlertRule {
+  id: string;
+  type: string;
+  threshold: number;
+  isActive: boolean;
+  productId: string | null;
+  productName: string | null;
+  createdAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private http = inject(HttpClient);
@@ -138,5 +148,22 @@ export class SettingsService {
 
   deleteReportSchedule(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/report-schedules/${id}`);
+  }
+
+  // Alert Rules
+  getAlertRules(): Observable<AlertRule[]> {
+    return this.http.get<AlertRule[]>(`${this.baseUrl}/alert-rules`);
+  }
+
+  createAlertRule(dto: { type: string; threshold: number; productId: string | null }): Observable<AlertRule> {
+    return this.http.post<AlertRule>(`${this.baseUrl}/alert-rules`, dto);
+  }
+
+  updateAlertRule(id: string, dto: { threshold: number; isActive: boolean }): Observable<AlertRule> {
+    return this.http.put<AlertRule>(`${this.baseUrl}/alert-rules/${id}`, dto);
+  }
+
+  deleteAlertRule(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/alert-rules/${id}`);
   }
 }

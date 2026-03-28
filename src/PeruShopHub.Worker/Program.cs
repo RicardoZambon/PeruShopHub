@@ -15,6 +15,7 @@ builder.Services.AddHostedService<StockAlertWorker>();
 builder.Services.AddHostedService<NotificationCleanupWorker>();
 builder.Services.AddHostedService<SkuProfitabilityRefreshWorker>();
 builder.Services.AddHostedService<ReportEmailWorker>();
+builder.Services.AddHostedService<AlertWorker>();
 
 var host = builder.Build();
 host.Run();

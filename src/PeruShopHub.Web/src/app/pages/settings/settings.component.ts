@@ -14,7 +14,7 @@ import { FormActionsComponent } from '../../shared/components/form-actions/form-
 import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/toggle-switch.component';
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
-import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule, type ReportSchedule } from '../../services/settings.service';
+import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule, type ReportSchedule, type AlertRule } from '../../services/settings.service';
 import { TenantService, type TenantMember } from '../../services/tenant.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
@@ -25,15 +25,6 @@ interface FixedCost {
   id: number;
   nome: string;
   valor: number;
-}
-
-interface AlertConfig {
-  id: string;
-  label: string;
-  description: string;
-  enabled: boolean;
-  threshold: number;
-  unit: string;
 }
 
 @Component({
@@ -100,13 +91,12 @@ export class SettingsComponent implements OnInit {
   taxProfileForm!: FormGroup;
   savingTaxProfile = signal(false);
 
-  // Alerts
-  alerts = signal<AlertConfig[]>([
-    { id: 'margem', label: 'Margem mínima', description: 'Alerta quando a margem de um produto ficar abaixo do limite', enabled: true, threshold: 10, unit: '%' },
-    { id: 'estoque', label: 'Estoque mínimo', description: 'Alerta quando o estoque ficar abaixo do limite', enabled: true, threshold: 5, unit: 'unidades' },
-    { id: 'pergunta', label: 'Pergunta sem resposta', description: 'Alerta quando uma pergunta ficar sem resposta por mais de', enabled: false, threshold: 24, unit: 'horas' },
-    { id: 'divergencia', label: 'Divergência financeira', description: 'Alerta quando a divergência entre esperado e depositado exceder', enabled: false, threshold: 5, unit: '%' },
-  ]);
+  // Alert Rules
+  alertRules = signal<AlertRule[]>([]);
+  showAlertRuleModal = signal(false);
+  editingAlertRule = signal<AlertRule | null>(null);
+  alertRuleForm!: FormGroup;
+  savingAlertRule = signal(false);
 
   // Report schedules
   reportSchedules = signal<ReportSchedule[]>([]);
@@ -170,6 +160,12 @@ export class SettingsComponent implements OnInit {
       recipients: ['', [Validators.required]],
       isActive: [true],
     });
+
+    this.alertRuleForm = this.fb.group({
+      type: ['MarginBelow', Validators.required],
+      threshold: [10, [Validators.required, Validators.min(0)]],
+      productId: [null as string | null],
+    });
   }
 
   ngOnInit(): void {
@@ -180,6 +176,7 @@ export class SettingsComponent implements OnInit {
     this.loadPaymentFeeRules();
     this.loadTaxProfile();
     this.loadReportSchedules();
+    this.loadAlertRules();
   }
 
   selectTab(tab: SettingsTab): void {
@@ -391,18 +388,127 @@ export class SettingsComponent implements OnInit {
     this.confirmDialog.done();
   }
 
-  // Alerts
-  toggleAlert(id: string): void {
-    this.alerts.update(list =>
-      list.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a)
-    );
+  // Alert Rules
+  private loadAlertRules(): void {
+    this.settingsService.getAlertRules().subscribe({
+      next: (data) => this.alertRules.set(data),
+      error: (err) => console.error('Failed to load alert rules:', err),
+    });
   }
 
-  updateAlertThreshold(id: string, event: Event): void {
-    const value = parseFloat((event.target as HTMLInputElement).value) || 0;
-    this.alerts.update(list =>
-      list.map(a => a.id === id ? { ...a, threshold: value } : a)
-    );
+  openNewAlertRuleModal(): void {
+    this.editingAlertRule.set(null);
+    this.alertRuleForm.reset({ type: 'MarginBelow', threshold: 10, productId: null });
+    this.showAlertRuleModal.set(true);
+  }
+
+  openEditAlertRuleModal(rule: AlertRule): void {
+    this.editingAlertRule.set(rule);
+    this.alertRuleForm.patchValue({
+      type: rule.type,
+      threshold: rule.threshold,
+      productId: rule.productId,
+    });
+    this.showAlertRuleModal.set(true);
+  }
+
+  closeAlertRuleModal(): void {
+    this.showAlertRuleModal.set(false);
+    this.editingAlertRule.set(null);
+  }
+
+  saveAlertRule(): void {
+    if (!this.alertRuleForm.valid) {
+      this.alertRuleForm.markAllAsTouched();
+      return;
+    }
+
+    this.savingAlertRule.set(true);
+    const { type, threshold, productId } = this.alertRuleForm.value;
+    const editing = this.editingAlertRule();
+
+    if (editing) {
+      this.settingsService.updateAlertRule(editing.id, { threshold, isActive: editing.isActive }).subscribe({
+        next: (updated) => {
+          this.savingAlertRule.set(false);
+          this.alertRules.update(list => list.map(r => r.id === editing.id ? updated : r));
+          this.closeAlertRuleModal();
+          this.toastService.show('Regra de alerta atualizada', 'success');
+        },
+        error: () => {
+          this.savingAlertRule.set(false);
+          this.toastService.show('Erro ao atualizar regra de alerta', 'danger');
+        },
+      });
+    } else {
+      this.settingsService.createAlertRule({ type, threshold, productId: productId || null }).subscribe({
+        next: (created) => {
+          this.savingAlertRule.set(false);
+          this.alertRules.update(list => [...list, created]);
+          this.closeAlertRuleModal();
+          this.toastService.show('Regra de alerta criada', 'success');
+        },
+        error: () => {
+          this.savingAlertRule.set(false);
+          this.toastService.show('Erro ao criar regra de alerta', 'danger');
+        },
+      });
+    }
+  }
+
+  toggleAlertRuleActive(rule: AlertRule): void {
+    this.settingsService.updateAlertRule(rule.id, { threshold: rule.threshold, isActive: !rule.isActive }).subscribe({
+      next: (updated) => {
+        this.alertRules.update(list => list.map(r => r.id === rule.id ? updated : r));
+        this.toastService.show(
+          updated.isActive ? 'Alerta ativado' : 'Alerta desativado',
+          'success'
+        );
+      },
+      error: () => {
+        this.toastService.show('Erro ao atualizar alerta', 'danger');
+      },
+    });
+  }
+
+  async deleteAlertRule(rule: AlertRule): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Remover regra de alerta',
+      message: `Deseja remover a regra de alerta "${this.alertTypeLabel(rule.type)}"${rule.productName ? ' para ' + rule.productName : ''}?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
+    this.settingsService.deleteAlertRule(rule.id).subscribe({
+      next: () => {
+        this.confirmDialog.done();
+        this.alertRules.update(list => list.filter(r => r.id !== rule.id));
+        this.toastService.show('Regra de alerta removida', 'success');
+      },
+      error: () => {
+        this.confirmDialog.done();
+        this.toastService.show('Erro ao remover regra de alerta', 'danger');
+      },
+    });
+  }
+
+  alertTypeLabel(type: string): string {
+    switch (type) {
+      case 'MarginBelow': return 'Margem abaixo do limite';
+      case 'CostIncrease': return 'Aumento de custo';
+      case 'StockLow': return 'Estoque baixo';
+      default: return type;
+    }
+  }
+
+  alertTypeUnit(type: string): string {
+    switch (type) {
+      case 'MarginBelow': return '%';
+      case 'CostIncrease': return '%';
+      case 'StockLow': return 'un.';
+      default: return '';
+    }
   }
 
   // Commission Rules

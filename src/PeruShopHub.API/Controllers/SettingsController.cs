@@ -389,8 +389,121 @@ public class SettingsController : ControllerBase
 
         return NoContent();
     }
+    // --- Alert Rules ---
+
+    [HttpGet("alert-rules")]
+    public async Task<ActionResult<IReadOnlyList<AlertRuleDto>>> GetAlertRules()
+    {
+        var rules = await _db.AlertRules
+            .AsNoTracking()
+            .Include(a => a.Product)
+            .OrderBy(a => a.Type)
+            .ThenBy(a => a.CreatedAt)
+            .Select(a => new AlertRuleDto(
+                a.Id, a.Type, a.Threshold, a.IsActive, a.ProductId,
+                a.Product != null ? a.Product.Name : null, a.CreatedAt))
+            .ToListAsync();
+
+        return Ok(rules);
+    }
+
+    [HttpPost("alert-rules")]
+    public async Task<ActionResult<AlertRuleDto>> CreateAlertRule([FromBody] CreateAlertRuleDto dto)
+    {
+        var errors = new Dictionary<string, string[]>();
+        var validTypes = new[] { "MarginBelow", "CostIncrease", "StockLow" };
+
+        if (!validTypes.Contains(dto.Type))
+            errors["Type"] = new[] { "Tipo inválido. Valores aceitos: MarginBelow, CostIncrease, StockLow" };
+
+        if (dto.Threshold < 0)
+            errors["Threshold"] = new[] { "Limite deve ser maior ou igual a 0" };
+
+        if (dto.ProductId.HasValue)
+        {
+            var productExists = await _db.Products.AnyAsync(p => p.Id == dto.ProductId.Value);
+            if (!productExists)
+                errors["ProductId"] = new[] { "Produto não encontrado" };
+        }
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        var rule = new AlertRule
+        {
+            Id = Guid.NewGuid(),
+            Type = dto.Type,
+            Threshold = dto.Threshold,
+            IsActive = true,
+            ProductId = dto.ProductId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.AlertRules.Add(rule);
+        await _db.SaveChangesAsync();
+
+        await _auditService.LogAsync("Regra de alerta criada", "AlertRule", rule.Id,
+            null, new { rule.Type, rule.Threshold, rule.ProductId });
+
+        string? productName = null;
+        if (rule.ProductId.HasValue)
+            productName = await _db.Products.Where(p => p.Id == rule.ProductId).Select(p => p.Name).FirstOrDefaultAsync();
+
+        return CreatedAtAction(nameof(GetAlertRules),
+            new AlertRuleDto(rule.Id, rule.Type, rule.Threshold, rule.IsActive, rule.ProductId, productName, rule.CreatedAt));
+    }
+
+    [HttpPut("alert-rules/{id:guid}")]
+    public async Task<ActionResult<AlertRuleDto>> UpdateAlertRule(Guid id, [FromBody] UpdateAlertRuleDto dto)
+    {
+        var rule = await _db.AlertRules.Include(a => a.Product).FirstOrDefaultAsync(a => a.Id == id);
+        if (rule is null)
+            return NotFound();
+
+        var errors = new Dictionary<string, string[]>();
+
+        if (dto.Threshold < 0)
+            errors["Threshold"] = new[] { "Limite deve ser maior ou igual a 0" };
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        var oldThreshold = rule.Threshold;
+        var oldIsActive = rule.IsActive;
+
+        rule.Threshold = dto.Threshold;
+        rule.IsActive = dto.IsActive;
+        rule.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        await _auditService.LogAsync("Regra de alerta atualizada", "AlertRule", rule.Id,
+            new { Threshold = oldThreshold, IsActive = oldIsActive },
+            new { Threshold = rule.Threshold, IsActive = rule.IsActive });
+
+        return Ok(new AlertRuleDto(rule.Id, rule.Type, rule.Threshold, rule.IsActive, rule.ProductId,
+            rule.Product?.Name, rule.CreatedAt));
+    }
+
+    [HttpDelete("alert-rules/{id:guid}")]
+    public async Task<IActionResult> DeleteAlertRule(Guid id)
+    {
+        var rule = await _db.AlertRules.FindAsync(id);
+        if (rule is null)
+            return NotFound();
+
+        await _auditService.LogAsync("Regra de alerta removida", "AlertRule", rule.Id,
+            new { rule.Type, rule.Threshold, rule.ProductId }, null);
+
+        _db.AlertRules.Remove(rule);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
 
+public record AlertRuleDto(Guid Id, string Type, decimal Threshold, bool IsActive, Guid? ProductId, string? ProductName, DateTime CreatedAt);
+public record CreateAlertRuleDto(string Type, decimal Threshold, Guid? ProductId);
+public record UpdateAlertRuleDto(decimal Threshold, bool IsActive);
 public record UpdateCostsDto(decimal? TaxRate);
 public record UpdateCommissionRuleDto(decimal Rate);
 public record TaxProfileDto(Guid Id, string TaxRegime, decimal AliquotPercentage, string? State);
