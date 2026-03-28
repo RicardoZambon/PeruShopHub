@@ -428,7 +428,7 @@
         "Angular build passes"
       ],
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 2 — Financial Engine."
     },
     {

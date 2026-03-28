@@ -530,3 +530,14 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Angular test runner (vitest) may fail on first cold run due to cache; retry resolves it
   - Reconciliation flow is a good reference for how to pass user context from controller to service
 ---
+
+## 2026-03-28 - US-019
+- Commission Engine infrastructure already existed (entity, DTOs, CRUD endpoints, frontend page, seed data, resolution algorithm)
+- Added API override logic in `RecalculateOrderCostsAsync`: when an API-sourced cost exists for a category (e.g., `marketplace_commission` from ML Billing API), the Calculated cost for that same category is skipped — API takes precedence
+- Added 2 new unit tests: `RecalculateOrderCosts_ApiCostOverridesCalculated` and `Commission_ResolutionAlgorithm_AllFallbackLevels`
+- Files changed: `src/PeruShopHub.Infrastructure/Services/CostCalculationService.cs`, `tests/PeruShopHub.UnitTests/Services/CostCalculationServiceTests.cs`
+- **Learnings for future iterations:**
+  - Commission resolution already had good test coverage (4 individual tests), but a single comprehensive test covering all fallback levels is more readable
+  - The `RecalculateOrderCostsAsync` pattern of removing Calculated costs and re-adding could cause duplicates when API costs exist for the same category — the API override pattern (`apiCostCategories.Contains(cost.Category)`) prevents this
+  - When order costs come from external APIs (ML Billing), they use `Source = "API"` which takes priority over `Source = "Calculated"`
+---
