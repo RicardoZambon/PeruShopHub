@@ -575,3 +575,19 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Tax_UsesConfiguredRate test was broken since US-020 (TaxProfile migration) — ResolveTaxRateAsync reads from DB, not config. Tests need to seed TaxProfile for custom rates
   - Seed migration Designer.cs can be copied from the schema migration and name-patched
 ---
+
+## 2026-03-28 - US-022a
+- Added 3 missing cost categories to CostCalculationService: `shipping_seller` (Source: API), `fulfillment_fee` (Source: API), `advertising` (Source: Manual)
+- Added `IsZeroValue` bool flag to `OrderCost` entity to flag zero-value costs
+- Created EF migration `AddIsZeroValueToOrderCost` for the new column
+- All 10 cost categories now produced: product_cost, packaging, storage_daily, marketplace_commission, fixed_fee, tax, payment_fee, shipping_seller, fulfillment_fee, advertising
+- Zero-value costs are stored with `IsZeroValue = true`
+- Order.Profit = TotalAmount - Sum(all costs) was already implemented in RecalculateOrderCostsAsync
+- Updated all existing tests (count assertions from 7→10) and added 7 new tests for new categories, IsZeroValue flag, and Source correctness
+- Files changed: `src/PeruShopHub.Core/Entities/OrderCost.cs`, `src/PeruShopHub.Infrastructure/Services/CostCalculationService.cs`, `src/PeruShopHub.Infrastructure/Migrations/20260328174024_AddIsZeroValueToOrderCost*`, `tests/PeruShopHub.UnitTests/Services/CostCalculationServiceTests.cs`, `scripts/ralph/prd.json`
+- **Learnings for future iterations:**
+  - shipping_seller and fulfillment_fee are API-sourced (from ML webhook/API) — currently placeholder zeros until ML integration populates real values
+  - advertising is Manual-sourced — user attributes this or it comes from Ads API integration later
+  - RecalculateOrderCostsAsync preserves Manual and API costs, only replaces Calculated ones — the 3 new API/Manual costs will be replaced by real API data when available
+  - CostCalculationService uses string-based categories (no enum) — consistent with rest of codebase
+---
