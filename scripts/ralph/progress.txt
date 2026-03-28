@@ -31,6 +31,8 @@ Started: Fri Mar 28 2026
 - **SQLite + EF Core gotcha**: SQLite DELETE in batch with INSERT/UPDATE on same table causes `DbUpdateConcurrencyException`. Workaround: test delete logic separately or test the underlying calculation methods directly
 - **CostCalculationService testing**: Service uses DbContext directly (not repository), so tests need real DB (SQLite in-memory). Mock `INotificationDispatcher` and `ILogger`. Use `IConfiguration` in-memory collection for tax rate
 - **SQLite LINQ limitation**: Complex projections with `.Select()` containing subqueries (e.g., `Variants.Sum(v => v.Stock)`) followed by `.OrderBy()` on the projected result fail with SQLite. These queries need integration tests with PostgreSQL
+- **Integration test auth pattern**: Register via `POST /api/auth/register` → extract AccessToken from AuthResponse → set `Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token)` → all subsequent requests are authenticated with tenant context
+- **Integration test data seeding**: Orders (and other webhook-sourced entities) must be seeded via `CreateDbContext()` since there's no POST endpoint. Set TenantId from the auth response's `User.TenantId`
 - **Moq expression tree gotcha**: When verifying methods with optional `CancellationToken` params, you must include `It.IsAny<CancellationToken>()` explicitly — Moq expression trees can't handle optional arguments
 - **PurchaseOrderService testing**: AddCost/UpdateCost/RemoveCost with Items involve INSERT+UPDATE batches that can trigger SQLite concurrency issues. Test validation paths and simpler operations; leave full CRUD cost tests for integration
 
@@ -132,4 +134,24 @@ Started: Fri Mar 28 2026
   - PurchaseOrderService AddCost/UpdateCost involve INSERT+UPDATE batches that trigger SQLite DbUpdateConcurrencyException — test validation and simpler paths in unit tests, reserve full CRUD for integration
   - CategoryService circular reference detection can be tested with a 3-level chain (A→B→C, then try A.Parent=C)
   - PurchaseOrderService RemoveCost works in SQLite when the PO is seeded with costs already in it (no prior AddCost step)
+---
+
+## 2026-03-28 - US-006
+- Created integration tests for all major API controllers using CustomWebApplicationFactory + TestContainers
+- **AuthControllerTests** (3 tests): register → login → get token → access /me → refresh token flow, duplicate email validation (400), wrong password (401)
+- **ProductsControllerTests** (2 tests): full CRUD lifecycle (create → read → update → delete → verify 404), pagination with PagedResult verification
+- **CategoriesControllerTests** (2 tests): parent → child hierarchy creation with children verification via detail endpoint, delete + verify 404
+- **OrdersControllerTests** (2 tests): seed order in DB → add costs → fulfill → verify IsFulfilled + stock decreased, order list pagination
+- **TenantIsolationTests** (1 test): Tenant A creates product, Tenant B cannot see it (list or by ID → 404), each tenant sees only their own data
+- **ConcurrencyTests** (2 tests): product optimistic locking (first update succeeds, second with stale version gets 409), category optimistic locking (same pattern)
+- Total: 12 new integration tests (14 total including 2 pre-existing health check tests)
+- All tests build successfully; require Docker for execution (TestContainers PostgreSQL + Redis)
+- Unit tests (142) still pass
+- Files changed: `tests/PeruShopHub.IntegrationTests/Controllers/AuthControllerTests.cs` (new), `tests/PeruShopHub.IntegrationTests/Controllers/ProductsControllerTests.cs` (new), `tests/PeruShopHub.IntegrationTests/Controllers/CategoriesControllerTests.cs` (new), `tests/PeruShopHub.IntegrationTests/Controllers/OrdersControllerTests.cs` (new), `tests/PeruShopHub.IntegrationTests/Controllers/TenantIsolationTests.cs` (new), `tests/PeruShopHub.IntegrationTests/Controllers/ConcurrencyTests.cs` (new), `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Orders don't have a POST create endpoint — they come from marketplace webhooks. For integration tests, seed Order/OrderItem entities directly via CreateDbContext()
+  - The TenantMiddleware sets tenant context from JWT claims — each registered user gets their own tenant, so creating two users = two isolated tenants
+  - Optimistic locking works via Version field: first update increments version, second update with stale version throws ConflictException (409)
+  - Integration tests need separate HttpClient instances per tenant (use Factory.CreateClient()) to test cross-tenant isolation
+  - Docker not available in dev container — integration tests can only run in CI (ubuntu-latest has Docker)
 ---
