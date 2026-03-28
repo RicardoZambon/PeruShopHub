@@ -44,9 +44,10 @@ builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 // File Storage (needed for photo sync during import)
 builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
-// ML Listing Import
+// ML Listing Import & Product Sync
 builder.Services.AddScoped<IMlPhotoSyncService, MlPhotoSyncService>();
 builder.Services.AddScoped<IMlListingImportService, MlListingImportService>();
+builder.Services.AddScoped<IProductSyncService, ProductSyncService>();
 
 builder.Services.AddHostedService<MlListingImportWorker>();
 builder.Services.AddHostedService<StockAlertWorker>();
@@ -55,6 +56,7 @@ builder.Services.AddHostedService<SkuProfitabilityRefreshWorker>();
 builder.Services.AddHostedService<ReportEmailWorker>();
 builder.Services.AddHostedService<AlertWorker>();
 builder.Services.AddHostedService<TokenRenewalWorker>();
+builder.Services.AddHostedService<ProductSyncWorker>();
 
 var host = builder.Build();
 host.Run();
