@@ -87,7 +87,7 @@
         ".NET build passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 0.5. Split from original US-005. Depends on US-003."
     },
     {

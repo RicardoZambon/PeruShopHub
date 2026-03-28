@@ -102,3 +102,17 @@ Started: Fri Mar 28 2026
   - `IConfiguration.GetValue<decimal>()` with in-memory collection works well for configuring tax rate in tests
   - Commission resolution tests need careful setup of `CommissionRule` entities with correct MarketplaceId, CategoryPattern, and ListingType combinations
 ---
+
+## 2026-03-28 - US-005a
+- Created 22 unit tests for ProductService and 27 unit tests for OrderService (49 total, exceeding minimum 12)
+- ProductService tests cover: create (with auto-SKU generation, SKU increment), create validation (duplicate SKU, empty name, negative costs, invalid category), notification broadcast, GetById (found + not found), Update (valid + not found), Delete (hard delete without orders, soft delete with orders, not found), GetList (pagination, search filter, status filter, category filter with descendants), GetNextSku (with prefix, null category, no prefix)
+- OrderService tests cover: GetList (pagination, search by buyer name, search by external ID, status filter, date range filter), GetById (financials calculation, timeline building for Pago/Cancelado/Entregue statuses, payment status derivation for 6 statuses), AddCost (valid + not found + validation), UpdateCost (valid + not found), DeleteCost (found + not found), Fulfill (delegates to cost service), RecalculateCosts (valid + not found)
+- Files changed: `tests/PeruShopHub.UnitTests/Services/ProductServiceTests.cs` (new), `tests/PeruShopHub.UnitTests/Services/OrderServiceTests.cs` (new), `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- **Learnings for future iterations:**
+  - ProductService uses ICacheService for list caching — mock returns null to bypass cache in tests
+  - ProductService.DeleteAsync does soft delete (IsActive=false, Status="Excluído") when OrderItems reference the product, hard delete otherwise
+  - OrderService.GetByIdAsync calculates financials inline (revenue - totalCosts = profit, profit/revenue*100 = margin) — not stored on entity
+  - OrderService timeline and payment status are derived from order status using static helper methods BuildTimeline and DerivePaymentStatus
+  - OrderService.FulfillAsync and RecalculateCostsAsync delegate to ICostCalculationService — mock verification is sufficient
+  - SQLite in-memory DB works well for testing both services since they use DbContext directly
+---
