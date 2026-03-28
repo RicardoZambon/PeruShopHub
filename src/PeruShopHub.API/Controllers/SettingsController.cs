@@ -285,6 +285,97 @@ public class SettingsController : ControllerBase
 
         return Ok(new TaxProfileDto(profile.Id, profile.TaxRegime, profile.AliquotPercentage, profile.State));
     }
+    // --- Report Schedules ---
+
+    [HttpGet("report-schedules")]
+    public async Task<ActionResult<IReadOnlyList<ReportScheduleDto>>> GetReportSchedules()
+    {
+        var schedules = await _db.ReportSchedules
+            .AsNoTracking()
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new ReportScheduleDto(
+                s.Id, s.Frequency, s.Recipients, s.IsActive, s.LastSentAt, s.CreatedAt))
+            .ToListAsync();
+
+        return Ok(schedules);
+    }
+
+    [HttpPost("report-schedules")]
+    public async Task<ActionResult<ReportScheduleDto>> CreateReportSchedule([FromBody] CreateReportScheduleDto dto)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        var validFrequencies = new[] { "weekly", "monthly" };
+        if (!validFrequencies.Contains(dto.Frequency))
+            errors["Frequency"] = new[] { "Frequência inválida. Valores aceitos: weekly, monthly" };
+
+        if (string.IsNullOrWhiteSpace(dto.Recipients))
+            errors["Recipients"] = new[] { "Pelo menos um destinatário é obrigatório" };
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        var schedule = new ReportSchedule
+        {
+            Id = Guid.NewGuid(),
+            Frequency = dto.Frequency,
+            Recipients = dto.Recipients.Trim(),
+            IsActive = dto.IsActive,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.ReportSchedules.Add(schedule);
+        await _db.SaveChangesAsync();
+
+        var result = new ReportScheduleDto(
+            schedule.Id, schedule.Frequency, schedule.Recipients, schedule.IsActive, schedule.LastSentAt, schedule.CreatedAt);
+
+        return CreatedAtAction(nameof(GetReportSchedules), result);
+    }
+
+    [HttpPut("report-schedules/{id:guid}")]
+    public async Task<ActionResult<ReportScheduleDto>> UpdateReportSchedule(Guid id, [FromBody] UpdateReportScheduleDto dto)
+    {
+        var schedule = await _db.ReportSchedules.FindAsync(id);
+        if (schedule is null)
+            return NotFound();
+
+        var errors = new Dictionary<string, string[]>();
+
+        var validFrequencies = new[] { "weekly", "monthly" };
+        if (!validFrequencies.Contains(dto.Frequency))
+            errors["Frequency"] = new[] { "Frequência inválida. Valores aceitos: weekly, monthly" };
+
+        if (string.IsNullOrWhiteSpace(dto.Recipients))
+            errors["Recipients"] = new[] { "Pelo menos um destinatário é obrigatório" };
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        schedule.Frequency = dto.Frequency;
+        schedule.Recipients = dto.Recipients.Trim();
+        schedule.IsActive = dto.IsActive;
+        schedule.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var result = new ReportScheduleDto(
+            schedule.Id, schedule.Frequency, schedule.Recipients, schedule.IsActive, schedule.LastSentAt, schedule.CreatedAt);
+
+        return Ok(result);
+    }
+
+    [HttpDelete("report-schedules/{id:guid}")]
+    public async Task<IActionResult> DeleteReportSchedule(Guid id)
+    {
+        var schedule = await _db.ReportSchedules.FindAsync(id);
+        if (schedule is null)
+            return NotFound();
+
+        _db.ReportSchedules.Remove(schedule);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
 
 public record UpdateCostsDto(decimal? TaxRate);
@@ -294,3 +385,6 @@ public record UpdateTaxProfileDto(string TaxRegime, decimal AliquotPercentage, s
 public record PaymentFeeRuleDto(Guid Id, int InstallmentMin, int InstallmentMax, decimal FeePercentage, bool IsDefault);
 public record CreatePaymentFeeRuleDto(int InstallmentMin, int InstallmentMax, decimal FeePercentage);
 public record UpdatePaymentFeeRuleDto(int InstallmentMin, int InstallmentMax, decimal FeePercentage);
+public record ReportScheduleDto(Guid Id, string Frequency, string Recipients, bool IsActive, DateTime? LastSentAt, DateTime CreatedAt);
+public record CreateReportScheduleDto(string Frequency, string Recipients, bool IsActive);
+public record UpdateReportScheduleDto(string Frequency, string Recipients, bool IsActive);

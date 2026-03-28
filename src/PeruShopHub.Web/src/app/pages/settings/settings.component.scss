@@ -814,3 +814,40 @@
     white-space: nowrap;
   }
 }
+
+.settings__empty-state {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  color: var(--neutral-400);
+  background: var(--surface);
+  border: 1px dashed var(--neutral-200);
+  border-radius: var(--radius-md);
+
+  p {
+    margin: var(--space-1) 0;
+    font-size: var(--body-size);
+  }
+}
+
+.settings__info-box {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-md);
+  font-size: var(--small-size);
+  color: var(--text-secondary);
+
+  ul {
+    margin: var(--space-2) 0;
+    padding-left: var(--space-4);
+  }
+
+  li {
+    margin-bottom: var(--space-1);
+  }
+
+  p {
+    margin: var(--space-2) 0 0;
+  }
+}

@@ -54,6 +54,15 @@ export interface PaymentFeeRule {
   isDefault: boolean;
 }
 
+export interface ReportSchedule {
+  id: string;
+  frequency: string;
+  recipients: string;
+  isActive: boolean;
+  lastSentAt: string | null;
+  createdAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private http = inject(HttpClient);
@@ -113,5 +122,21 @@ export class SettingsService {
 
   deletePaymentFeeRule(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/payment-fee-rules/${id}`);
+  }
+
+  getReportSchedules(): Observable<ReportSchedule[]> {
+    return this.http.get<ReportSchedule[]>(`${this.baseUrl}/report-schedules`);
+  }
+
+  createReportSchedule(dto: { frequency: string; recipients: string; isActive: boolean }): Observable<ReportSchedule> {
+    return this.http.post<ReportSchedule>(`${this.baseUrl}/report-schedules`, dto);
+  }
+
+  updateReportSchedule(id: string, dto: { frequency: string; recipients: string; isActive: boolean }): Observable<ReportSchedule> {
+    return this.http.put<ReportSchedule>(`${this.baseUrl}/report-schedules/${id}`, dto);
+  }
+
+  deleteReportSchedule(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/report-schedules/${id}`);
   }
 }

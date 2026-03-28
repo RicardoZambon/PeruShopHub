@@ -490,6 +490,110 @@
       </div>
     }
 
+    <!-- Relatórios Tab -->
+    @if (activeTab() === 'relatorios') {
+      <div class="settings__section">
+        <h2 class="settings__section-title">Relatórios Automatizados</h2>
+        <p class="settings__section-description">Configure o envio automático de relatórios de lucratividade por email.</p>
+
+        <div class="settings__section-header">
+          <h3 class="settings__subsection-title">Agendamentos</h3>
+          <app-button variant="accent" (click)="openNewReportScheduleModal()">Novo Agendamento</app-button>
+        </div>
+
+        @if (reportSchedules().length === 0) {
+          <div class="settings__empty-state">
+            <p>Nenhum agendamento configurado.</p>
+            <p>Crie um agendamento para receber relatórios de lucratividade por email automaticamente.</p>
+          </div>
+        } @else {
+          <div class="commission-rules-table-wrapper">
+            <table class="commission-rules-table">
+              <thead>
+                <tr>
+                  <th class="commission-rules-table__th">Frequência</th>
+                  <th class="commission-rules-table__th">Destinatários</th>
+                  <th class="commission-rules-table__th">Último Envio</th>
+                  <th class="commission-rules-table__th">Ativo</th>
+                  <th class="commission-rules-table__th commission-rules-table__th--actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (schedule of reportSchedules(); track schedule.id) {
+                  <tr class="commission-rules-table__row">
+                    <td class="commission-rules-table__td">
+                      {{ schedule.frequency === 'weekly' ? 'Semanal' : 'Mensal' }}
+                    </td>
+                    <td class="commission-rules-table__td">{{ schedule.recipients }}</td>
+                    <td class="commission-rules-table__td">
+                      {{ schedule.lastSentAt ? (schedule.lastSentAt | date:'dd/MM/yyyy HH:mm') : 'Nunca' }}
+                    </td>
+                    <td class="commission-rules-table__td">
+                      <app-toggle-switch
+                        [checked]="schedule.isActive"
+                        (checkedChange)="toggleReportScheduleActive(schedule)">
+                      </app-toggle-switch>
+                    </td>
+                    <td class="commission-rules-table__td commission-rules-table__td--actions">
+                      <app-button variant="icon" [icon]="pencilIcon" [iconOnly]="true"
+                        (click)="openEditReportScheduleModal(schedule)"></app-button>
+                      <app-button variant="danger" [icon]="trashIcon" [iconOnly]="true"
+                        (click)="deleteReportSchedule(schedule)"></app-button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <div class="settings__info-box">
+          <strong>Como funciona:</strong>
+          <ul>
+            <li><strong>Semanal:</strong> Enviado toda segunda-feira com dados de segunda a domingo da semana anterior.</li>
+            <li><strong>Mensal:</strong> Enviado no dia 1º com dados do mês anterior completo.</li>
+          </ul>
+          <p>O relatório inclui: faturamento, lucro, margem média, ticket médio, top 5 produtos e 5 menores faturamentos.</p>
+        </div>
+      </div>
+
+      <!-- Report Schedule Modal -->
+      <app-dialog
+        [title]="editingReportSchedule() ? 'Editar Agendamento' : 'Novo Agendamento de Relatório'"
+        [open]="showReportScheduleModal()"
+        (closed)="closeReportScheduleModal()">
+        <form body [formGroup]="reportScheduleForm" (ngSubmit)="saveReportSchedule()"
+          class="settings-modal-form form-layout" [class.form-layout--saving]="savingReportSchedule()">
+
+          <app-form-field label="Frequência"
+            [error]="reportScheduleForm.get('frequency')?.invalid && reportScheduleForm.get('frequency')?.touched ? 'Frequência é obrigatória' : ''">
+            <select class="form-field__select" formControlName="frequency">
+              <option value="weekly">Semanal (toda segunda-feira)</option>
+              <option value="monthly">Mensal (todo dia 1º)</option>
+            </select>
+          </app-form-field>
+
+          <app-form-field label="Destinatários (emails separados por vírgula)"
+            [error]="reportScheduleForm.get('recipients')?.invalid && reportScheduleForm.get('recipients')?.touched ? 'Pelo menos um email é obrigatório' : ''">
+            <input class="form-field__input" type="text" formControlName="recipients"
+              placeholder="email1@exemplo.com, email2@exemplo.com" />
+          </app-form-field>
+
+          <app-form-field label="Ativo">
+            <app-toggle-switch
+              [checked]="reportScheduleForm.get('isActive')?.value"
+              (checkedChange)="reportScheduleForm.get('isActive')?.setValue($event)">
+            </app-toggle-switch>
+          </app-form-field>
+        </form>
+        <ng-container footer>
+          <app-form-actions (cancel)="closeReportScheduleModal()" (save)="saveReportSchedule()"
+            [disabled]="reportScheduleForm.invalid"
+            [saveLabel]="editingReportSchedule() ? 'Salvar' : 'Criar'"></app-form-actions>
+        </ng-container>
+      </app-dialog>
+    }
+
     <!-- Aparência Tab -->
     @if (activeTab() === 'aparencia') {
       <div class="settings__section">

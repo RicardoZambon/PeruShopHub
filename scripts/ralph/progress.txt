@@ -51,6 +51,8 @@ Started: Fri Mar 28 2026
 - **ToastService types**: 'success' | 'warning' | 'danger' | 'info' — use 'danger' not 'error'
 - **Materialized view in unit tests**: `SkuProfitabilityViews` fails on SQLite — wrap queries in try-catch and return empty result gracefully
 - **EF Core expression tree + optional params**: Record constructors with optional params (e.g., `string? X = null`) fail in `Select()` projections — use explicit `(Type?)null` instead
+- **IEmailService**: Stub `NoOpEmailService` registered in both API and Worker. When US-059 adds real provider, swap in both `Program.cs` files
+- **Worker cross-tenant queries**: Use `IgnoreQueryFilters()` in workers since there's no tenant context — filter by TenantId manually
 - **Post-query enrichment pattern**: For data from materialized views/cross-entity lookups, fetch the main query first, then batch-lookup supplementary data and merge with `record with { }` syntax
 
 ---
@@ -774,4 +776,36 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - MarginChartPointDto has `Label`+`Margin` (not generic Value) — needs its own frontend interface
   - Cost category colors should be assigned server-side for consistency across all dashboard consumers
   - When changing shared interfaces (api.models.ts), check ALL pages that import them — finance page broke because ChartDataPoint fields changed
+---
+
+## 2026-03-28 - US-028
+- Implemented automated report scheduling with email dispatch
+- Created `ReportSchedule` entity (Core) with ITenantScoped, EF configuration, and migration
+- Created `IEmailService` interface (Core) with `NoOpEmailService` stub (Infrastructure) — ready for US-059 real provider
+- Created `ReportEmailWorker` (Worker) — runs hourly, checks weekly (Monday) and monthly (1st) schedules, builds KPI summary email from real order data
+- Added CRUD endpoints in SettingsController: GET/POST/PUT/DELETE `/api/settings/report-schedules` with validation
+- Added frontend "Relatórios" tab in Settings with schedule table, create/edit modal, active toggle, delete with confirmation, and info box explaining the schedule logic
+- Registered IEmailService in both API and Worker DI containers
+- Files changed:
+  - `src/PeruShopHub.Core/Entities/ReportSchedule.cs` (new)
+  - `src/PeruShopHub.Core/Interfaces/IEmailService.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Email/NoOpEmailService.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/ReportScheduleConfiguration.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs` (added DbSet)
+  - `src/PeruShopHub.Infrastructure/Migrations/20260328190000_AddReportSchedules.cs` (new)
+  - `src/PeruShopHub.Worker/Workers/ReportEmailWorker.cs` (new)
+  - `src/PeruShopHub.Worker/Program.cs` (registered worker + email service)
+  - `src/PeruShopHub.API/Program.cs` (registered email service)
+  - `src/PeruShopHub.API/Controllers/SettingsController.cs` (added CRUD endpoints + DTOs)
+  - `src/PeruShopHub.Web/src/app/services/settings.service.ts` (added ReportSchedule interface + service methods)
+  - `src/PeruShopHub.Web/src/app/pages/settings/settings.component.ts` (added tab, signals, form, methods)
+  - `src/PeruShopHub.Web/src/app/pages/settings/settings.component.html` (added Relatórios tab template)
+  - `src/PeruShopHub.Web/src/app/pages/settings/settings.component.scss` (added empty-state and info-box styles)
+- **Learnings for future iterations:**
+  - ToggleSwitchComponent uses `(checkedChange)` event, not `(changed)` — always check the actual component API
+  - ConfirmDialogService has `accept()` (auto-sets processing) and `done()` — no `startProcessing()` method
+  - Order entity has `Profit` but no `TotalCosts` — derive costs as `TotalAmount - Profit`
+  - OrderItem uses `Name` (not `ProductName`) and `Subtotal` for the line total
+  - Worker needs `IgnoreQueryFilters()` when querying across tenants (no tenant context in worker scope)
+  - IEmailService uses NoOpEmailService stub — when US-059 implements the real provider, swap registration in API and Worker Program.cs
 ---

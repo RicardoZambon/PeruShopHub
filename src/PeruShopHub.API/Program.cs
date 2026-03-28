@@ -103,6 +103,7 @@ builder.Services.AddSignalR()
     });
 builder.Services.AddSingleton<INotificationHubContext, NotificationHubContextAdapter>();
 builder.Services.AddScoped<INotificationDispatcher, SignalRNotificationDispatcher>();
+builder.Services.AddScoped<IEmailService, PeruShopHub.Infrastructure.Email.NoOpEmailService>();
 
 // ── File Storage ──────────────────────────────────────────
 builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();

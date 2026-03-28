@@ -13,12 +13,12 @@ import { FormActionsComponent } from '../../shared/components/form-actions/form-
 import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/toggle-switch.component';
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
-import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule } from '../../services/settings.service';
+import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule, type ReportSchedule } from '../../services/settings.service';
 import { TenantService, type TenantMember } from '../../services/tenant.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
 
-type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'aparencia';
+type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'relatorios' | 'aparencia';
 
 interface FixedCost {
   id: number;
@@ -64,6 +64,7 @@ export class SettingsComponent implements OnInit {
     { key: 'custos-fixos', label: 'Custos Fixos' },
     { key: 'fiscal', label: 'Fiscal' },
     { key: 'alertas', label: 'Alertas' },
+    { key: 'relatorios', label: 'Relatórios' },
     { key: 'aparencia', label: 'Aparência' },
   ];
 
@@ -103,6 +104,13 @@ export class SettingsComponent implements OnInit {
     { id: 'pergunta', label: 'Pergunta sem resposta', description: 'Alerta quando uma pergunta ficar sem resposta por mais de', enabled: false, threshold: 24, unit: 'horas' },
     { id: 'divergencia', label: 'Divergência financeira', description: 'Alerta quando a divergência entre esperado e depositado exceder', enabled: false, threshold: 5, unit: '%' },
   ]);
+
+  // Report schedules
+  reportSchedules = signal<ReportSchedule[]>([]);
+  showReportScheduleModal = signal(false);
+  editingReportSchedule = signal<ReportSchedule | null>(null);
+  reportScheduleForm!: FormGroup;
+  savingReportSchedule = signal(false);
 
   // Theme
   currentTheme = this.themeService.currentTheme;
@@ -153,6 +161,12 @@ export class SettingsComponent implements OnInit {
       aliquotPercentage: [6.0, [Validators.required, Validators.min(0), Validators.max(100)]],
       state: [''],
     });
+
+    this.reportScheduleForm = this.fb.group({
+      frequency: ['weekly', Validators.required],
+      recipients: ['', [Validators.required]],
+      isActive: [true],
+    });
   }
 
   ngOnInit(): void {
@@ -162,6 +176,7 @@ export class SettingsComponent implements OnInit {
     this.loadCommissionRules();
     this.loadPaymentFeeRules();
     this.loadTaxProfile();
+    this.loadReportSchedules();
   }
 
   selectTab(tab: SettingsTab): void {
@@ -682,6 +697,118 @@ export class SettingsComponent implements OnInit {
         });
       },
       error: (err) => console.error('Failed to load tax profile:', err),
+    });
+  }
+
+  // --- Report Schedules ---
+
+  private loadReportSchedules(): void {
+    this.settingsService.getReportSchedules().subscribe({
+      next: (data) => this.reportSchedules.set(data),
+      error: (err) => console.error('Failed to load report schedules:', err),
+    });
+  }
+
+  openNewReportScheduleModal(): void {
+    this.editingReportSchedule.set(null);
+    this.reportScheduleForm.reset({ frequency: 'weekly', recipients: '', isActive: true });
+    this.showReportScheduleModal.set(true);
+  }
+
+  openEditReportScheduleModal(schedule: ReportSchedule): void {
+    this.editingReportSchedule.set(schedule);
+    this.reportScheduleForm.patchValue({
+      frequency: schedule.frequency,
+      recipients: schedule.recipients,
+      isActive: schedule.isActive,
+    });
+    this.showReportScheduleModal.set(true);
+  }
+
+  closeReportScheduleModal(): void {
+    this.showReportScheduleModal.set(false);
+    this.editingReportSchedule.set(null);
+  }
+
+  saveReportSchedule(): void {
+    if (!this.reportScheduleForm.valid) {
+      this.reportScheduleForm.markAllAsTouched();
+      return;
+    }
+
+    this.savingReportSchedule.set(true);
+    const { frequency, recipients, isActive } = this.reportScheduleForm.value;
+    const dto = { frequency, recipients: recipients.trim(), isActive };
+    const editing = this.editingReportSchedule();
+
+    if (editing) {
+      this.settingsService.updateReportSchedule(editing.id, dto).subscribe({
+        next: (updated) => {
+          this.savingReportSchedule.set(false);
+          this.reportSchedules.update(list => list.map(s => s.id === editing.id ? updated : s));
+          this.closeReportScheduleModal();
+          this.toastService.show('Agendamento atualizado', 'success');
+        },
+        error: () => {
+          this.savingReportSchedule.set(false);
+          this.toastService.show('Erro ao atualizar agendamento', 'danger');
+        },
+      });
+    } else {
+      this.settingsService.createReportSchedule(dto).subscribe({
+        next: (created) => {
+          this.savingReportSchedule.set(false);
+          this.reportSchedules.update(list => [...list, created]);
+          this.closeReportScheduleModal();
+          this.toastService.show('Agendamento criado', 'success');
+        },
+        error: () => {
+          this.savingReportSchedule.set(false);
+          this.toastService.show('Erro ao criar agendamento', 'danger');
+        },
+      });
+    }
+  }
+
+  async deleteReportSchedule(schedule: ReportSchedule): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Remover agendamento',
+      message: `Deseja remover o agendamento de relatório ${schedule.frequency === 'weekly' ? 'semanal' : 'mensal'} para "${schedule.recipients}"?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
+    this.settingsService.deleteReportSchedule(schedule.id).subscribe({
+      next: () => {
+        this.confirmDialog.done();
+        this.reportSchedules.update(list => list.filter(s => s.id !== schedule.id));
+        this.toastService.show('Agendamento removido', 'success');
+      },
+      error: () => {
+        this.confirmDialog.done();
+        this.toastService.show('Erro ao remover agendamento', 'danger');
+      },
+    });
+  }
+
+  toggleReportScheduleActive(schedule: ReportSchedule): void {
+    const dto = {
+      frequency: schedule.frequency,
+      recipients: schedule.recipients,
+      isActive: !schedule.isActive,
+    };
+    this.settingsService.updateReportSchedule(schedule.id, dto).subscribe({
+      next: (updated) => {
+        this.reportSchedules.update(list => list.map(s => s.id === schedule.id ? updated : s));
+        this.toastService.show(
+          updated.isActive ? 'Agendamento ativado' : 'Agendamento desativado',
+          'success'
+        );
+      },
+      error: () => {
+        this.toastService.show('Erro ao atualizar agendamento', 'danger');
+      },
     });
   }
 }
