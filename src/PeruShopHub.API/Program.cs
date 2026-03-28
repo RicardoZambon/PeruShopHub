@@ -33,6 +33,9 @@ try
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── QuestPDF Community License ────────────────────────────
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 // ── Sentry ───────────────────────────────────────────────────
 var sentryDsn = builder.Configuration["SENTRY_DSN"]
     ?? Environment.GetEnvironmentVariable("SENTRY_DSN");

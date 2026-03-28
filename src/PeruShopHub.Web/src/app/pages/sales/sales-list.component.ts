@@ -15,8 +15,11 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import { formatBrl as formatBrlUtil, formatDateShort, getOrderStatusVariant } from '../../shared/utils';
 import { OrderService, type OrderListItem } from '../../services/order.service';
+import { FinanceService } from '../../services/finance.service';
+import { ToastService } from '../../services/toast.service';
 import { firstValueFrom } from 'rxjs';
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
@@ -24,12 +27,14 @@ type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
 @Component({
   selector: 'app-sales-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, ButtonComponent],
   templateUrl: './sales-list.component.html',
   styleUrl: './sales-list.component.scss',
 })
 export class SalesListComponent implements OnInit {
   private readonly orderService = inject(OrderService);
+  private readonly financeService = inject(FinanceService);
+  private readonly toastService = inject(ToastService);
 
   readonly searchIcon = Search;
   readonly cartIcon = ShoppingCart;
@@ -173,5 +178,24 @@ export class SalesListComponent implements OnInit {
 
   onRowClick(row: Record<string, any>): void {
     this.router.navigate(['/vendas', row['id']]);
+  }
+
+  onExportPdf(): void {
+    const dateFrom = this.dateFrom() || undefined;
+    const dateTo = this.dateTo() || undefined;
+
+    this.financeService.exportOrdersPdf(dateFrom, dateTo).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vendas_${new Date().toISOString().split('T')[0]}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.toastService.show('Erro ao gerar PDF', 'danger');
+      },
+    });
   }
 }

@@ -46,6 +46,9 @@ Started: Fri Mar 28 2026
 - **Sentry error tracking**: `Sentry.AspNetCore` 6.x via `builder.WebHost.UseSentry()`. DSN from `SENTRY_DSN` env var. Disabled when DSN not set. `SentrySdk.CaptureException()` in GlobalExceptionFilter for manual capture with scope enrichment
 - **Excel export pattern**: ClosedXML 0.104.2 in Application project. Use `XLWorkbook` → `Worksheets.Add()` → populate cells → `SaveAs(MemoryStream)` → return `byte[]`. Controller returns `File(bytes, contentType, fileName)`. Frontend uses `responseType: 'blob'` + `URL.createObjectURL()` for download
 - **Frontend DTO alignment**: Frontend interfaces must match backend DTO field names exactly (camelCase). When backend returns `createdAt`, frontend uses `createdAt` — not custom Portuguese names
+- **PDF export pattern**: QuestPDF 2024.12.2 in Application project. Set `QuestPDF.Settings.License = LicenseType.Community` in Program.cs. Service returns `byte[]`, controller returns `File(bytes, "application/pdf", fileName)`. Frontend uses `responseType: 'blob'` + `URL.createObjectURL()` for download
+- **QuestPDF table header gotcha**: `table.Header()` callback param is NOT `TableDescriptor` — inline header cells directly in the lambda instead of passing to a typed helper
+- **ToastService types**: 'success' | 'warning' | 'danger' | 'info' — use 'danger' not 'error'
 
 ---
 
@@ -639,4 +642,33 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - When a materialized view doesn't support certain filters (like date ranges), use a dual-path approach: fast path via view, fallback to source tables for filtered queries
   - Designer files for SQL-only migrations can be copied from the previous migration with only the migration name/class updated
   - The `SkuProfitabilityView` entity uses `gen_random_uuid()` to generate IDs since materialized views need a primary key for EF Core mapping
+---
+
+## 2026-03-28 - US-024
+- Implemented PDF Export with QuestPDF for profitability, orders, and inventory reports
+- Created `IReportService` interface with 3 report methods: GenerateProfitabilityReport, GenerateOrderReport, GenerateInventoryReport
+- Created `ReportService` using QuestPDF with professional layout: company header, date range, KPI summary row, detail tables, footer with page numbers
+- Created `ReportsController` with 3 endpoints: GET /api/reports/profitability/pdf, GET /api/reports/orders/pdf, GET /api/reports/inventory/pdf
+- Configured QuestPDF Community License in Program.cs
+- Wired Finance page "Exportar PDF" button to download profitability report (was previously a placeholder toast)
+- Added "Exportar PDF" button to Sales list page with date range filters
+- Frontend uses responseType: 'blob' + URL.createObjectURL for browser download
+- Files changed:
+  - `src/PeruShopHub.Application/PeruShopHub.Application.csproj` (added QuestPDF 2024.12.2)
+  - `src/PeruShopHub.Application/Services/IReportService.cs` (new)
+  - `src/PeruShopHub.Application/Services/ReportService.cs` (new)
+  - `src/PeruShopHub.Application/DependencyInjection.cs` (registered IReportService)
+  - `src/PeruShopHub.API/Controllers/ReportsController.cs` (new)
+  - `src/PeruShopHub.API/Program.cs` (QuestPDF license setting)
+  - `src/PeruShopHub.Web/src/app/services/finance.service.ts` (export methods)
+  - `src/PeruShopHub.Web/src/app/pages/finance/finance.component.ts` (onExport wired)
+  - `src/PeruShopHub.Web/src/app/pages/sales/sales-list.component.ts` (added export)
+  - `src/PeruShopHub.Web/src/app/pages/sales/sales-list.component.html` (added button)
+- **Learnings for future iterations:**
+  - QuestPDF `table.Header()` callback parameter is NOT `TableDescriptor` — inline the header cell creation instead of using a separate helper with the wrong type
+  - OrderItem has no Product navigation property — use OrderItem.Sku and OrderItem.Name directly
+  - Order has no Buyer navigation — use Order.BuyerName directly
+  - ToastService uses 'danger' not 'error' as the type for error messages
+  - QuestPDF Community License must be set via `QuestPDF.Settings.License = LicenseType.Community` before any PDF generation
+  - BRL formatting in C# (non-locale): `$"R$ {value:N2}".Replace(",", "X").Replace(".", ",").Replace("X", ".")` handles the comma-as-decimal pattern
 ---

@@ -1,0 +1,397 @@
+using Microsoft.EntityFrameworkCore;
+using PeruShopHub.Infrastructure.Persistence;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+
+namespace PeruShopHub.Application.Services;
+
+public class ReportService : IReportService
+{
+    private readonly PeruShopHubDbContext _db;
+
+    private static readonly string PrimaryColor = "#1A237E";
+    private static readonly string AccentColor = "#FF6F00";
+    private static readonly string SuccessColor = "#2E7D32";
+    private static readonly string DangerColor = "#C62828";
+
+    public ReportService(PeruShopHubDbContext db)
+    {
+        _db = db;
+    }
+
+    public async Task<byte[]> GenerateProfitabilityReportAsync(DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default)
+    {
+        var start = dateFrom ?? DateTime.UtcNow.AddDays(-30);
+        var end = dateTo ?? DateTime.UtcNow;
+
+        var orders = await _db.Orders
+            .Include(o => o.Items)
+            .Include(o => o.Costs)
+            .Where(o => o.OrderDate >= start && o.OrderDate <= end)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync(ct);
+
+        var totalRevenue = orders.Sum(o => o.TotalAmount);
+        var totalProfit = orders.Sum(o => o.Profit);
+        var totalCosts = totalRevenue - totalProfit;
+        var avgMargin = totalRevenue != 0 ? Math.Round(totalProfit / totalRevenue * 100, 2) : 0m;
+        var orderCount = orders.Count;
+        var avgTicket = orderCount > 0 ? Math.Round(totalRevenue / orderCount, 2) : 0m;
+
+        // Group by SKU
+        var skuData = orders
+            .SelectMany(o => o.Items.Select(i => new { Item = i, Order = o }))
+            .GroupBy(x => x.Item.Sku ?? "N/A")
+            .Select(g =>
+            {
+                var revenue = g.Sum(x => x.Item.Quantity * x.Item.UnitPrice);
+                var unitsSold = g.Sum(x => x.Item.Quantity);
+                var productName = g.First().Item.Name ?? "N/A";
+                var totalOrderRevenue = g.Select(x => x.Order).Distinct().Sum(o => o.TotalAmount);
+                var totalOrderCosts = g.Select(x => x.Order).Distinct().Sum(o => o.Costs.Sum(c => c.Value));
+                var proportion = totalOrderRevenue != 0 ? revenue / totalOrderRevenue : 0;
+                var costs = totalOrderCosts * proportion;
+                var profit = revenue - costs;
+                var margin = revenue != 0 ? Math.Round(profit / revenue * 100, 2) : 0m;
+                return new { Sku = g.Key, Name = productName, UnitsSold = unitsSold, Revenue = revenue, Costs = costs, Profit = profit, Margin = margin };
+            })
+            .OrderByDescending(x => x.Revenue)
+            .ToList();
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.MarginHorizontal(40);
+                page.MarginVertical(30);
+
+                page.Header().Element(c => ComposeHeader(c, "Relatório de Lucratividade", start, end));
+
+                page.Content().Element(content =>
+                {
+                    content.PaddingVertical(10).Column(col =>
+                    {
+                        col.Spacing(15);
+
+                        col.Item().Element(c => ComposeKpiRow(c, new[]
+                        {
+                            ("Receita Total", FormatBrl(totalRevenue)),
+                            ("Custos Totais", FormatBrl(totalCosts)),
+                            ("Lucro Total", FormatBrl(totalProfit)),
+                            ("Margem Média", $"{avgMargin:F2}%"),
+                            ("Pedidos", orderCount.ToString()),
+                            ("Ticket Médio", FormatBrl(avgTicket)),
+                        }));
+
+                        col.Item().Element(c => ComposeSectionTitle(c, "Lucratividade por SKU"));
+
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(1.2f);
+                                columns.RelativeColumn(2f);
+                                columns.RelativeColumn(0.8f);
+                                columns.RelativeColumn(1.2f);
+                                columns.RelativeColumn(1.2f);
+                                columns.RelativeColumn(1.2f);
+                                columns.RelativeColumn(0.8f);
+                            });
+
+                            table.Header(header =>
+                            {
+                                foreach (var h in new[] { "SKU", "Produto", "Qtd", "Receita", "Custos", "Lucro", "Margem" })
+                                    header.Cell().Background(PrimaryColor).Padding(5)
+                                        .Text(h).FontSize(8).Bold().FontColor(Colors.White);
+                            });
+
+                            foreach (var sku in skuData)
+                            {
+                                ComposeTableCell(table, sku.Sku, false);
+                                ComposeTableCell(table, sku.Name, false);
+                                ComposeTableCell(table, sku.UnitsSold.ToString(), true);
+                                ComposeTableCell(table, FormatBrl(sku.Revenue), true);
+                                ComposeTableCell(table, FormatBrl(sku.Costs), true);
+                                ComposeTableCell(table, FormatBrl(sku.Profit), true, sku.Profit >= 0 ? SuccessColor : DangerColor);
+                                ComposeTableCell(table, $"{sku.Margin:F1}%", true, sku.Margin >= 20 ? SuccessColor : sku.Margin >= 10 ? AccentColor : DangerColor);
+                            }
+                        });
+                    });
+                });
+
+                page.Footer().Element(c => ComposeFooter(c));
+            });
+        });
+
+        return document.GeneratePdf();
+    }
+
+    public async Task<byte[]> GenerateOrderReportAsync(DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default)
+    {
+        var start = dateFrom ?? DateTime.UtcNow.AddDays(-30);
+        var end = dateTo ?? DateTime.UtcNow;
+
+        var orders = await _db.Orders
+            .Include(o => o.Items)
+            .Include(o => o.Costs)
+            .Where(o => o.OrderDate >= start && o.OrderDate <= end)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync(ct);
+
+        var totalRevenue = orders.Sum(o => o.TotalAmount);
+        var totalProfit = orders.Sum(o => o.Profit);
+        var totalCosts = totalRevenue - totalProfit;
+        var orderCount = orders.Count;
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4.Landscape());
+                page.MarginHorizontal(30);
+                page.MarginVertical(25);
+
+                page.Header().Element(c => ComposeHeader(c, "Relatório de Vendas", start, end));
+
+                page.Content().Element(content =>
+                {
+                    content.PaddingVertical(10).Column(col =>
+                    {
+                        col.Spacing(15);
+
+                        col.Item().Element(c => ComposeKpiRow(c, new[]
+                        {
+                            ("Total Pedidos", orderCount.ToString()),
+                            ("Receita", FormatBrl(totalRevenue)),
+                            ("Custos", FormatBrl(totalCosts)),
+                            ("Lucro", FormatBrl(totalProfit)),
+                        }));
+
+                        col.Item().Element(c => ComposeSectionTitle(c, "Detalhamento de Vendas"));
+
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(1.2f);
+                                columns.RelativeColumn(1f);
+                                columns.RelativeColumn(1.5f);
+                                columns.RelativeColumn(0.6f);
+                                columns.RelativeColumn(1f);
+                                columns.RelativeColumn(1f);
+                                columns.RelativeColumn(0.7f);
+                                columns.RelativeColumn(0.8f);
+                            });
+
+                            table.Header(header =>
+                            {
+                                foreach (var h in new[] { "Pedido", "Data", "Comprador", "Itens", "Valor", "Lucro", "Margem", "Status" })
+                                    header.Cell().Background(PrimaryColor).Padding(5)
+                                        .Text(h).FontSize(8).Bold().FontColor(Colors.White);
+                            });
+
+                            foreach (var order in orders)
+                            {
+                                var margin = order.TotalAmount != 0 ? Math.Round(order.Profit / order.TotalAmount * 100, 1) : 0m;
+                                var buyerName = order.BuyerName ?? "N/A";
+
+                                ComposeTableCell(table, order.ExternalOrderId ?? order.Id.ToString()[..8], false);
+                                ComposeTableCell(table, order.OrderDate.ToString("dd/MM/yyyy"), false);
+                                ComposeTableCell(table, buyerName.Length > 25 ? buyerName[..22] + "..." : buyerName, false);
+                                ComposeTableCell(table, order.Items.Sum(i => i.Quantity).ToString(), true);
+                                ComposeTableCell(table, FormatBrl(order.TotalAmount), true);
+                                ComposeTableCell(table, FormatBrl(order.Profit), true, order.Profit >= 0 ? SuccessColor : DangerColor);
+                                ComposeTableCell(table, $"{margin:F1}%", true, margin >= 20 ? SuccessColor : margin >= 10 ? AccentColor : DangerColor);
+                                ComposeTableCell(table, order.Status ?? "N/A", true);
+                            }
+                        });
+                    });
+                });
+
+                page.Footer().Element(c => ComposeFooter(c));
+            });
+        });
+
+        return document.GeneratePdf();
+    }
+
+    public async Task<byte[]> GenerateInventoryReportAsync(CancellationToken ct = default)
+    {
+        var products = await _db.Products
+            .Include(p => p.Variants)
+            .OrderBy(p => p.Name)
+            .ToListAsync(ct);
+
+        var items = products.Select(p =>
+        {
+            var totalStock = p.Variants.Sum(v => v.Stock);
+            var unitCost = p.PurchaseCost;
+            var stockValue = totalStock * unitCost;
+            return new { p.Sku, p.Name, TotalStock = totalStock, UnitCost = unitCost, StockValue = stockValue, p.MinStock, p.MaxStock };
+        }).ToList();
+
+        var totalItems = items.Count;
+        var totalUnits = items.Sum(i => i.TotalStock);
+        var totalValue = items.Sum(i => i.StockValue);
+        var belowMin = items.Count(i => i.MinStock.HasValue && i.TotalStock <= i.MinStock.Value);
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.MarginHorizontal(40);
+                page.MarginVertical(30);
+
+                page.Header().Element(c => ComposeHeader(c, "Relatório de Estoque", null, null));
+
+                page.Content().Element(content =>
+                {
+                    content.PaddingVertical(10).Column(col =>
+                    {
+                        col.Spacing(15);
+
+                        col.Item().Element(c => ComposeKpiRow(c, new[]
+                        {
+                            ("Produtos", totalItems.ToString()),
+                            ("Unidades", totalUnits.ToString()),
+                            ("Valor Total", FormatBrl(totalValue)),
+                            ("Abaixo Mínimo", belowMin.ToString()),
+                        }));
+
+                        col.Item().Element(c => ComposeSectionTitle(c, "Posição de Estoque"));
+
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(1.2f);
+                                columns.RelativeColumn(2.5f);
+                                columns.RelativeColumn(0.8f);
+                                columns.RelativeColumn(0.8f);
+                                columns.RelativeColumn(0.8f);
+                                columns.RelativeColumn(1.2f);
+                                columns.RelativeColumn(1.2f);
+                            });
+
+                            table.Header(header =>
+                            {
+                                foreach (var h in new[] { "SKU", "Produto", "Estoque", "Mín", "Máx", "Custo Unit.", "Valor" })
+                                    header.Cell().Background(PrimaryColor).Padding(5)
+                                        .Text(h).FontSize(8).Bold().FontColor(Colors.White);
+                            });
+
+                            foreach (var item in items)
+                            {
+                                var isLow = item.MinStock.HasValue && item.TotalStock <= item.MinStock.Value;
+
+                                ComposeTableCell(table, item.Sku, false);
+                                ComposeTableCell(table, item.Name.Length > 35 ? item.Name[..32] + "..." : item.Name, false);
+                                ComposeTableCell(table, item.TotalStock.ToString(), true, isLow ? DangerColor : null);
+                                ComposeTableCell(table, item.MinStock?.ToString() ?? "-", true);
+                                ComposeTableCell(table, item.MaxStock?.ToString() ?? "-", true);
+                                ComposeTableCell(table, FormatBrl(item.UnitCost), true);
+                                ComposeTableCell(table, FormatBrl(item.StockValue), true);
+                            }
+                        });
+                    });
+                });
+
+                page.Footer().Element(c => ComposeFooter(c));
+            });
+        });
+
+        return document.GeneratePdf();
+    }
+
+    // --- Shared PDF Composition Helpers ---
+
+    private static void ComposeHeader(IContainer container, string title, DateTime? dateFrom, DateTime? dateTo)
+    {
+        container.Column(col =>
+        {
+            col.Item().Row(row =>
+            {
+                row.RelativeItem().Column(c =>
+                {
+                    c.Item().Text("PeruShopHub")
+                        .FontSize(20).Bold().FontColor(PrimaryColor);
+                    c.Item().Text(title)
+                        .FontSize(14).FontColor(Colors.Grey.Darken2);
+                });
+
+                row.ConstantItem(200).AlignRight().Column(c =>
+                {
+                    if (dateFrom.HasValue && dateTo.HasValue)
+                    {
+                        c.Item().AlignRight().Text($"{dateFrom:dd/MM/yyyy} — {dateTo:dd/MM/yyyy}")
+                            .FontSize(10).FontColor(Colors.Grey.Darken1);
+                    }
+                    c.Item().AlignRight().Text($"Gerado em {DateTime.Now:dd/MM/yyyy HH:mm}")
+                        .FontSize(9).FontColor(Colors.Grey.Medium);
+                });
+            });
+
+            col.Item().PaddingVertical(5).LineHorizontal(1).LineColor(PrimaryColor);
+        });
+    }
+
+    private static void ComposeFooter(IContainer container)
+    {
+        container.Column(col =>
+        {
+            col.Item().LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten2);
+            col.Item().PaddingTop(5).Row(row =>
+            {
+                row.RelativeItem().Text("PeruShopHub — Gestão de Marketplaces")
+                    .FontSize(8).FontColor(Colors.Grey.Medium);
+                row.RelativeItem().AlignRight().Text(text =>
+                {
+                    text.Span("Página ").FontSize(8).FontColor(Colors.Grey.Medium);
+                    text.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Medium);
+                    text.Span(" de ").FontSize(8).FontColor(Colors.Grey.Medium);
+                    text.TotalPages().FontSize(8).FontColor(Colors.Grey.Medium);
+                });
+            });
+        });
+    }
+
+    private static void ComposeKpiRow(IContainer container, (string Label, string Value)[] kpis)
+    {
+        container.Row(row =>
+        {
+            foreach (var kpi in kpis)
+            {
+                row.RelativeItem().Border(0.5f).BorderColor(Colors.Grey.Lighten2)
+                    .Padding(8).Column(col =>
+                    {
+                        col.Item().Text(kpi.Label).FontSize(8).FontColor(Colors.Grey.Darken1);
+                        col.Item().Text(kpi.Value).FontSize(12).Bold().FontColor(PrimaryColor);
+                    });
+            }
+        });
+    }
+
+    private static void ComposeSectionTitle(IContainer container, string title)
+    {
+        container.PaddingTop(5).Text(title).FontSize(12).SemiBold().FontColor(PrimaryColor);
+    }
+
+    private static void ComposeTableCell(TableDescriptor table, string text, bool alignRight, string? fontColor = null)
+    {
+        var cell = table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(4);
+        var textBlock = alignRight
+            ? cell.AlignRight().Text(text)
+            : cell.Text(text);
+        textBlock.FontSize(8);
+        if (fontColor != null)
+            textBlock.FontColor(fontColor);
+    }
+
+    private static string FormatBrl(decimal value)
+    {
+        return $"R$ {value:N2}".Replace(",", "X").Replace(".", ",").Replace("X", ".");
+    }
+}

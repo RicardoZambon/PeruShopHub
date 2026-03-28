@@ -42,4 +42,18 @@ export class FinanceService {
   getAbcCurve(): Observable<AbcProduct[]> {
     return this.http.get<AbcProduct[]>(`${this.baseUrl}/abc-curve`);
   }
+
+  exportProfitabilityPdf(dateFrom?: string, dateTo?: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/reports/profitability/pdf`, {
+      params: buildHttpParams({ dateFrom, dateTo }),
+      responseType: 'blob',
+    });
+  }
+
+  exportOrdersPdf(dateFrom?: string, dateTo?: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/reports/orders/pdf`, {
+      params: buildHttpParams({ dateFrom, dateTo }),
+      responseType: 'blob',
+    });
+  }
 }
