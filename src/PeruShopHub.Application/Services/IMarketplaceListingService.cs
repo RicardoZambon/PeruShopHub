@@ -5,6 +5,12 @@ namespace PeruShopHub.Application.Services;
 
 public interface IMarketplaceListingService
 {
+    Task<PagedResult<ListingGridDto>> GetAllListingsAsync(
+        string? search, string? status, string? syncStatus,
+        string? sortBy, string? sortDirection,
+        int page, int pageSize,
+        CancellationToken ct = default);
+
     Task<PagedResult<UnlinkedListingDto>> GetUnlinkedListingsAsync(
         string marketplaceId, string? search, int page, int pageSize,
         CancellationToken ct = default);

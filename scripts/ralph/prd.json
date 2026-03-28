@@ -956,7 +956,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 51,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Depends on US-039a."
     },
     {

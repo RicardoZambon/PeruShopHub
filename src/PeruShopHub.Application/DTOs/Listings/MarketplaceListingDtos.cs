@@ -38,3 +38,18 @@ public record ProductListingDto(
     string? Permalink,
     string? ThumbnailUrl,
     int AvailableQuantity);
+
+public record ListingGridDto(
+    Guid Id,
+    string MarketplaceId,
+    string ExternalId,
+    Guid? ProductId,
+    string? ProductName,
+    string Title,
+    string Status,
+    decimal Price,
+    string? Permalink,
+    string? ThumbnailUrl,
+    int AvailableQuantity,
+    string SyncStatus,
+    DateTime UpdatedAt);

@@ -1,5 +1,170 @@
-<div class="listings__empty">
-  <lucide-angular [img]="megaphoneIcon" [size]="48" class="listings__empty-icon"></lucide-angular>
-  <h1 class="listings__empty-title">Anúncios</h1>
-  <p class="listings__empty-description">Gerencie seus anúncios nos marketplaces. Em breve.</p>
-</div>
+@if (!hasData()) {
+  <div class="listings-empty">
+    <app-empty-state
+      title="Nenhum anúncio encontrado"
+      description="Importe seus anúncios do Mercado Livre na página de Produtos."
+    ></app-empty-state>
+  </div>
+} @else {
+  <!-- Header -->
+  <app-page-header title="Anúncios">
+    <app-button
+      variant="outline"
+      size="sm"
+      [icon]="refreshIcon"
+      (click)="loadListings(true)">
+      Atualizar
+    </app-button>
+  </app-page-header>
+
+  <!-- Action Bar -->
+  <div class="action-bar">
+    <app-search-input
+      placeholder="Buscar por título ou ID ML..."
+      [value]="searchQuery()"
+      (valueChange)="onSearchChange($event)"
+    ></app-search-input>
+    <app-select-dropdown
+      [options]="statusOptions"
+      [value]="statusFilter()"
+      (valueChange)="onStatusChange($event)"
+    ></app-select-dropdown>
+    <app-select-dropdown
+      [options]="syncOptions"
+      [value]="syncFilter()"
+      (valueChange)="onSyncChange($event)"
+    ></app-select-dropdown>
+  </div>
+
+  <!-- Data Grid -->
+  <app-data-grid
+    #grid
+    [columns]="gridColumns"
+    [data]="gridData()"
+    [loading]="loading()"
+    [hasMore]="hasMore()"
+    [pageSize]="pageSize()"
+    [totalCount]="totalCount()"
+    entityName="anúncios"
+    emptyTitle="Nenhum anúncio encontrado"
+    emptyDescription="Tente ajustar os filtros de busca."
+    ariaLabel="Lista de anúncios do marketplace"
+    (sortChange)="onSort($event)"
+    (loadMore)="onLoadMore()"
+    (rowClick)="onRowClick($event)"
+  >
+    <!-- Thumbnail cell -->
+    <ng-template appGridCell="thumbnailUrl" let-row let-value="value">
+      <div class="thumb">
+        @if (value) {
+          <img [src]="value" [alt]="row.title" class="thumb__img" />
+        } @else {
+          <lucide-icon [img]="imageIcon" [size]="18"></lucide-icon>
+        }
+      </div>
+    </ng-template>
+
+    <!-- Title cell -->
+    <ng-template appGridCell="title" let-row let-value="value">
+      <span class="cell-name">{{ value }}</span>
+    </ng-template>
+
+    <!-- External ID cell -->
+    <ng-template appGridCell="externalId" let-row let-value="value">
+      <span class="cell-mono">{{ value }}</span>
+    </ng-template>
+
+    <!-- Price cell -->
+    <ng-template appGridCell="price" let-row let-value="value">
+      <span class="cell-mono">{{ formatBrl(value) }}</span>
+    </ng-template>
+
+    <!-- Stock cell -->
+    <ng-template appGridCell="stock" let-row let-value="value">
+      <span
+        [class.stock--low]="value > 0 && value <= 10"
+        [class.stock--zero]="value === 0">
+        {{ value }}
+      </span>
+    </ng-template>
+
+    <!-- Status cell -->
+    <ng-template appGridCell="status" let-row let-value="value">
+      <app-badge [label]="getStatusLabel(value)" [variant]="getStatusVariant(value)"></app-badge>
+    </ng-template>
+
+    <!-- Sync Status cell -->
+    <ng-template appGridCell="syncStatus" let-row let-value="value">
+      <app-badge [label]="value" [variant]="getSyncVariant(value)"></app-badge>
+    </ng-template>
+
+    <!-- Product Name cell -->
+    <ng-template appGridCell="productName" let-row let-value="value">
+      @if (value) {
+        <button class="link-btn" (click)="goToProduct($event, row)">
+          {{ value }}
+        </button>
+      } @else {
+        <span class="cell-mono cell-muted">—</span>
+      }
+    </ng-template>
+
+    <!-- Actions cell -->
+    <ng-template appGridCell="actions" let-row>
+      <div class="actions-group">
+        @if (row.permalink) {
+          <button class="edit-btn" title="Ver no Mercado Livre" (click)="openOnMl($event, row)">
+            <lucide-icon [img]="externalLinkIcon" [size]="16"></lucide-icon>
+          </button>
+        }
+        @if (row.productId) {
+          <button class="edit-btn" title="Ver produto interno" (click)="goToProduct($event, row)">
+            <lucide-icon [img]="linkIcon" [size]="16"></lucide-icon>
+          </button>
+        }
+      </div>
+    </ng-template>
+
+    <!-- Mobile card template -->
+    <ng-template appGridCard let-row>
+      <div class="card-header">
+        <div class="thumb thumb--sm">
+          @if (row.thumbnailUrl) {
+            <img [src]="row.thumbnailUrl" [alt]="row.title" class="thumb__img" />
+          } @else {
+            <lucide-icon [img]="imageIcon" [size]="16"></lucide-icon>
+          }
+        </div>
+        <div class="card-title">
+          <span class="card-name">{{ row.title }}</span>
+          <span class="card-sku">{{ row.externalId }}</span>
+        </div>
+        <app-badge [label]="getStatusLabel(row.status)" [variant]="getStatusVariant(row.status)"></app-badge>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <span class="card-label">Preço</span>
+          <span class="card-value cell-mono">{{ formatBrl(row.price) }}</span>
+        </div>
+        <div class="card-field">
+          <span class="card-label">Estoque</span>
+          <span class="card-value"
+            [class.stock--low]="row.stock > 0 && row.stock <= 10"
+            [class.stock--zero]="row.stock === 0">
+            {{ row.stock }}
+          </span>
+        </div>
+        <div class="card-field">
+          <span class="card-label">Sincronização</span>
+          <app-badge [label]="row.syncStatus" [variant]="getSyncVariant(row.syncStatus)"></app-badge>
+        </div>
+        @if (row.productName) {
+          <div class="card-field">
+            <span class="card-label">Produto</span>
+            <span class="card-value">{{ row.productName }}</span>
+          </div>
+        }
+      </div>
+    </ng-template>
+  </app-data-grid>
+}

@@ -104,6 +104,22 @@ public class IntegrationsController : ControllerBase
         return Ok(status);
     }
 
+    [HttpGet("mercadolivre/listings")]
+    public async Task<ActionResult<PagedResult<ListingGridDto>>> GetAllListings(
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string? syncStatus = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDirection = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var result = await _listingService.GetAllListingsAsync(
+            search, status, syncStatus, sortBy, sortDirection, page, pageSize, ct);
+        return Ok(result);
+    }
+
     [HttpGet("mercadolivre/unlinked-items")]
     public async Task<ActionResult<PagedResult<UnlinkedListingDto>>> GetUnlinkedItems(
         [FromQuery] string? search = null,

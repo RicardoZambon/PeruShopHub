@@ -1212,3 +1212,28 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Pattern: re-fetch entity in new scope when passing between scopes (tracked by different DbContext instances)
   - `MlListingImportService.ImportSingleItemAsync` and `ProductSyncService.SyncSingleItemAsync` share identical product/variant creation and update logic — consider extracting shared helper if they diverge
 ---
+
+## 2026-03-28 - US-044
+- Implemented full "Anúncios" (Listings) page showing all ML marketplace listings
+- Backend: Added `GetAllListingsAsync` method to `IMarketplaceListingService` with search, status, syncStatus, sorting, and pagination
+- Backend: Added `ListingGridDto` record with product name and sync status
+- Backend: Added `GET /api/integrations/mercadolivre/listings` endpoint on IntegrationsController
+- Frontend: Created `ListingService` with `list()` method calling the new endpoint
+- Frontend: Built full `ListingsComponent` with DataGrid, thumbnail images, status badges, sync status badges, filters (status + sync), search, infinite scroll, sorting
+- Frontend: Mobile card template for responsive layout
+- Route `/anuncios` and sidebar entry were already wired from previous iterations
+- Files changed:
+  - `src/PeruShopHub.Application/DTOs/Listings/MarketplaceListingDtos.cs` (added ListingGridDto)
+  - `src/PeruShopHub.Application/Services/IMarketplaceListingService.cs` (added GetAllListingsAsync)
+  - `src/PeruShopHub.Application/Services/MarketplaceListingService.cs` (implemented GetAllListingsAsync)
+  - `src/PeruShopHub.API/Controllers/IntegrationsController.cs` (added listings endpoint)
+  - `src/PeruShopHub.Web/src/app/services/listing.service.ts` (new)
+  - `src/PeruShopHub.Web/src/app/pages/listings/listings.component.ts` (rewritten)
+  - `src/PeruShopHub.Web/src/app/pages/listings/listings.component.html` (rewritten)
+  - `src/PeruShopHub.Web/src/app/pages/listings/listings.component.scss` (rewritten)
+- **Learnings for future iterations:**
+  - ML listing statuses are lowercase from the API (active, paused, closed) — different from internal product statuses (Ativo, Pausado, Encerrado)
+  - The route and sidebar entry for `/anuncios` were already set up in a previous iteration
+  - Use `Include(ml => ml.Product)` in EF Core query to join product name for the grid
+  - Sync status is derived: ProductId != null → "Sincronizado", null → "Não vinculado"
+---
