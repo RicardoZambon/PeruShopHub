@@ -1104,3 +1104,17 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - `MarketplaceListing` has unique index on (TenantId, MarketplaceId, ExternalId) for upsert logic
   - Worker needs its own Redis registration since it doesn't share API's DI container
 ---
+
+## 2026-03-28 - US-039b
+- Added "Importar ML" button to Products page header (uses `<ng-content>` slot of PageHeaderComponent)
+- Created import dialog with progress bar, status display, results summary, and error log
+- Added ML badge ("ML" yellow chip) on product names for products linked to marketplace listings
+- Backend: Added `HasMarketplaceListing` field to `ProductListDto`, enriched via post-query lookup against `MarketplaceListings` table
+- Frontend: Added `ImportJobStatus` interface and `triggerMlImport()`/`getMlImportStatus()` methods to `SettingsService`
+- Frontend polls import status every 2s during active import, auto-refreshes product list on completion
+- Files changed: `ProductDtos.cs`, `ProductService.cs`, `products-list.component.ts/.html/.scss`, `product.service.ts`, `settings.service.ts`
+- **Learnings for future iterations:**
+  - EF Core expression tree + record optional params: Adding `HasMarketplaceListing = false` as optional param to `ProductListDto` causes `CS0854` error in `.Select()` projection. Must pass `false` explicitly in the constructor call
+  - PageHeaderComponent supports `<ng-content>` slot for extra buttons between title and primary action
+  - Post-query enrichment pattern: Fetch main query, then batch-lookup supplementary data (marketplace listings) and merge with `record with { }` syntax — same pattern as ABC classification enrichment
+---
