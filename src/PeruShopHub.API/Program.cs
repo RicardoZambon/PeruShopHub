@@ -14,6 +14,8 @@ using PeruShopHub.Infrastructure.Persistence;
 using PeruShopHub.Infrastructure.Services;
 using PeruShopHub.Application;
 using PeruShopHub.Infrastructure.Marketplace;
+using Microsoft.AspNetCore.DataProtection;
+using PeruShopHub.Infrastructure.Security;
 using PeruShopHub.Infrastructure.Storage;
 using Serilog;
 using Serilog.Events;
@@ -89,7 +91,11 @@ builder.Services.AddDbContext<PeruShopHubDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // ── Data Protection (token encryption at rest) ──────────
-builder.Services.AddDataProtection();
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"] ?? "keys";
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+    .SetApplicationName("PeruShopHub");
+builder.Services.AddSingleton<ITokenEncryptionService, TokenEncryptionService>();
 
 // ── Redis Cache ───────────────────────────────────────────
 builder.Services.AddStackExchangeRedisCache(options =>

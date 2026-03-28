@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +13,7 @@ public class IntegrationService : IIntegrationService
 {
     private readonly PeruShopHubDbContext _db;
     private readonly ICacheService _cache;
-    private readonly IDataProtector _protector;
+    private readonly ITokenEncryptionService _tokenEncryption;
     private readonly IConfiguration _configuration;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<IntegrationService> _logger;
@@ -25,14 +24,14 @@ public class IntegrationService : IIntegrationService
     public IntegrationService(
         PeruShopHubDbContext db,
         ICacheService cache,
-        IDataProtectionProvider dataProtectionProvider,
+        ITokenEncryptionService tokenEncryption,
         IConfiguration configuration,
         IServiceProvider serviceProvider,
         ILogger<IntegrationService> logger)
     {
         _db = db;
         _cache = cache;
-        _protector = dataProtectionProvider.CreateProtector("PeruShopHub.OAuth.Tokens");
+        _tokenEncryption = tokenEncryption;
         _configuration = configuration;
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -92,8 +91,8 @@ public class IntegrationService : IIntegrationService
 
         connection.IsConnected = true;
         connection.Status = "Active";
-        connection.AccessTokenProtected = _protector.Protect(tokenResult.AccessToken);
-        connection.RefreshTokenProtected = _protector.Protect(tokenResult.RefreshToken);
+        connection.AccessTokenProtected = _tokenEncryption.Encrypt(tokenResult.AccessToken);
+        connection.RefreshTokenProtected = _tokenEncryption.Encrypt(tokenResult.RefreshToken);
         connection.TokenExpiresAt = DateTime.UtcNow.AddSeconds(tokenResult.ExpiresInSeconds);
         connection.ExternalUserId = tokenResult.UserId;
         connection.SellerNickname = tokenResult.Nickname;
