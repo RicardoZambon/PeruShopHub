@@ -13,6 +13,7 @@ using PeruShopHub.Infrastructure.Notifications;
 using PeruShopHub.Infrastructure.Persistence;
 using PeruShopHub.Infrastructure.Services;
 using PeruShopHub.Application;
+using PeruShopHub.Infrastructure.Marketplace;
 using PeruShopHub.Infrastructure.Storage;
 using Serilog;
 using Serilog.Events;
@@ -110,6 +111,15 @@ builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
 // ── Cost Calculation ─────────────────────────────────────
 builder.Services.AddScoped<ICostCalculationService, CostCalculationService>();
+
+// ── Marketplace Adapters ─────────────────────────────────
+builder.Services.AddHttpClient("MercadoLivre", client =>
+{
+    client.BaseAddress = new Uri("https://api.mercadolibre.com");
+    client.DefaultRequestHeaders.Accept.Add(
+        new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+});
+builder.Services.AddKeyedScoped<IMarketplaceAdapter, MercadoLivreAdapter>("mercadolivre");
 
 // ── Application Services ─────────────────────────────────
 builder.Services.AddHttpContextAccessor();
