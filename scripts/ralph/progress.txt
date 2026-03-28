@@ -7,6 +7,9 @@ Started: Fri Mar 28 2026
 - **On-demand sync pattern**: Redis cache key for queue (`prefix:queue:{tenantId}`), polling worker checks for queued requests, status tracked via cache with TTL. Same pattern for listing import and order sync
 - **Redis queue pattern**: Use `IConnectionMultiplexer` + `ListLeftPushAsync` for Redis LIST operations (queues). `IDistributedCache`/`ICacheService` only supports key-value, not lists
 - **Webhook skip paths**: New unauthenticated endpoints must be added to skip lists in BOTH `TenantMiddleware` AND `TenantRateLimitMiddleware`
+- **Webhook topic routing**: WebhooksController enqueues to `ml:webhooks:{topic}` for ANY topic. Worker Topics array + switch/case is where new topic support is added
+- **ML resource ID extraction**: All ML webhooks use `/resource_type/{id}` format — shared `ExtractIdFromResource` helper works for all topics
+- **Webhook connection lookup**: `FindConnectionAsync` (MarketplaceConnection by ExternalUserId + IsConnected + Active) is reused across all webhook handlers
 - **Marketplace adapter pattern**: `IMarketplaceAdapter` in Core/Interfaces, implementations in Infrastructure/Marketplace. Keyed DI: `AddKeyedScoped<IMarketplaceAdapter, XAdapter>("key")`. Named HttpClient per marketplace
 - **ML API DTOs**: Use `[JsonPropertyName("snake_case")]` on ML response models — ML API uses snake_case, not camelCase
 - All components are **standalone** (no NgModules) with `standalone: true`
@@ -1339,4 +1342,27 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - The mapper is stateless/pure (no DB dependency) so it's registered as singleton — future mappers for other marketplaces should follow same pattern
   - `MapOrderDetails` now sets `ExternalOrderId` from details — callers should still set it on new Order creation for the initial save
   - When adding new ML status values, update both `MapOrderStatus` and `IsFulfilledStatus` in the mapper
+---
+
+## 2026-03-28 - US-049
+- Implemented additional webhook support for items, shipments, and payments topics
+- Extended WebhookProcessingWorker to handle 4 topics: orders_v2, items, shipments, payments
+- Added IMarketplaceAdapter methods: GetShipmentDetailsAsync, GetPaymentDetailsAsync
+- Implemented MercadoLivreAdapter methods for /shipments/{id} and /collections/{id} endpoints
+- Added ML API response models: MlPaymentResponse, extended MlShippingResponse (tracking, status_history)
+- Added Order entity fields: ShippingStatus, TrackingUrl, ExternalShippingId
+- Created EF Core migration AddShippingDetailsToOrder
+- Items webhook: updates MarketplaceListing + linked Product (price, stock, status)
+- Shipments webhook: updates order shipping status, tracking, carrier; creates shipping notification
+- Payments webhook: updates order payment method, installments, amount, status
+- Updated ShippingInfoDto with trackingUrl and shippingStatus fields
+- Frontend: added shipping status badge, tracking URL link, pending state handling
+- Files changed: IMarketplaceAdapter.cs, MercadoLivreAdapter.cs, MercadoLivreModels.cs, WebhookProcessingWorker.cs, Order.cs, OrderDtos.cs, OrderService.cs, MlOrderMapper.cs, order.service.ts, sale-detail.component.ts/html/scss, migration files
+- **Learnings for future iterations:**
+  - Each webhook topic gets its own Redis queue key: `ml:webhooks:{topic}` — the existing queue service already supports this dynamically
+  - The WebhooksController already routes any topic to the correct Redis queue — no controller changes needed for new topics
+  - ML shipments API returns status_history with date fields per status (date_handling, date_shipped, etc.) — flatten into ordered list
+  - ML payments API is at /collections/{id}, not /payments/{id}
+  - FindConnectionAsync pattern can be shared across all topic handlers — extracted to helper method
+  - ExtractIdFromResource works for all ML webhook resources: /orders/{id}, /items/{id}, /shipments/{id}, /collections/{id}
 ---
