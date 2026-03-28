@@ -139,10 +139,23 @@
               </div>
               <div class="integration-card__info">
                 <h3 class="integration-card__name">{{ integration.name }}</h3>
-                @if (integration.isConnected) {
+                @if (integration.isConnected || integration.status === 'Error') {
                   <span class="integration-card__nickname">{{ integration.sellerNickname }}</span>
                   <div class="integration-card__status">
-                    <app-badge label="Conectado" [variant]="integration.status === 'Active' ? 'success' : 'warning'" />
+                    @switch (integration.status) {
+                      @case ('Active') {
+                        <app-badge label="Ativo" variant="success" />
+                      }
+                      @case ('Error') {
+                        <app-badge label="Erro" variant="danger" />
+                      }
+                      @case ('Expired') {
+                        <app-badge label="Expirado" variant="warning" />
+                      }
+                      @default {
+                        <app-badge label="Desconectado" variant="neutral" />
+                      }
+                    }
                     @if (integration.externalUserId) {
                       <span class="integration-card__user-id">ID: {{ integration.externalUserId }}</span>
                     }
@@ -153,12 +166,32 @@
                   @if (integration.lastSyncAt) {
                     <span class="integration-card__sync">Última sync: {{ integration.lastSyncAt | date:'dd/MM/yyyy HH:mm' }}</span>
                   }
+                  <!-- Connection health indicator -->
+                  @if (integration.status === 'Error' || integration.refreshErrorCount > 0) {
+                    <div class="integration-card__health">
+                      <span class="integration-card__health-indicator integration-card__health-indicator--error"></span>
+                      <span class="integration-card__health-text">{{ integration.refreshErrorCount }} erro(s) de conexão</span>
+                    </div>
+                  } @else if (integration.status === 'Active') {
+                    <div class="integration-card__health">
+                      <span class="integration-card__health-indicator integration-card__health-indicator--ok"></span>
+                      <span class="integration-card__health-text">Conexão saudável</span>
+                    </div>
+                  }
                 } @else if (integration.comingSoon) {
                   <span class="integration-card__coming-soon">Em breve</span>
+                } @else {
+                  <div class="integration-card__status">
+                    <app-badge label="Desconectado" variant="neutral" />
+                  </div>
                 }
               </div>
               <div class="integration-card__actions">
-                @if (integration.isConnected) {
+                @if (integration.status === 'Active' && integration.isConnected) {
+                  <app-button variant="outline" (click)="triggerSync(integration)" [disabled]="syncingMarketplace()">Sincronizar Agora</app-button>
+                  <app-button variant="danger" (click)="disconnectIntegration(integration)" [disabled]="connectingMarketplace()">Desconectar</app-button>
+                } @else if (integration.status === 'Error') {
+                  <app-button variant="accent" (click)="connectIntegration(integration)" [disabled]="connectingMarketplace()">Reconectar</app-button>
                   <app-button variant="danger" (click)="disconnectIntegration(integration)" [disabled]="connectingMarketplace()">Desconectar</app-button>
                 } @else if (!integration.comingSoon) {
                   <app-button variant="accent" (click)="connectIntegration(integration)" [disabled]="connectingMarketplace()">Conectar Mercado Livre</app-button>

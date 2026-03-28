@@ -441,8 +441,48 @@
     font-style: italic;
   }
 
+  &__user-id {
+    font-family: var(--font-mono);
+    font-size: var(--mono-size);
+    color: var(--neutral-500);
+  }
+
+  &__expiry {
+    font-size: var(--label-size);
+    color: var(--neutral-400);
+  }
+
+  &__health {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+  }
+
+  &__health-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &--ok {
+      background-color: var(--success);
+    }
+
+    &--error {
+      background-color: var(--danger);
+    }
+  }
+
+  &__health-text {
+    font-size: var(--label-size);
+    color: var(--neutral-500);
+  }
+
   &__actions {
     flex-shrink: 0;
+    display: flex;
+    gap: var(--space-2);
   }
 
   @include m.mobile {

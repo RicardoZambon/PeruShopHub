@@ -20,7 +20,8 @@ public record IntegrationDto(
     bool ComingSoon,
     string Status,
     string? ExternalUserId,
-    DateTime? TokenExpiresAt);
+    DateTime? TokenExpiresAt,
+    int RefreshErrorCount);
 
 public record CostConfigDto(
     string Category,

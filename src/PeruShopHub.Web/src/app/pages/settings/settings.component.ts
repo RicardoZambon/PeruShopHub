@@ -65,6 +65,7 @@ export class SettingsComponent implements OnInit {
   users = signal<UserRow[]>([]);
   integrations = signal<Integration[]>([]);
   connectingMarketplace = signal(false);
+  syncingMarketplace = signal(false);
 
   // Fixed costs
   embalagemPadrao = signal(0);
@@ -970,6 +971,26 @@ export class SettingsComponent implements OnInit {
           this.toastService.show('Erro ao desconectar marketplace', 'danger');
         },
       });
+    });
+  }
+
+  triggerSync(integration: Integration): void {
+    this.syncingMarketplace.set(true);
+    this.settingsService.triggerSync(integration.marketplaceId).subscribe({
+      next: (result) => {
+        this.integrations.update(list =>
+          list.map(i => i.id === integration.id
+            ? { ...i, lastSyncAt: result.lastSyncAt }
+            : i
+          )
+        );
+        this.syncingMarketplace.set(false);
+        this.toastService.show('Sincronização iniciada', 'success');
+      },
+      error: () => {
+        this.syncingMarketplace.set(false);
+        this.toastService.show('Erro ao iniciar sincronização', 'danger');
+      },
     });
   }
 }

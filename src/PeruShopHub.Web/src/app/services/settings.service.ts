@@ -23,6 +23,7 @@ export interface Integration {
   status: string;
   externalUserId?: string;
   tokenExpiresAt?: string;
+  refreshErrorCount: number;
 }
 
 export interface OAuthInitResponse {
@@ -111,6 +112,10 @@ export class SettingsService {
 
   disconnectIntegration(marketplaceId: string): Observable<void> {
     return this.http.post<void>(`${environment.apiUrl}/integrations/${marketplaceId}/disconnect`, {});
+  }
+
+  triggerSync(marketplaceId: string): Observable<{ lastSyncAt: string }> {
+    return this.http.post<{ lastSyncAt: string }>(`${environment.apiUrl}/integrations/${marketplaceId}/sync`, {});
   }
 
   getCosts(): Observable<FixedCostsResponse> {
