@@ -809,3 +809,22 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Worker needs `IgnoreQueryFilters()` when querying across tenants (no tenant context in worker scope)
   - IEmailService uses NoOpEmailService stub — when US-059 implements the real provider, swap registration in API and Worker Program.cs
 ---
+
+## 2026-03-28 - US-029
+- Implemented Audit Trail / Activity Log feature (full-stack)
+- Backend: AuditLog entity, EF Core configuration with JSONB columns and composite indexes, migration
+- Backend: IAuditService/AuditService with IHttpContextAccessor for user context extraction
+- Backend: GET /api/audit-log endpoint with filters (entityType, entityId, dateFrom, dateTo, userId) + pagination
+- Backend: Wired audit logging into ProductService (price/cost changes), InventoryService (stock adjustments), OrderService (cost add/update/delete), PurchaseOrderService (PO receive), SettingsController (commission rule CRUD)
+- Frontend: AuditLogService, standalone AuditLogComponent at /configuracoes/log-atividades
+- Frontend: Data table with filters, skeleton loading, pagination, empty state
+- Frontend: Added "Log de Atividades" tab to Settings that navigates to audit log page
+- Updated unit tests to pass mock IAuditService to modified service constructors
+- Files changed: 28 files (10 new, 18 modified)
+- **Learnings for future iterations:**
+  - Application project needed `<FrameworkReference Include="Microsoft.AspNetCore.App" />` to access `IHttpContextAccessor` — adding this avoids needing a separate NuGet package
+  - When adding constructor params to services, all unit test files creating those services need updating too
+  - SCSS mixin import path from pages/ is `../../../styles/mixins` (3 levels up), not 4
+  - Settings component at 800+ lines — new feature tabs should be separate components/routes rather than expanding it further
+  - AuditLog entity uses JSONB columns for OldValue/NewValue — flexible schema for varying audit data shapes
+---
