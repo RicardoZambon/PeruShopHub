@@ -360,3 +360,26 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - getMarketplaces() derives marketplace list from existing allocations — falls back to "mercadolivre" when no allocations exist
   - Backend PUT endpoint is upsert — creates allocation if it doesn't exist, updates if it does
 ---
+
+## 2026-03-28 - US-014
+- Added MinStock/MaxStock nullable int fields to Product entity
+- Created EF Core migration AddMinMaxStockToProduct
+- Updated ProductDtos (List, Detail, Create, Update) with MinStock/MaxStock
+- Updated ProductService: create, update, MapToDetailDto, list projection
+- Added StockAlertDto and GET /api/inventory/alerts endpoint
+- Updated IInventoryService + InventoryService with GetAlertsAsync method
+- Updated StockAlertWorker to check Products with MinStock (creates stock_alert notifications with TenantId)
+- Dashboard pending actions already counts stock_alert notifications (no change needed)
+- InventoryItemDto now includes MinStock/MaxStock for row-level highlighting
+- Frontend: Product form now has "Estoque mínimo" and "Estoque máximo" fields in Preço e Custos tab
+- Frontend: Product interface and inventory service updated with new fields
+- Frontend: Inventory overview highlights rows where totalStock ≤ minStock with red background
+- DataGrid component now supports _rowClass property on data rows via [ngClass]
+- Files changed: Product.cs, ProductDtos.cs, ProductService.cs, InventoryDtos.cs, InventoryService.cs, IInventoryService.cs, InventoryController.cs, StockAlertWorker.cs, migration, product-form.component.ts/html, inventory.component.ts/scss, inventory.service.ts, product.service.ts, data-grid.component.html
+- **Learnings for future iterations:**
+  - DataGrid component doesn't have built-in row class support — added _rowClass convention via [ngClass]="row['_rowClass']" (bracket notation required for index signatures in strict mode templates)
+  - UpdateProductDto uses nullable fields — setting MinStock/MaxStock=0 means "clear" (mapped to null in service)
+  - StockAlertWorker previously only checked Supplies — now also checks Products with MinStock configured
+  - Dashboard BuildPendingActionsAsync already queries stock_alert notification type — no change was needed
+  - Inventory overview grid uses ::ng-deep for row class styling since the class is applied inside the child DataGrid component
+---
