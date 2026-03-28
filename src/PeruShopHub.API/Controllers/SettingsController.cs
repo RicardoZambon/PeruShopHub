@@ -138,6 +138,102 @@ public class SettingsController : ControllerBase
         return NoContent();
     }
 
+    // --- Payment Fee Rules ---
+
+    [HttpGet("payment-fee-rules")]
+    public async Task<ActionResult<IReadOnlyList<PaymentFeeRuleDto>>> GetPaymentFeeRules()
+    {
+        var rules = await _db.PaymentFeeRules
+            .AsNoTracking()
+            .OrderBy(r => r.InstallmentMin)
+            .ThenBy(r => r.InstallmentMax)
+            .Select(r => new PaymentFeeRuleDto(
+                r.Id, r.InstallmentMin, r.InstallmentMax, r.FeePercentage, r.IsDefault))
+            .ToListAsync();
+
+        return Ok(rules);
+    }
+
+    [HttpPost("payment-fee-rules")]
+    public async Task<ActionResult<PaymentFeeRuleDto>> CreatePaymentFeeRule([FromBody] CreatePaymentFeeRuleDto dto)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (dto.InstallmentMin < 1)
+            errors["InstallmentMin"] = new[] { "Parcela mínima deve ser pelo menos 1" };
+        if (dto.InstallmentMax < dto.InstallmentMin)
+            errors["InstallmentMax"] = new[] { "Parcela máxima deve ser maior ou igual à mínima" };
+        if (dto.FeePercentage < 0 || dto.FeePercentage > 100)
+            errors["FeePercentage"] = new[] { "Taxa deve estar entre 0 e 100" };
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        var rule = new PaymentFeeRule
+        {
+            Id = Guid.NewGuid(),
+            InstallmentMin = dto.InstallmentMin,
+            InstallmentMax = dto.InstallmentMax,
+            FeePercentage = dto.FeePercentage,
+            IsDefault = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.PaymentFeeRules.Add(rule);
+        await _db.SaveChangesAsync();
+
+        var result = new PaymentFeeRuleDto(
+            rule.Id, rule.InstallmentMin, rule.InstallmentMax, rule.FeePercentage, rule.IsDefault);
+
+        return CreatedAtAction(nameof(GetPaymentFeeRules), result);
+    }
+
+    [HttpPut("payment-fee-rules/{id:guid}")]
+    public async Task<ActionResult<PaymentFeeRuleDto>> UpdatePaymentFeeRule(Guid id, [FromBody] UpdatePaymentFeeRuleDto dto)
+    {
+        var rule = await _db.PaymentFeeRules.FindAsync(id);
+        if (rule is null)
+            return NotFound();
+
+        var errors = new Dictionary<string, string[]>();
+
+        if (dto.InstallmentMin < 1)
+            errors["InstallmentMin"] = new[] { "Parcela mínima deve ser pelo menos 1" };
+        if (dto.InstallmentMax < dto.InstallmentMin)
+            errors["InstallmentMax"] = new[] { "Parcela máxima deve ser maior ou igual à mínima" };
+        if (dto.FeePercentage < 0 || dto.FeePercentage > 100)
+            errors["FeePercentage"] = new[] { "Taxa deve estar entre 0 e 100" };
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        rule.InstallmentMin = dto.InstallmentMin;
+        rule.InstallmentMax = dto.InstallmentMax;
+        rule.FeePercentage = dto.FeePercentage;
+        await _db.SaveChangesAsync();
+
+        var result = new PaymentFeeRuleDto(
+            rule.Id, rule.InstallmentMin, rule.InstallmentMax, rule.FeePercentage, rule.IsDefault);
+
+        return Ok(result);
+    }
+
+    [HttpDelete("payment-fee-rules/{id:guid}")]
+    public async Task<IActionResult> DeletePaymentFeeRule(Guid id)
+    {
+        var rule = await _db.PaymentFeeRules.FindAsync(id);
+        if (rule is null)
+            return NotFound();
+
+        if (rule.IsDefault)
+            return Conflict(new { message = "Não é possível excluir a regra padrão." });
+
+        _db.PaymentFeeRules.Remove(rule);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     // --- Tax Profile ---
 
     [HttpGet("tax-profile")]
@@ -195,3 +291,6 @@ public record UpdateCostsDto(decimal? TaxRate);
 public record UpdateCommissionRuleDto(decimal Rate);
 public record TaxProfileDto(Guid Id, string TaxRegime, decimal AliquotPercentage, string? State);
 public record UpdateTaxProfileDto(string TaxRegime, decimal AliquotPercentage, string? State);
+public record PaymentFeeRuleDto(Guid Id, int InstallmentMin, int InstallmentMax, decimal FeePercentage, bool IsDefault);
+public record CreatePaymentFeeRuleDto(int InstallmentMin, int InstallmentMax, decimal FeePercentage);
+public record UpdatePaymentFeeRuleDto(int InstallmentMin, int InstallmentMax, decimal FeePercentage);

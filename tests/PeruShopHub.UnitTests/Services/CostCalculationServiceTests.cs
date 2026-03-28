@@ -379,12 +379,23 @@ public class CostCalculationServiceTests : IDisposable
     [Fact]
     public async Task CalculateOrderCosts_Tax_UsesConfiguredRate()
     {
+        // Seed a TaxProfile with 10% rate (ResolveTaxRateAsync reads from DB, not config)
+        _db.TaxProfiles.Add(new TaxProfile
+        {
+            Id = Guid.NewGuid(),
+            TenantId = _tenantId,
+            TaxRegime = "SimplesNacional",
+            AliquotPercentage = 10m,
+            CreatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
         var order = CreateOrder(200m, new List<OrderItem>
         {
             CreateOrderItem("SKU-T", quantity: 1, unitPrice: 200m),
         });
 
-        var service = CreateService(taxRate: 0.10m);
+        var service = CreateService();
         var costs = await service.CalculateOrderCostsAsync(order);
 
         costs.Single(c => c.Category == "tax").Value.Should().Be(20m); // 200 * 0.10
@@ -419,9 +430,9 @@ public class CostCalculationServiceTests : IDisposable
         var service = CreateService();
         var costs = await service.CalculateOrderCostsAsync(order);
 
-        costs.Should().HaveCount(6);
+        costs.Should().HaveCount(7);
         costs.Select(c => c.Category).Should().BeEquivalentTo(
-            new[] { "product_cost", "packaging", "storage_daily", "marketplace_commission", "fixed_fee", "tax" });
+            new[] { "product_cost", "packaging", "storage_daily", "marketplace_commission", "fixed_fee", "tax", "payment_fee" });
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -449,9 +460,10 @@ public class CostCalculationServiceTests : IDisposable
         var profit = order.TotalAmount - totalCosts;
 
         // product_cost: 20*2=40, packaging: 1*2=2, commission: 100*0.13=13, fixed_fee: 6.50*2=13, tax: 100*0.06=6
-        // Total costs: 40+2+13+13+6 = 74
-        totalCosts.Should().Be(74m);
-        profit.Should().Be(26m);
+        // payment_fee: 100*0.0499=4.99 (default fallback rate, no rules in DB)
+        // Total costs: 40+2+13+13+6+4.99 = 78.99
+        totalCosts.Should().Be(78.99m);
+        profit.Should().Be(21.01m);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -503,9 +515,9 @@ public class CostCalculationServiceTests : IDisposable
         foreach (var cost in newCosts)
             order.Costs.Add(cost);
 
-        // 6 calculated + 1 manual = 7 total
-        order.Costs.Should().HaveCount(7);
-        order.Costs.Count(c => c.Source == "Calculated").Should().Be(6);
+        // 7 calculated + 1 manual = 8 total
+        order.Costs.Should().HaveCount(8);
+        order.Costs.Count(c => c.Source == "Calculated").Should().Be(7);
         order.Costs.Should().Contain(c => c.Source == "Manual" && c.Category == "shipping_seller" && c.Value == 15m);
 
         // Step 3: Recalculate profit (same as RecalculateOrderCostsAsync line 160)
@@ -1101,7 +1113,7 @@ public class CostCalculationServiceTests : IDisposable
         var service = CreateService();
         var costs = await service.CalculateOrderCostsAsync(order);
 
-        costs.Should().HaveCount(6);
+        costs.Should().HaveCount(7);
         costs.Sum(c => c.Value).Should().Be(0m); // All zero
     }
 }

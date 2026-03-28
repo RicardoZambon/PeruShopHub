@@ -25,6 +25,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Persistence\Seeds\SeedData.sql" />
     <EmbeddedResource Include="Persistence\Seeds\SeedCommissionRules.sql" />
+    <EmbeddedResource Include="Persistence\Seeds\SeedPaymentFeeRules.sql" />
   </ItemGroup>
 
 </Project>

@@ -13,7 +13,7 @@ import { FormActionsComponent } from '../../shared/components/form-actions/form-
 import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/toggle-switch.component';
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
-import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile } from '../../services/settings.service';
+import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule } from '../../services/settings.service';
 import { TenantService, type TenantMember } from '../../services/tenant.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
@@ -81,6 +81,12 @@ export class SettingsComponent implements OnInit {
   editingCommissionRule = signal<CommissionRule | null>(null);
   commissionRuleForm!: FormGroup;
 
+  // Payment fee rules
+  paymentFeeRules = signal<PaymentFeeRule[]>([]);
+  showPaymentFeeRuleModal = signal(false);
+  editingPaymentFeeRule = signal<PaymentFeeRule | null>(null);
+  paymentFeeRuleForm!: FormGroup;
+
   // Tax rate
   taxRate = signal(0);
   taxRateForm!: FormGroup;
@@ -132,6 +138,12 @@ export class SettingsComponent implements OnInit {
       rate: [null as number | null, [Validators.required, Validators.min(0), Validators.max(100)]],
     });
 
+    this.paymentFeeRuleForm = this.fb.group({
+      installmentMin: [1, [Validators.required, Validators.min(1), Validators.max(24)]],
+      installmentMax: [1, [Validators.required, Validators.min(1), Validators.max(24)]],
+      feePercentage: [null as number | null, [Validators.required, Validators.min(0), Validators.max(100)]],
+    });
+
     this.taxRateForm = this.fb.group({
       taxRate: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     });
@@ -148,6 +160,7 @@ export class SettingsComponent implements OnInit {
     this.loadIntegrations();
     this.loadCosts();
     this.loadCommissionRules();
+    this.loadPaymentFeeRules();
     this.loadTaxProfile();
   }
 
@@ -467,6 +480,97 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  // Payment Fee Rules
+  openNewPaymentFeeRuleModal(): void {
+    this.editingPaymentFeeRule.set(null);
+    this.paymentFeeRuleForm.reset({ installmentMin: 1, installmentMax: 1, feePercentage: null });
+    this.showPaymentFeeRuleModal.set(true);
+  }
+
+  openEditPaymentFeeRuleModal(rule: PaymentFeeRule): void {
+    this.editingPaymentFeeRule.set(rule);
+    this.paymentFeeRuleForm.patchValue({
+      installmentMin: rule.installmentMin,
+      installmentMax: rule.installmentMax,
+      feePercentage: rule.feePercentage,
+    });
+    this.showPaymentFeeRuleModal.set(true);
+  }
+
+  closePaymentFeeRuleModal(): void {
+    this.showPaymentFeeRuleModal.set(false);
+    this.editingPaymentFeeRule.set(null);
+  }
+
+  savePaymentFeeRule(): void {
+    if (!this.paymentFeeRuleForm.valid) {
+      this.paymentFeeRuleForm.markAllAsTouched();
+      return;
+    }
+
+    this.saving.set(true);
+    const formValue = this.paymentFeeRuleForm.value;
+    const dto = {
+      installmentMin: formValue.installmentMin,
+      installmentMax: formValue.installmentMax,
+      feePercentage: formValue.feePercentage,
+    };
+    const editing = this.editingPaymentFeeRule();
+
+    if (editing) {
+      this.settingsService.updatePaymentFeeRule(editing.id, dto).subscribe({
+        next: (updated) => {
+          this.saving.set(false);
+          this.paymentFeeRules.update(rules =>
+            rules.map(r => r.id === editing.id ? updated : r)
+          );
+          this.closePaymentFeeRuleModal();
+          this.toastService.show('Regra de taxa de pagamento atualizada', 'success');
+        },
+        error: () => {
+          this.saving.set(false);
+          this.toastService.show('Erro ao atualizar regra', 'danger');
+        },
+      });
+    } else {
+      this.settingsService.createPaymentFeeRule(dto).subscribe({
+        next: (created) => {
+          this.saving.set(false);
+          this.paymentFeeRules.update(rules => [...rules, created]);
+          this.closePaymentFeeRuleModal();
+          this.toastService.show('Regra de taxa de pagamento criada', 'success');
+        },
+        error: () => {
+          this.saving.set(false);
+          this.toastService.show('Erro ao criar regra', 'danger');
+        },
+      });
+    }
+  }
+
+  async deletePaymentFeeRule(rule: PaymentFeeRule): Promise<void> {
+    if (rule.isDefault) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Remover regra',
+      message: `Deseja remover a regra de taxa de pagamento para ${rule.installmentMin}-${rule.installmentMax}x?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
+    this.settingsService.deletePaymentFeeRule(rule.id).subscribe({
+      next: () => {
+        this.confirmDialog.done();
+        this.paymentFeeRules.update(rules => rules.filter(r => r.id !== rule.id));
+        this.toastService.show('Regra de taxa de pagamento removida', 'success');
+      },
+      error: () => {
+        this.confirmDialog.done();
+        this.toastService.show('Erro ao remover regra', 'danger');
+      },
+    });
+  }
+
   // Tax Rate
   saveTaxRate(): void {
     if (!this.taxRateForm.valid) return;
@@ -557,6 +661,13 @@ export class SettingsComponent implements OnInit {
         });
       },
       error: (err) => console.error('Failed to load costs:', err),
+    });
+  }
+
+  private loadPaymentFeeRules(): void {
+    this.settingsService.getPaymentFeeRules().subscribe({
+      next: (data) => this.paymentFeeRules.set(data),
+      error: (err) => console.error('Failed to load payment fee rules:', err),
     });
   }
 

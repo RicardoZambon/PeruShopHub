@@ -15,6 +15,7 @@ public class CostCalculationService : ICostCalculationService
 
     private const decimal HardcodedFallbackCommissionRate = 0.13m;
     private const decimal DefaultTaxRate = 0.06m;
+    private const decimal DefaultPaymentFeeRate = 0.0499m;
     private readonly int _averageDaysInStorage;
 
     public CostCalculationService(
@@ -167,6 +168,18 @@ public class CostCalculationService : ICostCalculationService
             Category = "tax",
             Description = $"Impostos ({taxRate:P0})",
             Value = order.TotalAmount * taxRate,
+            Source = "Calculated"
+        });
+
+        // ── payment_fee ────────────────────────────────────
+        var paymentFeeRate = await ResolvePaymentFeeRateAsync(order.Installments ?? 1, ct);
+        costs.Add(new OrderCost
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            Category = "payment_fee",
+            Description = $"Taxa de pagamento ({order.Installments ?? 1}x — {paymentFeeRate:P2})",
+            Value = order.TotalAmount * paymentFeeRate,
             Source = "Calculated"
         });
 
@@ -492,6 +505,32 @@ public class CostCalculationService : ICostCalculationService
             return DefaultTaxRate;
 
         return profile.AliquotPercentage / 100m;
+    }
+
+    private async Task<decimal> ResolvePaymentFeeRateAsync(int installments, CancellationToken ct)
+    {
+        // Try specific match: installment count within range
+        var rule = await _db.PaymentFeeRules
+            .AsNoTracking()
+            .Where(r => !r.IsDefault && r.InstallmentMin <= installments && r.InstallmentMax >= installments)
+            .FirstOrDefaultAsync(ct);
+
+        if (rule != null)
+            return rule.FeePercentage / 100m;
+
+        // Fallback: default rule
+        var defaultRule = await _db.PaymentFeeRules
+            .AsNoTracking()
+            .Where(r => r.IsDefault)
+            .FirstOrDefaultAsync(ct);
+
+        if (defaultRule != null)
+            return defaultRule.FeePercentage / 100m;
+
+        _logger.LogWarning("No payment fee rule found for {Installments} installments. Using hardcoded fallback rate {Rate}.",
+            installments, DefaultPaymentFeeRate);
+
+        return DefaultPaymentFeeRate;
     }
 
     private static decimal CalculateFixedFee(decimal unitPrice)

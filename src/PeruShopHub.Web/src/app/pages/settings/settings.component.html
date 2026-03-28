@@ -329,6 +329,51 @@
             </table>
           </div>
         </div>
+
+        <!-- Payment Fee Rules Section -->
+        <div class="settings__subsection">
+          <div class="settings__section-header">
+            <h3 class="settings__subsection-title">Taxas de Pagamento</h3>
+            <app-button variant="accent" (click)="openNewPaymentFeeRuleModal()">Nova Regra</app-button>
+          </div>
+
+          <div class="commission-rules-table-wrapper">
+            <table class="commission-rules-table">
+              <thead>
+                <tr>
+                  <th class="commission-rules-table__th">Parcela Mín.</th>
+                  <th class="commission-rules-table__th">Parcela Máx.</th>
+                  <th class="commission-rules-table__th commission-rules-table__th--rate">Taxa (%)</th>
+                  <th class="commission-rules-table__th">Padrão</th>
+                  <th class="commission-rules-table__th commission-rules-table__th--actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (rule of paymentFeeRules(); track rule.id) {
+                  <tr class="commission-rules-table__row">
+                    <td class="commission-rules-table__td commission-rules-table__td--mono">{{ rule.installmentMin }}x</td>
+                    <td class="commission-rules-table__td commission-rules-table__td--mono">{{ rule.installmentMax }}x</td>
+                    <td class="commission-rules-table__td commission-rules-table__td--mono">{{ rule.feePercentage }}%</td>
+                    <td class="commission-rules-table__td">
+                      @if (rule.isDefault) {
+                        <app-badge label="Padrão" variant="primary" />
+                      }
+                    </td>
+                    <td class="commission-rules-table__td commission-rules-table__td--actions">
+                      <app-button variant="icon" [icon]="pencilIcon" [iconOnly]="true" ariaLabel="Editar" size="sm" (click)="openEditPaymentFeeRuleModal(rule)"></app-button>
+                      <app-button variant="danger" [icon]="trashIcon" [iconOnly]="true" ariaLabel="Excluir" size="sm" [disabled]="rule.isDefault" (click)="deletePaymentFeeRule(rule)"></app-button>
+                    </td>
+                  </tr>
+                }
+                @if (paymentFeeRules().length === 0) {
+                  <tr>
+                    <td colspan="5" class="commission-rules-table__empty">Nenhuma regra de taxa de pagamento cadastrada</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     }
 
@@ -615,6 +660,57 @@
       (cancel)="closeCommissionRuleModal()"
       (save)="saveCommissionRule()"
       [disabled]="commissionRuleForm.invalid">
+    </app-form-actions>
+  </ng-container>
+</app-dialog>
+
+<!-- Payment Fee Rule Modal -->
+<app-dialog
+  [title]="editingPaymentFeeRule() ? 'Editar Regra' : 'Nova Regra de Taxa de Pagamento'"
+  [open]="showPaymentFeeRuleModal()"
+  (closed)="closePaymentFeeRuleModal()">
+  <form body [formGroup]="paymentFeeRuleForm" (ngSubmit)="savePaymentFeeRule()" class="settings-modal-form form-layout" [class.form-layout--saving]="saving()">
+    <div class="form-layout--row">
+      <app-form-field label="Parcela Mín."
+        [error]="paymentFeeRuleForm.get('installmentMin')?.invalid && paymentFeeRuleForm.get('installmentMin')?.touched ? 'Mínimo 1' : ''">
+        <input
+          class="form-field__input form-field__input--mono"
+          type="number"
+          min="1"
+          max="24"
+          formControlName="installmentMin" />
+      </app-form-field>
+
+      <app-form-field label="Parcela Máx."
+        [error]="paymentFeeRuleForm.get('installmentMax')?.invalid && paymentFeeRuleForm.get('installmentMax')?.touched ? 'Mínimo 1' : ''">
+        <input
+          class="form-field__input form-field__input--mono"
+          type="number"
+          min="1"
+          max="24"
+          formControlName="installmentMax" />
+      </app-form-field>
+    </div>
+
+    <app-form-field label="Taxa (%)"
+      [error]="paymentFeeRuleForm.get('feePercentage')?.invalid && paymentFeeRuleForm.get('feePercentage')?.touched ? 'Taxa deve estar entre 0 e 100' : ''">
+      <div class="form-field__prefix-group">
+        <input
+          class="form-field__input form-field__input--mono form-field__input--with-suffix"
+          type="number"
+          step="0.01"
+          min="0"
+          max="100"
+          formControlName="feePercentage" />
+        <span class="form-field__suffix">%</span>
+      </div>
+    </app-form-field>
+  </form>
+  <ng-container footer>
+    <app-form-actions
+      (cancel)="closePaymentFeeRuleModal()"
+      (save)="savePaymentFeeRule()"
+      [disabled]="paymentFeeRuleForm.invalid">
     </app-form-actions>
   </ng-container>
 </app-dialog>

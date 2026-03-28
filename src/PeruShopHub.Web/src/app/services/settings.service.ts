@@ -46,6 +46,14 @@ export interface TaxProfile {
   state: string | null;
 }
 
+export interface PaymentFeeRule {
+  id: string;
+  installmentMin: number;
+  installmentMax: number;
+  feePercentage: number;
+  isDefault: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private http = inject(HttpClient);
@@ -89,5 +97,21 @@ export class SettingsService {
 
   updateTaxProfile(dto: { taxRegime: string; aliquotPercentage: number; state: string | null }): Observable<TaxProfile> {
     return this.http.put<TaxProfile>(`${this.baseUrl}/tax-profile`, dto);
+  }
+
+  getPaymentFeeRules(): Observable<PaymentFeeRule[]> {
+    return this.http.get<PaymentFeeRule[]>(`${this.baseUrl}/payment-fee-rules`);
+  }
+
+  createPaymentFeeRule(dto: { installmentMin: number; installmentMax: number; feePercentage: number }): Observable<PaymentFeeRule> {
+    return this.http.post<PaymentFeeRule>(`${this.baseUrl}/payment-fee-rules`, dto);
+  }
+
+  updatePaymentFeeRule(id: string, dto: { installmentMin: number; installmentMax: number; feePercentage: number }): Observable<PaymentFeeRule> {
+    return this.http.put<PaymentFeeRule>(`${this.baseUrl}/payment-fee-rules/${id}`, dto);
+  }
+
+  deletePaymentFeeRule(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/payment-fee-rules/${id}`);
   }
 }

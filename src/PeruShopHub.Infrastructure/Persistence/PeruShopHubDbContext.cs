@@ -38,6 +38,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<VariationField> VariationFields => Set<VariationField>();
     public DbSet<StockAllocation> StockAllocations => Set<StockAllocation>();
     public DbSet<TaxProfile> TaxProfiles => Set<TaxProfile>();
+    public DbSet<PaymentFeeRule> PaymentFeeRules => Set<PaymentFeeRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
