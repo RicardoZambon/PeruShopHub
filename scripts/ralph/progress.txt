@@ -1179,3 +1179,21 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - `MarketplaceItemVariation` record uses optional param with default value for backward compatibility when adding new fields
   - No test projects exist in the repo yet — tests pass vacuously for .NET, 57 Angular tests pass via vitest
 ---
+
+## 2026-03-28 - US-042
+- Implemented ML photo sync during listing import
+- Added `ExternalUrl` (varchar 2000) and `IsActive` (bool, default true) fields to `FileUpload` entity with EF migration
+- Created `MlPhotoSyncService` that downloads ML item pictures via HttpClient and stores them locally via `IFileStorageService`
+- Integrated photo sync into `MlListingImportService.ImportSingleItemAsync()` — runs after product create/update with error isolation (photo failure doesn't break import)
+- Updated `ProductService.GetPhotoUrlsAsync()` and `FileService.GetByEntityAsync()` to filter by `IsActive`
+- Updated product list query to also filter photos by `IsActive`
+- Registered `IFileStorageService` (LocalFileStorageService) and `IMlPhotoSyncService` in Worker DI
+- Frontend gallery already existed in product-detail — no frontend changes needed
+- Files changed: `FileUpload.cs`, `FileUploadConfiguration.cs`, `MlPhotoSyncService.cs` (new), `MlListingImportService.cs`, `ProductService.cs`, `FileService.cs`, `DependencyInjection.cs`, `Worker/Program.cs`, EF migration
+- **Learnings for future iterations:**
+  - `FileUpload` uses entity-agnostic design: `EntityType` + `EntityId` links to any entity — no nav properties needed
+  - Photo sync is idempotent: matches by `ExternalUrl` to avoid re-downloading
+  - Removed photos are marked `IsActive = false` rather than deleted (soft delete for photos)
+  - Worker needs explicit DI registrations separate from API — `IFileStorageService` wasn't registered in Worker before
+  - Integration tests fail in this environment due to Docker unavailability — unit tests are the primary quality gate
+---
