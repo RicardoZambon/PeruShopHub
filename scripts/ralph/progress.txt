@@ -890,3 +890,41 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - `OrderItem.ProductId` is a direct nullable Guid — no navigation to ProductVariant
   - Worker cross-tenant pattern: use `IgnoreQueryFilters()` + manual TenantId filtering
 ---
+
+## 2026-03-28 - US-REV-2
+- **Phase 2 Review — Financial Engine**: Comprehensive review of all 15 Phase 2 stories
+- **Build verification:**
+  - .NET build: ✅ 0 errors (2 warnings — EF Core version resolution, pre-existing)
+  - Angular build: ✅ success (21.9s)
+  - Unit tests: ✅ 164/164 passed
+  - Angular tests: ✅ 57/57 passed
+- **Backend API review (all 15 stories):**
+  - All required endpoints exist and are properly implemented
+  - All service layer methods present and functional
+  - All DTOs properly defined with correct field types
+  - Cost calculation engine complete with all 10 cost categories
+  - Commission/Tax/PaymentFee resolution with proper fallbacks
+  - Background workers (AlertWorker, ReportEmailWorker, SkuProfitabilityRefreshWorker) all registered
+  - Audit logging wired across financial operations
+- **Frontend wiring review (10 UI stories):**
+  - All service methods call correct API endpoints
+  - All components properly display/use data
+  - Loading/error states present with skeleton placeholders
+  - Forms with validation matching backend DTOs
+  - Export (PDF/Excel) using blob download pattern
+  - Simulator with debounced recalculation
+  - Settings tabs for commission rules, tax, payment fees, alerts, report schedules
+- **Database migration review:**
+  - All 9 Phase 2 entities have DbSet registrations (11 total including supporting entities)
+  - All migrations apply in correct order
+  - All monetary fields use NUMERIC(18,4)
+  - All entities implement ITenantScoped with query filters
+  - Proper indexes on all entities
+- **Gaps found: NONE**
+  - All acceptance criteria for all 15 Phase 2 stories are verified as met
+  - No missing endpoints, frontend wiring, migrations, validation, or error handling detected
+  - Phase 2 Financial Engine is complete and ready for Phase 3 (Mercado Livre Integration)
+- **Learnings for future iterations:**
+  - Angular vitest can have transient failures on first run — re-run to confirm
+  - EF Core MSB3277 warnings persist (version resolution between Infrastructure 9.0.14 and Application 9.0.1) — not blocking but worth unifying later
+---
