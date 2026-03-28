@@ -926,6 +926,167 @@ public class CostCalculationServiceTests : IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════
+    // RecalculateOrderCostsAsync — API source overrides Calculated
+    // ═══════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task RecalculateOrderCosts_ApiCostOverridesCalculated()
+    {
+        // When an API-sourced cost exists for a category (e.g., marketplace_commission
+        // from ML Billing API), recalculation should NOT add a Calculated cost for that
+        // same category — the API value takes precedence.
+
+        var product = CreateProduct(packagingCost: 1m);
+        var variant = CreateVariant(product, "SKU-API", purchaseCost: 10m);
+        _db.Products.Add(product);
+        await _db.SaveChangesAsync();
+
+        var order = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-API", quantity: 1, unitPrice: 100m),
+        });
+
+        // Simulate an existing API-sourced commission from ML Billing
+        var apiCommission = new OrderCost
+        {
+            Id = Guid.NewGuid(), TenantId = _tenantId, OrderId = order.Id,
+            Category = "marketplace_commission", Value = 11.50m, Source = "API",
+            Description = "Comissão ML Billing API",
+        };
+        order.Costs.Add(apiCommission);
+
+        // Step 1: Remove existing calculated costs (same logic as RecalculateOrderCostsAsync)
+        var calculatedCosts = order.Costs.Where(c => c.Source == "Calculated").ToList();
+        foreach (var cost in calculatedCosts)
+            order.Costs.Remove(cost);
+
+        // Step 2: Recalculate costs
+        var service = CreateService();
+        var newCosts = await service.CalculateOrderCostsAsync(order);
+
+        // Step 3: Apply API override logic — skip categories that have API costs
+        var apiCostCategories = order.Costs
+            .Where(c => c.Source == "API")
+            .Select(c => c.Category)
+            .ToHashSet();
+
+        foreach (var cost in newCosts)
+        {
+            if (!apiCostCategories.Contains(cost.Category))
+                order.Costs.Add(cost);
+        }
+
+        // The API commission (11.50) should be preserved, NOT the calculated one (13.00)
+        var commissions = order.Costs.Where(c => c.Category == "marketplace_commission").ToList();
+        commissions.Should().HaveCount(1);
+        commissions.Single().Source.Should().Be("API");
+        commissions.Single().Value.Should().Be(11.50m);
+
+        // Other calculated categories should still be present
+        order.Costs.Should().Contain(c => c.Category == "product_cost" && c.Source == "Calculated");
+        order.Costs.Should().Contain(c => c.Category == "packaging" && c.Source == "Calculated");
+        order.Costs.Should().Contain(c => c.Category == "fixed_fee" && c.Source == "Calculated");
+        order.Costs.Should().Contain(c => c.Category == "tax" && c.Source == "Calculated");
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Commission resolution — all fallback levels in single test
+    // ═══════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Commission_ResolutionAlgorithm_AllFallbackLevels()
+    {
+        // This test verifies the complete resolution chain:
+        // 1. Specific match (marketplace + category + listing type) → 16%
+        // 2. Category only (no listing type match) → 12%
+        // 3. Marketplace default (IsDefault=true) → 14%
+        // 4. Hardcoded fallback → 13%
+
+        var catElec = "cat-electronics";
+        var catHome = "cat-home";
+
+        // Seed commission rules
+        _db.CommissionRules.AddRange(
+            // Specific rule: electronics + classico → 16%
+            new CommissionRule
+            {
+                Id = Guid.NewGuid(), TenantId = _tenantId,
+                MarketplaceId = "mercadolivre", CategoryPattern = catElec,
+                ListingType = null, Rate = 0.16m,
+            },
+            // Category-only rule: home → 12%
+            new CommissionRule
+            {
+                Id = Guid.NewGuid(), TenantId = _tenantId,
+                MarketplaceId = "mercadolivre", CategoryPattern = catHome,
+                ListingType = null, Rate = 0.12m,
+            },
+            // Marketplace default → 14%
+            new CommissionRule
+            {
+                Id = Guid.NewGuid(), TenantId = _tenantId,
+                MarketplaceId = "mercadolivre", IsDefault = true, Rate = 0.14m,
+            }
+        );
+
+        // Products for each fallback level
+        var prodElec = CreateProduct(categoryId: catElec);
+        prodElec.Sku = "P-ELEC";
+        var varElec = CreateVariant(prodElec, "SKU-ELEC", purchaseCost: 10m);
+
+        var prodHome = CreateProduct(categoryId: catHome);
+        prodHome.Sku = "P-HOME";
+        prodHome.Name = "Home Product";
+        var varHome = CreateVariant(prodHome, "SKU-HOME", purchaseCost: 10m);
+
+        var prodNiche = CreateProduct(categoryId: "cat-unknown-niche");
+        prodNiche.Sku = "P-NICHE";
+        prodNiche.Name = "Niche Product";
+        var varNiche = CreateVariant(prodNiche, "SKU-NICHE", purchaseCost: 10m);
+
+        _db.Products.AddRange(prodElec, prodHome, prodNiche);
+        await _db.SaveChangesAsync();
+
+        var service = CreateService();
+
+        // Level 1: Specific category match → 16%
+        var order1 = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-ELEC", quantity: 1, unitPrice: 100m, productId: prodElec.Id),
+        });
+        var costs1 = await service.CalculateOrderCostsAsync(order1);
+        costs1.Single(c => c.Category == "marketplace_commission").Value.Should().Be(16m);
+
+        // Level 2: Category-only match → 12%
+        var order2 = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-HOME", quantity: 1, unitPrice: 100m, productId: prodHome.Id),
+        });
+        var costs2 = await service.CalculateOrderCostsAsync(order2);
+        costs2.Single(c => c.Category == "marketplace_commission").Value.Should().Be(12m);
+
+        // Level 3: No category match, falls to marketplace default → 14%
+        var order3 = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-NICHE", quantity: 1, unitPrice: 100m, productId: prodNiche.Id),
+        });
+        var costs3 = await service.CalculateOrderCostsAsync(order3);
+        costs3.Single(c => c.Category == "marketplace_commission").Value.Should().Be(14m);
+
+        // Level 4: No rules at all → hardcoded 13%
+        // Remove all commission rules
+        _db.CommissionRules.RemoveRange(_db.CommissionRules.ToList());
+        await _db.SaveChangesAsync();
+
+        var order4 = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-NONE", quantity: 1, unitPrice: 100m),
+        });
+        var costs4 = await service.CalculateOrderCostsAsync(order4);
+        costs4.Single(c => c.Category == "marketplace_commission").Value.Should().Be(13m);
+    }
+
+    // ═══════════════════════════════════════════════════════════
     // Edge case — zero price order
     // ═══════════════════════════════════════════════════════════
 

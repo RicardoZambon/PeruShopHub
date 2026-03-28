@@ -191,9 +191,17 @@ public class CostCalculationService : ICostCalculationService
 
         // Recalculate using cost effective at order time
         var newCosts = await CalculateOrderCostsInternalAsync(order, order.OrderDate, ct);
+
+        // API-sourced costs override calculated ones for the same category
+        var apiCostCategories = order.Costs
+            .Where(c => c.Source == "API")
+            .Select(c => c.Category)
+            .ToHashSet();
+
         foreach (var cost in newCosts)
         {
-            order.Costs.Add(cost);
+            if (!apiCostCategories.Contains(cost.Category))
+                order.Costs.Add(cost);
         }
 
         // Recalculate profit
