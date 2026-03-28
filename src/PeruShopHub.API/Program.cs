@@ -105,6 +105,12 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
+// ── Redis Connection (for webhook queue list operations) ─
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect(redisConnectionString));
+builder.Services.AddSingleton<IWebhookQueueService, RedisWebhookQueueService>();
+
 // ── SignalR + Redis Backplane ─────────────────────────────
 builder.Services.AddSignalR()
     .AddStackExchangeRedis(builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379", options =>

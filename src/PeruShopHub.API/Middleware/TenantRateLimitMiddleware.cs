@@ -14,6 +14,7 @@ public class TenantRateLimitMiddleware
         "/api/auth/login",
         "/api/auth/register",
         "/api/auth/refresh",
+        "/api/webhooks/mercadolivre",
         "/health"
     };
 
