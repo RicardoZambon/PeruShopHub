@@ -43,6 +43,7 @@ Started: Fri Mar 28 2026
 - **Angular test script**: `npm test` runs `vitest run` (not `ng test`). CI uses `npx vitest run`
 - **Rate limiting middleware**: `TenantRateLimitMiddleware` uses `IDistributedCache` (Redis) for per-tenant counters. Placed after TenantMiddleware in pipeline. Config in `RateLimiting:RequestsPerMinute`
 - **Serilog logging**: Structured JSON logging via Serilog. Config in `Serilog:` section of appsettings.json. `CorrelationIdMiddleware` first in pipeline, `RequestLoggingMiddleware` after auth. Use `LogContext.PushProperty()` to enrich logs
+- **Sentry error tracking**: `Sentry.AspNetCore` 6.x via `builder.WebHost.UseSentry()`. DSN from `SENTRY_DSN` env var. Disabled when DSN not set. `SentrySdk.CaptureException()` in GlobalExceptionFilter for manual capture with scope enrichment
 
 ---
 
@@ -219,4 +220,29 @@ Started: Fri Mar 28 2026
   - Bootstrap logger pattern (`CreateBootstrapLogger` + try/catch/finally with `Log.CloseAndFlush()`) captures startup errors before DI is configured
   - `ITenantContext` does not have `UserId` — get it from `ClaimTypes.NameIdentifier` on `HttpContext.User` instead
   - CorrelationId middleware must be first in the pipeline to ensure all subsequent middleware/handlers have correlation context
+---
+
+## 2026-03-28 - US-010
+- Implemented error tracking with Sentry via `Sentry.AspNetCore` 6.2.0
+- DSN configured via `SENTRY_DSN` environment variable (also supports appsettings key)
+- When DSN is not set (local dev), Sentry is completely disabled — no SDK initialization
+- `UseSentry()` on `WebHost` provides automatic unhandled exception capture with full stack traces
+- Request context (URL, method, headers) captured automatically by Sentry middleware
+- Sensitive headers (Authorization, Cookie, X-Api-Key) redacted via `SetBeforeSend` callback
+- Environment tag set from `ASPNETCORE_ENVIRONMENT` (lowercased: development/staging/production)
+- `GlobalExceptionFilter` explicitly captures unhandled exceptions to Sentry with enriched scope:
+  - User ID from JWT `NameIdentifier` claim
+  - Tenant ID from JWT `TenantId` claim
+  - Controller/action tags for easier filtering
+- Trace sampling: 100% in development, 20% in production
+- `SendDefaultPii = false` to avoid leaking personally identifiable information
+- .NET build passes (0 errors), 142 unit tests pass
+- Files changed: `src/PeruShopHub.API/PeruShopHub.API.csproj` (added Sentry.AspNetCore package), `src/PeruShopHub.API/Program.cs` (Sentry initialization), `src/PeruShopHub.API/Filters/GlobalExceptionFilter.cs` (Sentry capture in unhandled exceptions)
+- **Learnings for future iterations:**
+  - `Sentry.AspNetCore` 6.x integrates via `builder.WebHost.UseSentry()` — it automatically adds middleware for request context capture
+  - `SentrySdk.ConfigureScope()` + `SentrySdk.CaptureException()` is the pattern for manually capturing exceptions with enriched context
+  - `SetBeforeSend` callback receives `(SentryEvent, Hint)` — use it to sanitize headers before they leave the process
+  - `SendDefaultPii = false` prevents automatic PII capture but you can still manually set `scope.User` with just the ID
+  - Sentry SDK is no-op when DSN is null/empty — safe to reference `SentrySdk.CaptureException` even when Sentry is not initialized
+  - `SentryUser` has `Id`, `Email`, `Username`, `IpAddress` properties — only set what's needed
 ---

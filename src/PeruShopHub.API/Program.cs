@@ -30,6 +30,38 @@ try
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── Sentry ───────────────────────────────────────────────────
+var sentryDsn = builder.Configuration["SENTRY_DSN"]
+    ?? Environment.GetEnvironmentVariable("SENTRY_DSN");
+
+if (!string.IsNullOrWhiteSpace(sentryDsn))
+{
+    builder.WebHost.UseSentry(options =>
+    {
+        options.Dsn = sentryDsn;
+        options.Environment = builder.Environment.EnvironmentName.ToLowerInvariant();
+        options.SendDefaultPii = false;
+        options.MaxBreadcrumbs = 50;
+        options.TracesSampleRate = builder.Environment.IsProduction() ? 0.2 : 1.0;
+        options.SetBeforeSend((sentryEvent, _) =>
+        {
+            // Sanitize headers — remove sensitive ones
+            if (sentryEvent.Request?.Headers != null)
+            {
+                var sensitiveHeaders = new[] { "Authorization", "Cookie", "X-Api-Key" };
+                foreach (var header in sensitiveHeaders)
+                {
+                    if (sentryEvent.Request.Headers.ContainsKey(header))
+                    {
+                        sentryEvent.Request.Headers[header] = "[Redacted]";
+                    }
+                }
+            }
+            return sentryEvent;
+        });
+    });
+}
+
 // ── Serilog ──────────────────────────────────────────────────
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
