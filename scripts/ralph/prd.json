@@ -937,7 +937,7 @@
         ".NET build passes"
       ],
       "priority": 50,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Depends on US-039a."
     },
     {

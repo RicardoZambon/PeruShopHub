@@ -1197,3 +1197,18 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Worker needs explicit DI registrations separate from API — `IFileStorageService` wasn't registered in Worker before
   - Integration tests fail in this environment due to Docker unavailability — unit tests are the primary quality gate
 ---
+
+## 2026-03-28 - US-043
+- Implemented `ProductSyncWorker` background service that runs every 2 hours (configurable via `Workers:ProductSync:IntervalMinutes`)
+- Created `ProductSyncService` (Application layer) with full sync logic: scroll all seller items, fetch details, create/update listings+products+variants
+- Detects items removed from ML (paused/closed) and marks them inactive locally
+- Sends notifications on sync errors or failures
+- Registered in both Application DI and Worker Program.cs
+- Files changed: `src/PeruShopHub.Application/Services/ProductSyncService.cs` (new), `src/PeruShopHub.Worker/Workers/ProductSyncWorker.cs` (new), `src/PeruShopHub.Application/DependencyInjection.cs`, `src/PeruShopHub.Worker/Program.cs`
+- **Learnings for future iterations:**
+  - `LastSyncAt` already exists on `MarketplaceConnection` — no migration needed
+  - Worker doesn't use `AddApplicationServices()` — must register each service individually in Worker/Program.cs
+  - Pattern: each connection processed in its own scope to isolate DbContext tracking
+  - Pattern: re-fetch entity in new scope when passing between scopes (tracked by different DbContext instances)
+  - `MlListingImportService.ImportSingleItemAsync` and `ProductSyncService.SyncSingleItemAsync` share identical product/variant creation and update logic — consider extracting shared helper if they diverge
+---
