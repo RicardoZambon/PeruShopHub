@@ -36,6 +36,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<CommissionRule> CommissionRules => Set<CommissionRule>();
     public DbSet<VariationField> VariationFields => Set<VariationField>();
+    public DbSet<StockAllocation> StockAllocations => Set<StockAllocation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

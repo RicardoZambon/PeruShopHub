@@ -306,4 +306,202 @@ public class InventoryServiceTests : IDisposable
 
         result.Sku.Should().Be("W-001-V1"); // variant SKU
     }
+
+    // --- GetAllocations tests ---
+
+    [Fact]
+    public async Task GetAllocations_ReturnsProductWithVariantsAndAllocations()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        SeedAllocation(v.Id, "mercadolivre", 60);
+        SeedAllocation(v.Id, "amazon", 30);
+        var service = CreateService();
+
+        var result = await service.GetAllocationsAsync(p.Id);
+
+        result.ProductId.Should().Be(p.Id);
+        result.ProductName.Should().Be("Widget");
+        result.Variants.Should().HaveCount(1);
+        var variantDto = result.Variants[0];
+        variantDto.TotalStock.Should().Be(100);
+        variantDto.TotalAllocated.Should().Be(90);
+        variantDto.Unallocated.Should().Be(10);
+        variantDto.Allocations.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetAllocations_NoAllocations_ReturnsZeroAllocated()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 50);
+        var service = CreateService();
+
+        var result = await service.GetAllocationsAsync(p.Id);
+
+        result.Variants[0].TotalAllocated.Should().Be(0);
+        result.Variants[0].Unallocated.Should().Be(50);
+        result.Variants[0].Allocations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAllocations_ProductNotFound_ThrowsNotFoundException()
+    {
+        var service = CreateService();
+
+        var act = () => service.GetAllocationsAsync(Guid.NewGuid());
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    // --- UpdateAllocation tests ---
+
+    [Fact]
+    public async Task UpdateAllocation_CreatesNew_WhenNotExists()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        var service = CreateService();
+        var dto = new UpdateStockAllocationDto("mercadolivre", 50);
+
+        var result = await service.UpdateAllocationAsync(v.Id, dto);
+
+        result.MarketplaceId.Should().Be("mercadolivre");
+        result.AllocatedQuantity.Should().Be(50);
+        result.ReservedQuantity.Should().Be(0);
+        result.VariantSku.Should().Be("W-001-V1");
+    }
+
+    [Fact]
+    public async Task UpdateAllocation_UpdatesExisting()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        SeedAllocation(v.Id, "mercadolivre", 30);
+        var service = CreateService();
+        var dto = new UpdateStockAllocationDto("mercadolivre", 70);
+
+        var result = await service.UpdateAllocationAsync(v.Id, dto);
+
+        result.AllocatedQuantity.Should().Be(70);
+        var allocs = await _db.StockAllocations.Where(a => a.ProductVariantId == v.Id).ToListAsync();
+        allocs.Should().HaveCount(1); // no duplicate
+    }
+
+    [Fact]
+    public async Task UpdateAllocation_ExceedsStock_ThrowsValidationException()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        SeedAllocation(v.Id, "mercadolivre", 60);
+        var service = CreateService();
+        var dto = new UpdateStockAllocationDto("amazon", 50); // 60 + 50 = 110 > 100
+
+        var act = () => service.UpdateAllocationAsync(v.Id, dto);
+
+        await act.Should().ThrowAsync<AppValidationException>();
+    }
+
+    [Fact]
+    public async Task UpdateAllocation_ExactStock_Succeeds()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        SeedAllocation(v.Id, "mercadolivre", 60);
+        var service = CreateService();
+        var dto = new UpdateStockAllocationDto("amazon", 40); // 60 + 40 = 100 exactly
+
+        var result = await service.UpdateAllocationAsync(v.Id, dto);
+
+        result.AllocatedQuantity.Should().Be(40);
+    }
+
+    [Fact]
+    public async Task UpdateAllocation_NegativeQuantity_ThrowsValidationException()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        var service = CreateService();
+        var dto = new UpdateStockAllocationDto("mercadolivre", -10);
+
+        var act = () => service.UpdateAllocationAsync(v.Id, dto);
+
+        await act.Should().ThrowAsync<AppValidationException>();
+    }
+
+    [Fact]
+    public async Task UpdateAllocation_VariantNotFound_ThrowsNotFoundException()
+    {
+        var service = CreateService();
+        var dto = new UpdateStockAllocationDto("mercadolivre", 10);
+
+        var act = () => service.UpdateAllocationAsync(Guid.NewGuid(), dto);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task UpdateAllocation_SameMarketplace_AllowsFullStock()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        SeedAllocation(v.Id, "mercadolivre", 30);
+        var service = CreateService();
+        // Update existing marketplace to full stock — should not consider old value
+        var dto = new UpdateStockAllocationDto("mercadolivre", 100);
+
+        var result = await service.UpdateAllocationAsync(v.Id, dto);
+
+        result.AllocatedQuantity.Should().Be(100);
+    }
+
+    // --- Proportional adjustment on stock decrease ---
+
+    [Fact]
+    public async Task CreateMovement_StockDecrease_AdjustsAllocationsProportionally()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        SeedAllocation(v.Id, "mercadolivre", 60);
+        SeedAllocation(v.Id, "amazon", 40);
+        var service = CreateService();
+        // Decrease stock by 50 → new stock = 50, but allocations sum to 100
+        var dto = new StockAdjustmentDto(p.Id, v.Id, -50, "Lost in warehouse");
+
+        await service.CreateMovementAsync(dto);
+
+        var allocs = await _db.StockAllocations
+            .Where(a => a.ProductVariantId == v.Id)
+            .OrderByDescending(a => a.AllocatedQuantity)
+            .ToListAsync();
+        var total = allocs.Sum(a => a.AllocatedQuantity);
+        total.Should().BeLessThanOrEqualTo(50);
+        // Proportional: ML was 60% → ~30, Amazon was 40% → ~20
+        allocs[0].AllocatedQuantity.Should().BeInRange(29, 31);
+        allocs[1].AllocatedQuantity.Should().BeInRange(19, 21);
+    }
+
+    [Fact]
+    public async Task CreateMovement_StockIncrease_DoesNotAdjustAllocations()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 100);
+        SeedAllocation(v.Id, "mercadolivre", 60);
+        var service = CreateService();
+        var dto = new StockAdjustmentDto(p.Id, v.Id, 50, "New shipment");
+
+        await service.CreateMovementAsync(dto);
+
+        var alloc = await _db.StockAllocations.FirstAsync(a => a.ProductVariantId == v.Id);
+        alloc.AllocatedQuantity.Should().Be(60); // unchanged
+    }
+
+    private StockAllocation SeedAllocation(Guid variantId, string marketplaceId, int allocated)
+    {
+        var allocation = new StockAllocation
+        {
+            Id = Guid.NewGuid(),
+            TenantId = _tenantId,
+            ProductVariantId = variantId,
+            MarketplaceId = marketplaceId,
+            AllocatedQuantity = allocated,
+            ReservedQuantity = 0,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _db.StockAllocations.Add(allocation);
+        _db.SaveChanges();
+        _db.ChangeTracker.Clear();
+        return allocation;
+    }
 }

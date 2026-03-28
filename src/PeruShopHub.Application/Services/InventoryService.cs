@@ -127,6 +127,9 @@ public class InventoryService : IInventoryService
 
         variant.Stock += dto.Quantity;
 
+        // Adjust allocations if new stock is below total allocated
+        await AdjustAllocationsIfExceedingAsync(variant.Id, variant.Stock, ct);
+
         var movement = new StockMovement
         {
             Id = Guid.NewGuid(),
@@ -153,5 +156,127 @@ public class InventoryService : IInventoryService
             movement.Reason,
             movement.CreatedBy,
             movement.CreatedAt);
+    }
+
+    public async Task<ProductAllocationsDto> GetAllocationsAsync(Guid productId, CancellationToken ct = default)
+    {
+        var product = await _db.Products.AsNoTracking()
+            .Include(p => p.Variants)
+            .FirstOrDefaultAsync(p => p.Id == productId, ct)
+            ?? throw new NotFoundException("Produto não encontrado.");
+
+        var variantIds = product.Variants.Select(v => v.Id).ToList();
+
+        var allocations = await _db.StockAllocations.AsNoTracking()
+            .Where(a => variantIds.Contains(a.ProductVariantId))
+            .ToListAsync(ct);
+
+        var variantDtos = product.Variants.Select(v =>
+        {
+            var variantAllocations = allocations
+                .Where(a => a.ProductVariantId == v.Id)
+                .Select(a => new StockAllocationDto(
+                    a.Id,
+                    a.ProductVariantId,
+                    v.Sku,
+                    a.MarketplaceId,
+                    a.AllocatedQuantity,
+                    a.ReservedQuantity))
+                .ToList();
+
+            var totalAllocated = variantAllocations.Sum(a => a.AllocatedQuantity);
+
+            return new VariantAllocationsDto(
+                v.Id,
+                v.Sku,
+                v.Stock,
+                totalAllocated,
+                v.Stock - totalAllocated,
+                variantAllocations);
+        }).ToList();
+
+        return new ProductAllocationsDto(product.Id, product.Name, variantDtos);
+    }
+
+    public async Task<StockAllocationDto> UpdateAllocationAsync(Guid variantId, UpdateStockAllocationDto dto, CancellationToken ct = default)
+    {
+        var variant = await _db.ProductVariants.AsNoTracking()
+            .FirstOrDefaultAsync(v => v.Id == variantId, ct)
+            ?? throw new NotFoundException("Variante do produto não encontrada.");
+
+        if (dto.AllocatedQuantity < 0)
+            throw new AppValidationException("AllocatedQuantity", "Quantidade alocada não pode ser negativa.");
+
+        // Check total allocations for this variant (excluding the marketplace being updated)
+        var existingAllocations = await _db.StockAllocations
+            .Where(a => a.ProductVariantId == variantId && a.MarketplaceId != dto.MarketplaceId)
+            .SumAsync(a => a.AllocatedQuantity, ct);
+
+        if (existingAllocations + dto.AllocatedQuantity > variant.Stock)
+            throw new AppValidationException("AllocatedQuantity",
+                $"Soma das alocações ({existingAllocations + dto.AllocatedQuantity}) excede o estoque total ({variant.Stock}).");
+
+        var allocation = await _db.StockAllocations
+            .FirstOrDefaultAsync(a => a.ProductVariantId == variantId && a.MarketplaceId == dto.MarketplaceId, ct);
+
+        if (allocation == null)
+        {
+            allocation = new StockAllocation
+            {
+                Id = Guid.NewGuid(),
+                ProductVariantId = variantId,
+                MarketplaceId = dto.MarketplaceId,
+                AllocatedQuantity = dto.AllocatedQuantity,
+                ReservedQuantity = 0,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _db.StockAllocations.Add(allocation);
+        }
+        else
+        {
+            allocation.AllocatedQuantity = dto.AllocatedQuantity;
+            allocation.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        return new StockAllocationDto(
+            allocation.Id,
+            allocation.ProductVariantId,
+            variant.Sku,
+            allocation.MarketplaceId,
+            allocation.AllocatedQuantity,
+            allocation.ReservedQuantity);
+    }
+
+    private async Task AdjustAllocationsIfExceedingAsync(Guid variantId, int newStock, CancellationToken ct)
+    {
+        var allocations = await _db.StockAllocations
+            .Where(a => a.ProductVariantId == variantId)
+            .ToListAsync(ct);
+
+        if (allocations.Count == 0) return;
+
+        var totalAllocated = allocations.Sum(a => a.AllocatedQuantity);
+        if (totalAllocated <= newStock) return;
+
+        // Proportionally reduce allocations to fit new stock
+        var targetTotal = Math.Max(0, newStock);
+        foreach (var alloc in allocations)
+        {
+            alloc.AllocatedQuantity = totalAllocated > 0
+                ? (int)Math.Floor((double)alloc.AllocatedQuantity / totalAllocated * targetTotal)
+                : 0;
+            alloc.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // Distribute remainder due to rounding to the largest allocation
+        var distributed = allocations.Sum(a => a.AllocatedQuantity);
+        var remainder = targetTotal - distributed;
+        if (remainder > 0 && allocations.Count > 0)
+        {
+            allocations.OrderByDescending(a => a.AllocatedQuantity).First().AllocatedQuantity += remainder;
+        }
     }
 }

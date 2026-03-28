@@ -17,4 +17,8 @@ public interface IInventoryService
         CancellationToken ct = default);
 
     Task<StockMovementDto> CreateMovementAsync(StockAdjustmentDto dto, CancellationToken ct = default);
+
+    Task<ProductAllocationsDto> GetAllocationsAsync(Guid productId, CancellationToken ct = default);
+
+    Task<StockAllocationDto> UpdateAllocationAsync(Guid variantId, UpdateStockAllocationDto dto, CancellationToken ct = default);
 }

@@ -322,3 +322,22 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - The full PO receive flow is in CostCalculationService (lines 167-313), not in PurchaseOrderService which just delegates
   - SignalR broadcasts both entity-level (`PurchaseOrder/received`) and per-product updates (`product/updated`) for frontend refresh
 ---
+
+## 2026-03-28 - US-013a
+- Created `StockAllocation` entity with ProductVariantId, MarketplaceId, AllocatedQuantity, ReservedQuantity
+- Created EF Core configuration with unique constraint on (ProductVariantId, MarketplaceId, TenantId)
+- Generated migration `20260328152106_AddStockAllocations`
+- Added `GET /api/inventory/{productId}/allocations` endpoint returning allocations per variant per channel with unallocated calculation
+- Added `PUT /api/inventory/{variantId}/allocations` endpoint with upsert logic (creates or updates allocation for a marketplace)
+- Validation: sum of allocations ≤ variant total stock, negative quantity rejected
+- Proportional allocation adjustment when stock decreases below total allocated (in CreateMovementAsync)
+- Added 12 unit tests covering: get allocations (with/without data, not found), update allocation (create new, update existing, exact stock, exceeds stock, negative, not found, same marketplace full stock), proportional adjustment on stock decrease, no adjustment on stock increase
+- All 154 unit tests pass, .NET build passes (0 errors), Angular build passes
+- Files changed: `src/PeruShopHub.Core/Entities/StockAllocation.cs` (new), `src/PeruShopHub.Infrastructure/Persistence/Configurations/StockAllocationConfiguration.cs` (new), `src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs` (added DbSet), `src/PeruShopHub.Infrastructure/Migrations/20260328152106_AddStockAllocations.cs` (new), `src/PeruShopHub.Application/DTOs/Inventory/InventoryDtos.cs` (added allocation DTOs), `src/PeruShopHub.Application/Services/IInventoryService.cs` (added allocation methods), `src/PeruShopHub.Application/Services/InventoryService.cs` (added allocation logic + proportional adjustment), `src/PeruShopHub.API/Controllers/InventoryController.cs` (added allocation endpoints), `tests/PeruShopHub.UnitTests/Services/InventoryServiceTests.cs` (added 12 tests)
+- **Learnings for future iterations:**
+  - FluentAssertions 8.x uses `BeLessThanOrEqualTo` not `BeLessOrEqualTo`
+  - Allocation methods added to existing InventoryService rather than creating a separate service — keeps stock-related logic together
+  - Upsert pattern: query by unique key, create if null, update if exists — avoids unique constraint violations
+  - Proportional adjustment uses Math.Floor for each allocation then distributes rounding remainder to largest allocation
+  - The `AdjustAllocationsIfExceedingAsync` private method is called in `CreateMovementAsync` — any code path that changes stock should also call this if directly modifying variant.Stock
+---

@@ -52,4 +52,22 @@ public class InventoryController : ControllerBase
         var result = await _inventoryService.CreateMovementAsync(dto, ct);
         return Ok(result);
     }
+
+    [HttpGet("{productId}/allocations")]
+    public async Task<ActionResult<ProductAllocationsDto>> GetAllocations(Guid productId, CancellationToken ct = default)
+    {
+        var result = await _inventoryService.GetAllocationsAsync(productId, ct);
+        return Ok(result);
+    }
+
+    [HttpPut("{variantId}/allocations")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
+    public async Task<ActionResult<StockAllocationDto>> UpdateAllocation(
+        Guid variantId,
+        [FromBody] UpdateStockAllocationDto dto,
+        CancellationToken ct = default)
+    {
+        var result = await _inventoryService.UpdateAllocationAsync(variantId, dto, ct);
+        return Ok(result);
+    }
 }
