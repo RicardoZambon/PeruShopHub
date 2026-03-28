@@ -39,6 +39,13 @@ export interface CommissionRule {
   isDefault: boolean;
 }
 
+export interface TaxProfile {
+  id: string;
+  taxRegime: string;
+  aliquotPercentage: number;
+  state: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private http = inject(HttpClient);
@@ -74,5 +81,13 @@ export class SettingsService {
 
   updateCosts(dto: { taxRate: number }): Observable<any> {
     return this.http.put(`${this.baseUrl}/costs`, dto);
+  }
+
+  getTaxProfile(): Observable<TaxProfile> {
+    return this.http.get<TaxProfile>(`${this.baseUrl}/tax-profile`);
+  }
+
+  updateTaxProfile(dto: { taxRegime: string; aliquotPercentage: number; state: string | null }): Observable<TaxProfile> {
+    return this.http.put<TaxProfile>(`${this.baseUrl}/tax-profile`, dto);
   }
 }

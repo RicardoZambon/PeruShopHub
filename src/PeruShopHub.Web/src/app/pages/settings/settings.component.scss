@@ -119,6 +119,12 @@
     margin: 0;
   }
 
+  &__section-description {
+    font-size: var(--body-size);
+    color: var(--neutral-500);
+    margin: var(--space-1) 0 var(--space-3) 0;
+  }
+
   &__form {
     display: flex;
     flex-direction: column;

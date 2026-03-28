@@ -14,7 +14,7 @@ public class CostCalculationService : ICostCalculationService
     private readonly ILogger<CostCalculationService> _logger;
 
     private const decimal HardcodedFallbackCommissionRate = 0.13m;
-    private readonly decimal _taxRate;
+    private const decimal DefaultTaxRate = 0.06m;
     private readonly int _averageDaysInStorage;
 
     public CostCalculationService(
@@ -26,7 +26,6 @@ public class CostCalculationService : ICostCalculationService
         _db = db;
         _notifications = notifications;
         _logger = logger;
-        _taxRate = config.GetValue<decimal>("CostSettings:TaxRate", 0.06m);
         _averageDaysInStorage = config.GetValue<int>("CostSettings:AverageDaysInStorage", 30);
     }
 
@@ -160,13 +159,14 @@ public class CostCalculationService : ICostCalculationService
         });
 
         // ── tax ──────────────────────────────────────────────
+        var taxRate = await ResolveTaxRateAsync(ct);
         costs.Add(new OrderCost
         {
             Id = Guid.NewGuid(),
             OrderId = order.Id,
             Category = "tax",
-            Description = $"Impostos ({_taxRate:P0})",
-            Value = order.TotalAmount * _taxRate,
+            Description = $"Impostos ({taxRate:P0})",
+            Value = order.TotalAmount * taxRate,
             Source = "Calculated"
         });
 
@@ -480,6 +480,18 @@ public class CostCalculationService : ICostCalculationService
             marketplace, HardcodedFallbackCommissionRate);
 
         return HardcodedFallbackCommissionRate;
+    }
+
+    private async Task<decimal> ResolveTaxRateAsync(CancellationToken ct)
+    {
+        var profile = await _db.TaxProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(ct);
+
+        if (profile is null)
+            return DefaultTaxRate;
+
+        return profile.AliquotPercentage / 100m;
     }
 
     private static decimal CalculateFixedFee(decimal unitPrice)

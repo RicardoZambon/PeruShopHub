@@ -13,12 +13,12 @@ import { FormActionsComponent } from '../../shared/components/form-actions/form-
 import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/toggle-switch.component';
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
-import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule } from '../../services/settings.service';
+import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile } from '../../services/settings.service';
 import { TenantService, type TenantMember } from '../../services/tenant.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
 
-type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'alertas' | 'aparencia';
+type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'aparencia';
 
 interface FixedCost {
   id: number;
@@ -62,6 +62,7 @@ export class SettingsComponent implements OnInit {
     { key: 'usuarios', label: 'Usuários' },
     { key: 'integracoes', label: 'Integrações' },
     { key: 'custos-fixos', label: 'Custos Fixos' },
+    { key: 'fiscal', label: 'Fiscal' },
     { key: 'alertas', label: 'Alertas' },
     { key: 'aparencia', label: 'Aparência' },
   ];
@@ -83,6 +84,11 @@ export class SettingsComponent implements OnInit {
   // Tax rate
   taxRate = signal(0);
   taxRateForm!: FormGroup;
+
+  // Tax profile (Fiscal tab)
+  taxProfile = signal<TaxProfile | null>(null);
+  taxProfileForm!: FormGroup;
+  savingTaxProfile = signal(false);
 
   // Alerts
   alerts = signal<AlertConfig[]>([
@@ -129,6 +135,12 @@ export class SettingsComponent implements OnInit {
     this.taxRateForm = this.fb.group({
       taxRate: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     });
+
+    this.taxProfileForm = this.fb.group({
+      taxRegime: ['SimplesNacional', Validators.required],
+      aliquotPercentage: [6.0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      state: [''],
+    });
   }
 
   ngOnInit(): void {
@@ -136,6 +148,7 @@ export class SettingsComponent implements OnInit {
     this.loadIntegrations();
     this.loadCosts();
     this.loadCommissionRules();
+    this.loadTaxProfile();
   }
 
   selectTab(tab: SettingsTab): void {
@@ -472,6 +485,31 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  // Tax Profile (Fiscal tab)
+  saveTaxProfile(): void {
+    if (!this.taxProfileForm.valid) {
+      this.taxProfileForm.markAllAsTouched();
+      return;
+    }
+    this.savingTaxProfile.set(true);
+    const { taxRegime, aliquotPercentage, state } = this.taxProfileForm.value;
+    this.settingsService.updateTaxProfile({
+      taxRegime,
+      aliquotPercentage,
+      state: state || null,
+    }).subscribe({
+      next: (updated) => {
+        this.savingTaxProfile.set(false);
+        this.taxProfile.set(updated);
+        this.toastService.show('Perfil fiscal atualizado', 'success');
+      },
+      error: () => {
+        this.savingTaxProfile.set(false);
+        this.toastService.show('Erro ao atualizar perfil fiscal', 'danger');
+      },
+    });
+  }
+
   // Appearance
   selectTheme(theme: ThemePreference): void {
     this.themeService.setTheme(theme);
@@ -519,6 +557,20 @@ export class SettingsComponent implements OnInit {
         });
       },
       error: (err) => console.error('Failed to load costs:', err),
+    });
+  }
+
+  private loadTaxProfile(): void {
+    this.settingsService.getTaxProfile().subscribe({
+      next: (data) => {
+        this.taxProfile.set(data);
+        this.taxProfileForm.patchValue({
+          taxRegime: data.taxRegime,
+          aliquotPercentage: data.aliquotPercentage,
+          state: data.state || '',
+        });
+      },
+      error: (err) => console.error('Failed to load tax profile:', err),
     });
   }
 }

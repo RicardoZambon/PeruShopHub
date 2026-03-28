@@ -137,7 +137,61 @@ public class SettingsController : ControllerBase
 
         return NoContent();
     }
+
+    // --- Tax Profile ---
+
+    [HttpGet("tax-profile")]
+    public async Task<ActionResult<TaxProfileDto>> GetTaxProfile()
+    {
+        var profile = await _db.TaxProfiles.FirstOrDefaultAsync();
+
+        if (profile is null)
+        {
+            // Return default values if no profile exists yet
+            return Ok(new TaxProfileDto(Guid.Empty, "SimplesNacional", 6.0m, null));
+        }
+
+        return Ok(new TaxProfileDto(profile.Id, profile.TaxRegime, profile.AliquotPercentage, profile.State));
+    }
+
+    [HttpPut("tax-profile")]
+    public async Task<ActionResult<TaxProfileDto>> UpdateTaxProfile([FromBody] UpdateTaxProfileDto dto)
+    {
+        var validRegimes = new[] { "SimplesNacional", "LucroPresumido", "MEI" };
+        if (!validRegimes.Contains(dto.TaxRegime))
+            return BadRequest(new { errors = new Dictionary<string, string[]> { ["TaxRegime"] = new[] { "Regime tributário inválido. Valores aceitos: SimplesNacional, LucroPresumido, MEI" } } });
+
+        if (dto.AliquotPercentage < 0 || dto.AliquotPercentage > 100)
+            return BadRequest(new { errors = new Dictionary<string, string[]> { ["AliquotPercentage"] = new[] { "Alíquota deve estar entre 0 e 100" } } });
+
+        var profile = await _db.TaxProfiles.FirstOrDefaultAsync();
+
+        if (profile is null)
+        {
+            profile = new TaxProfile
+            {
+                Id = Guid.NewGuid(),
+                TaxRegime = dto.TaxRegime,
+                AliquotPercentage = dto.AliquotPercentage,
+                State = dto.State,
+            };
+            _db.TaxProfiles.Add(profile);
+        }
+        else
+        {
+            profile.TaxRegime = dto.TaxRegime;
+            profile.AliquotPercentage = dto.AliquotPercentage;
+            profile.State = dto.State;
+            profile.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new TaxProfileDto(profile.Id, profile.TaxRegime, profile.AliquotPercentage, profile.State));
+    }
 }
 
 public record UpdateCostsDto(decimal? TaxRate);
 public record UpdateCommissionRuleDto(decimal Rate);
+public record TaxProfileDto(Guid Id, string TaxRegime, decimal AliquotPercentage, string? State);
+public record UpdateTaxProfileDto(string TaxRegime, decimal AliquotPercentage, string? State);
