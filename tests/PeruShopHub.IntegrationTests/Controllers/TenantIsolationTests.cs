@@ -44,7 +44,7 @@ public class TenantIsolationTests : IntegrationTestBase
             var productDto = new CreateProductDto(
                 Sku: "TENA-001", Name: "Tenant A Product", Description: null,
                 CategoryId: null, Price: 50.00m, PurchaseCost: 20.00m,
-                PackagingCost: 1.00m, Supplier: null,
+                PackagingCost: 1.00m, StorageCostDaily: null, Supplier: null,
                 Weight: 1m, Height: 1m, Width: 1m, Length: 1m);
             var createResponse = await clientA.PostAsJsonAsync("/api/products", productDto);
             createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -54,7 +54,7 @@ public class TenantIsolationTests : IntegrationTestBase
             var productDtoB = new CreateProductDto(
                 Sku: "TENB-001", Name: "Tenant B Product", Description: null,
                 CategoryId: null, Price: 75.00m, PurchaseCost: 30.00m,
-                PackagingCost: 1.50m, Supplier: null,
+                PackagingCost: 1.50m, StorageCostDaily: null, Supplier: null,
                 Weight: 1m, Height: 1m, Width: 1m, Length: 1m);
             var createResponseB = await clientB.PostAsJsonAsync("/api/products", productDtoB);
             createResponseB.StatusCode.Should().Be(HttpStatusCode.Created);

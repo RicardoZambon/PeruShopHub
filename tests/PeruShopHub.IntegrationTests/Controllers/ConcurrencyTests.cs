@@ -33,7 +33,7 @@ public class ConcurrencyTests : IntegrationTestBase
         var createDto = new CreateProductDto(
             Sku: "CONC-001", Name: "Concurrent Product", Description: null,
             CategoryId: null, Price: 50.00m, PurchaseCost: 20.00m,
-            PackagingCost: 1.00m, Supplier: null,
+            PackagingCost: 1.00m, StorageCostDaily: null, Supplier: null,
             Weight: 1m, Height: 1m, Width: 1m, Length: 1m);
         var createResponse = await Client.PostAsJsonAsync("/api/products", createDto);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -44,7 +44,7 @@ public class ConcurrencyTests : IntegrationTestBase
         var update1 = new UpdateProductDto(
             Sku: null, Name: "Updated by User 1", Description: null,
             CategoryId: null, Price: 60.00m, PurchaseCost: null,
-            PackagingCost: null, Supplier: null, Status: null,
+            PackagingCost: null, StorageCostDaily: null, Supplier: null, Status: null,
             IsActive: null, Weight: null, Height: null,
             Width: null, Length: null, Version: originalVersion);
         var response1 = await Client.PutAsJsonAsync($"/api/products/{product.Id}", update1);
@@ -54,7 +54,7 @@ public class ConcurrencyTests : IntegrationTestBase
         var update2 = new UpdateProductDto(
             Sku: null, Name: "Updated by User 2", Description: null,
             CategoryId: null, Price: 70.00m, PurchaseCost: null,
-            PackagingCost: null, Supplier: null, Status: null,
+            PackagingCost: null, StorageCostDaily: null, Supplier: null, Status: null,
             IsActive: null, Weight: null, Height: null,
             Width: null, Length: null, Version: originalVersion); // stale version!
         var response2 = await Client.PutAsJsonAsync($"/api/products/{product.Id}", update2);

@@ -15,6 +15,7 @@ public class CostCalculationService : ICostCalculationService
 
     private const decimal HardcodedFallbackCommissionRate = 0.13m;
     private readonly decimal _taxRate;
+    private readonly int _averageDaysInStorage;
 
     public CostCalculationService(
         PeruShopHubDbContext db,
@@ -26,6 +27,7 @@ public class CostCalculationService : ICostCalculationService
         _notifications = notifications;
         _logger = logger;
         _taxRate = config.GetValue<decimal>("CostSettings:TaxRate", 0.06m);
+        _averageDaysInStorage = config.GetValue<int>("CostSettings:AverageDaysInStorage", 30);
     }
 
     public async Task<List<OrderCost>> CalculateOrderCostsAsync(Order order, CancellationToken ct = default)
@@ -99,6 +101,27 @@ public class CostCalculationService : ICostCalculationService
             Category = "packaging",
             Description = "Custo de embalagem",
             Value = totalPackagingCost,
+            Source = "Calculated"
+        });
+
+        // ── storage_daily ──────────────────────────────────
+        decimal totalStorageCost = 0m;
+        foreach (var item in order.Items)
+        {
+            if (variantBySku.TryGetValue(item.Sku, out var storageVariant))
+            {
+                var dailyCost = storageVariant.Product.StorageCostDaily ?? 0m;
+                totalStorageCost += dailyCost * _averageDaysInStorage * item.Quantity;
+            }
+        }
+
+        costs.Add(new OrderCost
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            Category = "storage_daily",
+            Description = $"Custo de armazenagem ({_averageDaysInStorage} dias)",
+            Value = totalStorageCost,
             Source = "Calculated"
         });
 

@@ -66,6 +66,7 @@ public class ProductService : IProductService
                 p.Price,
                 p.PurchaseCost,
                 p.PackagingCost,
+                p.StorageCostDaily,
                 p.Status,
                 p.NeedsReview,
                 p.IsActive,
@@ -162,6 +163,7 @@ public class ProductService : IProductService
             Price = dto.Price,
             PurchaseCost = dto.PurchaseCost,
             PackagingCost = dto.PackagingCost,
+            StorageCostDaily = dto.StorageCostDaily,
             Supplier = dto.Supplier,
             Weight = dto.Weight,
             Height = dto.Height,
@@ -202,6 +204,7 @@ public class ProductService : IProductService
         if (dto.Price.HasValue) product.Price = dto.Price.Value;
         if (dto.PurchaseCost.HasValue) product.PurchaseCost = dto.PurchaseCost.Value;
         if (dto.PackagingCost.HasValue) product.PackagingCost = dto.PackagingCost.Value;
+        if (dto.StorageCostDaily.HasValue) product.StorageCostDaily = dto.StorageCostDaily.Value == 0 ? null : dto.StorageCostDaily.Value;
         if (dto.Supplier is not null) product.Supplier = dto.Supplier;
         if (dto.Status is not null) product.Status = dto.Status;
         if (dto.IsActive.HasValue) product.IsActive = dto.IsActive.Value;
@@ -563,6 +566,9 @@ public class ProductService : IProductService
         if (dto.PackagingCost < 0)
             AddError(errors, "PackagingCost", "Custo de embalagem deve ser maior ou igual a zero.");
 
+        if (dto.StorageCostDaily.HasValue && dto.StorageCostDaily.Value < 0)
+            AddError(errors, "StorageCostDaily", "Custo de armazenagem diário deve ser maior ou igual a zero.");
+
         if (!string.IsNullOrWhiteSpace(dto.CategoryId))
         {
             if (Guid.TryParse(dto.CategoryId, out var catId))
@@ -619,6 +625,9 @@ public class ProductService : IProductService
 
         if (dto.PackagingCost.HasValue && dto.PackagingCost.Value < 0)
             AddError(errors, "PackagingCost", "Custo de embalagem deve ser maior ou igual a zero.");
+
+        if (dto.StorageCostDaily.HasValue && dto.StorageCostDaily.Value < 0)
+            AddError(errors, "StorageCostDaily", "Custo de armazenagem diário deve ser maior ou igual a zero.");
 
         if (dto.CategoryId is not null && !string.IsNullOrWhiteSpace(dto.CategoryId))
         {
@@ -701,6 +710,7 @@ public class ProductService : IProductService
             product.Price,
             product.PurchaseCost,
             product.PackagingCost,
+            product.StorageCostDaily,
             product.Supplier,
             product.Status,
             product.NeedsReview,

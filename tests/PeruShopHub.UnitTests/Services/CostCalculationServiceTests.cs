@@ -409,7 +409,7 @@ public class CostCalculationServiceTests : IDisposable
     // ═══════════════════════════════════════════════════════════
 
     [Fact]
-    public async Task CalculateOrderCosts_ReturnsFiveCostCategories()
+    public async Task CalculateOrderCosts_ReturnsSixCostCategories()
     {
         var order = CreateOrder(100m, new List<OrderItem>
         {
@@ -419,9 +419,9 @@ public class CostCalculationServiceTests : IDisposable
         var service = CreateService();
         var costs = await service.CalculateOrderCostsAsync(order);
 
-        costs.Should().HaveCount(5);
+        costs.Should().HaveCount(6);
         costs.Select(c => c.Category).Should().BeEquivalentTo(
-            new[] { "product_cost", "packaging", "marketplace_commission", "fixed_fee", "tax" });
+            new[] { "product_cost", "packaging", "storage_daily", "marketplace_commission", "fixed_fee", "tax" });
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -503,9 +503,9 @@ public class CostCalculationServiceTests : IDisposable
         foreach (var cost in newCosts)
             order.Costs.Add(cost);
 
-        // 5 calculated + 1 manual = 6 total
-        order.Costs.Should().HaveCount(6);
-        order.Costs.Count(c => c.Source == "Calculated").Should().Be(5);
+        // 6 calculated + 1 manual = 7 total
+        order.Costs.Should().HaveCount(7);
+        order.Costs.Count(c => c.Source == "Calculated").Should().Be(6);
         order.Costs.Should().Contain(c => c.Source == "Manual" && c.Category == "shipping_seller" && c.Value == 15m);
 
         // Step 3: Recalculate profit (same as RecalculateOrderCostsAsync line 160)
@@ -940,7 +940,7 @@ public class CostCalculationServiceTests : IDisposable
         var service = CreateService();
         var costs = await service.CalculateOrderCostsAsync(order);
 
-        costs.Should().HaveCount(5);
+        costs.Should().HaveCount(6);
         costs.Sum(c => c.Value).Should().Be(0m); // All zero
     }
 }

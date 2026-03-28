@@ -39,6 +39,7 @@ public class ProductsControllerTests : IntegrationTestBase
             Price: 99.90m,
             PurchaseCost: 40.00m,
             PackagingCost: 2.50m,
+            StorageCostDaily: null,
             Supplier: "Test Supplier",
             Weight: 0.5m,
             Height: 10m,
@@ -65,7 +66,7 @@ public class ProductsControllerTests : IntegrationTestBase
         var updateDto = new UpdateProductDto(
             Sku: null, Name: "Updated Product", Description: null,
             CategoryId: null, Price: 129.90m, PurchaseCost: null,
-            PackagingCost: null, Supplier: null, Status: null,
+            PackagingCost: null, StorageCostDaily: null, Supplier: null, Status: null,
             IsActive: null, Weight: null, Height: null,
             Width: null, Length: null, Version: created.Version);
 
@@ -95,7 +96,7 @@ public class ProductsControllerTests : IntegrationTestBase
             var dto = new CreateProductDto(
                 Sku: $"PAG-{i:D3}", Name: $"Paged Product {i}", Description: null,
                 CategoryId: null, Price: 10m * i, PurchaseCost: 5m,
-                PackagingCost: 1m, Supplier: null,
+                PackagingCost: 1m, StorageCostDaily: null, Supplier: null,
                 Weight: 1m, Height: 1m, Width: 1m, Length: 1m);
             await Client.PostAsJsonAsync("/api/products", dto);
         }

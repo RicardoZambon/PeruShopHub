@@ -16,6 +16,7 @@ export interface Product {
   acquisitionCost: number;
   purchaseCost: number;
   packagingCost: number;
+  storageCostDaily?: number | null;
   weight?: number;
   height?: number;
   width?: number;

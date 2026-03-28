@@ -94,7 +94,7 @@ public class ProductServiceTests : IDisposable
     public async Task Create_ValidProduct_ReturnsDetailDto()
     {
         var service = CreateService();
-        var dto = new CreateProductDto("SKU-001", "New Product", "Desc", null, 99.90m, 40m, 3m, "Supplier", 0.5m, 10m, 20m, 30m);
+        var dto = new CreateProductDto("SKU-001", "New Product", "Desc", null, 99.90m, 40m, 3m, null, "Supplier", 0.5m, 10m, 20m, 30m);
 
         var result = await service.CreateAsync(dto);
 
@@ -110,7 +110,7 @@ public class ProductServiceTests : IDisposable
     {
         var category = SeedCategory(skuPrefix: "ELEC");
         var service = CreateService();
-        var dto = new CreateProductDto(null, "Auto SKU Product", null, category.Id.ToString(), 50m, 20m, 2m, null, 0m, 0m, 0m, 0m);
+        var dto = new CreateProductDto(null, "Auto SKU Product", null, category.Id.ToString(), 50m, 20m, 2m, null, null, 0m, 0m, 0m, 0m);
 
         var result = await service.CreateAsync(dto);
 
@@ -124,7 +124,7 @@ public class ProductServiceTests : IDisposable
         SeedProduct(sku: "ELEC-001");
         SeedProduct(sku: "ELEC-002");
         var service = CreateService();
-        var dto = new CreateProductDto(null, "Third Product", null, category.Id.ToString(), 50m, 20m, 2m, null, 0m, 0m, 0m, 0m);
+        var dto = new CreateProductDto(null, "Third Product", null, category.Id.ToString(), 50m, 20m, 2m, null, null, 0m, 0m, 0m, 0m);
 
         var result = await service.CreateAsync(dto);
 
@@ -136,7 +136,7 @@ public class ProductServiceTests : IDisposable
     {
         SeedProduct(sku: "DUP-001");
         var service = CreateService();
-        var dto = new CreateProductDto("DUP-001", "Duplicate", null, null, 10m, 5m, 1m, null, 0m, 0m, 0m, 0m);
+        var dto = new CreateProductDto("DUP-001", "Duplicate", null, null, 10m, 5m, 1m, null, null, 0m, 0m, 0m, 0m);
 
         var act = () => service.CreateAsync(dto);
 
@@ -148,7 +148,7 @@ public class ProductServiceTests : IDisposable
     public async Task Create_EmptyName_ThrowsValidationException()
     {
         var service = CreateService();
-        var dto = new CreateProductDto("SKU-X", "", null, null, 10m, 5m, 1m, null, 0m, 0m, 0m, 0m);
+        var dto = new CreateProductDto("SKU-X", "", null, null, 10m, 5m, 1m, null, null, 0m, 0m, 0m, 0m);
 
         var act = () => service.CreateAsync(dto);
 
@@ -160,7 +160,7 @@ public class ProductServiceTests : IDisposable
     public async Task Create_NegativeCosts_ThrowsValidationException()
     {
         var service = CreateService();
-        var dto = new CreateProductDto("SKU-X", "Product", null, null, -1m, -1m, -1m, null, 0m, 0m, 0m, 0m);
+        var dto = new CreateProductDto("SKU-X", "Product", null, null, -1m, -1m, -1m, null, null, 0m, 0m, 0m, 0m);
 
         var act = () => service.CreateAsync(dto);
 
@@ -174,7 +174,7 @@ public class ProductServiceTests : IDisposable
     public async Task Create_InvalidCategoryId_ThrowsValidationException()
     {
         var service = CreateService();
-        var dto = new CreateProductDto("SKU-X", "Product", null, Guid.NewGuid().ToString(), 10m, 5m, 1m, null, 0m, 0m, 0m, 0m);
+        var dto = new CreateProductDto("SKU-X", "Product", null, Guid.NewGuid().ToString(), 10m, 5m, 1m, null, null, 0m, 0m, 0m, 0m);
 
         var act = () => service.CreateAsync(dto);
 
@@ -186,7 +186,7 @@ public class ProductServiceTests : IDisposable
     public async Task Create_BroadcastsNotification()
     {
         var service = CreateService();
-        var dto = new CreateProductDto("SKU-N", "Notified", null, null, 10m, 5m, 1m, null, 0m, 0m, 0m, 0m);
+        var dto = new CreateProductDto("SKU-N", "Notified", null, null, 10m, 5m, 1m, null, null, 0m, 0m, 0m, 0m);
 
         await service.CreateAsync(dto);
 
@@ -225,7 +225,7 @@ public class ProductServiceTests : IDisposable
     {
         var product = SeedProduct();
         var service = CreateService();
-        var dto = new UpdateProductDto(null, "Updated Name", null, null, 150m, null, null, null, null, null, null, null, null, null, product.Version);
+        var dto = new UpdateProductDto(null, "Updated Name", null, null, 150m, null, null, null, null, null, null, null, null, null, null, product.Version);
 
         var result = await service.UpdateAsync(product.Id, dto);
 
@@ -238,7 +238,7 @@ public class ProductServiceTests : IDisposable
     public async Task Update_NonExistent_ThrowsNotFoundException()
     {
         var service = CreateService();
-        var dto = new UpdateProductDto(null, "X", null, null, null, null, null, null, null, null, null, null, null, null, 0);
+        var dto = new UpdateProductDto(null, "X", null, null, null, null, null, null, null, null, null, null, null, null, null, 0);
 
         var act = () => service.UpdateAsync(Guid.NewGuid(), dto);
 

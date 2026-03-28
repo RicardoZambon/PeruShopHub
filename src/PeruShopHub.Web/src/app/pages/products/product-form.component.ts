@@ -79,10 +79,11 @@ export class ProductFormComponent {
   margemEstimada = computed(() => {
     const preco = this.form?.get('precoVenda')?.value || 0;
     const custoAquisicao = this.form?.get('custoAquisicao')?.value || 0;
+    const custoEmbalagem = this.form?.get('custoEmbalagem')?.value || 0;
 
     if (preco <= 0) return null;
 
-    return ((preco - custoAquisicao) / preco) * 100;
+    return ((preco - custoAquisicao - custoEmbalagem) / preco) * 100;
   });
 
   constructor(
@@ -98,6 +99,8 @@ export class ProductFormComponent {
       fornecedor: [''],
       precoVenda: [null as number | null, [Validators.required, Validators.min(0.01)]],
       custoAquisicao: [null as number | null, [Validators.min(0)]],
+      custoEmbalagem: [null as number | null, [Validators.min(0)]],
+      custoArmazenagemDiario: [null as number | null, [Validators.min(0)]],
       estoqueMinimo: [null as number | null, [Validators.min(1)]],
       estoqueMaximo: [null as number | null, [Validators.min(1)]],
       peso: [null as number | null],
@@ -150,6 +153,8 @@ export class ProductFormComponent {
         fornecedor: product.supplier ?? '',
         precoVenda: product.price,
         custoAquisicao: product.acquisitionCost,
+        custoEmbalagem: product.packagingCost ?? 0,
+        custoArmazenagemDiario: product.storageCostDaily ?? null,
         estoqueMinimo: product.minStock ?? null,
         estoqueMaximo: product.maxStock ?? null,
         peso: product.weight,
@@ -311,7 +316,8 @@ export class ProductFormComponent {
         supplier: formValue.fornecedor || undefined,
         price: formValue.precoVenda,
         purchaseCost: formValue.custoAquisicao ?? 0,
-        packagingCost: 0,
+        packagingCost: formValue.custoEmbalagem ?? 0,
+        storageCostDaily: formValue.custoArmazenagemDiario ?? 0,
         minStock: formValue.estoqueMinimo ?? 0,
         maxStock: formValue.estoqueMaximo ?? 0,
         weight: formValue.peso ?? undefined,

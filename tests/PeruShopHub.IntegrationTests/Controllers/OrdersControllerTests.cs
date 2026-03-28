@@ -36,7 +36,7 @@ public class OrdersControllerTests : IntegrationTestBase
         var createProductDto = new CreateProductDto(
             Sku: "ORD-PROD-001", Name: "Order Test Product", Description: null,
             CategoryId: null, Price: 100.00m, PurchaseCost: 40.00m,
-            PackagingCost: 2.00m, Supplier: null,
+            PackagingCost: 2.00m, StorageCostDaily: null, Supplier: null,
             Weight: 1m, Height: 10m, Width: 10m, Length: 10m);
         var productResponse = await Client.PostAsJsonAsync("/api/products", createProductDto);
         productResponse.EnsureSuccessStatusCode();

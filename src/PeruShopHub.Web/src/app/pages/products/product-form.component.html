@@ -143,6 +143,36 @@
                 </app-form-field>
               </div>
 
+              <div class="fields-row">
+                <app-form-field label="Custo de embalagem (R$)">
+                  <div class="input-prefix">
+                    <span class="prefix">R$</span>
+                    <input
+                      id="custoEmbalagem"
+                      type="number"
+                      formControlName="custoEmbalagem"
+                      placeholder="0,00"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                </app-form-field>
+
+                <app-form-field label="Custo de armazenagem diário (R$)">
+                  <div class="input-prefix">
+                    <span class="prefix">R$</span>
+                    <input
+                      id="custoArmazenagemDiario"
+                      type="number"
+                      formControlName="custoArmazenagemDiario"
+                      placeholder="0,00"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                </app-form-field>
+              </div>
+
               <!-- Margin Calculator -->
               @if (margemEstimada() !== null) {
                 <div class="margin-calculator">
