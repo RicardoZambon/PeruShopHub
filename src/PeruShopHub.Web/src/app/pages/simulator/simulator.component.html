@@ -1,0 +1,180 @@
+<app-page-header title="Simulador de Preços" subtitle="Simule cenários de custo e veja o impacto na lucratividade"></app-page-header>
+
+<div class="simulator-container">
+  <!-- Mode toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn" [class.active]="!batchMode()" (click)="batchMode() && toggleBatchMode()">Produto único</button>
+    <button class="mode-btn" [class.active]="batchMode()" (click)="!batchMode() && toggleBatchMode()">Simulação em lote</button>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading()" class="skeleton-grid">
+    <app-skeleton height="40px"></app-skeleton>
+    <app-skeleton height="300px"></app-skeleton>
+  </div>
+
+  <!-- Single product mode -->
+  <ng-container *ngIf="!loading() && !batchMode()">
+    <div class="product-selector">
+      <label class="field-label">Selecionar Produto</label>
+      <app-select-dropdown
+        [options]="productOptions()"
+        [value]="selectedProductId()"
+        placeholder="Escolha um produto..."
+        (valueChange)="onProductSelect($event)">
+      </app-select-dropdown>
+    </div>
+
+    <div *ngIf="selectedProduct()" class="simulator-grid">
+      <!-- Left: Cost inputs -->
+      <div class="cost-inputs">
+        <h3 class="section-title">Variáveis de Custo</h3>
+        <p class="section-hint">Ajuste os valores e veja o impacto em tempo real</p>
+
+        <div class="fields-list">
+          <div *ngFor="let field of costFields(); let i = index" class="cost-field">
+            <label class="field-label">{{ field.label }}</label>
+            <div class="input-wrapper">
+              <span class="input-prefix">{{ field.suffix === 'R$' ? 'R$' : '' }}</span>
+              <input
+                type="number"
+                [ngModel]="field.value"
+                (ngModelChange)="costFields()[i].value = $event; onFieldChange()"
+                [step]="field.isRate ? 0.1 : 1"
+                min="0"
+                class="cost-input"
+                [class.rate-input]="field.isRate" />
+              <span *ngIf="field.isRate" class="input-suffix">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Results -->
+      <div class="simulation-results">
+        <div *ngIf="simulating() && !result()" class="results-skeleton">
+          <app-skeleton height="200px"></app-skeleton>
+        </div>
+
+        <ng-container *ngIf="result() as res">
+          <!-- Margin comparison -->
+          <div class="comparison-header">
+            <div class="comparison-card current">
+              <span class="comparison-label">Margem Atual</span>
+              <span class="comparison-value" [style.color]="res.current.marginPercent >= 20 ? 'var(--success)' : res.current.marginPercent >= 10 ? 'var(--warning)' : 'var(--danger)'">
+                {{ res.current.marginPercent | number:'1.2-2' }}%
+              </span>
+              <span class="comparison-sub">{{ formatBrl(res.current.profitAmount) }} lucro</span>
+            </div>
+
+            <div class="comparison-arrow">
+              <span class="arrow-icon">&rarr;</span>
+            </div>
+
+            <div class="comparison-card simulated">
+              <span class="comparison-label">Margem Simulada</span>
+              <span class="comparison-value" [style.color]="res.simulated.marginPercent >= 20 ? 'var(--success)' : res.simulated.marginPercent >= 10 ? 'var(--warning)' : 'var(--danger)'">
+                {{ res.simulated.marginPercent | number:'1.2-2' }}%
+              </span>
+              <span class="comparison-sub">{{ formatBrl(res.simulated.profitAmount) }} lucro</span>
+            </div>
+          </div>
+
+          <!-- Diff badge -->
+          <div class="diff-badge" [style.color]="getMarginColor(res.marginDiff)">
+            <span *ngIf="res.marginDiff > 0">+</span>{{ res.marginDiff | number:'1.2-2' }}% margem
+            &nbsp;/&nbsp;
+            <span *ngIf="res.profitDiff > 0">+</span>{{ formatBrl(res.profitDiff) }} lucro
+          </div>
+
+          <!-- Cost breakdown bars -->
+          <h3 class="section-title">Decomposição de Custos</h3>
+          <div class="breakdown-table">
+            <div class="breakdown-header">
+              <span>Componente</span>
+              <span>Atual</span>
+              <span>Simulado</span>
+              <span>Diferença</span>
+            </div>
+            <div *ngFor="let item of res.simulated.costBreakdown; let i = index" class="breakdown-row">
+              <span class="breakdown-label">
+                <span class="color-dot" [style.background]="item.color"></span>
+                {{ item.label }}
+              </span>
+              <span class="breakdown-value mono">{{ formatBrl(res.current.costBreakdown[i]?.amount) }}</span>
+              <span class="breakdown-value mono">{{ formatBrl(item.amount) }}</span>
+              <span class="breakdown-diff mono" [style.color]="getMarginColor(item.label === 'Lucro' ? (item.amount - (res.current.costBreakdown[i]?.amount ?? 0)) : -((item.amount - (res.current.costBreakdown[i]?.amount ?? 0))))">
+                <ng-container *ngIf="(item.amount - (res.current.costBreakdown[i]?.amount ?? 0)) as diff">
+                  <span *ngIf="diff > 0">+</span>{{ formatBrl(diff) }}
+                </ng-container>
+              </span>
+            </div>
+          </div>
+
+          <!-- Visual bars -->
+          <h3 class="section-title" style="margin-top: var(--space-4)">Visualização</h3>
+          <div class="visual-bars">
+            <div class="bar-row" *ngFor="let item of res.simulated.costBreakdown">
+              <span class="bar-label">{{ item.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width]="getBarWidth(item.amount, res.simulated)" [style.background]="item.color"></div>
+              </div>
+              <span class="bar-pct mono">{{ item.percentage | number:'1.1-1' }}%</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Batch mode -->
+  <ng-container *ngIf="!loading() && batchMode()">
+    <div class="batch-section">
+      <h3 class="section-title">Selecione os produtos para simular</h3>
+      <p class="section-hint">A simulação usará os valores atuais de cada produto (sem overrides)</p>
+
+      <div class="batch-product-list">
+        <label *ngFor="let product of products()" class="batch-product-item" [class.selected]="isBatchSelected(product.id)">
+          <input type="checkbox" [checked]="isBatchSelected(product.id)" (change)="toggleBatchProduct(product.id)" />
+          <span class="batch-sku mono">{{ product.sku }}</span>
+          <span class="batch-name">{{ product.name }}</span>
+          <span class="batch-price mono">{{ formatBrl(product.price) }}</span>
+        </label>
+      </div>
+
+      <div class="batch-actions">
+        <app-button
+          [disabled]="batchProducts().length === 0 || batchSimulating()"
+          (clicked)="runBatchSimulation()">
+          {{ batchSimulating() ? 'Simulando...' : 'Simular ' + batchProducts().length + ' produtos' }}
+        </app-button>
+      </div>
+
+      <!-- Batch results -->
+      <div *ngIf="batchResults().length > 0" class="batch-results">
+        <h3 class="section-title">Resultados</h3>
+        <div class="batch-results-table">
+          <div class="batch-header">
+            <span>Produto</span>
+            <span>Preço</span>
+            <span>Margem Atual</span>
+            <span>Lucro</span>
+          </div>
+          <div *ngFor="let r of batchResults()" class="batch-result-row">
+            <span class="batch-result-name">
+              <span class="mono">{{ r.productSku }}</span>
+              {{ r.productName }}
+            </span>
+            <span class="mono">{{ formatBrl(r.current.price) }}</span>
+            <span [style.color]="r.current.marginPercent >= 20 ? 'var(--success)' : r.current.marginPercent >= 10 ? 'var(--warning)' : 'var(--danger)'" class="mono">
+              {{ r.current.marginPercent | number:'1.2-2' }}%
+            </span>
+            <span class="mono" [style.color]="r.current.profitAmount >= 0 ? 'var(--success)' : 'var(--danger)'">
+              {{ formatBrl(r.current.profitAmount) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

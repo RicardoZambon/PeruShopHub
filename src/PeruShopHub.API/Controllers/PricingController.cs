@@ -17,6 +17,24 @@ public class PricingController : ControllerBase
         _pricingService = pricingService;
     }
 
+    [HttpPost("simulate")]
+    public async Task<ActionResult<SimulationResult>> Simulate(
+        [FromBody] SimulateRequest request,
+        CancellationToken ct = default)
+    {
+        var result = await _pricingService.SimulateAsync(request, ct);
+        return Ok(result);
+    }
+
+    [HttpPost("simulate/batch")]
+    public async Task<ActionResult<IReadOnlyList<SimulationResult>>> BatchSimulate(
+        [FromBody] BatchSimulateRequest request,
+        CancellationToken ct = default)
+    {
+        var results = await _pricingService.BatchSimulateAsync(request, ct);
+        return Ok(results);
+    }
+
     [HttpPost("calculate")]
     public async Task<ActionResult<PriceCalculationResult>> Calculate(
         [FromBody] PriceCalculationRequest request,

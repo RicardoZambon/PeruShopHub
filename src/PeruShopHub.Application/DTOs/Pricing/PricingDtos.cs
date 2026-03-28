@@ -47,3 +47,50 @@ public record CreatePricingRuleDto(
 
 public record UpdatePricingRuleDto(
     decimal TargetMarginPercent);
+
+// --- Simulation DTOs ---
+
+public record SimulationOverrides(
+    decimal? ProductCost = null,
+    decimal? PackagingCost = null,
+    decimal? CommissionRate = null,
+    decimal? TaxRate = null,
+    decimal? PaymentFeeRate = null,
+    decimal? ShippingCost = null,
+    decimal? AdvertisingCost = null,
+    decimal? Price = null);
+
+public record SimulateRequest(
+    Guid ProductId,
+    SimulationOverrides Overrides,
+    string MarketplaceId = "mercadolivre",
+    string? ListingType = null);
+
+public record BatchSimulateRequest(
+    List<SimulateRequest> Items);
+
+public record SimulationScenario(
+    decimal Price,
+    decimal ProductCost,
+    decimal PackagingCost,
+    decimal ShippingCost,
+    decimal AdvertisingCost,
+    decimal CommissionAmount,
+    decimal CommissionRate,
+    decimal TaxAmount,
+    decimal TaxRate,
+    decimal PaymentFeeAmount,
+    decimal PaymentFeeRate,
+    decimal TotalCosts,
+    decimal ProfitAmount,
+    decimal MarginPercent,
+    IReadOnlyList<CostComponentDto> CostBreakdown);
+
+public record SimulationResult(
+    Guid ProductId,
+    string ProductName,
+    string ProductSku,
+    SimulationScenario Current,
+    SimulationScenario Simulated,
+    decimal MarginDiff,
+    decimal ProfitDiff);

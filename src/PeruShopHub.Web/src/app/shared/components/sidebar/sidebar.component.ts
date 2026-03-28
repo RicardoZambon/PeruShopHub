@@ -18,6 +18,7 @@ import {
   PackageOpen,
   ClipboardList,
   Shield,
+  Calculator,
 } from 'lucide-angular';
 import { SidebarService } from '../../../services/sidebar.service';
 import { AuthService } from '../../../services/auth.service';
@@ -63,6 +64,7 @@ export class SidebarComponent {
     { label: 'Suprimentos', route: '/suprimentos', icon: PackageOpen, group: 'CATÁLOGO' },
     { label: 'Compras', route: '/compras', icon: ClipboardList, group: 'CATÁLOGO' },
     { label: 'Financeiro', route: '/financeiro', icon: DollarSign, group: 'CATÁLOGO' },
+    { label: 'Simulador', route: '/simulador', icon: Calculator, group: 'CATÁLOGO' },
 
     { label: 'Configurações', route: '/configuracoes', icon: Settings },
   ];

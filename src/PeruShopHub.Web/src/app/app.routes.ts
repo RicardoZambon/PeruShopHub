@@ -110,6 +110,11 @@ export const routes: Routes = [
           import('./pages/finance/finance.component').then(m => m.FinanceComponent),
       },
       {
+        path: 'simulador',
+        loadComponent: () =>
+          import('./pages/simulator/simulator.component').then(m => m.SimulatorComponent),
+      },
+      {
         path: 'estoque',
         loadComponent: () =>
           import('./pages/inventory/inventory.component').then(m => m.InventoryComponent),

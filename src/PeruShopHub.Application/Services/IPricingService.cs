@@ -9,4 +9,6 @@ public interface IPricingService
     Task<PricingRuleDto> CreateRuleAsync(CreatePricingRuleDto dto, CancellationToken ct = default);
     Task<PricingRuleDto> UpdateRuleAsync(Guid id, UpdatePricingRuleDto dto, CancellationToken ct = default);
     Task DeleteRuleAsync(Guid id, CancellationToken ct = default);
+    Task<SimulationResult> SimulateAsync(SimulateRequest request, CancellationToken ct = default);
+    Task<IReadOnlyList<SimulationResult>> BatchSimulateAsync(BatchSimulateRequest request, CancellationToken ct = default);
 }

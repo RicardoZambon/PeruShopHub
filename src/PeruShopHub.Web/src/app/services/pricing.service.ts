@@ -54,6 +54,56 @@ export interface CreatePricingRuleDto {
   targetMarginPercent: number;
 }
 
+export interface SimulationOverrides {
+  productCost?: number | null;
+  packagingCost?: number | null;
+  commissionRate?: number | null;
+  taxRate?: number | null;
+  paymentFeeRate?: number | null;
+  shippingCost?: number | null;
+  advertisingCost?: number | null;
+  price?: number | null;
+}
+
+export interface SimulateRequest {
+  productId: string;
+  overrides: SimulationOverrides;
+  marketplaceId?: string;
+  listingType?: string | null;
+}
+
+export interface BatchSimulateRequest {
+  items: SimulateRequest[];
+}
+
+export interface SimulationScenario {
+  price: number;
+  productCost: number;
+  packagingCost: number;
+  shippingCost: number;
+  advertisingCost: number;
+  commissionAmount: number;
+  commissionRate: number;
+  taxAmount: number;
+  taxRate: number;
+  paymentFeeAmount: number;
+  paymentFeeRate: number;
+  totalCosts: number;
+  profitAmount: number;
+  marginPercent: number;
+  costBreakdown: CostComponent[];
+}
+
+export interface SimulationResult {
+  productId: string;
+  productName: string;
+  productSku: string;
+  current: SimulationScenario;
+  simulated: SimulationScenario;
+  marginDiff: number;
+  profitDiff: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PricingService {
   private readonly http = inject(HttpClient);
@@ -88,6 +138,18 @@ export class PricingService {
   async deleteRule(id: string): Promise<void> {
     await firstValueFrom(
       this.http.delete<void>(`${this.baseUrl}/rules/${id}`),
+    );
+  }
+
+  async simulate(request: SimulateRequest): Promise<SimulationResult> {
+    return firstValueFrom(
+      this.http.post<SimulationResult>(`${this.baseUrl}/simulate`, request),
+    );
+  }
+
+  async batchSimulate(items: SimulateRequest[]): Promise<SimulationResult[]> {
+    return firstValueFrom(
+      this.http.post<SimulationResult[]>(`${this.baseUrl}/simulate/batch`, { items }),
     );
   }
 }

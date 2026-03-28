@@ -164,6 +164,106 @@ public class PricingService : IPricingService
         await _db.SaveChangesAsync(ct);
     }
 
+    public async Task<SimulationResult> SimulateAsync(SimulateRequest request, CancellationToken ct = default)
+    {
+        var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == request.ProductId, ct)
+            ?? throw new NotFoundException($"Produto {request.ProductId} não encontrado.");
+
+        var commissionRate = await ResolveCommissionRateAsync(request.MarketplaceId, request.ListingType, ct);
+        var taxRate = await ResolveTaxRateAsync(ct);
+        var paymentFeeRate = await ResolvePaymentFeeRateAsync(ct);
+
+        // Current scenario uses product's actual values
+        var currentScenario = BuildScenario(
+            price: product.Price,
+            productCost: product.PurchaseCost,
+            packagingCost: product.PackagingCost,
+            shippingCost: 0m,
+            advertisingCost: 0m,
+            commissionRate: commissionRate,
+            taxRate: taxRate,
+            paymentFeeRate: paymentFeeRate);
+
+        // Simulated scenario applies overrides
+        var o = request.Overrides;
+        var simulatedScenario = BuildScenario(
+            price: o.Price ?? product.Price,
+            productCost: o.ProductCost ?? product.PurchaseCost,
+            packagingCost: o.PackagingCost ?? product.PackagingCost,
+            shippingCost: o.ShippingCost ?? 0m,
+            advertisingCost: o.AdvertisingCost ?? 0m,
+            commissionRate: o.CommissionRate.HasValue ? o.CommissionRate.Value / 100m : commissionRate,
+            taxRate: o.TaxRate.HasValue ? o.TaxRate.Value / 100m : taxRate,
+            paymentFeeRate: o.PaymentFeeRate.HasValue ? o.PaymentFeeRate.Value / 100m : paymentFeeRate);
+
+        return new SimulationResult(
+            ProductId: product.Id,
+            ProductName: product.Name,
+            ProductSku: product.Sku,
+            Current: currentScenario,
+            Simulated: simulatedScenario,
+            MarginDiff: Math.Round(simulatedScenario.MarginPercent - currentScenario.MarginPercent, 2),
+            ProfitDiff: Math.Round(simulatedScenario.ProfitAmount - currentScenario.ProfitAmount, 2));
+    }
+
+    public async Task<IReadOnlyList<SimulationResult>> BatchSimulateAsync(BatchSimulateRequest request, CancellationToken ct = default)
+    {
+        var results = new List<SimulationResult>();
+        foreach (var item in request.Items)
+        {
+            results.Add(await SimulateAsync(item, ct));
+        }
+        return results;
+    }
+
+    private static SimulationScenario BuildScenario(
+        decimal price,
+        decimal productCost,
+        decimal packagingCost,
+        decimal shippingCost,
+        decimal advertisingCost,
+        decimal commissionRate,
+        decimal taxRate,
+        decimal paymentFeeRate)
+    {
+        var commissionAmount = Math.Round(price * commissionRate, 2);
+        var taxAmount = Math.Round(price * taxRate, 2);
+        var paymentFeeAmount = Math.Round(price * paymentFeeRate, 2);
+        var totalCosts = productCost + packagingCost + shippingCost + advertisingCost
+            + commissionAmount + taxAmount + paymentFeeAmount;
+        var profitAmount = price - totalCosts;
+        var marginPercent = price > 0 ? Math.Round((profitAmount / price) * 100m, 2) : 0m;
+
+        var breakdown = new List<CostComponentDto>
+        {
+            new("Custo do Produto", productCost, price > 0 ? Math.Round(productCost / price * 100m, 1) : 0, "#4CAF50"),
+            new("Embalagem", packagingCost, price > 0 ? Math.Round(packagingCost / price * 100m, 1) : 0, "#8BC34A"),
+            new("Frete", shippingCost, price > 0 ? Math.Round(shippingCost / price * 100m, 1) : 0, "#00BCD4"),
+            new("Publicidade", advertisingCost, price > 0 ? Math.Round(advertisingCost / price * 100m, 1) : 0, "#E91E63"),
+            new("Comissão", commissionAmount, Math.Round(commissionRate * 100m, 1), "#FF9800"),
+            new("Impostos", taxAmount, Math.Round(taxRate * 100m, 1), "#F44336"),
+            new("Taxa de Pagamento", paymentFeeAmount, Math.Round(paymentFeeRate * 100m, 1), "#9C27B0"),
+            new("Lucro", profitAmount, price > 0 ? Math.Round(profitAmount / price * 100m, 1) : 0, "#1A237E"),
+        };
+
+        return new SimulationScenario(
+            Price: price,
+            ProductCost: productCost,
+            PackagingCost: packagingCost,
+            ShippingCost: shippingCost,
+            AdvertisingCost: advertisingCost,
+            CommissionAmount: commissionAmount,
+            CommissionRate: Math.Round(commissionRate * 100m, 2),
+            TaxAmount: taxAmount,
+            TaxRate: Math.Round(taxRate * 100m, 2),
+            PaymentFeeAmount: paymentFeeAmount,
+            PaymentFeeRate: Math.Round(paymentFeeRate * 100m, 2),
+            TotalCosts: totalCosts,
+            ProfitAmount: profitAmount,
+            MarginPercent: marginPercent,
+            CostBreakdown: breakdown);
+    }
+
     private async Task<decimal> ResolveCommissionRateAsync(string marketplaceId, string? listingType, CancellationToken ct)
     {
         // Try specific rule first, then default
