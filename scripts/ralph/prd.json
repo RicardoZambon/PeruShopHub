@@ -368,7 +368,7 @@
         "Angular build passes"
       ],
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 1. Independent."
     },
     {

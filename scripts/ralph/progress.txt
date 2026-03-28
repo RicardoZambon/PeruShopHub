@@ -455,3 +455,20 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - ConfirmDialogService has accept/cancel/done pattern — call processing.set(true) after confirm, done() when complete
   - computed() in Angular works well for derived reconciliation state (discrepancy counts, item status)
 ---
+
+## 2026-03-28 - US-017
+- Added line chart (Chart.js / ng2-charts) to Product Detail "Histórico de Custos" section showing cost over time
+- Added "Motivo" (reason) column to cost history data grid
+- Implemented historical cost lookup in CostCalculationService: RecalculateOrderCostsAsync now uses the cost that was effective at the order's OrderDate via ProductCostHistory
+- Added GetHistoricalCostsAsync private method that queries ProductCostHistory for the most recent cost entry on or before a given date per variant
+- Files changed:
+  - `src/PeruShopHub.Web/src/app/pages/products/product-detail.component.ts` (chart config, reason column, BaseChartDirective import)
+  - `src/PeruShopHub.Web/src/app/pages/products/product-detail.component.html` (chart canvas, reason cell template)
+  - `src/PeruShopHub.Web/src/app/pages/products/product-detail.component.scss` (chart container styles)
+  - `src/PeruShopHub.Infrastructure/Services/CostCalculationService.cs` (historical cost lookup, CalculateOrderCostsInternalAsync)
+- **Learnings for future iterations:**
+  - ng2-charts BaseChartDirective is already imported in dashboard — same pattern works in any component (import + add to imports array)
+  - CalculateOrderCostsAsync is the public interface method; CalculateOrderCostsInternalAsync is the private one with effectiveDate param — keeps interface stable
+  - ProductCostHistory.VariantId is nullable — use `h.VariantId!.Value` when filtering (variant cost entries always have VariantId)
+  - Cost history API returns descending order — reverse for chronological chart display
+---

@@ -29,6 +29,10 @@ public class CostCalculationService : ICostCalculationService
     }
 
     public async Task<List<OrderCost>> CalculateOrderCostsAsync(Order order, CancellationToken ct = default)
+        => await CalculateOrderCostsInternalAsync(order, effectiveDate: null, ct);
+
+    private async Task<List<OrderCost>> CalculateOrderCostsInternalAsync(
+        Order order, DateTime? effectiveDate, CancellationToken ct = default)
     {
         var costs = new List<OrderCost>();
 
@@ -45,12 +49,25 @@ public class CostCalculationService : ICostCalculationService
             .ToDictionary(g => g.Key, g => g.First());
 
         // ── product_cost ─────────────────────────────────────
+        // When recalculating old orders, use the cost that was effective at the order date
+        var historicalCosts = new Dictionary<Guid, decimal>();
+        if (effectiveDate.HasValue)
+        {
+            var variantIds = variants.Select(v => v.Id).ToList();
+            historicalCosts = await GetHistoricalCostsAsync(variantIds, effectiveDate.Value, ct);
+        }
+
         decimal totalProductCost = 0m;
         foreach (var item in order.Items)
         {
             if (variantBySku.TryGetValue(item.Sku, out var variant))
             {
-                var purchaseCost = variant.PurchaseCost ?? 0m;
+                decimal purchaseCost;
+                if (effectiveDate.HasValue && historicalCosts.TryGetValue(variant.Id, out var histCost))
+                    purchaseCost = histCost;
+                else
+                    purchaseCost = variant.PurchaseCost ?? 0m;
+
                 totalProductCost += purchaseCost * item.Quantity;
             }
         }
@@ -149,8 +166,8 @@ public class CostCalculationService : ICostCalculationService
             _db.OrderCosts.Remove(cost);
         }
 
-        // Recalculate
-        var newCosts = await CalculateOrderCostsAsync(order, ct);
+        // Recalculate using cost effective at order time
+        var newCosts = await CalculateOrderCostsInternalAsync(order, order.OrderDate, ct);
         foreach (var cost in newCosts)
         {
             order.Costs.Add(cost);
@@ -444,5 +461,26 @@ public class CostCalculationService : ICostCalculationService
             <= 79m => 6.75m,
             _ => 0m // Should not reach here since we check < 79 before calling
         };
+    }
+
+    /// <summary>
+    /// For each variant, finds the cost that was effective at the given date
+    /// by looking at the most recent ProductCostHistory entry on or before that date.
+    /// </summary>
+    private async Task<Dictionary<Guid, decimal>> GetHistoricalCostsAsync(
+        List<Guid> variantIds, DateTime effectiveDate, CancellationToken ct)
+    {
+        // Get the most recent cost history entry for each variant at or before the effective date
+        var histories = await _db.ProductCostHistories
+            .Where(h => variantIds.Contains(h.VariantId!.Value) && h.CreatedAt <= effectiveDate)
+            .GroupBy(h => h.VariantId!.Value)
+            .Select(g => new
+            {
+                VariantId = g.Key,
+                NewCost = g.OrderByDescending(h => h.CreatedAt).First().NewCost
+            })
+            .ToListAsync(ct);
+
+        return histories.ToDictionary(h => h.VariantId, h => h.NewCost);
     }
 }

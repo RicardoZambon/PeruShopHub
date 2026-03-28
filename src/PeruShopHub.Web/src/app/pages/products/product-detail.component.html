@@ -156,6 +156,18 @@
         <!-- Cost History -->
         <div class="detail-page__section">
           <h2 class="detail-page__section-title">Histórico de Custos</h2>
+
+          <!-- Cost history line chart -->
+          @if (costChartConfig()) {
+            <div class="cost-chart-container">
+              <canvas baseChart
+                [type]="costChartConfig()!.type"
+                [data]="costChartConfig()!.data"
+                [options]="costChartConfig()!.options">
+              </canvas>
+            </div>
+          }
+
           <app-data-grid
             [columns]="costHistoryColumns"
             [data]="costHistory()"
@@ -182,6 +194,9 @@
             </ng-template>
             <ng-template appGridCell="newCost" let-row let-value="value">
               <span class="mono" [ngClass]="getCostChangeClass(row['previousCost'], value)">{{ value | brlCurrency }}</span>
+            </ng-template>
+            <ng-template appGridCell="reason" let-row let-value="value">
+              <span class="text-muted">{{ value || '—' }}</span>
             </ng-template>
             <ng-template appGridCard let-row>
               <div class="mobile-card">

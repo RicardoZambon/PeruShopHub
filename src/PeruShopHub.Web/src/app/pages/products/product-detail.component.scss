@@ -318,3 +318,16 @@
     color: var(--neutral-900);
   }
 }
+
+.cost-chart-container {
+  height: 280px;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+
+  @include m.mobile {
+    height: 200px;
+  }
+}

@@ -2,6 +2,8 @@ import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideAngularModule, ArrowLeft, Package, Edit } from 'lucide-angular';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration } from 'chart.js';
 import {
   KpiCardComponent,
   BadgeComponent,
@@ -60,6 +62,7 @@ interface ProductDetail {
     GridCellDirective,
     GridCardDirective,
     PageHeaderComponent,
+    BaseChartDirective,
   ],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
@@ -111,6 +114,7 @@ export class ProductDetailComponent implements OnInit {
     { key: 'unitCostPaid', label: 'Custo Pago', align: 'right' },
     { key: 'previousCost', label: 'Custo Anterior', align: 'right' },
     { key: 'newCost', label: 'Novo Custo', align: 'right' },
+    { key: 'reason', label: 'Motivo' },
   ];
 
   recentOrderColumns: GridColumn[] = [
@@ -121,6 +125,55 @@ export class ProductDetailComponent implements OnInit {
     { key: 'total', label: 'Total', align: 'right' },
     { key: 'profit', label: 'Lucro', align: 'right' },
   ];
+
+  // Cost history line chart
+  costChartConfig = computed<ChartConfiguration<'line'> | null>(() => {
+    const history = this.costHistory();
+    if (history.length === 0) return null;
+
+    // Reverse to chronological order (API returns desc)
+    const sorted = [...history].reverse();
+    const labels = sorted.map(h => this.formatDate(h.date));
+    const data = sorted.map(h => h.newCost);
+
+    return {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Custo Médio (R$)',
+          data,
+          borderColor: '#1A237E',
+          backgroundColor: 'rgba(26, 35, 126, 0.1)',
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#1A237E',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `R$ ${(ctx.parsed.y ?? 0).toFixed(2).replace('.', ',')}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            ticks: {
+              callback: (value) => `R$ ${Number(value).toFixed(2).replace('.', ',')}`,
+            },
+          },
+        },
+      },
+    };
+  });
 
   statusVariant = computed<BadgeVariant>(() => {
     const p = this.product();
