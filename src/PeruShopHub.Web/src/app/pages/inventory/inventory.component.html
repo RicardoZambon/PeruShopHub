@@ -322,6 +322,144 @@
       </app-data-grid>
     </div>
   </ng-template>
+
+  <ng-template appTabPanel="reconciliacao">
+    <div class="estoque__content">
+      @if (reconResult(); as result) {
+        <!-- Result view -->
+        <div class="recon__result">
+          <div class="recon__result-header">
+            <h3 class="recon__result-title">Resultado da Reconciliação</h3>
+            <div class="recon__result-summary">
+              <span class="recon__result-stat">Itens verificados: <strong>{{ result.itemsChecked }}</strong></span>
+              <span class="recon__result-stat">Discrepâncias: <strong class="recon__result-stat--warn">{{ result.discrepancies }}</strong></span>
+              <span class="recon__result-stat">Diferença total: <strong>{{ result.totalDifference }}</strong> unidades</span>
+            </div>
+          </div>
+
+          <div class="recon__table-wrap">
+            <table class="recon__table">
+              <thead>
+                <tr>
+                  <th class="recon__th">SKU</th>
+                  <th class="recon__th">Produto</th>
+                  <th class="recon__th recon__th--right">Estoque Sistema</th>
+                  <th class="recon__th recon__th--right">Contagem Física</th>
+                  <th class="recon__th recon__th--right">Diferença</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of result.items; track item.variantId) {
+                  <tr class="recon__row" [class.recon__row--under]="item.difference < 0" [class.recon__row--over]="item.difference > 0">
+                    <td class="recon__td recon__td--mono">{{ item.sku }}</td>
+                    <td class="recon__td">{{ item.productName }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right">{{ item.systemQuantity }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right">{{ item.countedQuantity }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right recon__td--diff"
+                      [class.recon__td--negative]="item.difference < 0"
+                      [class.recon__td--positive]="item.difference > 0">
+                      {{ item.difference > 0 ? '+' : '' }}{{ item.difference }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="recon__result-actions">
+            <button class="recon__btn recon__btn--secondary" (click)="resetReconciliation()">Nova Reconciliação</button>
+          </div>
+        </div>
+      } @else {
+        <!-- Input view -->
+        <div class="recon__header">
+          <div class="recon__header-info">
+            <h3 class="recon__title">Contagem Física de Estoque</h3>
+            <p class="recon__subtitle">Insira as quantidades contadas fisicamente para cada variante. Apenas itens preenchidos serão reconciliados.</p>
+          </div>
+          <div class="recon__header-stats">
+            @if (reconFilledCount() > 0) {
+              <span class="recon__stat">{{ reconFilledCount() }} itens preenchidos</span>
+              @if (reconDiscrepancyCount() > 0) {
+                <span class="recon__stat recon__stat--warn">{{ reconDiscrepancyCount() }} com discrepância</span>
+              }
+            }
+          </div>
+        </div>
+
+        @if (reconLoading()) {
+          <div class="recon__loading">
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <div class="recon__skeleton-row">
+                <app-skeleton type="text" width="15%" height="20px" />
+                <app-skeleton type="text" width="30%" height="20px" />
+                <app-skeleton type="text" width="10%" height="20px" />
+                <app-skeleton type="text" width="15%" height="32px" />
+                <app-skeleton type="text" width="10%" height="20px" />
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="recon__table-wrap">
+            <table class="recon__table">
+              <thead>
+                <tr>
+                  <th class="recon__th">SKU</th>
+                  <th class="recon__th">Produto</th>
+                  <th class="recon__th recon__th--right">Estoque Sistema</th>
+                  <th class="recon__th recon__th--right">Contagem Física</th>
+                  <th class="recon__th recon__th--right">Diferença</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of reconItems(); track item.variantId) {
+                  <tr class="recon__row"
+                    [class.recon__row--under]="item.status === 'under'"
+                    [class.recon__row--over]="item.status === 'over'">
+                    <td class="recon__td recon__td--mono">{{ item.sku }}</td>
+                    <td class="recon__td">{{ item.productName }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right">{{ item.systemQty }}</td>
+                    <td class="recon__td recon__td--right">
+                      <input
+                        type="number"
+                        class="recon__input"
+                        [value]="item.countedQty ?? ''"
+                        (input)="onReconQtyChange(item.variantId, $any($event.target).value)"
+                        min="0"
+                        placeholder="—"
+                      />
+                    </td>
+                    <td class="recon__td recon__td--mono recon__td--right recon__td--diff"
+                      [class.recon__td--negative]="item.status === 'under'"
+                      [class.recon__td--positive]="item.status === 'over'">
+                      @if (item.difference !== null) {
+                        {{ item.difference > 0 ? '+' : '' }}{{ item.difference }}
+                      } @else {
+                        <span class="recon__td--muted">—</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (reconItems().length === 0) {
+            <div class="recon__empty">
+              <p>Nenhum produto com variantes encontrado para reconciliação.</p>
+            </div>
+          }
+
+          <div class="recon__actions">
+            <button class="recon__btn recon__btn--secondary" (click)="resetReconciliation()" [disabled]="reconFilledCount() === 0">Limpar</button>
+            <button class="recon__btn recon__btn--primary" (click)="submitReconciliation()" [disabled]="reconFilledCount() === 0 || reconSaving()">
+              {{ reconSaving() ? 'Reconciliando...' : 'Reconciliar' }}
+            </button>
+          </div>
+        }
+      }
+    </div>
+  </ng-template>
 </app-tab-panels>
 
 <!-- Entry Modal -->

@@ -360,6 +360,97 @@ public class InventoryService : IInventoryService
         return alerts.OrderBy(a => a.TotalStock).ToList();
     }
 
+    public async Task<ReconciliationResultDto> ReconcileAsync(ReconciliationRequestDto dto, string createdBy, CancellationToken ct = default)
+    {
+        if (dto.Items == null || dto.Items.Count == 0)
+            throw new AppValidationException("Items", "Nenhum item informado para reconciliação.");
+
+        var errors = new Dictionary<string, List<string>>();
+
+        // Validate no duplicate variants
+        var duplicates = dto.Items.GroupBy(i => i.VariantId).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        if (duplicates.Count > 0)
+            errors.Add("Items", new List<string> { "Itens duplicados encontrados na lista." });
+
+        // Validate no negative quantities
+        var negatives = dto.Items.Where(i => i.CountedQuantity < 0).ToList();
+        if (negatives.Count > 0)
+            errors.Add("CountedQuantity", new List<string> { "Quantidade contada não pode ser negativa." });
+
+        if (errors.Count > 0)
+            throw new AppValidationException(errors);
+
+        var variantIds = dto.Items.Select(i => i.VariantId).ToList();
+        var variants = await _db.ProductVariants
+            .Include(v => v.Product)
+            .Where(v => variantIds.Contains(v.Id))
+            .ToListAsync(ct);
+
+        if (variants.Count != variantIds.Count)
+        {
+            var found = variants.Select(v => v.Id).ToHashSet();
+            var missing = variantIds.Where(id => !found.Contains(id)).ToList();
+            throw new NotFoundException($"Variantes não encontradas: {string.Join(", ", missing)}");
+        }
+
+        var batchId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        var resultItems = new List<ReconciliationResultItemDto>();
+        var discrepancies = 0;
+        var totalDifference = 0;
+
+        foreach (var item in dto.Items)
+        {
+            var variant = variants.First(v => v.Id == item.VariantId);
+            var systemQty = variant.Stock;
+            var difference = item.CountedQuantity - systemQty;
+            var hasDiscrepancy = difference != 0;
+
+            if (hasDiscrepancy)
+            {
+                discrepancies++;
+                totalDifference += Math.Abs(difference);
+
+                variant.Stock = item.CountedQuantity;
+
+                // Adjust allocations if new stock is below total allocated
+                await AdjustAllocationsIfExceedingAsync(variant.Id, variant.Stock, ct);
+
+                _db.StockMovements.Add(new StockMovement
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = variant.ProductId,
+                    VariantId = variant.Id,
+                    Type = "Ajuste",
+                    Quantity = difference,
+                    UnitCost = variant.PurchaseCost ?? variant.Product.PurchaseCost,
+                    Reason = $"Reconciliação física (lote {batchId})",
+                    CreatedBy = createdBy,
+                    CreatedAt = now
+                });
+            }
+
+            resultItems.Add(new ReconciliationResultItemDto(
+                variant.Id,
+                variant.Sku,
+                variant.Product.Name,
+                systemQty,
+                item.CountedQuantity,
+                difference,
+                hasDiscrepancy));
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        return new ReconciliationResultDto(
+            batchId,
+            dto.Items.Count,
+            discrepancies,
+            totalDifference,
+            now,
+            resultItems);
+    }
+
     private async Task AdjustAllocationsIfExceedingAsync(Guid variantId, int newStock, CancellationToken ct)
     {
         var allocations = await _db.StockAllocations

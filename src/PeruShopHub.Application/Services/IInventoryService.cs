@@ -28,4 +28,6 @@ public interface IInventoryService
     Task<StockAllocationDto> UpdateAllocationAsync(Guid variantId, UpdateStockAllocationDto dto, CancellationToken ct = default);
 
     Task<IReadOnlyList<StockAlertDto>> GetAlertsAsync(CancellationToken ct = default);
+
+    Task<ReconciliationResultDto> ReconcileAsync(ReconciliationRequestDto dto, string createdBy, CancellationToken ct = default);
 }

@@ -96,6 +96,34 @@ export interface StockAdjustmentDto {
   reason: string;
 }
 
+export interface ReconciliationItem {
+  variantId: string;
+  countedQuantity: number;
+}
+
+export interface ReconciliationRequest {
+  items: ReconciliationItem[];
+}
+
+export interface ReconciliationResultItem {
+  variantId: string;
+  sku: string;
+  productName: string;
+  systemQuantity: number;
+  countedQuantity: number;
+  difference: number;
+  hasDiscrepancy: boolean;
+}
+
+export interface ReconciliationResult {
+  batchId: string;
+  itemsChecked: number;
+  discrepancies: number;
+  totalDifference: number;
+  reconciliatedAt: string;
+  items: ReconciliationResultItem[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class InventoryService {
   private readonly http = inject(HttpClient);
@@ -126,6 +154,10 @@ export class InventoryService {
 
   getAlerts(): Observable<StockAlert[]> {
     return this.http.get<StockAlert[]>(`${this.baseUrl}/alerts`);
+  }
+
+  reconcile(dto: ReconciliationRequest): Observable<ReconciliationResult> {
+    return this.http.post<ReconciliationResult>(`${this.baseUrl}/reconciliation`, dto);
   }
 
   exportMovements(params: Omit<MovementQueryParams, 'page' | 'pageSize'>): Observable<Blob> {

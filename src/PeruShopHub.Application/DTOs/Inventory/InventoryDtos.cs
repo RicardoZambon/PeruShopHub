@@ -30,3 +30,25 @@ public record ProductAllocationsDto(
     Guid ProductId,
     string ProductName,
     List<VariantAllocationsDto> Variants);
+
+// Stock Reconciliation DTOs
+public record ReconciliationItemDto(Guid VariantId, int CountedQuantity);
+
+public record ReconciliationRequestDto(List<ReconciliationItemDto> Items);
+
+public record ReconciliationResultItemDto(
+    Guid VariantId,
+    string Sku,
+    string ProductName,
+    int SystemQuantity,
+    int CountedQuantity,
+    int Difference,
+    bool HasDiscrepancy);
+
+public record ReconciliationResultDto(
+    Guid BatchId,
+    int ItemsChecked,
+    int Discrepancies,
+    int TotalDifference,
+    DateTime ReconciliatedAt,
+    List<ReconciliationResultItemDto> Items);

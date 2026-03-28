@@ -77,6 +77,19 @@ public class InventoryController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("reconciliation")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
+    public async Task<ActionResult<ReconciliationResultDto>> Reconcile(
+        [FromBody] ReconciliationRequestDto dto,
+        CancellationToken ct = default)
+    {
+        var userName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+            ?? User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            ?? "system";
+        var result = await _inventoryService.ReconcileAsync(dto, userName, ct);
+        return Ok(result);
+    }
+
     [HttpGet("{productId}/allocations")]
     public async Task<ActionResult<ProductAllocationsDto>> GetAllocations(Guid productId, CancellationToken ct = default)
     {

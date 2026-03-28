@@ -23,11 +23,14 @@ import {
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 import { InventoryService } from '../../services/inventory.service';
-import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocations, VariantAllocations } from '../../services/inventory.service';
+import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocations, VariantAllocations, ReconciliationResult, ReconciliationResultItem } from '../../services/inventory.service';
+import { ProductService } from '../../services/product.service';
+import type { Product } from '../../services/product.service';
+import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
-type InventoryTab = 'visao-geral' | 'movimentacoes' | 'estoque-full';
+type InventoryTab = 'visao-geral' | 'movimentacoes' | 'reconciliacao' | 'estoque-full';
 type MovementType = 'Entrada' | 'Saída' | 'Ajuste' | 'Reconciliacao';
 
 interface ProductOption {
@@ -44,6 +47,8 @@ interface ProductOption {
 })
 export class InventoryComponent implements OnInit {
   private readonly inventoryService = inject(InventoryService);
+  private readonly productService = inject(ProductService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly router = inject(Router);
 
   @ViewChild('movGrid') movGridRef!: DataGridComponent;
@@ -137,6 +142,7 @@ export class InventoryComponent implements OnInit {
   tabs: TabItem[] = [
     { key: 'visao-geral', label: 'Visão Geral' },
     { key: 'movimentacoes', label: 'Movimentações' },
+    { key: 'reconciliacao', label: 'Reconciliação' },
     { key: 'estoque-full', label: 'Estoque Full', disabled: true },
   ];
 
@@ -261,6 +267,8 @@ export class InventoryComponent implements OnInit {
     this.activeTab.set(tab);
     if (tab === 'movimentacoes') {
       this.loadMovementsGrid(true);
+    } else if (tab === 'reconciliacao') {
+      this.loadReconciliationProducts();
     }
   }
 
@@ -452,6 +460,121 @@ export class InventoryComponent implements OnInit {
       'Reconciliacao': 'Reconciliação',
     };
     return labels[type] ?? type;
+  }
+
+  // Reconciliation state
+  reconLoading = signal(false);
+  reconSaving = signal(false);
+  reconProducts = signal<Product[]>([]);
+  reconCountedQty = signal<Record<string, number | null>>({});
+  reconResult = signal<ReconciliationResult | null>(null);
+
+  reconItems = computed(() => {
+    const products = this.reconProducts();
+    const counted = this.reconCountedQty();
+    const items: {
+      variantId: string;
+      sku: string;
+      productName: string;
+      systemQty: number;
+      countedQty: number | null;
+      difference: number | null;
+      status: 'under' | 'over' | 'match' | 'pending';
+    }[] = [];
+
+    for (const product of products) {
+      if (!product.variants || product.variants.length === 0) continue;
+      for (const variant of product.variants) {
+        const qty = counted[variant.id] ?? null;
+        const diff = qty !== null ? qty - (variant.stock ?? 0) : null;
+        let status: 'under' | 'over' | 'match' | 'pending' = 'pending';
+        if (diff !== null) {
+          status = diff < 0 ? 'under' : diff > 0 ? 'over' : 'match';
+        }
+        items.push({
+          variantId: variant.id,
+          sku: variant.sku || product.sku,
+          productName: product.name,
+          systemQty: variant.stock ?? 0,
+          countedQty: qty,
+          difference: diff,
+          status,
+        });
+      }
+    }
+    return items;
+  });
+
+  reconDiscrepancyCount = computed(() => {
+    return this.reconItems().filter(i => i.status === 'under' || i.status === 'over').length;
+  });
+
+  reconFilledCount = computed(() => {
+    return this.reconItems().filter(i => i.countedQty !== null).length;
+  });
+
+  async loadReconciliationProducts(): Promise<void> {
+    if (this.reconProducts().length > 0) return; // already loaded
+    this.reconLoading.set(true);
+    try {
+      const result = await this.productService.list({ page: 1, pageSize: 500, status: 'active' });
+      this.reconProducts.set(result.items);
+    } catch {
+      this.reconProducts.set([]);
+    } finally {
+      this.reconLoading.set(false);
+    }
+  }
+
+  onReconQtyChange(variantId: string, value: string): void {
+    const num = value === '' ? null : parseInt(value, 10);
+    if (num !== null && (isNaN(num) || num < 0)) return;
+    this.reconCountedQty.update(prev => ({ ...prev, [variantId]: num }));
+  }
+
+  resetReconciliation(): void {
+    this.reconCountedQty.set({});
+    this.reconResult.set(null);
+  }
+
+  async submitReconciliation(): Promise<void> {
+    const items = this.reconItems().filter(i => i.countedQty !== null);
+    if (items.length === 0) return;
+
+    const discrepancies = items.filter(i => i.status !== 'match').length;
+    const message = discrepancies > 0
+      ? `${items.length} itens verificados, ${discrepancies} com discrepância. O estoque será ajustado automaticamente.`
+      : `${items.length} itens verificados, nenhuma discrepância encontrada. Nenhum ajuste será feito.`;
+
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Confirmar Reconciliação',
+      message,
+      confirmLabel: 'Reconciliar',
+      cancelLabel: 'Cancelar',
+      variant: 'warning',
+    });
+
+    if (!confirmed) return;
+
+    this.reconSaving.set(true);
+    this.confirmDialogService.processing.set(true);
+    try {
+      const result = await firstValueFrom(this.inventoryService.reconcile({
+        items: items.map(i => ({
+          variantId: i.variantId,
+          countedQuantity: i.countedQty!,
+        })),
+      }));
+      this.reconResult.set(result);
+      this.confirmDialogService.done();
+      // Refresh inventory data
+      this.loadInventoryGrid(true);
+      this.loadMovements();
+    } catch {
+      this.confirmDialogService.done();
+    } finally {
+      this.reconSaving.set(false);
+    }
   }
 
   // Allocation dialog state

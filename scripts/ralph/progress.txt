@@ -429,3 +429,29 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Excel export endpoint should return `File(bytes, contentType, fileName)` from controller for proper download
   - Date filter inputs in Angular need explicit (change) binding to signal — not auto-bound by just setting [value]
 ---
+
+## 2026-03-28 - US-016
+- Implemented internal stock reconciliation (physical count vs system)
+- Backend: `POST /api/inventory/reconciliation` endpoint accepts list of { variantId, countedQuantity }
+- Backend: Compares counted vs system stock, creates StockMovement type "Ajuste" with reason linking to batch ID
+- Backend: Updates variant.Stock, returns report (items checked, discrepancies, total difference)
+- Backend: Validates no duplicates, no negatives, all variants exist; adjusts allocations if exceeding
+- Frontend: Added "Reconciliação" tab to inventory page with product/variant list
+- Frontend: Input fields for counted quantities, real-time difference calculation
+- Frontend: Red highlighting for under-count (counted < system), yellow for over-count
+- Frontend: Confirmation dialog before submitting, result view with summary statistics
+- Files changed:
+  - `src/PeruShopHub.Application/DTOs/Inventory/InventoryDtos.cs` (reconciliation DTOs)
+  - `src/PeruShopHub.Application/Services/IInventoryService.cs` (ReconcileAsync method)
+  - `src/PeruShopHub.Application/Services/InventoryService.cs` (reconciliation logic)
+  - `src/PeruShopHub.API/Controllers/InventoryController.cs` (POST reconciliation endpoint)
+  - `src/PeruShopHub.Web/src/app/services/inventory.service.ts` (reconcile method + DTOs)
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.ts` (reconciliation tab logic)
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.html` (reconciliation tab template)
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.scss` (reconciliation styles)
+- **Learnings for future iterations:**
+  - ProductService.list() with status='active' and large pageSize fetches all products with variants for reconciliation
+  - Batch reconciliation uses a shared batchId in the movement reason to link all movements from one reconciliation session
+  - ConfirmDialogService has accept/cancel/done pattern — call processing.set(true) after confirm, done() when complete
+  - computed() in Angular works well for derived reconciliation state (discrepancy counts, item status)
+---
