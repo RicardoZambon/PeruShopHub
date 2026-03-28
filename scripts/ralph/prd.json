@@ -1,245 +1,1835 @@
 {
   "project": "PeruShopHub",
   "branchName": "ralph/backend-wiring",
-  "description": "Backend Hardening Sprint — Extract service layer from fat controllers, add missing CRUD endpoints, implement input validation with consistent error responses, add role-based authorization, and introduce optimistic locking on key entities.",
+  "description": "MVP Phases 0.5–5: CI/CD, test infrastructure, stock & fulfillment, financial engine, Mercado Livre integration, post-sale messaging, LGPD compliance, security hardening, and production deployment.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Typed exceptions and global exception filter",
-      "description": "As a developer, I want a global exception handling mechanism so all controllers return consistent error responses without repetitive try/catch blocks.",
+      "title": "GitHub Actions CI Pipeline",
+      "description": "As a developer, I want automated build and test checks on every PR so regressions are caught before merge.",
       "acceptanceCriteria": [
-        "NotFoundException class created in Application/Exceptions/ — takes entity name and ID",
-        "ValidationException class created — takes Dictionary<string, List<string>> of field errors",
-        "ConflictException class created — takes message string",
-        "GlobalExceptionFilter created in API/Filters/ implementing IExceptionFilter",
-        "Filter catches NotFoundException → 404 with { error: message }",
-        "Filter catches ValidationException → 400 with { errors: { field: [messages] } }",
-        "Filter catches ConflictException → 409 with { error: message }",
-        "Filter catches UnauthorizedAccessException → 403 with { error: 'Acesso negado' }",
-        "Filter registered globally in Program.cs via AddControllers(o => o.Filters.Add<GlobalExceptionFilter>())",
-        "Unhandled exceptions still return 500 with generic message (no stack trace in response)",
+        "`.github/workflows/ci.yml` created",
+        "Backend job: `dotnet restore` → `dotnet build` → `dotnet test` (all test projects)",
+        "Frontend job: `npm ci` → `ng build --configuration=production` → `ng test --watch=false --browsers=ChromeHeadless`",
+        "Both jobs run in parallel on `push` to `main` and on all PRs",
+        "Pipeline fails if any step fails",
+        "Badge in README shows CI status",
         ".NET build passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Foundation for all other stories — every service will use these exceptions."
+      "notes": "Phase 0.5 — DevOps & Quality Foundation. No dependencies."
     },
     {
       "id": "US-002",
-      "title": "DI registration and service base pattern",
-      "description": "As a developer, I want a consistent pattern for registering application services so adding new services is mechanical.",
+      "title": "Docker Image Build & Push Pipeline",
+      "description": "As a developer, I want Docker images built and pushed automatically so deployments are reproducible.",
       "acceptanceCriteria": [
-        "AddApplicationServices() extension method created on IServiceCollection in Application project",
-        "Method registers all service interfaces to implementations as Scoped",
-        "Called from Program.cs after AddInfrastructureServices()",
-        "At minimum, register placeholder interfaces and implementations for: ProductService, CategoryService, OrderService, PurchaseOrderService, CustomerService, SupplyService, DashboardService, FinanceService, InventoryService, UserService, FileService",
-        "Each service takes AppDbContext via constructor injection",
-        "Each interface file created with a single placeholder method (e.g., Task<T> GetByIdAsync(Guid id))",
+        "`.github/workflows/docker.yml` created",
+        "Triggers on push to `main` (not on PRs)",
+        "Builds `Dockerfile.api`, `Dockerfile.worker`, `Dockerfile.web` images",
+        "Pushes to GitHub Container Registry (ghcr.io)",
+        "Tags images with commit SHA and `latest`",
+        "Uses Docker layer caching for faster builds",
         ".NET build passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Creates the scaffolding. Subsequent stories fill in the implementations."
+      "passes": false,
+      "notes": "Phase 0.5. Depends on US-001 (CI before Docker push)."
     },
     {
       "id": "US-003",
-      "title": "Extract CategoryService from controller",
-      "description": "As a developer, I want category business logic in a service so it is testable and controllers are thin HTTP adapters.",
+      "title": "Test Infrastructure Setup",
+      "description": "As a developer, I want test projects configured with TestContainers so integration tests run against real PostgreSQL and Redis.",
       "acceptanceCriteria": [
-        "ICategoryService defines: GetByParentAsync, GetByIdAsync, GetTreeAsync, CreateAsync, UpdateAsync, DeleteAsync",
-        "CategoryService implements all methods, moving logic from CategoriesController",
-        "Parent-child hierarchy queries moved to service",
-        "Breadth-first tree traversal moved to service",
-        "Validation: Name required, Slug required+unique, ParentId must reference existing category, no circular refs",
-        "ValidationException thrown with all errors collected (not fail-on-first)",
-        "NotFoundException thrown when category not found",
-        "CategoriesController refactored to delegate to ICategoryService — no EF queries in controller",
-        "All existing category endpoints still work identically (same request/response shapes)",
+        "`tests/PeruShopHub.UnitTests/` project created with xUnit + FluentAssertions + Moq",
+        "`tests/PeruShopHub.IntegrationTests/` project created with xUnit + TestContainers",
+        "`IntegrationTestBase` class spins up PostgreSQL 16 + Redis 7 containers",
+        "`CustomWebApplicationFactory<Program>` uses TestContainers connection strings",
+        "Database migrated automatically in test setup",
+        "Both test projects added to CI pipeline",
+        "`dotnet test` runs successfully from repo root",
         ".NET build passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Categories are simpler than Products — good first extraction to establish the pattern."
+      "passes": false,
+      "notes": "Phase 0.5. Foundation for all test stories."
     },
     {
       "id": "US-004",
-      "title": "Extract ProductService from controller",
-      "description": "As a developer, I want product business logic in a service so SKU generation, analytics, and variant management are testable.",
+      "title": "Unit Tests — Financial Calculations",
+      "description": "As a developer, I want unit tests covering all financial calculation logic so cost decomposition is provably correct.",
       "acceptanceCriteria": [
-        "IProductService defines: GetListAsync, GetByIdAsync, CreateAsync, UpdateAsync, DeleteAsync, GetVariantsAsync, CreateVariantAsync, UpdateVariantAsync, DeleteVariantAsync, GetAnalyticsAsync, GetRecentOrdersAsync",
-        "ProductService implements all methods, moving logic from ProductsController",
-        "SKU auto-generation logic moved to service",
-        "Category descendant recursion for filtering moved to service",
-        "Product analytics calculations moved to service",
-        "Profit distribution in recent orders moved to service",
-        "Cache key generation and invalidation logic moved to service (inject ICacheService)",
-        "Validation: Name required (max 200), SKU unique, Price >= 0, Cost >= 0, CategoryId must exist, Weight/dimensions >= 0",
-        "ProductsController refactored to thin adapter — no EF queries, no business logic",
-        "All existing product endpoints still work identically",
+        "Tests for `CostCalculationService.CalculateOrderCostsAsync` — verifies product_cost, packaging, commission, fixed_fee, tax categories",
+        "Tests for commission resolution: specific match → category fallback → default fallback → hardcoded 13%",
+        "Tests for fixed fee brackets: ≤R$12.50 (50%), R$12.51-29 (R$6.25), R$29.01-50 (R$6.50), R$50.01-79 (R$6.75), >R$79 (R$0)",
+        "Tests for weighted average cost on PO receive",
+        "Tests for cost distribution: `by_value` and `by_quantity`",
+        "Tests for `RecalculateOrderCostsAsync` — preserves manual/API costs",
+        "Tests for profit: `TotalAmount - Sum(Costs)`",
+        "Edge cases: zero quantity, zero price, missing variant, missing commission rule",
+        "All tests pass, minimum 15 test cases",
         ".NET build passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Largest extraction — includes SKU generation, analytics, cache, variants."
+      "passes": false,
+      "notes": "Phase 0.5. Depends on US-003."
     },
     {
-      "id": "US-005",
-      "title": "Extract OrderService from controller",
-      "description": "As a developer, I want order business logic in a service so timeline building, cost management, and fulfillment are testable.",
+      "id": "US-005a",
+      "title": "Unit Tests — ProductService & OrderService",
+      "description": "As a developer, I want unit tests for ProductService and OrderService so core business logic is verified.",
       "acceptanceCriteria": [
-        "IOrderService defines: GetListAsync, GetByIdAsync, GetCostsAsync, AddCostAsync, UpdateCostAsync, DeleteCostAsync, FulfillAsync, CancelAsync",
-        "OrderService implements all methods, moving logic from OrdersController",
-        "Timeline building logic moved to service",
-        "Payment status derivation moved to service",
-        "Order cost CRUD moved to service with validation (value > 0, valid category)",
-        "Fulfillment with auto stock deduction moved to service",
-        "Cancellation logic moved to service",
-        "OrdersController refactored to thin adapter",
-        "All existing order endpoints still work identically",
+        "ProductService tests: create (SKU auto-gen), update, delete, category filtering, search",
+        "OrderService tests: list with pagination, detail, fulfillment flow, timeline building",
+        "Mock dependencies (DbContext, ICacheService) using Moq",
+        "All tests pass, minimum 12 test cases",
         ".NET build passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Phase 0.5. Split from original US-005. Depends on US-003."
     },
     {
-      "id": "US-006",
-      "title": "Extract PurchaseOrderService from controller",
-      "description": "As a developer, I want purchase order business logic in a service so cost allocation and status management are testable.",
+      "id": "US-005b",
+      "title": "Unit Tests — CategoryService, PurchaseOrderService, InventoryService",
+      "description": "As a developer, I want unit tests for CategoryService, PurchaseOrderService, and InventoryService so remaining core services are verified.",
       "acceptanceCriteria": [
-        "IPurchaseOrderService defines: GetListAsync, GetByIdAsync, CreateAsync, UpdateAsync, DeleteAsync, AddItemAsync, UpdateItemAsync, DeleteItemAsync, AddCostAsync, UpdateCostAsync, DeleteCostAsync, ReceiveAsync, CancelAsync",
-        "PurchaseOrderService implements all methods, moving logic from PurchaseOrdersController",
-        "Cost allocation logic (by_value, by_quantity distribution) moved to service",
-        "Status-based access controls (edit only if Rascunho) enforced in service",
-        "Validation: Supplier required, items must reference valid ProductId/VariantId, quantities > 0, unitCost >= 0",
-        "NEW: PUT /api/purchase-orders/{id}/costs/{costId} endpoint added via controller + service",
-        "PurchaseOrdersController refactored to thin adapter",
-        "All existing PO endpoints still work identically",
+        "CategoryService tests: hierarchy traversal, circular reference detection, slug uniqueness",
+        "PurchaseOrderService tests: create, receive, cost allocation, status gating",
+        "InventoryService tests: overview calculation, movement creation, stock adjustment",
+        "Mock dependencies using Moq",
+        "All tests pass, minimum 18 test cases",
         ".NET build passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Includes the new PO cost update endpoint."
+      "passes": false,
+      "notes": "Phase 0.5. Split from original US-005. Depends on US-003."
     },
     {
-      "id": "US-007",
-      "title": "Extract DashboardService and FinanceService from controllers",
-      "description": "As a developer, I want financial aggregation logic in services so dashboard and finance calculations are testable.",
+      "id": "US-006",
+      "title": "Integration Tests — Controllers",
+      "description": "As a developer, I want integration tests hitting real endpoints with a real database so API contracts are verified end-to-end.",
       "acceptanceCriteria": [
-        "IDashboardService defines: GetSummaryAsync, GetRevenueChartAsync, GetCostBreakdownAsync, GetTopProductsAsync, GetLeastProfitableAsync, GetPendingActionsAsync",
-        "DashboardService implements all methods, moving logic from DashboardController",
-        "Top products ranking with profit distribution moved to service",
-        "Period parsing moved to service",
-        "IFinanceService defines: GetSummaryAsync, GetRevenueChartAsync, GetMarginChartAsync, GetSkuProfitabilityAsync, GetReconciliationAsync, GetAbcCurveAsync",
-        "FinanceService implements all methods, moving logic from FinanceController",
-        "SKU profitability aggregation moved to service",
-        "ABC curve classification moved to service",
-        "Monthly reconciliation logic moved to service",
-        "Both controllers refactored to thin adapters",
-        "All existing dashboard and finance endpoints still work identically",
+        "Auth flow test: register → login → get token → access protected endpoint",
+        "Product CRUD test: create → read → update → delete → verify 404",
+        "Order flow test: create order → add costs → fulfill → verify stock decreased",
+        "Category test: create parent → create child → verify hierarchy",
+        "Tenant isolation test: Tenant A data invisible to Tenant B",
+        "Concurrency test: two simultaneous updates → one succeeds, one gets 409",
+        "Tests use `CustomWebApplicationFactory` with TestContainers",
+        "All tests pass",
         ".NET build passes"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Two services in one story since they share similar financial calculation patterns."
+      "passes": false,
+      "notes": "Phase 0.5. Depends on US-003."
+    },
+    {
+      "id": "US-007",
+      "title": "Angular Test Setup",
+      "description": "As a developer, I want Angular unit tests for shared components and critical services so frontend regressions are caught.",
+      "acceptanceCriteria": [
+        "Karma/Jasmine configured (or Jest)",
+        "Tests for `AuthService`: login, register, token storage, refresh, logout",
+        "Tests for `DataGridComponent`: pagination, sorting, search, empty state",
+        "Tests for `FormFieldComponent`: validation display, error messages",
+        "Tests for currency formatting (BRL, monospace)",
+        "Tests run in CI with `ng test --watch=false --browsers=ChromeHeadless`",
+        "Minimum 15 test cases",
+        "Angular build passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Phase 0.5. Independent."
     },
     {
       "id": "US-008",
-      "title": "Extract remaining services (Customer, Supply, Inventory, File, Search, Notification)",
-      "description": "As a developer, I want all remaining controllers refactored to use services.",
+      "title": "API Rate Limiting per Tenant",
+      "description": "As a platform operator, I want per-tenant rate limiting so one tenant cannot overload the system.",
       "acceptanceCriteria": [
-        "ICustomerService + CustomerService: GetListAsync, GetByIdAsync",
-        "ISupplyService + SupplyService: GetListAsync, GetByIdAsync (NEW), CreateAsync, UpdateAsync, DeleteAsync (NEW soft-delete)",
-        "IInventoryService + InventoryService: GetOverviewAsync, GetMovementsAsync, CreateMovementAsync",
-        "IFileService + FileService: UploadAsync, GetByEntityAsync, DeleteAsync",
-        "ISearchService + SearchService: SearchAsync",
-        "INotificationService + NotificationService: GetListAsync, MarkReadAsync, MarkAllReadAsync",
-        "NEW: GET /api/supplies/{id} endpoint returns full supply detail",
-        "NEW: DELETE /api/supplies/{id} sets IsActive=false (add IsActive to Supply entity if missing)",
-        "Supply validation: Name required (max 200), CurrentStock >= 0, MinimumStock >= 0, UnitCost >= 0",
-        "All 6 controllers refactored to thin adapters",
-        "All existing endpoints still work identically",
-        ".NET build passes"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "Batch extraction of simpler services. Includes new Supply endpoints."
-    },
-    {
-      "id": "US-009",
-      "title": "User management service and endpoints",
-      "description": "As an admin, I want to manage system users so I can create accounts, assign roles, and reset passwords.",
-      "acceptanceCriteria": [
-        "IUserService defines: GetListAsync, GetByIdAsync, CreateAsync, UpdateAsync, DeactivateAsync, ResetPasswordAsync, ChangePasswordAsync",
-        "UserService implements all methods with bcrypt password hashing (BCrypt.Net-Next NuGet)",
-        "GET /api/settings/users/{id} returns user detail (no password hash)",
-        "POST /api/settings/users creates user — validates: Name required, Email required+valid+unique, Password min 8 chars, Role in [Admin,Manager,Viewer]",
-        "PUT /api/settings/users/{id} updates profile and role — validates same rules minus password",
-        "DELETE /api/settings/users/{id} deactivates user (soft-delete via IsActive flag)",
-        "POST /api/settings/users/{id}/reset-password — admin sets new password for user",
-        "POST /api/auth/change-password — self-service, requires current password verification",
-        "Password never returned in any DTO",
-        "SettingsController user endpoints delegate to IUserService",
+        ".NET built-in rate limiter or `AspNetCoreRateLimit` configured",
+        "Rate limit: 100 requests/minute per tenant (configurable via appsettings)",
+        "Response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`",
+        "429 Too Many Requests with `Retry-After` header when exceeded",
+        "Super-admin exempt from rate limiting",
+        "Rate limit counters in Redis (shared across instances)",
         ".NET build passes"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "May need to add IsActive field to SystemUser entity. BCrypt.Net-Next is the recommended bcrypt library for .NET."
+      "passes": false,
+      "notes": "Phase 0.5. Independent."
     },
     {
-      "id": "US-010",
-      "title": "Role-based authorization on all endpoints",
-      "description": "As an admin, I want role-based access control so viewers cannot modify data and only admins can manage settings.",
+      "id": "US-009",
+      "title": "Structured Logging with Serilog",
+      "description": "As a platform operator, I want structured JSON logging with request correlation for debugging production issues.",
       "acceptanceCriteria": [
-        "JWT token generation includes role claim: new Claim(ClaimTypes.Role, user.Role)",
-        "AuthController login response includes user role",
-        "All Settings endpoints (users, integrations, costs) require Admin role",
-        "All POST/PUT/DELETE on Products, Categories, Supplies, POs require Manager or Admin role",
-        "All POST/PUT/DELETE on Orders (costs, fulfillment, cancel) require Manager or Admin role",
-        "All GET endpoints require any authenticated user (Viewer+)",
-        "Auth endpoints (login, refresh) remain anonymous",
-        "Change-password requires authenticated user (any role, self only)",
-        "Unauthorized role access returns 403 Forbidden",
+        "Serilog packages: `Serilog.AspNetCore`, `Serilog.Sinks.Console`, `Serilog.Sinks.File`",
+        "JSON format for all log output",
+        "CorrelationId per request (from header or auto-generated)",
+        "Log entries include: CorrelationId, TenantId, UserId, Endpoint, StatusCode, ElapsedMs",
+        "Request/response logging middleware (configurable)",
+        "Log levels configurable per namespace",
+        "Sensitive data excluded (passwords, tokens)",
+        "Log files rotated daily, 30 days retention",
         ".NET build passes"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": "Uses [Authorize(Roles = \"Admin\")] and [Authorize(Roles = \"Admin,Manager\")] attributes."
+      "passes": false,
+      "notes": "Phase 0.5. Independent."
     },
     {
-      "id": "US-011",
-      "title": "Optimistic locking on key entities",
-      "description": "As a user, I want to be notified when someone else has modified a record I am editing so I don't lose their changes.",
+      "id": "US-010",
+      "title": "Error Tracking with Sentry",
+      "description": "As a platform operator, I want unhandled exceptions reported to Sentry for immediate alerting.",
       "acceptanceCriteria": [
-        "Version property (int) added to Product, Category, PurchaseOrder, Supply entities",
-        "EF Core config: .Property(e => e.Version).IsConcurrencyToken() for all 4 entities",
-        "EF migration created adding version column (INTEGER NOT NULL DEFAULT 0) to 4 tables",
-        "All update DTOs for these entities include Version field (required)",
-        "Services check version match before saving; EF throws DbUpdateConcurrencyException on mismatch",
-        "DbUpdateConcurrencyException caught in services → throws ConflictException with Portuguese message",
-        "API returns 409 Conflict with message: 'Este registro foi modificado por outro usuário. Recarregue e tente novamente.'",
-        "All GET detail endpoints return Version in response DTO",
-        "Migration applies cleanly",
+        "`Sentry.AspNetCore` NuGet package added",
+        "DSN configurable via `SENTRY_DSN` env var",
+        "Unhandled exceptions auto-reported with stack trace",
+        "Request context: URL, method, sanitized headers, user ID, tenant ID",
+        "GlobalExceptionFilter sends to Sentry before returning error",
+        "Environment tag: development/staging/production",
+        "Disabled when DSN not configured (local dev)",
         ".NET build passes"
       ],
       "priority": 11,
-      "passes": true,
-      "notes": "Run migration after adding Version properties. Existing rows get version=0."
+      "passes": false,
+      "notes": "Phase 0.5. Independent."
+    },
+    {
+      "id": "US-011",
+      "title": "Health Check Dashboard",
+      "description": "As a platform operator, I want health check endpoints verifying all dependencies for monitoring.",
+      "acceptanceCriteria": [
+        "`/health` returns aggregated status (Healthy/Degraded/Unhealthy)",
+        "`/health/ready` checks: PostgreSQL, Redis, disk space",
+        "`/health/live` returns 200 if process running (liveness probe)",
+        "Each check has 5s timeout",
+        "Response includes individual check results with duration",
+        "Health check UI at `/health-ui`",
+        "Checks run every 30 seconds (configurable)",
+        ".NET build passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Phase 0.5. Independent."
+    },
+    {
+      "id": "US-REV-0.5",
+      "title": "Phase 0.5 Review — DevOps & Quality Foundation",
+      "description": "As a developer, I want to review Phase 0.5 implementation for completeness and gaps before starting Phase 1 (Stock & Fulfillment).",
+      "acceptanceCriteria": [
+        "Review all Phase 0.5 stories — verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build — zero errors",
+        "Run all existing tests — zero failures",
+        "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
+        "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
+        "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
+        "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
+        "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
+        "Document any gaps found in progress.txt with specific story IDs and missing criteria",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Gate review between Phase 0.5 and Phase 1 (Stock & Fulfillment). If gaps are found, document them and they will be addressed before moving to the next phase."
     },
     {
       "id": "US-012",
-      "title": "Frontend 409 handling and version passthrough",
-      "description": "As a frontend developer, I want the Angular app to handle optimistic locking conflicts gracefully.",
+      "title": "Purchase Order Receive → Stock Adjustment Flow",
+      "description": "As a seller, I want receiving a PO to automatically update stock and product costs.",
       "acceptanceCriteria": [
-        "Error interceptor detects 409 status and shows specific toast: 'Este registro foi modificado por outro usuário. Recarregue a página.'",
-        "Product, Category, Supply, PurchaseOrder TypeScript interfaces include version: number field",
-        "All update service calls (product.service, category.service, supply.service, purchase-order.service) include version in PUT request body",
-        "After successful update, local state updated with new version from response",
-        "Angular build passes (ng build --configuration=development)"
+        "`POST /api/purchase-orders/{id}/receive` triggers full receive flow",
+        "For each PO item: increment `ProductVariant.Stock` by received quantity",
+        "Weighted average cost recalculated: (currentStock * currentCost + newQty * newUnitCost) / totalQty",
+        "StockMovement created for each item with type 'Entrada', linked to PO",
+        "ProductCostHistory record created for each cost change",
+        "Additional PO costs distributed proportionally before calculation",
+        "Product.PurchaseCost updated as weighted average across active variants",
+        "PO status changes to 'Recebido' — cannot be received twice",
+        "SignalR notification sent to tenant users",
+        "Frontend PO detail shows 'Receber' button (only when status is 'Rascunho')",
+        ".NET build passes",
+        "Angular build passes"
       ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Small frontend story — only changes needed for optimistic locking support."
+      "priority": 14,
+      "passes": false,
+      "notes": "Phase 1 — Stock & Fulfillment."
+    },
+    {
+      "id": "US-013a",
+      "title": "Stock Allocation by Channel — Backend",
+      "description": "As a developer, I want the stock allocation entity and API endpoints so each channel has defined quantities.",
+      "acceptanceCriteria": [
+        "New entity `StockAllocation`: ProductVariantId, MarketplaceId (string), AllocatedQuantity, ReservedQuantity",
+        "Migration adds `stock_allocations` table with unique constraint on (VariantId, MarketplaceId, TenantId)",
+        "`GET /api/inventory/{productId}/allocations` returns allocations per variant per channel",
+        "`PUT /api/inventory/{variantId}/allocations` updates allocation for a marketplace",
+        "Validation: sum of allocations ≤ variant total stock",
+        "'Unallocated' quantity = total stock - sum(allocations)",
+        "When stock changes, allocations proportionally adjusted if exceeding new total",
+        ".NET build passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "Phase 1. Depends on US-012."
+    },
+    {
+      "id": "US-013b",
+      "title": "Stock Allocation by Channel — Frontend",
+      "description": "As a seller, I want to see and edit stock allocations per marketplace in the inventory detail view.",
+      "acceptanceCriteria": [
+        "Inventory detail view shows allocation table per marketplace with editable quantities",
+        "Unallocated quantity displayed prominently",
+        "Inline editing with save button per marketplace row",
+        "Validation: cannot allocate more than total stock",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "Phase 1. Depends on US-013a."
+    },
+    {
+      "id": "US-014",
+      "title": "Min/Max Stock Rules and Alerts",
+      "description": "As a seller, I want configurable minimum/maximum stock levels with alerts before running out.",
+      "acceptanceCriteria": [
+        "New fields on Product: MinStock (int?, nullable), MaxStock (int?, nullable)",
+        "Migration adds columns",
+        "Product create/edit form includes min/max stock fields",
+        "StockAlertWorker (runs every 15min) checks variant stock ≤ product MinStock → creates Notification",
+        "Notification type: 'low_stock', includes product name, current stock, min threshold",
+        "`GET /api/inventory/alerts` returns products below minimum stock",
+        "Dashboard 'Pending Actions' shows low-stock alert count",
+        "Inventory overview highlights rows where stock ≤ MinStock in red",
+        "No duplicate alert if unread alert exists for same product",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "Phase 1. Independent."
+    },
+    {
+      "id": "US-015",
+      "title": "Stock Movement History with Full Traceability",
+      "description": "As a seller, I want a complete audit trail of every stock change with who, when, and why.",
+      "acceptanceCriteria": [
+        "StockMovement includes: CreatedBy (user name/email), Reason (required for adjustments)",
+        "Every stock change creates a movement: Entrada, Saida, Ajuste, Reconciliacao",
+        "`GET /api/inventory/movements` supports filters: productId, variantId, type, dateFrom, dateTo, createdBy",
+        "Paginated, sorted by date descending",
+        "Each movement links to source: PurchaseOrderId or OrderId (clickable in UI)",
+        "Frontend Movimentacoes tab with filters and data grid",
+        "Export to Excel (ClosedXML) button on movements page",
+        "Movement reason required for manual adjustments (frontend + backend validation)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "Phase 1. Independent."
+    },
+    {
+      "id": "US-016",
+      "title": "Internal Stock Reconciliation",
+      "description": "As a seller, I want to perform physical stock counts and reconcile differences.",
+      "acceptanceCriteria": [
+        "`POST /api/inventory/reconciliation` accepts list of { variantId, countedQuantity }",
+        "Compares countedQuantity vs variant.Stock, creates StockMovement type 'Ajuste' with reason 'Reconciliacao fisica'",
+        "Updates variant.Stock to counted quantity",
+        "Returns report: items checked, discrepancies, total difference",
+        "Frontend: Reconciliacao page/dialog with product list, counted qty inputs, current qty shown",
+        "Differences highlighted (red if counted < system, yellow if counted > system)",
+        "Single batch record links all movements",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": "Phase 1. Depends on US-015."
+    },
+    {
+      "id": "US-017",
+      "title": "Product Cost History with Effective Dates",
+      "description": "As a seller, I want to see how product costs have changed over time for auditing profitability.",
+      "acceptanceCriteria": [
+        "ProductCostHistory uses CreatedAt as effective date",
+        "`GET /api/products/{id}/cost-history` returns history sorted by date descending",
+        "Response: date, previousCost, newCost, quantity, unitCostPaid, purchaseOrderId, reason",
+        "Line chart on Product Detail: cost over time (x=date, y=cost)",
+        "Old order cost recalculation uses cost effective at order time",
+        "Frontend Product detail 'Historico de Custos' section with table + chart",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": "Phase 1. Independent."
+    },
+    {
+      "id": "US-018",
+      "title": "Packaging and Storage Cost per Product",
+      "description": "As a seller, I want packaging and daily storage cost per product included in profitability.",
+      "acceptanceCriteria": [
+        "Verify Product.PackagingCost is used in cost calculations",
+        "New field: Product.StorageCostDaily (decimal?, nullable)",
+        "Migration adds StorageCostDaily column",
+        "Product form: 'Custo de embalagem (R$)' and 'Custo de armazenagem diario (R$)' fields",
+        "CostCalculationService includes packaging cost in order cost decomposition",
+        "Storage calculation: StorageCostDaily × averageDaysInStorage (configurable default: 30)",
+        "Storage cost added as OrderCost category 'storage_daily'",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": "Phase 1. Feeds into Phase 2 cost engine."
+    },
+    {
+      "id": "US-REV-1",
+      "title": "Phase 1 Review — Stock & Fulfillment",
+      "description": "As a developer, I want to review Phase 1 implementation for completeness and gaps before starting Phase 2 (Financial Engine).",
+      "acceptanceCriteria": [
+        "Review all Phase 1 stories — verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build — zero errors",
+        "Run all existing tests — zero failures",
+        "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
+        "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
+        "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
+        "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
+        "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
+        "Document any gaps found in progress.txt with specific story IDs and missing criteria",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": "Gate review between Phase 1 and Phase 2 (Financial Engine). If gaps are found, document them and they will be addressed before moving to the next phase."
+    },
+    {
+      "id": "US-019",
+      "title": "Commission Engine — Category, Reputation, Listing Type",
+      "description": "As a seller, I want commission rates varying by ML category, listing type, and reputation.",
+      "acceptanceCriteria": [
+        "CommissionRule entity supports: MarketplaceId, CategoryPattern, ListingType, Rate, IsDefault",
+        "Seed data: ML default commission rules for major categories",
+        "Resolution: exact match → category only → marketplace default → hardcoded 13%",
+        "GET/POST/PUT/DELETE /api/settings/commission-rules CRUD",
+        "Frontend Settings > Comissoes page with rules table + add/edit/delete",
+        "ML Billing API commission overrides calculated value (Source='API' > 'Calculated')",
+        "Unit test: resolution algorithm with all fallback levels",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": "Phase 2 — Financial Engine."
+    },
+    {
+      "id": "US-020",
+      "title": "Tax Calculation Engine",
+      "description": "As a seller, I want taxes calculated based on my tax regime for real tax impact per sale.",
+      "acceptanceCriteria": [
+        "New entity TaxProfile: TenantId, TaxRegime (SimplesNacional/LucroPresumido/MEI), AliquotPercentage, State",
+        "Migration adds tax_profiles table",
+        "GET/PUT /api/settings/tax-profile to read/update tenant's tax profile",
+        "Default: Simples Nacional, 6%",
+        "CostCalculationService uses tenant's tax rate instead of hardcoded CostSettings:TaxRate",
+        "Tax cost as OrderCost category 'tax' with Source 'Calculated'",
+        "Frontend Settings > Fiscal page with regime selector and aliquot input",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": "Phase 2. Parallel with US-019, US-021."
+    },
+    {
+      "id": "US-021",
+      "title": "Payment Fee Calculation",
+      "description": "As a seller, I want payment processing fees calculated per order based on installment count.",
+      "acceptanceCriteria": [
+        "New field on Order: InstallmentCount (int, default 1)",
+        "PaymentFeeRule entity: InstallmentRange (min/max), FeePercentage",
+        "Seed data: ML default payment fees (1x: 4.99%, etc.)",
+        "CostCalculationService calculates payment fee from installment count + total amount",
+        "Payment fee as OrderCost category 'payment_fee' with Source 'Calculated'",
+        "ML Billing API payment fee replaces calculated value",
+        "Frontend Settings: payment fee rules table",
+        "Order detail shows installment count and payment fee",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": "Phase 2. Parallel with US-019, US-020."
+    },
+    {
+      "id": "US-022a",
+      "title": "Complete Cost Composition Service",
+      "description": "As a developer, I want CostCalculationService to produce all 10 cost categories with correct sources.",
+      "acceptanceCriteria": [
+        "CalculateOrderCostsAsync produces: product_cost, packaging, marketplace_commission, fixed_fee, tax, payment_fee, shipping_seller, fulfillment_fee, storage_daily, advertising",
+        "Each cost has correct Source: 'Calculated', 'API', or 'Manual'",
+        "Order.Profit = TotalAmount - Sum(all costs)",
+        "Costs with value 0 stored but flagged",
+        ".NET build passes"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-019, US-020, US-021."
+    },
+    {
+      "id": "US-022b",
+      "title": "Cost Composition Frontend — Order Detail Breakdown",
+      "description": "As a seller, I want to see the full cost breakdown with percentages and pie chart on order detail.",
+      "acceptanceCriteria": [
+        "Order Detail page: cost breakdown table showing all categories with values and percentages",
+        "Cost breakdown pie chart on order detail",
+        "Costs with value 0 not shown in UI",
+        "Each cost line shows source badge ('API', 'Calculado', 'Manual')",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-022a."
+    },
+    {
+      "id": "US-023",
+      "title": "Materialized View — SKU Profitability",
+      "description": "As a seller, I want pre-computed profitability per SKU for instant finance dashboard loading.",
+      "acceptanceCriteria": [
+        "SQL materialized view `sku_profitability`: SKU, total_orders, total_units, total_revenue, total_costs (by category), total_profit, avg_margin",
+        "EF Core migration creates the materialized view",
+        "`REFRESH MATERIALIZED VIEW CONCURRENTLY` in background worker (every 1 hour)",
+        "`GET /api/finance/sku-profitability` reads from materialized view",
+        "Supports filters: dateFrom, dateTo, minMargin, maxMargin, search",
+        "Supports sorting by any column",
+        "Frontend Finance 'Lucratividade por SKU' tab uses this endpoint",
+        "Manual refresh button for admins",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-022a."
+    },
+    {
+      "id": "US-024",
+      "title": "PDF Export with QuestPDF",
+      "description": "As a seller, I want professional PDF financial reports to share with my accountant.",
+      "acceptanceCriteria": [
+        "QuestPDF NuGet package added",
+        "IReportService: GenerateProfitabilityReport, GenerateOrderReport, GenerateInventoryReport",
+        "PDFs with: company header, date range, summary KPIs, detail table, footer with timestamp",
+        "GET /api/reports/profitability/pdf?dateFrom=&dateTo= returns PDF",
+        "GET /api/reports/orders/pdf?dateFrom=&dateTo= returns PDF",
+        "Frontend: 'Exportar PDF' button on Finance and Sales pages",
+        "BRL formatting, Inter font, company colors",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-022a."
+    },
+    {
+      "id": "US-025",
+      "title": "Excel Export with ClosedXML",
+      "description": "As a seller, I want Excel spreadsheet exports to manipulate data in my own tools.",
+      "acceptanceCriteria": [
+        "ClosedXML NuGet package added",
+        "IExportService: ExportOrdersToExcel, ExportInventoryToExcel, ExportProfitabilityToExcel",
+        "xlsx with: formatted headers + filters, BRL number formatting, column auto-width",
+        "GET /api/reports/profitability/excel, orders/excel, inventory/excel endpoints",
+        "Frontend: 'Exportar Excel' button alongside PDF",
+        "Filenames: `profitabilidade_2026-03-01_2026-03-31.xlsx`",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-022a."
+    },
+    {
+      "id": "US-026",
+      "title": "ABC Curve Analysis with Real Data",
+      "description": "As a seller, I want A/B/C tier classification based on real revenue contribution.",
+      "acceptanceCriteria": [
+        "GET /api/finance/abc-curve?dateFrom=&dateTo= calculates from real order data",
+        "A = top 80% revenue, B = next 15%, C = remaining 5%",
+        "Response: SKUs with revenue, percentage, cumulative %, class, profit margin",
+        "Uses materialized view data",
+        "Frontend Finance 'Curva ABC' tab: table + Pareto chart (bar + cumulative line)",
+        "Color coding: A=green, B=yellow, C=red",
+        "Products page shows ABC class badge",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-023."
+    },
+    {
+      "id": "US-027",
+      "title": "Financial Dashboard with Real Data",
+      "description": "As a seller, I want the dashboard showing real financial KPIs from actual orders.",
+      "acceptanceCriteria": [
+        "KPIs from real data: revenue, costs, profit, avg margin, order count, avg ticket",
+        "Period selector: today, 7 days, 30 days, this month, custom range",
+        "Revenue vs Profit line chart (daily/weekly data points)",
+        "Cost breakdown pie chart by category",
+        "Top 5 most profitable + top 5 least profitable products",
+        "Comparison with previous period (e.g., '↑ 12% vs last month')",
+        "Frontend dashboard fully wired to real endpoints",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-022a, US-023."
+    },
+    {
+      "id": "US-028",
+      "title": "Automated Reports by Email",
+      "description": "As a seller, I want weekly/monthly profitability digest emails.",
+      "acceptanceCriteria": [
+        "New entity ReportSchedule: TenantId, Frequency (weekly/monthly), Recipients, IsActive, LastSentAt",
+        "Migration adds report_schedules table",
+        "ReportEmailWorker: runs daily, checks due scheduled reports",
+        "Weekly: sent Monday, covers previous Mon-Sun",
+        "Monthly: sent 1st, covers previous month",
+        "Email: summary KPIs, top/bottom products, link to dashboard",
+        "Uses email provider from US-059",
+        "Frontend Settings > Relatorios: configure frequency, recipients, enable/disable",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-024/025 + US-059 (email)."
+    },
+    {
+      "id": "US-029",
+      "title": "Audit Trail / Activity Log",
+      "description": "As a seller, I want to see who changed prices, stock, and costs for accountability.",
+      "acceptanceCriteria": [
+        "New entity AuditLog: TenantId, UserId, UserName, Action, EntityType, EntityId, OldValue (JSON), NewValue (JSON), CreatedAt",
+        "Migration with index on (TenantId, EntityType, CreatedAt)",
+        "Audit events for: price/cost changes, stock adjustments, commission rule changes, order cost edits, PO receives",
+        "IAuditService.LogAsync called from services",
+        "GET /api/audit-log with filters: entityType, entityId, dateFrom, dateTo, userId + pagination",
+        "Frontend Settings > Log de Atividades page with filters and data grid",
+        "Entries show: timestamp, user, action, old→new values",
+        "Owner and Admin roles only",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": "Phase 2. Independent."
+    },
+    {
+      "id": "US-030",
+      "title": "Target-Margin Pricing Rules",
+      "description": "As a seller, I want to set a desired margin and get the required selling price calculated.",
+      "acceptanceCriteria": [
+        "POST /api/pricing/calculate: productId, targetMarginPercent, marketplaceId, listingType",
+        "Backwards calculation: Price = ProductCost / (1 - targetMargin - commission - tax - paymentFee - fixedFee)",
+        "Returns: suggestedPrice, cost breakdown at that price, actual margin",
+        "GET/POST /api/pricing/rules: saved rules per product per marketplace",
+        "Frontend Product detail > 'Precificacao' tab with margin input, marketplace selector, calculated price",
+        "Bar chart showing price composition (cost, commission, tax, fees, profit)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-022a."
+    },
+    {
+      "id": "US-031",
+      "title": "Price Calculator & Scenario Simulator",
+      "description": "As a seller, I want what-if scenarios to plan for cost changes.",
+      "acceptanceCriteria": [
+        "POST /api/pricing/simulate: productId, overrides (commissionRate, taxRate, productCost, shippingCost, etc.)",
+        "Returns profitability at current price with overridden costs + comparison",
+        "Batch simulation: multiple products at once",
+        "Frontend 'Simulador' page accessible from Products and Finance",
+        "Inputs for each cost variable pre-filled with current values",
+        "Real-time recalculation (debounced 300ms)",
+        "Current margin vs simulated margin with color diff (green=better, red=worse)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 36,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-022a."
+    },
+    {
+      "id": "US-032",
+      "title": "Configurable Margin Alerts",
+      "description": "As a seller, I want notifications when a product's margin drops below threshold.",
+      "acceptanceCriteria": [
+        "New entity AlertRule: TenantId, Type (MarginBelow/CostIncrease/StockLow), Threshold, IsActive, ProductId (nullable)",
+        "Migration adds alert_rules table",
+        "AlertWorker: runs every hour, evaluates rules against current data",
+        "MarginBelow: checks avg margin over last 30 days, alerts if below threshold",
+        "CostIncrease: compares current cost vs 30 days ago, alerts if increase > threshold%",
+        "GET/POST/PUT/DELETE /api/settings/alert-rules CRUD",
+        "Frontend Settings > Alertas: rule list with type, threshold, product, active toggle",
+        "Notifications in bell + optional email",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 37,
+      "passes": false,
+      "notes": "Phase 2. Depends on US-022a."
+    },
+    {
+      "id": "US-REV-2",
+      "title": "Phase 2 Review — Financial Engine",
+      "description": "As a developer, I want to review Phase 2 implementation for completeness and gaps before starting Phase 3 (Mercado Livre Integration).",
+      "acceptanceCriteria": [
+        "Review all Phase 2 stories — verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build — zero errors",
+        "Run all existing tests — zero failures",
+        "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
+        "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
+        "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
+        "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
+        "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
+        "Document any gaps found in progress.txt with specific story IDs and missing criteria",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 38,
+      "passes": false,
+      "notes": "Gate review between Phase 2 and Phase 3 (Mercado Livre Integration). If gaps are found, document them and they will be addressed before moving to the next phase."
+    },
+    {
+      "id": "US-033",
+      "title": "MercadoLivreAdapter — Core Implementation",
+      "description": "As a developer, I want the MercadoLivreAdapter implementing IMarketplaceAdapter via DI keyed services.",
+      "acceptanceCriteria": [
+        "MercadoLivreAdapter implements IMarketplaceAdapter in Infrastructure project",
+        "Registered as services.AddKeyedScoped<IMarketplaceAdapter, MercadoLivreAdapter>('mercadolivre')",
+        "HttpClientFactory with named client 'MercadoLivre', base URL https://api.mercadolibre.com",
+        "All methods use CancellationToken",
+        "System.Text.Json with camelCase naming",
+        "Error handling: deserializes ML error responses",
+        "Logging: all API calls logged with correlation ID, endpoint, status code, elapsed time",
+        ".NET build passes"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": "Phase 3 — Mercado Livre Integration."
+    },
+    {
+      "id": "US-034",
+      "title": "OAuth 2.0 Flow with PKCE",
+      "description": "As a seller, I want to connect my ML account via OAuth securely.",
+      "acceptanceCriteria": [
+        "GET /api/integrations/mercadolivre/auth-url generates URL with PKCE (code_challenge, state)",
+        "State stored in Redis (5 min TTL) for CSRF prevention",
+        "GET /api/integrations/mercadolivre/callback exchanges code for tokens",
+        "Tokens stored in MarketplaceConnection entity",
+        "AccessToken and RefreshToken encrypted at rest (IDataProtectionProvider)",
+        "Connection status 'Active' with TokenExpiresAt",
+        "ML user_id stored",
+        "Frontend Settings > Integracoes: 'Conectar Mercado Livre' button triggers OAuth",
+        "After connection: shows status, ML username, expiration",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-033."
+    },
+    {
+      "id": "US-035",
+      "title": "Token Encryption at Rest",
+      "description": "As a platform operator, I want OAuth tokens encrypted in the database.",
+      "acceptanceCriteria": [
+        "ITokenEncryptionService: Encrypt(plainText), Decrypt(cipherText)",
+        "Uses IDataProtectionProvider with purpose 'MarketplaceTokens'",
+        "Data protection keys stored in dedicated directory (configurable)",
+        "MarketplaceConnection stores encrypted tokens, decrypts on read",
+        "Key rotation supported (old keys can still decrypt)",
+        "Unit test: encrypt → decrypt roundtrip",
+        "Integration test: save connection → reload → token correct",
+        ".NET build passes"
+      ],
+      "priority": 41,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-034."
+    },
+    {
+      "id": "US-036",
+      "title": "Token Renewal Background Worker",
+      "description": "As a seller, I want ML tokens renewed automatically before expiry.",
+      "acceptanceCriteria": [
+        "TokenRenewalWorker runs every 15 minutes",
+        "Queries connections where TokenExpiresAt < now + 30 minutes and status 'Active'",
+        "Calls POST /oauth/token with grant_type=refresh_token",
+        "Success: updates tokens, resets RefreshErrorCount to 0",
+        "Failure: increments RefreshErrorCount",
+        "Circuit breaker: after 3 failures, status='Error', notification created",
+        "Notification: 'Sua conexao com o Mercado Livre precisa ser reconectada'",
+        "All attempts logged with tenant context",
+        ".NET build passes"
+      ],
+      "priority": 42,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-035."
+    },
+    {
+      "id": "US-037",
+      "title": "HTTP Client — Circuit Breaker & Rate Limiter",
+      "description": "As a developer, I want Polly circuit breaker and rate limiting on ML API calls.",
+      "acceptanceCriteria": [
+        "Polly packages added (Polly v8 ResiliencePipeline API)",
+        "Policy chain: Rate Limiter → Retry → Circuit Breaker",
+        "Rate limiter: 300 requests/minute sliding window",
+        "Retry: 3 retries, exponential backoff (1s, 2s, 4s), only 5xx/timeout",
+        "Circuit breaker: opens after 5 failures, 30s open, then half-open",
+        "Open circuit: immediate failure, logs warning",
+        "Rate limit state in-memory (single-instance MVP)",
+        ".NET build passes"
+      ],
+      "priority": 43,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-036."
+    },
+    {
+      "id": "US-038",
+      "title": "ML Integration Settings Page",
+      "description": "As a seller, I want a settings page showing ML connection status with connect/disconnect.",
+      "acceptanceCriteria": [
+        "Frontend: Settings > Integracoes > Mercado Livre",
+        "Status badges: Ativo (green), Erro (red), Desconectado (gray)",
+        "When connected: seller name, user ID, token expiry, last sync",
+        "'Conectar' button → OAuth flow (when disconnected)",
+        "'Reconectar' button → OAuth flow (when error)",
+        "'Desconectar' button → confirmation → revokes tokens",
+        "'Sincronizar Agora' → triggers manual sync",
+        "Connection health indicator: last API call status, error count",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 44,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-034."
+    },
+    {
+      "id": "US-039a",
+      "title": "Import ML Listings — Backend Worker",
+      "description": "As a developer, I want a background import worker that fetches all ML items and maps them to internal products.",
+      "acceptanceCriteria": [
+        "GET /users/{userId}/items/search with scroll pagination to fetch all seller items",
+        "For each item: GET /items/{itemId} for full details",
+        "Map ML item → Product + ProductVariant(s): title, price, available_quantity, category_id, pictures, variations",
+        "POST /api/integrations/mercadolivre/import triggers import job (enqueued)",
+        "Batches of 50 respecting rate limit",
+        "Check ExternalId → update existing or create new",
+        "Progress tracking: total items, processed, errors",
+        ".NET build passes"
+      ],
+      "priority": 45,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-037."
+    },
+    {
+      "id": "US-039b",
+      "title": "Import ML Listings — Frontend",
+      "description": "As a seller, I want an import button with progress indicator and results on the Products page.",
+      "acceptanceCriteria": [
+        "Import button on Products page",
+        "Progress indicator during import",
+        "Import results log (items imported, updated, errors)",
+        "After import, products show ML icon badge for linked items",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 46,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-039a."
+    },
+    {
+      "id": "US-040",
+      "title": "Product-Listing Mapping (Link/Unlink)",
+      "description": "As a seller, I want to manually link/unlink internal products to ML listings.",
+      "acceptanceCriteria": [
+        "Product has ExternalId field (add if not present)",
+        "PUT /api/products/{id}/link-marketplace: { marketplaceId, externalId }",
+        "DELETE /api/products/{id}/link-marketplace/{marketplaceId}",
+        "GET /api/integrations/mercadolivre/unlinked-items returns unlinked ML items",
+        "Products page shows link status icon per product",
+        "'Vincular' action: dropdown of unlinked ML items with search",
+        "'Desvincular' action: confirmation → removes link",
+        "Linked products show ML item ID + direct ML link",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 47,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-039a."
+    },
+    {
+      "id": "US-041",
+      "title": "Variation Sync ML → Internal",
+      "description": "As a seller, I want ML product variations mapped to internal variants for per-variation tracking.",
+      "acceptanceCriteria": [
+        "ML item variations parsed from GET /items/{id} response",
+        "Each ML variation maps to ProductVariant: ML variation ID → ExternalId, attributes → name/SKU",
+        "ML available_quantity → variant Stock",
+        "ML picture_ids → linked to internal photos",
+        "New ML variations → create variants; existing → update",
+        "Deleted ML variations marked inactive (not deleted)",
+        "Frontend Product detail shows ML variation mapping in variants table",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 48,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-039a."
+    },
+    {
+      "id": "US-042",
+      "title": "Photo Sync ML → Internal",
+      "description": "As a seller, I want ML product photos imported and stored locally.",
+      "acceptanceCriteria": [
+        "ML photo URLs extracted from item pictures array",
+        "Photos downloaded and stored via IFileStorageService (local disk for MVP)",
+        "FileUpload record per photo, linked to Product",
+        "ExternalUrl preserved in FileUpload (new field if needed)",
+        "Photos displayed in Product detail gallery",
+        "Sync updates: new added, removed marked inactive",
+        "Background download respecting rate limit",
+        ".NET build passes"
+      ],
+      "priority": 49,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-039a."
+    },
+    {
+      "id": "US-043",
+      "title": "Periodic Product Sync Worker",
+      "description": "As a seller, I want products synced with ML every 2 hours.",
+      "acceptanceCriteria": [
+        "ProductSyncWorker runs every 2 hours (configurable)",
+        "Uses GET /users/{userId}/items/search with orders=last_updated_desc",
+        "Fetches details for items updated since last sync",
+        "Updates: price, stock, title, status, variations",
+        "Detects new items → creates them",
+        "Detects paused/closed items → updates internal status",
+        "LastSyncAt stored on MarketplaceConnection",
+        "Sync results logged: checked, updated, created, errors",
+        "Notification on errors",
+        ".NET build passes"
+      ],
+      "priority": 50,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-039a."
+    },
+    {
+      "id": "US-044",
+      "title": "Listings Page (Frontend)",
+      "description": "As a seller, I want an 'Anuncios' page showing all ML listings with sync status.",
+      "acceptanceCriteria": [
+        "New page /anuncios with route guard (auth + tenant)",
+        "Data grid: photo, title, ML ID, price, stock, status, sync status, internal product link",
+        "Sync status: Sincronizado (green), Desatualizado (yellow), Erro (red), Nao vinculado (gray)",
+        "Filters: status, sync status, search (title/ML ID)",
+        "Actions: Ver no ML (link), Vincular (if unlinked), Sincronizar (single-item)",
+        "Bulk actions: sync selected, sync all",
+        "Sidebar updated with 'Anuncios' item",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 51,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-039a."
+    },
+    {
+      "id": "US-045",
+      "title": "Webhook Receiver — orders_v2",
+      "description": "As a seller, I want ML order webhooks received and enqueued for processing.",
+      "acceptanceCriteria": [
+        "POST /api/webhooks/mercadolivre — no authentication (ML webhooks unauthenticated)",
+        "Validates structure: topic, resource, user_id, application_id",
+        "IP validation: only from ML IPs (configurable list)",
+        "Response < 500ms — validate and enqueue only",
+        "Payload enqueued to Redis list ml:webhooks:{topic}",
+        "Returns 200 OK immediately",
+        "For orders_v2: enqueues order resource URL",
+        "Duplicate detection: Redis SET with 24h TTL",
+        "Logging: webhook received, topic, resource, processing time",
+        ".NET build passes"
+      ],
+      "priority": 52,
+      "passes": false,
+      "notes": "Phase 3. Webhook chain start."
+    },
+    {
+      "id": "US-046",
+      "title": "Webhook Queue Worker",
+      "description": "As a developer, I want a background worker processing ML webhook queue reliably.",
+      "acceptanceCriteria": [
+        "WebhookProcessingWorker polls Redis ml:webhooks:* lists",
+        "One webhook at a time per topic (ordered processing)",
+        "For orders_v2: GET /orders/{orderId} for details",
+        "Maps ML order → internal Order: buyer, items, amounts, shipping, payment",
+        "Creates or updates Order (idempotent by ExternalOrderId)",
+        "OrderItems linked to internal products by ML item ID",
+        "Triggers CostCalculationService",
+        "Triggers stock decrement for fulfilled orders",
+        "SignalR notification: 'Nova venda: Pedido #XXX - R$ YYY'",
+        "Dead letter queue: after 3 failures → ml:webhooks:dead",
+        ".NET build passes"
+      ],
+      "priority": 53,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-045."
+    },
+    {
+      "id": "US-047",
+      "title": "Historical Order Sync",
+      "description": "As a seller, I want to import past ML orders for historical profitability analysis.",
+      "acceptanceCriteria": [
+        "POST /api/integrations/mercadolivre/sync-orders triggers historical sync",
+        "Uses GET /orders/search with scroll pagination, configurable date range (default: 90 days)",
+        "Batches of 50",
+        "Reuses same mapping logic as webhook processing",
+        "Skips orders already in system",
+        "Progress tracking: found, processed, skipped, errors",
+        "Frontend: 'Importar Historico ML' button on Sales page, progress indicator",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 54,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-048."
+    },
+    {
+      "id": "US-048",
+      "title": "ML Order → Internal Order Mapping",
+      "description": "As a developer, I want reliable mapping between ML order format and internal Order entity.",
+      "acceptanceCriteria": [
+        "Maps all ML fields: id→ExternalOrderId, date_created→OrderDate, buyer→BuyerName+Customer, items→OrderItems, total_amount, installments, payment status, shipping ID, order status",
+        "Handles edge cases: cancelled orders, partial shipments, multiple payments",
+        "Unit tests with sample ML API responses (at least 5 scenarios)",
+        ".NET build passes"
+      ],
+      "priority": 55,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-046. Used by US-046 and US-047."
+    },
+    {
+      "id": "US-049",
+      "title": "Additional Webhooks — items, shipments, payments",
+      "description": "As a seller, I want the system to react to item changes, shipment updates, and payment confirmations.",
+      "acceptanceCriteria": [
+        "Webhook receiver handles topics: items, shipments, payments (in addition to orders_v2)",
+        "items webhook: fetches item, updates internal product (price, stock, status)",
+        "shipments webhook: GET /shipments/{id}, updates order shipping status + tracking",
+        "payments webhook: GET /collections/{id}, updates order payment status",
+        "Each topic has its own Redis queue",
+        "Order detail shows real-time shipping tracking",
+        "Order timeline updated with shipping events",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 56,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-046."
+    },
+    {
+      "id": "US-050",
+      "title": "Billing API Integration — Real Costs",
+      "description": "As a seller, I want actual ML charges from the Billing API for real profitability.",
+      "acceptanceCriteria": [
+        "GET /billing/integration/group/ML/order/details?order_id= called after order processed",
+        "Parses: actual commission, fixed fee, shipping, payment fee, fulfillment fee",
+        "Creates/updates OrderCost with Source='API' — overrides 'Calculated' for same category",
+        "Retry: check at creation, then 1h, 6h, 24h",
+        "BillingReconciliationWorker: checks orders missing billing data (up to 7 days old)",
+        "Frontend cost breakdown shows 'Fonte: API' or 'Fonte: Calculado' badge",
+        "Dashboard uses API costs when available",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 57,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-046."
+    },
+    {
+      "id": "US-051",
+      "title": "Real Shipping Cost from ML",
+      "description": "As a seller, I want actual shipping costs from ML's shipping API.",
+      "acceptanceCriteria": [
+        "GET /shipments/{shipmentId} fetches shipping details with cost_components",
+        "Shipping cost to seller → OrderCost category 'shipping_seller', Source 'API'",
+        "Handles Mercado Envios and envio proprio",
+        "For free shipping (>R$79): captures seller-absorbed cost",
+        "Shipping tracking URL stored on Order",
+        "Frontend Order Detail: shipping section with carrier, tracking, cost, status",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 58,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-046."
+    },
+    {
+      "id": "US-052",
+      "title": "Fulfillment Fee Lookup (ML Full)",
+      "description": "As a seller, I want fulfillment fees from ML Full captured per order.",
+      "acceptanceCriteria": [
+        "Fulfillment fee from billing API → OrderCost 'fulfillment_fee', Source 'API'",
+        "If unavailable: estimate from product dimensions using ML fee table",
+        "GET /inventories/{inventoryId}/stock/fulfillment for Full stock levels",
+        "Frontend Order Detail: fulfillment fee with 'Full' badge",
+        "Products page: Full vs own shipping indicator",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 59,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-046."
+    },
+    {
+      "id": "US-053",
+      "title": "Auto Stock Update on ML After Internal Changes",
+      "description": "As a seller, I want stock changes automatically pushed to ML listings.",
+      "acceptanceCriteria": [
+        "When ProductVariant.Stock changes (PO receive, adjustment, reconciliation): enqueue if linked to ML",
+        "StockSyncWorker: PUT /items/{itemId} with available_quantity",
+        "For variations: PUT /items/{itemId}/variations/{variationId}",
+        "Respects rate limit (queued)",
+        "Uses allocated quantity from StockAllocation, not total stock",
+        "Retry on failure (3 attempts with backoff)",
+        "Logging: sync attempts with old/new quantity",
+        "Frontend: stock sync status per product (synced/pending/error)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 60,
+      "passes": false,
+      "notes": "Phase 3. Stock sync chain start."
+    },
+    {
+      "id": "US-054",
+      "title": "Items Webhook — External Stock Changes",
+      "description": "As a seller, I want the system to detect stock changes on ML from external sources.",
+      "acceptanceCriteria": [
+        "items webhook triggers re-fetch when available_quantity changes",
+        "Compares ML quantity vs local allocated quantity",
+        "ML < local: log discrepancy, create StockMovement 'Ajuste' reason 'Sync ML'",
+        "ML > local: update local quantity",
+        "Does NOT trigger stock push back (prevents infinite loop)",
+        "Discrepancy alert if difference > configurable threshold (default: 5 units)",
+        ".NET build passes"
+      ],
+      "priority": 61,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-053."
+    },
+    {
+      "id": "US-055",
+      "title": "Periodic Stock Reconciliation Worker",
+      "description": "As a seller, I want periodic comparison between local and ML stock.",
+      "acceptanceCriteria": [
+        "StockReconciliationWorker runs every 6 hours (configurable)",
+        "For each ML-linked product: GET /items/{itemId} → compare with local allocation",
+        "Report: items checked, matches, discrepancies with details",
+        "Small discrepancies (≤ threshold): auto-correct, create StockMovement",
+        "Large discrepancies (> threshold): notification for manual review",
+        "GET /api/inventory/reconciliation-reports with date filter",
+        "Frontend: Reconciliation history with reports list and detail",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 62,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-054."
+    },
+    {
+      "id": "US-056",
+      "title": "ML Fulfillment Stock Query",
+      "description": "As a seller, I want to see stock levels at ML's Full warehouse separately.",
+      "acceptanceCriteria": [
+        "GET /inventories/{inventoryId}/stock/fulfillment for Full products",
+        "Response: available, not_available, damaged, lost, in_transfer",
+        "Cached in Redis (15 min TTL)",
+        "GET /api/inventory/{productId}/fulfillment-stock returns breakdown",
+        "Frontend Inventory detail: 'Estoque Full' section for Full products",
+        "Badge on product cards: 'Full' indicator",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 63,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-039a."
+    },
+    {
+      "id": "US-057",
+      "title": "Daily Storage Cost Calculation Worker",
+      "description": "As a seller, I want daily storage costs accumulated per SKU for Full products.",
+      "acceptanceCriteria": [
+        "StorageCostWorker runs daily at midnight",
+        "For Full products: daily cost by size (Pequeno R$0.007, Medio R$0.015, Grande R$0.035, Especial R$0.050, Extra R$0.107)",
+        "Penalty multipliers: 91-180d=2x, 181-365d=3x, >365d=4x",
+        "New entity StorageCostAccumulation: ProductId, Date, DailyCost, CumulativeCost, DaysStored",
+        "GET /api/inventory/{productId}/storage-costs returns history",
+        "Storage cost included in order cost decomposition for Full orders",
+        "Frontend Product detail: cumulative storage cost chart",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 64,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-056."
+    },
+    {
+      "id": "US-058",
+      "title": "Full vs Own Shipping Simulator",
+      "description": "As a seller, I want to compare Full vs own shipping costs per SKU.",
+      "acceptanceCriteria": [
+        "POST /api/pricing/fulfillment-compare: productId",
+        "Full cost: (dailyStorageCost × avgDaysInStock) + fulfillmentFeePerSale",
+        "Own cost: avgShippingCost + packagingCost + laborCostPerShipment (configurable)",
+        "Returns: fullCost, ownShippingCost, recommendation, savings amount",
+        "Uses historical data for averages",
+        "Frontend Inventory 'Simulador Full' tab with comparison table",
+        "Green for recommended option, shows savings",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 65,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-057."
+    },
+    {
+      "id": "US-059",
+      "title": "Email Provider Integration",
+      "description": "As a platform operator, I want transactional email infrastructure.",
+      "acceptanceCriteria": [
+        "IEmailService: SendAsync(to, subject, htmlBody, textBody)",
+        "Implementation using Resend HTTP API",
+        "API key via EMAIL_API_KEY env var",
+        "From address via EMAIL_FROM (default: noreply@perushophub.com.br)",
+        "Email templates as Razor views or HTML builders",
+        "Retry: 3 attempts with backoff on transient failures",
+        "Logging: sent/failed with recipient and subject (not body)",
+        "When EMAIL_API_KEY not set: log to console (dev mode)",
+        ".NET build passes"
+      ],
+      "priority": 66,
+      "passes": false,
+      "notes": "Phase 3. Email chain start."
+    },
+    {
+      "id": "US-060",
+      "title": "Welcome Email on Registration",
+      "description": "As a new user, I want a welcome email after registering.",
+      "acceptanceCriteria": [
+        "Email sent after successful registration (async, non-blocking)",
+        "Subject: 'Bem-vindo ao PeruShopHub!'",
+        "Content: greeting, next steps (connect ML, import products, check report), dashboard link",
+        "Styled HTML with PeruShopHub branding (dark blue + orange)",
+        "Plain text fallback",
+        "Does not fail registration if email fails (fire-and-forget)",
+        ".NET build passes"
+      ],
+      "priority": 67,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-059."
+    },
+    {
+      "id": "US-061",
+      "title": "Forgot Password Flow",
+      "description": "As a user, I want to reset my password via email.",
+      "acceptanceCriteria": [
+        "POST /api/auth/forgot-password: { email } → always 200 (no enumeration)",
+        "If email exists: generate 64-char token, store hashed with 1h expiry",
+        "Send reset link: {frontendUrl}/reset-password?token=&email=",
+        "POST /api/auth/reset-password: { email, token, newPassword } validates and updates",
+        "Token single-use (deleted after reset)",
+        "Frontend: 'Esqueci minha senha' link → email form → success message",
+        "Frontend: /reset-password page with password + confirmation",
+        "Password min 8 chars",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 68,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-059."
+    },
+    {
+      "id": "US-062",
+      "title": "Email Notifications — Sales, Stock, Margin Alerts",
+      "description": "As a seller, I want optional email notifications for key events.",
+      "acceptanceCriteria": [
+        "New entity NotificationPreference: TenantId, UserId, Type (enum), EmailEnabled, InAppEnabled",
+        "Types: NewSale, LowStock, MarginAlert, MLConnectionError, SyncError",
+        "Migration with defaults (all enabled)",
+        "When notification created: check preferences → send email if enabled",
+        "Email templates per notification type",
+        "GET/PUT /api/settings/notification-preferences",
+        "Frontend Settings > Notificacoes: toggle matrix (type × channel)",
+        "Unsubscribe link in email footer",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 69,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-059."
+    },
+    {
+      "id": "US-063",
+      "title": "User Profile Self-Service",
+      "description": "As a user, I want to edit my profile and manage my team.",
+      "acceptanceCriteria": [
+        "GET /api/profile returns current user info",
+        "PUT /api/profile updates name, email (email change requires old email confirmation)",
+        "PUT /api/profile/password changes password (requires current)",
+        "Frontend /perfil page with profile form, password change section",
+        "Team management: list members, invite, change roles, remove",
+        "Profile photo upload (optional, via IFileStorageService)",
+        "Accessible from header dropdown",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 70,
+      "passes": false,
+      "notes": "Phase 3. Independent."
+    },
+    {
+      "id": "US-064a",
+      "title": "Onboarding Wizard — Backend",
+      "description": "As a developer, I want onboarding progress tracked per tenant with step completion API.",
+      "acceptanceCriteria": [
+        "New entity OnboardingProgress: TenantId, StepsCompleted (JSON array), IsCompleted, CompletedAt",
+        "Migration adds onboarding_progress table",
+        "Steps: 1) Profile, 2) Connect ML, 3) Import products, 4) Set costs, 5) View profitability",
+        "GET /api/onboarding/progress returns current progress",
+        "POST /api/onboarding/complete-step marks step done",
+        ".NET build passes"
+      ],
+      "priority": 71,
+      "passes": false,
+      "notes": "Phase 3. Independent."
+    },
+    {
+      "id": "US-064b",
+      "title": "Onboarding Wizard — Frontend",
+      "description": "As a new seller, I want a guided step-by-step setup wizard.",
+      "acceptanceCriteria": [
+        "Frontend /onboarding page with step-by-step wizard (progress bar)",
+        "Each step: description, action button (links to page), completion check",
+        "Shown automatically on first login after registration",
+        "Dismissible, accessible later from header ('Configuracao Inicial')",
+        "Step 5: profitability summary with confetti animation ('momento aha')",
+        "After all steps: celebration message, redirect to dashboard",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 72,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-064a."
+    },
+    {
+      "id": "US-065",
+      "title": "Setup Checklist & Contextual Tooltips",
+      "description": "As a new seller, I want contextual help and a persistent setup checklist.",
+      "acceptanceCriteria": [
+        "Dashboard shows 'Setup Checklist' card when onboarding not complete",
+        "Checklist: checkmarks for completed, links for incomplete",
+        "Contextual tooltips on key UI elements (first-time only, localStorage flag)",
+        "Dashboard tooltip: 'Estes KPIs sao calculados em tempo real...'",
+        "Products tooltip: 'Vincule seus produtos aos anuncios do ML...'",
+        "Finance tooltip: 'Aqui voce ve a decomposicao completa de custos...'",
+        "Tooltips dismissible, stored per tooltip ID in localStorage",
+        "'Mostrar dicas novamente' in Settings resets all",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 73,
+      "passes": false,
+      "notes": "Phase 3. Depends on US-064b."
+    },
+    {
+      "id": "US-REV-3",
+      "title": "Phase 3 Review — Mercado Livre Integration",
+      "description": "As a developer, I want to review Phase 3 implementation for completeness and gaps before starting Phase 4 (Post-Sale & Messaging).",
+      "acceptanceCriteria": [
+        "Review all Phase 3 stories — verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build — zero errors",
+        "Run all existing tests — zero failures",
+        "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
+        "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
+        "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
+        "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
+        "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
+        "Document any gaps found in progress.txt with specific story IDs and missing criteria",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 74,
+      "passes": false,
+      "notes": "Gate review between Phase 3 and Phase 4 (Post-Sale & Messaging). If gaps are found, document them and they will be addressed before moving to the next phase."
+    },
+    {
+      "id": "US-066",
+      "title": "Questions API Integration",
+      "description": "As a seller, I want ML product questions synced and answerable from the system.",
+      "acceptanceCriteria": [
+        "GET /my/received_questions/search for unanswered + recent questions",
+        "Synced every 5 minutes + on questions webhook",
+        "New entity MarketplaceQuestion: TenantId, ExternalId, ItemId, ProductId, BuyerName, QuestionText, AnswerText, Status, QuestionDate, AnswerDate",
+        "Migration adds marketplace_questions table",
+        "GET /api/questions with filters: status, productId, pagination",
+        "POST /api/questions/{id}/answer → calls POST /answers on ML API",
+        "Rate limit respected",
+        ".NET build passes"
+      ],
+      "priority": 75,
+      "passes": false,
+      "notes": "Phase 4 — Post-Sale & Messaging."
+    },
+    {
+      "id": "US-067",
+      "title": "Questions Page (Frontend)",
+      "description": "As a seller, I want a questions inbox page with inline answers.",
+      "acceptanceCriteria": [
+        "New page /perguntas with route guard",
+        "Tabs: Nao respondidas (default), Respondidas, Todas",
+        "Question card: product thumb + title, buyer name, question text, time ago",
+        "Inline answer field (textarea + 'Responder' button)",
+        "After answering: card moves to Respondidas with animation",
+        "Search/filter by product, sort newest first",
+        "Sidebar badge: unanswered count (red dot if > 0)",
+        "Real-time updates via SignalR",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 76,
+      "passes": false,
+      "notes": "Phase 4. Depends on US-066."
+    },
+    {
+      "id": "US-068",
+      "title": "Response Templates",
+      "description": "As a seller, I want reusable response templates for common questions.",
+      "acceptanceCriteria": [
+        "New entity ResponseTemplate: TenantId, Name, Category, Body, Placeholders (JSON), UsageCount",
+        "Migration adds response_templates table",
+        "GET/POST/PUT/DELETE /api/response-templates CRUD",
+        "Placeholders: {produto}, {preco}, {prazo} auto-replaced with context",
+        "Questions page: 'Templates' dropdown on answer textarea",
+        "Settings > Templates: manage templates (create, edit, delete, reorder)",
+        "Seed data: 5 common templates",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 77,
+      "passes": false,
+      "notes": "Phase 4. Depends on US-067."
+    },
+    {
+      "id": "US-069",
+      "title": "Post-Sale Messages Inbox",
+      "description": "As a seller, I want to see and send post-sale messages per order.",
+      "acceptanceCriteria": [
+        "GET /messages/packs/{packId}/sellers/{sellerId} for message thread",
+        "POST /messages/packs/{packId}/sellers/{sellerId} sends message",
+        "New entity MarketplaceMessage: TenantId, ExternalPackId, OrderId, SenderType, Text, SentAt, IsRead",
+        "Migration adds marketplace_messages table",
+        "Synced on messages webhook + periodically",
+        "GET/POST /api/messages endpoints for order thread",
+        "Frontend Order Detail: 'Mensagens' tab with chat-like thread",
+        "Message input with send button, character counter (350 chars)",
+        "Unread indicator on sidebar 'Vendas'",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 78,
+      "passes": false,
+      "notes": "Phase 4. Depends on US-046."
+    },
+    {
+      "id": "US-070",
+      "title": "Claims and Returns Management",
+      "description": "As a seller, I want to track claims and returns with full context.",
+      "acceptanceCriteria": [
+        "GET /post-purchase/v1/claims/search for ML claims",
+        "New entity Claim: TenantId, ExternalId, OrderId, Type, Status, Reason, CreatedAt, ResolvedAt, BuyerComment, SellerComment",
+        "Migration adds claims table",
+        "Synced on webhook + periodically",
+        "GET /api/claims with filters + POST /api/claims/{id}/respond",
+        "Frontend /reclamacoes page: claims list, status badges, filters",
+        "Claim detail: timeline, order context, response form",
+        "Sidebar badge: open claims count",
+        "Dashboard: return rate per product",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 79,
+      "passes": false,
+      "notes": "Phase 4. Depends on US-046."
+    },
+    {
+      "id": "US-071",
+      "title": "Unanswered Question/Message Alert",
+      "description": "As a seller, I want alerts when questions or messages go unanswered too long.",
+      "acceptanceCriteria": [
+        "ResponseTimeAlertWorker runs every 30 minutes",
+        "Checks unanswered questions older than threshold (default: 4 hours)",
+        "Checks unread buyer messages older than threshold (default: 12 hours)",
+        "Creates notification with count and age",
+        "Sends email if enabled in preferences",
+        "Threshold configurable: GET/PUT /api/settings/response-time-settings",
+        "Frontend Settings: response time configuration",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 80,
+      "passes": false,
+      "notes": "Phase 4. Depends on US-066, US-069."
+    },
+    {
+      "id": "US-072",
+      "title": "LGPD Compliance — Privacy Policy & Terms",
+      "description": "As a platform operator, I want LGPD-compliant privacy policy and terms.",
+      "acceptanceCriteria": [
+        "/termos-de-uso page with Terms of Use (pt-BR)",
+        "/politica-de-privacidade page with Privacy Policy (pt-BR)",
+        "Both publicly accessible (no auth)",
+        "Privacy policy: data collected, purpose, duration, third-party sharing, user rights",
+        "Terms: usage, billing, limitations, cancellation",
+        "Registration checkbox: 'Li e aceito os Termos...' (required)",
+        "TermsAcceptedAt, PrivacyAcceptedAt on SystemUser",
+        "Footer links on all pages",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 81,
+      "passes": false,
+      "notes": "Phase 4. LGPD — independent of ML."
+    },
+    {
+      "id": "US-073",
+      "title": "Cookie Consent Banner",
+      "description": "As a user, I want a cookie consent banner for LGPD compliance.",
+      "acceptanceCriteria": [
+        "Banner at bottom on first visit",
+        "Options: 'Aceitar todos', 'Apenas essenciais', 'Configurar'",
+        "Essential (always active): auth token, theme, sidebar state",
+        "Analytics (optional, disabled by default)",
+        "Consent stored in localStorage + cookie",
+        "Banner hidden after consent given",
+        "Settings link to modify consent (footer)",
+        "Angular build passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 82,
+      "passes": false,
+      "notes": "Phase 4. LGPD."
+    },
+    {
+      "id": "US-074a",
+      "title": "User Data Export (LGPD Portability)",
+      "description": "As a user, I want to export all my data as JSON/ZIP.",
+      "acceptanceCriteria": [
+        "POST /api/profile/export-data generates JSON/ZIP with all user data",
+        "Includes: profile, tenant, products, orders, costs, inventory, questions, messages, notifications",
+        "Excludes other users' data in same tenant",
+        "Export runs async — notification with download link (24h valid)",
+        "Frontend Profile page: 'Exportar meus dados' button",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 83,
+      "passes": false,
+      "notes": "Phase 4. LGPD."
+    },
+    {
+      "id": "US-074b",
+      "title": "Account Deletion (LGPD Erasure)",
+      "description": "As a user, I want to request account deletion with 30-day grace period.",
+      "acceptanceCriteria": [
+        "POST /api/profile/delete-account initiates deletion",
+        "If only Owner: requires tenant deletion (irreversible warning)",
+        "If member: removes TenantUser, anonymizes SystemUser",
+        "Confirmation: password + typed phrase",
+        "Data anonymized (30-day grace period for recovery)",
+        "After 30 days: hard delete via background worker",
+        "Frontend Profile: 'Excluir minha conta' button with multi-step confirmation",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 84,
+      "passes": false,
+      "notes": "Phase 4. LGPD."
+    },
+    {
+      "id": "US-075",
+      "title": "Accounting Software Integration (Export)",
+      "description": "As a seller, I want to export sales data in Bling/Tiny compatible formats.",
+      "acceptanceCriteria": [
+        "GET /api/reports/accounting-export?dateFrom=&dateTo=&format=bling generates CSV",
+        "GET /api/reports/accounting-export?format=tiny generates CSV",
+        "Export: order ID, date, buyer, items, amounts, costs, tax info",
+        "Field mapping matches Bling and Tiny expected formats",
+        "Frontend Finance > 'Exportar para ERP' button with format dropdown",
+        "Descriptive filename: vendas_bling_2026-03-01_2026-03-31.csv",
+        "Help text documenting field mappings",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 85,
+      "passes": false,
+      "notes": "Phase 4. Depends on Phase 2 exports."
+    },
+    {
+      "id": "US-REV-4",
+      "title": "Phase 4 Review — Post-Sale & Messaging",
+      "description": "As a developer, I want to review Phase 4 implementation for completeness and gaps before starting Phase 5 (Testing, Security & Go-Live).",
+      "acceptanceCriteria": [
+        "Review all Phase 4 stories — verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build — zero errors",
+        "Run all existing tests — zero failures",
+        "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
+        "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
+        "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
+        "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
+        "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
+        "Document any gaps found in progress.txt with specific story IDs and missing criteria",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        ".NET build passes",
+        "Angular build passes"
+      ],
+      "priority": 86,
+      "passes": false,
+      "notes": "Gate review between Phase 4 and Phase 5 (Testing, Security & Go-Live). If gaps are found, document them and they will be addressed before moving to the next phase."
+    },
+    {
+      "id": "US-076",
+      "title": "Test Coverage — 70%+ in Services",
+      "description": "As a developer, I want service layer test coverage above 70%.",
+      "acceptanceCriteria": [
+        "Coverage measured with coverlet, reported in CI",
+        "CostCalculationService: 90%+ coverage",
+        "ProductService, OrderService, InventoryService: 70%+ each",
+        "FinanceService, DashboardService: 70%+ each",
+        "PurchaseOrderService: 70%+ coverage",
+        "MercadoLivreAdapter: 60%+ (mocked HTTP)",
+        "Edge cases: null inputs, empty collections, boundaries, concurrency",
+        "CI fails if below threshold",
+        ".NET build passes"
+      ],
+      "priority": 87,
+      "passes": false,
+      "notes": "Phase 5 — Testing, Security & Go-Live."
+    },
+    {
+      "id": "US-077",
+      "title": "Integration Tests — Complete",
+      "description": "As a developer, I want comprehensive integration tests for all critical flows.",
+      "acceptanceCriteria": [
+        "All controller endpoints have at least one happy-path test",
+        "Webhook processing e2e: receive → process → verify order created",
+        "OAuth flow tested with mocked ML API",
+        "Multi-tenant isolation across all entities",
+        "Concurrent PO receive + sale: verify stock consistency",
+        "Token renewal: expired → refresh → retry succeeds",
+        "Report generation: PDF + Excel without errors",
+        "TestContainers (PostgreSQL + Redis)",
+        "All pass in CI",
+        ".NET build passes"
+      ],
+      "priority": 88,
+      "passes": false,
+      "notes": "Phase 5."
+    },
+    {
+      "id": "US-078",
+      "title": "Load Tests — Webhook Processing",
+      "description": "As a platform operator, I want load tests for 100 simultaneous webhooks.",
+      "acceptanceCriteria": [
+        "Load test project using NBomber or k6",
+        "100 concurrent webhooks → all 200 in < 500ms",
+        "50 concurrent order detail fetches → < 2s",
+        "20 concurrent product creates → no conflicts",
+        "Results documented: p50, p95, p99, error rate, throughput",
+        "Performance baseline established",
+        "Runnable locally and optionally in CI",
+        ".NET build passes"
+      ],
+      "priority": 89,
+      "passes": false,
+      "notes": "Phase 5."
+    },
+    {
+      "id": "US-079",
+      "title": "Angular Test Coverage — Critical Components",
+      "description": "As a developer, I want Angular tests covering critical user flows.",
+      "acceptanceCriteria": [
+        "50%+ coverage on shared components (DataGrid, FormField, Dialog, Toast)",
+        "Auth flow tests: login validation, token storage, redirect",
+        "Product form tests: required fields, SKU gen, cost fields, save",
+        "Dashboard tests: KPI cards, chart data, period selector",
+        "Questions page tests: answer, templates, tabs",
+        "Headless Chrome in CI",
+        "Minimum 40 test cases",
+        "Angular build passes"
+      ],
+      "priority": 90,
+      "passes": false,
+      "notes": "Phase 5."
+    },
+    {
+      "id": "US-080",
+      "title": "Security Tests — Tenant Isolation & Auth",
+      "description": "As a platform operator, I want automated security tests for tenant isolation and auth.",
+      "acceptanceCriteria": [
+        "Tenant A product invisible to Tenant B",
+        "Tenant A order → Tenant B GET → 404",
+        "Expired JWT → 401 on all endpoints",
+        "JWT without tenant → 403 on tenant-required endpoints",
+        "Non-admin → admin endpoints → 403",
+        "SQL injection in search params → properly escaped",
+        "XSS payload in product name → stored safely, rendered escaped",
+        "CSRF validation on state-changing endpoints",
+        "All pass in CI",
+        ".NET build passes"
+      ],
+      "priority": 91,
+      "passes": false,
+      "notes": "Phase 5."
+    },
+    {
+      "id": "US-081",
+      "title": "Automated Deploy to VPS",
+      "description": "As a platform operator, I want automated deployment to production VPS.",
+      "acceptanceCriteria": [
+        ".github/workflows/deploy.yml created",
+        "Triggers: manual dispatch or push with tag v*",
+        "Steps: build → push GHCR → SSH to VPS → pull → docker compose up -d",
+        "Zero-downtime: pull new → stop old → start new",
+        "Env vars via .env on VPS (not in repo)",
+        "Post-deploy health check: curl /health, fail if unhealthy",
+        "Rollback documented",
+        "SSL/TLS via Let's Encrypt on Nginx",
+        ".NET build passes"
+      ],
+      "priority": 92,
+      "passes": false,
+      "notes": "Phase 5. Independent."
+    },
+    {
+      "id": "US-082",
+      "title": "Automated PostgreSQL Backup",
+      "description": "As a platform operator, I want automated daily database backups.",
+      "acceptanceCriteria": [
+        "Backup script: pg_dump with compression, daily at 3 AM (cron)",
+        "Stored locally + synced to offsite (S3-compatible or Backblaze B2)",
+        "Retention: 7 daily, 4 weekly, 3 monthly",
+        "Weekly restore verification (automated)",
+        "Alert if backup hasn't run in 25 hours",
+        "Recovery procedure documented",
+        "Script tested: dump → restore → verify integrity"
+      ],
+      "priority": 93,
+      "passes": false,
+      "notes": "Phase 5. Independent."
+    },
+    {
+      "id": "US-083",
+      "title": "Production Monitoring",
+      "description": "As a platform operator, I want monitoring for uptime, errors, and performance.",
+      "acceptanceCriteria": [
+        "External uptime ping on /health every 60s (UptimeRobot or similar)",
+        "Alert channels: email + optionally Telegram/Slack",
+        "Sentry dashboard with alert rules",
+        "Nginx access/error logs with rotation",
+        "Disk space alert at 80%",
+        "Redis memory alert at 80%",
+        "PostgreSQL slow query log (> 1s)",
+        "Basic /health-ui or Grafana dashboard"
+      ],
+      "priority": 94,
+      "passes": false,
+      "notes": "Phase 5. Independent."
+    },
+    {
+      "id": "US-084",
+      "title": "Security Review & Hardening",
+      "description": "As a platform operator, I want OWASP top 10 security review.",
+      "acceptanceCriteria": [
+        "SQL injection review: all queries parameterized (verify no raw SQL without params)",
+        "XSS review: Angular sanitizes, backend encodes",
+        "CSRF: anti-forgery or SameSite cookies",
+        "JWT secret 256+ bits, in env var",
+        "HTTPS enforced with HSTS",
+        "CORS: only frontend origin",
+        "Auth rate limiting: 5 login attempts/minute",
+        "BCrypt work factor ≥ 12",
+        "Security headers: X-Content-Type-Options, X-Frame-Options, CSP",
+        "Dependency audit: dotnet list package --vulnerable, npm audit",
+        "Findings documented with severity and remediation"
+      ],
+      "priority": 95,
+      "passes": false,
+      "notes": "Phase 5. After US-080."
+    },
+    {
+      "id": "US-085",
+      "title": "UX Review — All Screens",
+      "description": "As a product owner, I want UX review of all screens for polished beta experience.",
+      "acceptanceCriteria": [
+        "All 16+ pages reviewed: consistency, responsive, loading states, error states, empty states",
+        "Mobile (375px) verified on all pages",
+        "Dark theme verified: no broken colors, unreadable text",
+        "Financial values: R$ 1.234,56 with monospace",
+        "All forms have validation messages",
+        "All deletes have confirmation dialogs",
+        "All loading states use skeleton placeholders",
+        "Toast notifications for all CRUD",
+        "Navigation consistent: sidebar, breadcrumbs, back buttons",
+        "Issues filed as GitHub Issues",
+        "Angular build passes"
+      ],
+      "priority": 96,
+      "passes": false,
+      "notes": "Phase 5. After all UI stories."
+    },
+    {
+      "id": "US-086",
+      "title": "Technical Documentation",
+      "description": "As a platform operator, I want documentation for running, configuring, and troubleshooting.",
+      "acceptanceCriteria": [
+        "Docs/deployment.md: VPS setup, env vars, Docker commands",
+        "Docs/environment-variables.md: all env vars with descriptions and defaults",
+        "Docs/troubleshooting.md: common issues and solutions",
+        "Docs/backup-restore.md: backup verification and restore procedures",
+        ".env.example in repo root with all required variables",
+        "docker-compose.prod.yml for production",
+        "README.md updated: overview, quick start, architecture diagram, doc links"
+      ],
+      "priority": 97,
+      "passes": false,
+      "notes": "Phase 5. After US-081."
     }
   ]
 }
