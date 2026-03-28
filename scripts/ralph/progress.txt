@@ -39,3 +39,19 @@ Started: Fri Mar 28 2026
   - Solution file is at repo root: `PeruShopHub.sln`
   - Node 20 is a reasonable default for Angular 17+ CI
 ---
+
+## 2026-03-28 - US-002
+- Created `.github/workflows/docker.yml` with matrix strategy for all 3 images (api, worker, web)
+- Triggers only on push to `main` (not on PRs)
+- Builds `Dockerfile.api`, `Dockerfile.worker`, `Dockerfile.web` using matrix strategy
+- Pushes to ghcr.io with commit SHA and `latest` tags
+- Uses GitHub Actions cache (`type=gha`) for Docker layer caching via Buildx
+- Uses `docker/metadata-action@v5` for tag/label generation
+- .NET build passes (warnings only, 0 errors)
+- Files changed: `.github/workflows/docker.yml`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Docker workflow uses matrix strategy to build all 3 images in parallel — efficient and DRY
+  - `docker/build-push-action@v6` with `cache-from: type=gha` + `cache-to: type=gha,mode=max` is the standard GHA caching approach
+  - Dockerfiles use repo root as build context (`.`) since they reference `src/` and `docker/` paths
+  - `GITHUB_TOKEN` has built-in write access to ghcr.io when `permissions.packages: write` is set
+---

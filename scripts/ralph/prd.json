@@ -34,7 +34,7 @@
         ".NET build passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 0.5. Depends on US-001 (CI before Docker push)."
     },
     {
