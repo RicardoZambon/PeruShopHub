@@ -848,3 +848,22 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - PricingRule has unique constraint on (TenantId, ProductId, MarketplaceId) — one rule per product per marketplace
   - Default fallbacks: commission 11%, tax 6% (Simples Nacional), payment fee 4.99% (ML single payment)
 ---
+
+## 2026-03-28 - US-031
+- Implemented POST /api/pricing/simulate endpoint with SimulateRequest/SimulationResult DTOs
+- Implemented POST /api/pricing/simulate/batch for batch simulation of multiple products
+- Backend uses BuildScenario() static helper to calculate current vs simulated profitability
+- Overrides support: price, productCost, packagingCost, shippingCost, advertisingCost, commissionRate, taxRate, paymentFeeRate
+- Frontend SimulatorComponent at /simulador with product selector, cost input fields, debounced 300ms recalculation
+- Shows current margin vs simulated margin with color-coded diff (green=better, red=worse)
+- Cost breakdown table showing component-by-component comparison
+- Visual bar chart of cost percentages
+- Batch mode for simulating multiple products at once
+- Added Calculator icon to sidebar navigation under CATÁLOGO group
+- Files changed: PricingDtos.cs, IPricingService.cs, PricingService.cs, PricingController.cs, pricing.service.ts, app.routes.ts, sidebar.component.ts, simulator.component.{ts,html,scss}
+- **Learnings for future iterations:**
+  - SCSS import path from `pages/**/` to `styles/` is `../../../styles/mixins` (3 levels, not 4)
+  - Sidebar nav items use lucide-angular icons — import from 'lucide-angular' and add to navItems array
+  - PricingService.CalculateAsync does backwards (margin→price); SimulateAsync does forward (price→profitability)
+  - SimulationOverrides rates (commissionRate, taxRate, paymentFeeRate) come as percentages from frontend (e.g., 11) and are divided by 100 in the service
+---
