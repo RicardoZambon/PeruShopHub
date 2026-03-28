@@ -127,7 +127,7 @@ builder.Services.AddHttpClient("MercadoLivre", client =>
     client.BaseAddress = new Uri("https://api.mercadolibre.com");
     client.DefaultRequestHeaders.Accept.Add(
         new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-});
+}).AddMercadoLivreResilience();
 builder.Services.AddKeyedScoped<IMarketplaceAdapter, MercadoLivreAdapter>("mercadolivre");
 
 // ── Application Services ─────────────────────────────────
