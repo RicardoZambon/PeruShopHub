@@ -18,5 +18,11 @@ public class MarketplaceConnectionConfiguration : IEntityTypeConfiguration<Marke
 
         builder.Property(m => m.TenantId).IsRequired();
         builder.HasIndex(m => m.TenantId);
+
+        // OAuth fields
+        builder.Property(m => m.AccessTokenProtected).HasMaxLength(2000);
+        builder.Property(m => m.RefreshTokenProtected).HasMaxLength(2000);
+        builder.Property(m => m.ExternalUserId).HasMaxLength(100);
+        builder.Property(m => m.Status).HasMaxLength(50).HasDefaultValue("Disconnected");
     }
 }

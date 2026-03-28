@@ -16,6 +16,12 @@ export const routes: Routes = [
       import('./pages/register/register.component').then(m => m.RegisterComponent),
   },
   {
+    path: 'oauth-callback',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/oauth-callback/oauth-callback.component').then(m => m.OAuthCallbackComponent),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./shared/components/layout/layout.component').then(m => m.LayoutComponent),

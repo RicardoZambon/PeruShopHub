@@ -64,6 +64,7 @@ export class SettingsComponent implements OnInit {
 
   users = signal<UserRow[]>([]);
   integrations = signal<Integration[]>([]);
+  connectingMarketplace = signal(false);
 
   // Fixed costs
   embalagemPadrao = signal(0);
@@ -922,6 +923,53 @@ export class SettingsComponent implements OnInit {
       error: () => {
         this.toastService.show('Erro ao atualizar agendamento', 'danger');
       },
+    });
+  }
+
+  // ── Integration OAuth ──────────────────────────────────────
+
+  connectIntegration(integration: Integration): void {
+    this.connectingMarketplace.set(true);
+    this.settingsService.getOAuthUrl(integration.marketplaceId).subscribe({
+      next: (result) => {
+        // Redirect to ML OAuth page
+        window.location.href = result.authorizationUrl;
+      },
+      error: (err) => {
+        this.connectingMarketplace.set(false);
+        this.toastService.show('Erro ao iniciar conexão OAuth', 'danger');
+        console.error('OAuth init error:', err);
+      },
+    });
+  }
+
+  disconnectIntegration(integration: Integration): void {
+    this.confirmDialog.confirm({
+      title: 'Desconectar marketplace',
+      message: `Deseja desconectar "${integration.name}"? Os tokens de acesso serão removidos.`,
+      confirmLabel: 'Desconectar',
+      cancelLabel: 'Cancelar',
+      variant: 'danger',
+    }).then(confirmed => {
+      if (!confirmed) return;
+
+      this.connectingMarketplace.set(true);
+      this.settingsService.disconnectIntegration(integration.marketplaceId).subscribe({
+        next: () => {
+          this.integrations.update(list =>
+            list.map(i => i.id === integration.id
+              ? { ...i, isConnected: false, status: 'Disconnected', sellerNickname: undefined, externalUserId: undefined, tokenExpiresAt: undefined }
+              : i
+            )
+          );
+          this.connectingMarketplace.set(false);
+          this.toastService.show(`${integration.name} desconectado`, 'success');
+        },
+        error: () => {
+          this.connectingMarketplace.set(false);
+          this.toastService.show('Erro ao desconectar marketplace', 'danger');
+        },
+      });
     });
   }
 }

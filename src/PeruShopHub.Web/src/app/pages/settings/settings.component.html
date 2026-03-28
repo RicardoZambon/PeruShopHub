@@ -139,21 +139,29 @@
               </div>
               <div class="integration-card__info">
                 <h3 class="integration-card__name">{{ integration.name }}</h3>
-                @if (integration.connected) {
+                @if (integration.isConnected) {
                   <span class="integration-card__nickname">{{ integration.sellerNickname }}</span>
                   <div class="integration-card__status">
-                    <app-badge label="Conectado" variant="success" />
-                    <span class="integration-card__sync">Última sync: {{ integration.lastSync }}</span>
+                    <app-badge label="Conectado" [variant]="integration.status === 'Active' ? 'success' : 'warning'" />
+                    @if (integration.externalUserId) {
+                      <span class="integration-card__user-id">ID: {{ integration.externalUserId }}</span>
+                    }
                   </div>
+                  @if (integration.tokenExpiresAt) {
+                    <span class="integration-card__expiry">Expira: {{ integration.tokenExpiresAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  }
+                  @if (integration.lastSyncAt) {
+                    <span class="integration-card__sync">Última sync: {{ integration.lastSyncAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  }
                 } @else if (integration.comingSoon) {
                   <span class="integration-card__coming-soon">Em breve</span>
                 }
               </div>
               <div class="integration-card__actions">
-                @if (integration.connected) {
-                  <app-button variant="danger">Desconectar</app-button>
+                @if (integration.isConnected) {
+                  <app-button variant="danger" (click)="disconnectIntegration(integration)" [disabled]="connectingMarketplace()">Desconectar</app-button>
                 } @else if (!integration.comingSoon) {
-                  <app-button variant="accent">Conectar</app-button>
+                  <app-button variant="accent" (click)="connectIntegration(integration)" [disabled]="connectingMarketplace()">Conectar Mercado Livre</app-button>
                 }
               </div>
             </div>

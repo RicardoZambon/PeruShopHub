@@ -14,4 +14,11 @@ public class MarketplaceConnection : ITenantScoped
     public DateTime? LastSyncAt { get; set; }
     public bool ComingSoon { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // OAuth fields (encrypted at rest via IDataProtectionProvider)
+    public string? AccessTokenProtected { get; set; }
+    public string? RefreshTokenProtected { get; set; }
+    public DateTime? TokenExpiresAt { get; set; }
+    public string? ExternalUserId { get; set; }
+    public string Status { get; set; } = "Disconnected"; // Disconnected, Active, Expired, Error
 }

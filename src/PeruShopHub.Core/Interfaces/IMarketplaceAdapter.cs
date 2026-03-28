@@ -10,6 +10,8 @@ public interface IMarketplaceAdapter
     /// <summary>Marketplace identifier, e.g. "mercadolivre", "amazon", "shopee".</summary>
     string MarketplaceId { get; }
 
+    string GetAuthorizationUrl(string redirectUri, string state, string codeChallenge);
+    Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri, string codeVerifier, CancellationToken ct = default);
     Task<TokenResult> RefreshTokenAsync(string refreshToken, CancellationToken ct = default);
     Task<MarketplaceProduct> GetProductAsync(string externalId, CancellationToken ct = default);
     Task UpdateStockAsync(string externalId, int quantity, CancellationToken ct = default);
@@ -21,6 +23,8 @@ public interface IMarketplaceAdapter
 // ── DTOs returned by IMarketplaceAdapter ────────────────────
 
 public record TokenResult(string AccessToken, string RefreshToken, int ExpiresInSeconds);
+
+public record OAuthTokenResult(string AccessToken, string RefreshToken, int ExpiresInSeconds, string UserId, string Nickname);
 
 public record MarketplaceProduct(
     string ExternalId,

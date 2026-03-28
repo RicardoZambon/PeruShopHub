@@ -949,3 +949,45 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - ML API uses snake_case JSON — use `[JsonPropertyName]` on response DTOs rather than relying on naming policy
   - The adapter doesn't store auth tokens — it receives them per-call or via HttpClient message handlers (to be added in token management story)
 ---
+
+## 2026-03-28 - US-034
+- Implemented OAuth 2.0 Flow with PKCE for Mercado Livre integration
+- Added OAuth fields to MarketplaceConnection entity (AccessTokenProtected, RefreshTokenProtected, TokenExpiresAt, ExternalUserId, Status)
+- Extended IMarketplaceAdapter with `GetAuthorizationUrl` and `ExchangeCodeAsync` methods
+- Implemented PKCE (code_verifier/code_challenge with SHA256) in IntegrationService
+- OAuth state stored in Redis with 5-minute TTL for CSRF prevention
+- Token encryption at rest using IDataProtectionProvider
+- Created IntegrationsController with endpoints: GET auth-url, GET callback, POST disconnect
+- Created OAuthCallbackComponent for frontend OAuth redirect handling
+- Updated frontend settings integrations tab with connect/disconnect buttons, status display, token expiry
+- Added MlUserResponse model for /users/me endpoint
+- Created EF migration for OAuth fields
+- Files changed:
+  - `src/PeruShopHub.Core/Entities/MarketplaceConnection.cs` — added OAuth fields
+  - `src/PeruShopHub.Core/Interfaces/IMarketplaceAdapter.cs` — added OAuth methods + OAuthTokenResult record
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreAdapter.cs` — implemented GetAuthorizationUrl, ExchangeCodeAsync
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreModels.cs` — added MlUserResponse
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/MarketplaceConnectionConfiguration.cs` — OAuth field config
+  - `src/PeruShopHub.Application/Services/IIntegrationService.cs` — new interface
+  - `src/PeruShopHub.Application/Services/IntegrationService.cs` — new service with PKCE + Redis state
+  - `src/PeruShopHub.Application/DependencyInjection.cs` — registered IntegrationService
+  - `src/PeruShopHub.Application/DTOs/Settings/SettingsDtos.cs` — extended IntegrationDto
+  - `src/PeruShopHub.API/Controllers/IntegrationsController.cs` — new controller
+  - `src/PeruShopHub.API/Controllers/SettingsController.cs` — updated integrations query
+  - `src/PeruShopHub.API/Program.cs` — added DataProtection
+  - `src/PeruShopHub.API/appsettings.json` — added Marketplaces config section
+  - `src/PeruShopHub.Web/src/app/services/settings.service.ts` — OAuth methods + updated Integration interface
+  - `src/PeruShopHub.Web/src/app/pages/settings/settings.component.ts` — connect/disconnect handlers
+  - `src/PeruShopHub.Web/src/app/pages/settings/settings.component.html` — updated integrations template
+  - `src/PeruShopHub.Web/src/app/pages/oauth-callback/oauth-callback.component.ts` — new component
+  - `src/PeruShopHub.Web/src/app/app.routes.ts` — added oauth-callback route
+  - `src/PeruShopHub.Infrastructure/Migrations/20260328204642_AddOAuthFieldsToMarketplaceConnection.cs` — migration
+- **Learnings for future iterations:**
+  - ML OAuth authorization URL is `https://auth.mercadolivre.com.br/authorization` (not .com)
+  - ML token exchange requires `client_id`, `client_secret`, `code`, `redirect_uri`, `code_verifier` as form-urlencoded
+  - After token exchange, fetch `/users/me` with Bearer token to get user_id and nickname
+  - `SetApplicationName()` on `IDataProtectionBuilder` needs `Microsoft.AspNetCore.DataProtection` namespace — or just use `AddDataProtection()` without it
+  - OAuth callback component needs `authGuard` but not `tenantGuard` (user returns from ML redirect)
+  - Store `code_verifier` in Redis (not cookies) — server-side PKCE state is more secure
+  - `Marketplaces:MercadoLivre:ClientId/ClientSecret/RedirectUri` config pattern for marketplace credentials
+---

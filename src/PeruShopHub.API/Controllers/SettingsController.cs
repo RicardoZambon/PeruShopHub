@@ -34,7 +34,8 @@ public class SettingsController : ControllerBase
             .OrderBy(m => m.Name)
             .Select(m => new IntegrationDto(
                 m.Id, m.MarketplaceId, m.Name, m.Logo,
-                m.IsConnected, m.SellerNickname, m.LastSyncAt, m.ComingSoon))
+                m.IsConnected, m.SellerNickname, m.LastSyncAt, m.ComingSoon,
+                m.Status, m.ExternalUserId, m.TokenExpiresAt))
             .ToListAsync();
 
         return Ok(integrations);

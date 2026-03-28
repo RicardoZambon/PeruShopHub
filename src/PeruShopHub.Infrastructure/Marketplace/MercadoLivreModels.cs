@@ -48,6 +48,17 @@ public class MlTokenResponse
     public string RefreshToken { get; set; } = string.Empty;
 }
 
+// ── ML User (me) response ──────────────────────────────────
+
+public class MlUserResponse
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("nickname")]
+    public string Nickname { get; set; } = string.Empty;
+}
+
 // ── ML Item (product) response ──────────────────────────────
 
 public class MlItemResponse

@@ -13,15 +13,27 @@ export interface UserRow {
 
 export interface Integration {
   id: string;
+  marketplaceId: string;
   name: string;
-  marketplace: string;
-  status: string;
-  connected: boolean;
-  comingSoon: boolean;
   logo: string;
+  isConnected: boolean;
   sellerNickname?: string;
-  lastSync?: string;
-  connectedAt?: string;
+  lastSyncAt?: string;
+  comingSoon: boolean;
+  status: string;
+  externalUserId?: string;
+  tokenExpiresAt?: string;
+}
+
+export interface OAuthInitResponse {
+  authorizationUrl: string;
+}
+
+export interface OAuthCallbackResponse {
+  marketplaceId: string;
+  sellerNickname: string;
+  status: string;
+  tokenExpiresAt: string;
 }
 
 export interface FixedCostsResponse {
@@ -84,6 +96,21 @@ export class SettingsService {
 
   getIntegrations(): Observable<Integration[]> {
     return this.http.get<Integration[]>(`${this.baseUrl}/integrations`);
+  }
+
+  getOAuthUrl(marketplaceId: string): Observable<OAuthInitResponse> {
+    return this.http.get<OAuthInitResponse>(`${environment.apiUrl}/integrations/${marketplaceId}/auth-url`);
+  }
+
+  handleOAuthCallback(marketplaceId: string, code: string, state: string): Observable<OAuthCallbackResponse> {
+    return this.http.get<OAuthCallbackResponse>(
+      `${environment.apiUrl}/integrations/${marketplaceId}/callback`,
+      { params: { code, state } }
+    );
+  }
+
+  disconnectIntegration(marketplaceId: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/integrations/${marketplaceId}/disconnect`, {});
   }
 
   getCosts(): Observable<FixedCostsResponse> {

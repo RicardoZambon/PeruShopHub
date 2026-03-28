@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PeruShopHub.Core.Interfaces;
 
@@ -18,6 +19,8 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
 
     private readonly HttpClient _http;
     private readonly ILogger<MercadoLivreAdapter> _logger;
+    private readonly string _clientId;
+    private readonly string _clientSecret;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -27,10 +30,60 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
 
     public MercadoLivreAdapter(
         IHttpClientFactory httpClientFactory,
-        ILogger<MercadoLivreAdapter> logger)
+        ILogger<MercadoLivreAdapter> logger,
+        IConfiguration configuration)
     {
         _http = httpClientFactory.CreateClient("MercadoLivre");
         _logger = logger;
+        _clientId = configuration["Marketplaces:MercadoLivre:ClientId"] ?? string.Empty;
+        _clientSecret = configuration["Marketplaces:MercadoLivre:ClientSecret"] ?? string.Empty;
+    }
+
+    // ── OAuth ────────────────────────────────────────────────
+
+    public string GetAuthorizationUrl(string redirectUri, string state, string codeChallenge)
+    {
+        return $"https://auth.mercadolivre.com.br/authorization" +
+               $"?response_type=code" +
+               $"&client_id={Uri.EscapeDataString(_clientId)}" +
+               $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
+               $"&state={Uri.EscapeDataString(state)}" +
+               $"&code_challenge={Uri.EscapeDataString(codeChallenge)}" +
+               $"&code_challenge_method=S256";
+    }
+
+    public async Task<OAuthTokenResult> ExchangeCodeAsync(
+        string code, string redirectUri, string codeVerifier, CancellationToken ct = default)
+    {
+        var tokenResponse = await SendAsync<MlTokenResponse>(
+            HttpMethod.Post,
+            "/oauth/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "authorization_code",
+                ["client_id"] = _clientId,
+                ["client_secret"] = _clientSecret,
+                ["code"] = code,
+                ["redirect_uri"] = redirectUri,
+                ["code_verifier"] = codeVerifier
+            }),
+            ct);
+
+        // Fetch user info to get user_id and nickname
+        var userHttp = new HttpRequestMessage(HttpMethod.Get, "/users/me");
+        userHttp.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
+        var userResponse = await _http.SendAsync(userHttp, ct);
+        userResponse.EnsureSuccessStatusCode();
+        var userBody = await userResponse.Content.ReadAsStringAsync(ct);
+        var user = JsonSerializer.Deserialize<MlUserResponse>(userBody, JsonOptions)
+            ?? throw new MercadoLivreException(500, null, "Failed to deserialize ML user info");
+
+        return new OAuthTokenResult(
+            tokenResponse.AccessToken,
+            tokenResponse.RefreshToken,
+            tokenResponse.ExpiresIn,
+            user.Id.ToString(),
+            user.Nickname);
     }
 
     // ── Token Refresh ────────────────────────────────────────

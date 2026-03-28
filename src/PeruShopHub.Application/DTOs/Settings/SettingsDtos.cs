@@ -17,7 +17,10 @@ public record IntegrationDto(
     bool IsConnected,
     string? SellerNickname,
     DateTime? LastSyncAt,
-    bool ComingSoon);
+    bool ComingSoon,
+    string Status,
+    string? ExternalUserId,
+    DateTime? TokenExpiresAt);
 
 public record CostConfigDto(
     string Category,

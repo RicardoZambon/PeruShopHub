@@ -88,6 +88,9 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services.AddDbContext<PeruShopHubDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// ── Data Protection (token encryption at rest) ──────────
+builder.Services.AddDataProtection();
+
 // ── Redis Cache ───────────────────────────────────────────
 builder.Services.AddStackExchangeRedisCache(options =>
 {
