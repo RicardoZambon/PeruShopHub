@@ -1,5 +1,6 @@
 import { Component, signal, computed, OnInit, inject, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -23,10 +24,11 @@ import { BrlCurrencyPipe } from '../../shared/pipes';
 import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 import { InventoryService } from '../../services/inventory.service';
 import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocations, VariantAllocations } from '../../services/inventory.service';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 type InventoryTab = 'visao-geral' | 'movimentacoes' | 'estoque-full';
-type MovementType = 'Entrada' | 'Saída' | 'Ajuste';
+type MovementType = 'Entrada' | 'Saída' | 'Ajuste' | 'Reconciliacao';
 
 interface ProductOption {
   sku: string;
@@ -36,12 +38,13 @@ interface ProductOption {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabPanelsComponent, TabPanelDirective, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, DataGridComponent, GridCellDirective, GridCardDirective],
+  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, BrlCurrencyPipe, PageHeaderComponent, TabPanelsComponent, TabPanelDirective, SelectDropdownComponent, DialogComponent, FormFieldComponent, FormActionsComponent, DataGridComponent, GridCellDirective, GridCardDirective],
   templateUrl: './inventory.component.html',
   styleUrl: './inventory.component.scss',
 })
 export class InventoryComponent implements OnInit {
   private readonly inventoryService = inject(InventoryService);
+  private readonly router = inject(Router);
 
   @ViewChild('movGrid') movGridRef!: DataGridComponent;
   @ViewChild('invGrid') invGridRef!: DataGridComponent;
@@ -49,6 +52,10 @@ export class InventoryComponent implements OnInit {
   activeTab = signal<InventoryTab>('visao-geral');
   loading = signal(true);
   movementTypeFilter = signal<MovementType | 'all'>('all');
+  movDateFrom = signal('');
+  movDateTo = signal('');
+  movCreatedBy = signal('');
+  exporting = signal(false);
 
   // Mutable inventory and movements data
   inventoryData = signal<InventoryItem[]>([]);
@@ -90,12 +97,14 @@ export class InventoryComponent implements OnInit {
   readonly movPageSize = signal(20);
 
   readonly movGridColumns: GridColumn[] = [
-    { key: 'data', label: 'Data', sortable: true },
-    { key: 'produto', label: 'Produto', sortable: true },
-    { key: 'tipo', label: 'Tipo' },
-    { key: 'quantidade', label: 'Quantidade', align: 'right' },
-    { key: 'custoUnitario', label: 'Custo Unitário', align: 'right' },
-    { key: 'motivo', label: 'Observação' },
+    { key: 'createdAt', label: 'Data', sortable: true },
+    { key: 'productName', label: 'Produto', sortable: true },
+    { key: 'type', label: 'Tipo' },
+    { key: 'quantity', label: 'Quantidade', align: 'right' },
+    { key: 'unitCost', label: 'Custo Unitário', align: 'right' },
+    { key: 'reason', label: 'Observação' },
+    { key: 'createdBy', label: 'Usuário' },
+    { key: 'source', label: 'Origem' },
   ];
 
   readonly movGridData = computed(() => {
@@ -136,6 +145,7 @@ export class InventoryComponent implements OnInit {
     { value: 'Entrada', label: 'Entrada' },
     { value: 'Saída', label: 'Saída' },
     { value: 'Ajuste', label: 'Ajuste' },
+    { value: 'Reconciliacao', label: 'Reconciliação' },
   ];
 
   kpis = computed(() => {
@@ -156,7 +166,7 @@ export class InventoryComponent implements OnInit {
     const filter = this.movementTypeFilter();
     const all = this.movements();
     if (filter === 'all') return all;
-    return all.filter(m => m.tipo === filter);
+    return all.filter(m => m.type === filter);
   });
 
   formatMovDate = formatDateShort;
@@ -266,6 +276,9 @@ export class InventoryComponent implements OnInit {
       const filter = this.movementTypeFilter();
       const result = await firstValueFrom(this.inventoryService.getMovements({
         type: filter === 'all' ? undefined : filter,
+        dateFrom: this.movDateFrom() || undefined,
+        dateTo: this.movDateTo() || undefined,
+        createdBy: this.movCreatedBy() || undefined,
         page: this.movCurrentPage(),
         pageSize: this.movPageSize(),
       }));
@@ -366,11 +379,13 @@ export class InventoryComponent implements OnInit {
     });
   }
 
-  getMovementTypeVariant(tipo: MovementType): BadgeVariant {
+  getMovementTypeVariant(tipo: string): BadgeVariant {
     switch (tipo) {
       case 'Entrada': return 'success';
       case 'Saída': return 'danger';
       case 'Ajuste': return 'primary';
+      case 'Reconciliacao': return 'warning' as BadgeVariant;
+      default: return 'primary';
     }
   }
 
@@ -380,6 +395,63 @@ export class InventoryComponent implements OnInit {
     this.movementTypeFilter.set(type);
     this.loadMovementsGrid(true);
     this.movGridRef?.scrollToTop();
+  }
+
+  onMovDateFromChange(event: Event): void {
+    this.movDateFrom.set((event.target as HTMLInputElement).value);
+    this.loadMovementsGrid(true);
+    this.movGridRef?.scrollToTop();
+  }
+
+  onMovDateToChange(event: Event): void {
+    this.movDateTo.set((event.target as HTMLInputElement).value);
+    this.loadMovementsGrid(true);
+    this.movGridRef?.scrollToTop();
+  }
+
+  onMovCreatedByChange(value: string): void {
+    this.movCreatedBy.set(value);
+    this.loadMovementsGrid(true);
+    this.movGridRef?.scrollToTop();
+  }
+
+  async exportMovements(): Promise<void> {
+    this.exporting.set(true);
+    try {
+      const filter = this.movementTypeFilter();
+      const blob = await firstValueFrom(this.inventoryService.exportMovements({
+        type: filter === 'all' ? undefined : filter,
+        dateFrom: this.movDateFrom() || undefined,
+        dateTo: this.movDateTo() || undefined,
+        createdBy: this.movCreatedBy() || undefined,
+      }));
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `movimentacoes_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  navigateToSource(movement: StockMovement): void {
+    if (movement.purchaseOrderId) {
+      this.router.navigate(['/compras', movement.purchaseOrderId]);
+    } else if (movement.orderId) {
+      this.router.navigate(['/vendas', movement.orderId]);
+    }
+  }
+
+  getMovementTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      'Entrada': 'Entrada',
+      'Saída': 'Saída',
+      'Ajuste': 'Ajuste',
+      'Reconciliacao': 'Reconciliação',
+    };
+    return labels[type] ?? type;
   }
 
   // Allocation dialog state

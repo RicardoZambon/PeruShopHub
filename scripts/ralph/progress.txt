@@ -44,6 +44,8 @@ Started: Fri Mar 28 2026
 - **Rate limiting middleware**: `TenantRateLimitMiddleware` uses `IDistributedCache` (Redis) for per-tenant counters. Placed after TenantMiddleware in pipeline. Config in `RateLimiting:RequestsPerMinute`
 - **Serilog logging**: Structured JSON logging via Serilog. Config in `Serilog:` section of appsettings.json. `CorrelationIdMiddleware` first in pipeline, `RequestLoggingMiddleware` after auth. Use `LogContext.PushProperty()` to enrich logs
 - **Sentry error tracking**: `Sentry.AspNetCore` 6.x via `builder.WebHost.UseSentry()`. DSN from `SENTRY_DSN` env var. Disabled when DSN not set. `SentrySdk.CaptureException()` in GlobalExceptionFilter for manual capture with scope enrichment
+- **Excel export pattern**: ClosedXML 0.104.2 in Application project. Use `XLWorkbook` → `Worksheets.Add()` → populate cells → `SaveAs(MemoryStream)` → return `byte[]`. Controller returns `File(bytes, contentType, fileName)`. Frontend uses `responseType: 'blob'` + `URL.createObjectURL()` for download
+- **Frontend DTO alignment**: Frontend interfaces must match backend DTO field names exactly (camelCase). When backend returns `createdAt`, frontend uses `createdAt` — not custom Portuguese names
 
 ---
 
@@ -382,4 +384,48 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - StockAlertWorker previously only checked Supplies — now also checks Products with MinStock configured
   - Dashboard BuildPendingActionsAsync already queries stock_alert notification type — no change was needed
   - Inventory overview grid uses ::ng-deep for row class styling since the class is applied inside the child DataGrid component
+---
+
+## 2026-03-28 - US-015
+- Implemented Stock Movement History with Full Traceability
+- **Backend changes:**
+  - Added `variantId` and `createdBy` filters to `GetMovementsAsync`
+  - Extracted `BuildMovementsQuery` private method for query reuse
+  - Added `PurchaseOrderId` and `OrderId` to `StockMovementDto` for source traceability
+  - Added reason validation (required) for manual stock adjustments in `CreateMovementAsync`
+  - Added ClosedXML package (0.104.2) to Application project
+  - Added `ExportMovementsToExcelAsync` service method with styled headers and auto-sized columns
+  - Added `GET /api/inventory/movements/export` endpoint returning XLSX file
+- **Frontend changes:**
+  - Updated `StockMovement` interface to match backend DTO (id, sku, productName, type, quantity, unitCost, reason, createdBy, createdAt, purchaseOrderId, orderId)
+  - Added `variantId` and `createdBy` to `MovementQueryParams`
+  - Added `exportMovements()` method to InventoryService returning Blob
+  - Wired date filter inputs (were hardcoded, now bound to signals)
+  - Added user filter text input for createdBy filtering
+  - Added "Exportar Excel" button with download-as-blob logic
+  - Added "Origem" (source) column with clickable links to PO or Order detail
+  - Added "Usuário" column showing createdBy
+  - Added "Reconciliação" to movement type filter options
+  - Updated all template references from Portuguese field names (data, produto, tipo, quantidade, etc.) to English DTO field names (createdAt, productName, type, quantity, etc.)
+- **Tests:**
+  - Updated all `GetMovementsAsync` calls in InventoryServiceTests to match new signature (8 params)
+  - Added `CreateMovement_EmptyReason_ThrowsValidationException` test
+  - All 155 unit tests pass, all 57 Angular tests pass
+- Files changed:
+  - `src/PeruShopHub.Application/DTOs/Inventory/InventoryDtos.cs`
+  - `src/PeruShopHub.Application/Services/IInventoryService.cs`
+  - `src/PeruShopHub.Application/Services/InventoryService.cs`
+  - `src/PeruShopHub.Application/PeruShopHub.Application.csproj`
+  - `src/PeruShopHub.API/Controllers/InventoryController.cs`
+  - `src/PeruShopHub.Web/src/app/services/inventory.service.ts`
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.html`
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.scss`
+  - `tests/PeruShopHub.UnitTests/Services/InventoryServiceTests.cs`
+- **Learnings for future iterations:**
+  - ClosedXML 0.104.2 works with .NET 9 — use `XLWorkbook` and `SaveAs(MemoryStream)` for in-memory export
+  - When adding parameters to service methods, must update: interface → service → controller → tests → frontend service
+  - Frontend StockMovement interface was using Portuguese field names (data, produto, tipo) while backend DTO uses English — always match backend DTO exactly
+  - Excel export endpoint should return `File(bytes, contentType, fileName)` from controller for proper download
+  - Date filter inputs in Angular need explicit (change) binding to signal — not auto-bound by just setting [value]
 ---

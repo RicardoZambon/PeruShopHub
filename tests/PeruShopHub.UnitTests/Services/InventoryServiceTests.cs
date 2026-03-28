@@ -112,7 +112,7 @@ public class InventoryServiceTests : IDisposable
         SeedMovement(p.Id, v.Id, quantity: 10);
         var service = CreateService();
 
-        var result = await service.GetMovementsAsync(null, null, null, null, 1, 10);
+        var result = await service.GetMovementsAsync(null, null, null, null, null, null, 1, 10);
 
         result.TotalCount.Should().Be(2);
         result.Items.Should().HaveCount(2);
@@ -126,7 +126,7 @@ public class InventoryServiceTests : IDisposable
             SeedMovement(p.Id, v.Id, quantity: i + 1, createdAt: DateTime.UtcNow.AddMinutes(-i));
         var service = CreateService();
 
-        var result = await service.GetMovementsAsync(null, null, null, null, 1, 2);
+        var result = await service.GetMovementsAsync(null, null, null, null, null, null, 1, 2);
 
         result.TotalCount.Should().Be(5);
         result.Items.Should().HaveCount(2);
@@ -143,7 +143,7 @@ public class InventoryServiceTests : IDisposable
         SeedMovement(p2.Id, v2.Id);
         var service = CreateService();
 
-        var result = await service.GetMovementsAsync(p1.Id, null, null, null, 1, 10);
+        var result = await service.GetMovementsAsync(p1.Id, null, null, null, null, null, 1, 10);
 
         result.TotalCount.Should().Be(1);
         result.Items[0].ProductName.Should().Be("Product 1");
@@ -157,7 +157,7 @@ public class InventoryServiceTests : IDisposable
         SeedMovement(p.Id, v.Id, type: "Entrada");
         var service = CreateService();
 
-        var result = await service.GetMovementsAsync(null, "Entrada", null, null, 1, 10);
+        var result = await service.GetMovementsAsync(null, null, "Entrada", null, null, null, 1, 10);
 
         result.TotalCount.Should().Be(1);
         result.Items[0].Type.Should().Be("Entrada");
@@ -173,7 +173,7 @@ public class InventoryServiceTests : IDisposable
         var service = CreateService();
 
         var result = await service.GetMovementsAsync(
-            null, null, new DateTime(2026, 2, 1), new DateTime(2026, 4, 1), 1, 10);
+            null, null, null, new DateTime(2026, 2, 1), new DateTime(2026, 4, 1), null, 1, 10);
 
         result.TotalCount.Should().Be(1);
     }
@@ -187,7 +187,7 @@ public class InventoryServiceTests : IDisposable
         var service = CreateService();
 
         var result = await service.GetMovementsAsync(
-            null, null, new DateTime(2026, 3, 1), null, 1, 10);
+            null, null, null, new DateTime(2026, 3, 1), null, null, 1, 10);
 
         result.TotalCount.Should().Be(1);
     }
@@ -200,7 +200,7 @@ public class InventoryServiceTests : IDisposable
         SeedMovement(p.Id, v.Id, quantity: 99, createdAt: new DateTime(2026, 6, 1));
         var service = CreateService();
 
-        var result = await service.GetMovementsAsync(null, null, null, null, 1, 10);
+        var result = await service.GetMovementsAsync(null, null, null, null, null, null, 1, 10);
 
         result.Items[0].Quantity.Should().Be(99); // newest first
         result.Items[1].Quantity.Should().Be(1);
@@ -216,7 +216,7 @@ public class InventoryServiceTests : IDisposable
         SeedMovement(p2.Id, v2.Id, type: "Ajuste");
         var service = CreateService();
 
-        var result = await service.GetMovementsAsync(null, null, null, null, 1, 10);
+        var result = await service.GetMovementsAsync(null, null, null, null, null, null, 1, 10);
 
         result.TotalCount.Should().Be(3);
     }
@@ -305,6 +305,18 @@ public class InventoryServiceTests : IDisposable
         var result = await service.CreateMovementAsync(dto);
 
         result.Sku.Should().Be("W-001-V1"); // variant SKU
+    }
+
+    [Fact]
+    public async Task CreateMovement_EmptyReason_ThrowsValidationException()
+    {
+        var (p, v) = SeedProductWithVariant("Widget", "W-001", stock: 10);
+        var service = CreateService();
+        var dto = new StockAdjustmentDto(p.Id, v.Id, 5, "");
+
+        var act = () => service.CreateMovementAsync(dto);
+
+        await act.Should().ThrowAsync<AppValidationException>();
     }
 
     // --- GetAllocations tests ---

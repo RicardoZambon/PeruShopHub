@@ -34,15 +34,32 @@ public class InventoryController : ControllerBase
     [HttpGet("movements")]
     public async Task<ActionResult<PagedResult<StockMovementDto>>> GetMovements(
         [FromQuery] Guid? productId = null,
+        [FromQuery] Guid? variantId = null,
         [FromQuery] string? type = null,
         [FromQuery] DateTime? dateFrom = null,
         [FromQuery] DateTime? dateTo = null,
+        [FromQuery] string? createdBy = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await _inventoryService.GetMovementsAsync(productId, type, dateFrom, dateTo, page, pageSize, ct);
+        var result = await _inventoryService.GetMovementsAsync(productId, variantId, type, dateFrom, dateTo, createdBy, page, pageSize, ct);
         return Ok(result);
+    }
+
+    [HttpGet("movements/export")]
+    public async Task<IActionResult> ExportMovements(
+        [FromQuery] Guid? productId = null,
+        [FromQuery] Guid? variantId = null,
+        [FromQuery] string? type = null,
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        [FromQuery] string? createdBy = null,
+        CancellationToken ct = default)
+    {
+        var bytes = await _inventoryService.ExportMovementsToExcelAsync(productId, variantId, type, dateFrom, dateTo, createdBy, ct);
+        var fileName = $"movimentacoes_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 
     [HttpPost("adjust")]

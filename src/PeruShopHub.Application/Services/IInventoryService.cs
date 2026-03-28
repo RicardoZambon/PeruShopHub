@@ -11,9 +11,14 @@ public interface IInventoryService
         CancellationToken ct = default);
 
     Task<PagedResult<StockMovementDto>> GetMovementsAsync(
-        Guid? productId, string? type,
-        DateTime? dateFrom, DateTime? dateTo,
+        Guid? productId, Guid? variantId, string? type,
+        DateTime? dateFrom, DateTime? dateTo, string? createdBy,
         int page, int pageSize,
+        CancellationToken ct = default);
+
+    Task<byte[]> ExportMovementsToExcelAsync(
+        Guid? productId, Guid? variantId, string? type,
+        DateTime? dateFrom, DateTime? dateTo, string? createdBy,
         CancellationToken ct = default);
 
     Task<StockMovementDto> CreateMovementAsync(StockAdjustmentDto dto, CancellationToken ct = default);

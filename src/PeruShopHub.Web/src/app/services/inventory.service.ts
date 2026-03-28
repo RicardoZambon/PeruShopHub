@@ -57,21 +57,26 @@ export interface UpdateStockAllocationDto {
 }
 
 export interface StockMovement {
-  data: string;
+  id: string;
   sku: string;
-  produto: string;
-  tipo: 'Entrada' | 'Saída' | 'Ajuste';
-  quantidade: number;
-  custoUnitario?: number;
-  motivo: string;
-  usuario: string;
+  productName: string;
+  type: string;
+  quantity: number;
+  unitCost?: number | null;
+  reason?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  purchaseOrderId?: string | null;
+  orderId?: string | null;
 }
 
 export interface MovementQueryParams {
   productId?: string;
+  variantId?: string;
   type?: string;
   dateFrom?: string;
   dateTo?: string;
+  createdBy?: string;
   page?: number;
   pageSize?: number;
 }
@@ -121,5 +126,13 @@ export class InventoryService {
 
   getAlerts(): Observable<StockAlert[]> {
     return this.http.get<StockAlert[]>(`${this.baseUrl}/alerts`);
+  }
+
+  exportMovements(params: Omit<MovementQueryParams, 'page' | 'pageSize'>): Observable<Blob> {
+    const { type, ...rest } = params;
+    return this.http.get(`${this.baseUrl}/movements/export`, {
+      params: buildHttpParams({ ...rest, type: type && type !== 'all' ? type : undefined }),
+      responseType: 'blob',
+    });
   }
 }

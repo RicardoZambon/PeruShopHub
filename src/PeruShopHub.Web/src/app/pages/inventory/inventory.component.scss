@@ -160,6 +160,60 @@
     color: var(--neutral-500);
   }
 
+  &__text-input {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--body-small-size);
+    font-family: inherit;
+    color: var(--neutral-900);
+    background: var(--surface);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    outline: none;
+    min-width: 160px;
+
+    &:focus {
+      border-color: var(--primary);
+      box-shadow: var(--focus-ring);
+    }
+
+    &::placeholder {
+      color: var(--neutral-400);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: flex-end;
+    margin-left: auto;
+  }
+
+  &__export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--body-small-size);
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--primary);
+    background: transparent;
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover:not(:disabled) {
+      background: var(--primary);
+      color: white;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
   @include m.mobile {
     flex-direction: column;
     gap: var(--space-3);
@@ -205,6 +259,17 @@
 
   &__muted {
     color: var(--neutral-500);
+  }
+
+  &__source-link {
+    color: var(--primary);
+    font-size: var(--label-size);
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   // Mobile card styles

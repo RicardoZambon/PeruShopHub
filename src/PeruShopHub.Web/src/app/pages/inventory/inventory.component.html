@@ -149,24 +149,24 @@
               <tbody>
                 @for (row of recentMovements(); track $index) {
                   <tr class="mov-table__row">
-                    <td class="mov-table__td mov-table__td--mono mov-table__td--muted">{{ row.data }}</td>
-                    <td class="mov-table__td">{{ row.produto }}</td>
+                    <td class="mov-table__td mov-table__td--mono mov-table__td--muted">{{ formatMovDate(row.createdAt) }}</td>
+                    <td class="mov-table__td">{{ row.productName }}</td>
                     <td class="mov-table__td">
-                      <app-badge [label]="row.tipo" [variant]="getMovementTypeVariant(row.tipo)" />
+                      <app-badge [label]="getMovementTypeLabel(row.type)" [variant]="getMovementTypeVariant(row.type)" />
                     </td>
                     <td class="mov-table__td mov-table__td--mono mov-table__td--right"
-                      [class.mov-table__td--positive]="row.quantidade > 0"
-                      [class.mov-table__td--negative]="row.quantidade < 0">
-                      {{ row.quantidade > 0 ? '+' : '' }}{{ row.quantidade }}
+                      [class.mov-table__td--positive]="row.quantity > 0"
+                      [class.mov-table__td--negative]="row.quantity < 0">
+                      {{ row.quantity > 0 ? '+' : '' }}{{ row.quantity }}
                     </td>
                     <td class="mov-table__td mov-table__td--mono mov-table__td--right">
-                      @if (row.custoUnitario) {
-                        {{ row.custoUnitario | brlCurrency }}
+                      @if (row.unitCost) {
+                        {{ row.unitCost | brlCurrency }}
                       } @else {
                         <span class="mov-table__td--muted">—</span>
                       }
                     </td>
-                    <td class="mov-table__td">{{ row.motivo }}</td>
+                    <td class="mov-table__td">{{ row.reason }}</td>
                   </tr>
                 }
               </tbody>
@@ -192,10 +192,31 @@
         <div class="mov-filters__group">
           <label class="mov-filters__label">Período</label>
           <div class="mov-filters__dates">
-            <input type="date" class="mov-filters__date-input" value="2026-03-20" />
+            <input type="date" class="mov-filters__date-input" [value]="movDateFrom()" (change)="onMovDateFromChange($event)" />
             <span class="mov-filters__separator">até</span>
-            <input type="date" class="mov-filters__date-input" value="2026-03-22" />
+            <input type="date" class="mov-filters__date-input" [value]="movDateTo()" (change)="onMovDateToChange($event)" />
           </div>
+        </div>
+        <div class="mov-filters__group">
+          <label class="mov-filters__label">Usuário</label>
+          <input
+            type="text"
+            class="mov-filters__text-input"
+            placeholder="Filtrar por usuário..."
+            [value]="movCreatedBy()"
+            (input)="onMovCreatedByChange($any($event.target).value)"
+          />
+        </div>
+        <div class="mov-filters__actions">
+          <button
+            class="mov-filters__export-btn"
+            [disabled]="exporting()"
+            (click)="exportMovements()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v9M5 8l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ exporting() ? 'Exportando...' : 'Exportar Excel' }}
+          </button>
         </div>
       </div>
 
@@ -216,26 +237,41 @@
         (loadMore)="onMovLoadMore()"
       >
         <!-- Date cell -->
-        <ng-template appGridCell="data" let-row let-value="value">
+        <ng-template appGridCell="createdAt" let-row let-value="value">
           <span class="mov__date">{{ formatMovDate(value) }}</span>
         </ng-template>
 
         <!-- Type cell (badge) -->
-        <ng-template appGridCell="tipo" let-row let-value="value">
-          <app-badge [label]="value" [variant]="getMovementTypeVariant(value)" />
+        <ng-template appGridCell="type" let-row let-value="value">
+          <app-badge [label]="getMovementTypeLabel(value)" [variant]="getMovementTypeVariant(value)" />
         </ng-template>
 
         <!-- Quantity cell (signed +/- with color) -->
-        <ng-template appGridCell="quantidade" let-row let-value="value">
+        <ng-template appGridCell="quantity" let-row let-value="value">
           <span class="mov__qty" [class.mov__qty--positive]="value > 0" [class.mov__qty--negative]="value < 0">
             {{ value > 0 ? '+' : '' }}{{ value }}
           </span>
         </ng-template>
 
         <!-- Unit Cost cell -->
-        <ng-template appGridCell="custoUnitario" let-row let-value="value">
+        <ng-template appGridCell="unitCost" let-row let-value="value">
           @if (value) {
             <span class="mov__mono">{{ value | brlCurrency }}</span>
+          } @else {
+            <span class="mov__muted">—</span>
+          }
+        </ng-template>
+
+        <!-- Source cell (clickable link to PO or Order) -->
+        <ng-template appGridCell="source" let-row>
+          @if (row.purchaseOrderId) {
+            <a class="mov__source-link" (click)="navigateToSource(row)">
+              Ordem de Compra
+            </a>
+          } @else if (row.orderId) {
+            <a class="mov__source-link" (click)="navigateToSource(row)">
+              Venda
+            </a>
           } @else {
             <span class="mov__muted">—</span>
           }
@@ -244,27 +280,41 @@
         <!-- Mobile card template -->
         <ng-template appGridCard let-row>
           <div class="mov__card-header">
-            <span class="mov__card-date">{{ formatMovDate(row.data) }}</span>
-            <app-badge [label]="row.tipo" [variant]="getMovementTypeVariant(row.tipo)" />
+            <span class="mov__card-date">{{ formatMovDate(row.createdAt) }}</span>
+            <app-badge [label]="getMovementTypeLabel(row.type)" [variant]="getMovementTypeVariant(row.type)" />
           </div>
-          <div class="mov__card-product">{{ row.produto }}</div>
+          <div class="mov__card-product">{{ row.productName }}</div>
           <div class="mov__card-body">
             <div class="mov__card-field">
               <span class="mov__card-label">Quantidade</span>
-              <span class="mov__card-value" [class.mov__qty--positive]="row.quantidade > 0" [class.mov__qty--negative]="row.quantidade < 0">
-                {{ row.quantidade > 0 ? '+' : '' }}{{ row.quantidade }}
+              <span class="mov__card-value" [class.mov__qty--positive]="row.quantity > 0" [class.mov__qty--negative]="row.quantity < 0">
+                {{ row.quantity > 0 ? '+' : '' }}{{ row.quantity }}
               </span>
             </div>
-            @if (row.custoUnitario) {
+            @if (row.unitCost) {
               <div class="mov__card-field">
                 <span class="mov__card-label">Custo Unit.</span>
-                <span class="mov__card-value mov__mono">{{ row.custoUnitario | brlCurrency }}</span>
+                <span class="mov__card-value mov__mono">{{ row.unitCost | brlCurrency }}</span>
               </div>
             }
-            @if (row.motivo) {
+            @if (row.createdBy) {
+              <div class="mov__card-field">
+                <span class="mov__card-label">Usuário</span>
+                <span class="mov__card-value">{{ row.createdBy }}</span>
+              </div>
+            }
+            @if (row.reason) {
               <div class="mov__card-field mov__card-field--full">
                 <span class="mov__card-label">Observação</span>
-                <span class="mov__card-value">{{ row.motivo }}</span>
+                <span class="mov__card-value">{{ row.reason }}</span>
+              </div>
+            }
+            @if (row.purchaseOrderId || row.orderId) {
+              <div class="mov__card-field mov__card-field--full">
+                <span class="mov__card-label">Origem</span>
+                <a class="mov__source-link" (click)="navigateToSource(row)">
+                  {{ row.purchaseOrderId ? 'Ordem de Compra' : 'Venda' }}
+                </a>
               </div>
             }
           </div>

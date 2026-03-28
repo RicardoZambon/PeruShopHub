@@ -72,29 +72,12 @@ public class InventoryService : IInventoryService
     }
 
     public async Task<PagedResult<StockMovementDto>> GetMovementsAsync(
-        Guid? productId, string? type,
-        DateTime? dateFrom, DateTime? dateTo,
+        Guid? productId, Guid? variantId, string? type,
+        DateTime? dateFrom, DateTime? dateTo, string? createdBy,
         int page, int pageSize,
         CancellationToken ct = default)
     {
-        var query = _db.StockMovements.AsNoTracking()
-            .Include(m => m.Product)
-            .Include(m => m.Variant)
-            .AsQueryable();
-
-        if (productId.HasValue)
-            query = query.Where(m => m.ProductId == productId.Value);
-
-        if (!string.IsNullOrWhiteSpace(type))
-            query = query.Where(m => m.Type == type);
-
-        if (dateFrom.HasValue)
-            query = query.Where(m => m.CreatedAt >= dateFrom.Value);
-
-        if (dateTo.HasValue)
-            query = query.Where(m => m.CreatedAt <= dateTo.Value);
-
-        query = query.OrderByDescending(m => m.CreatedAt);
+        var query = BuildMovementsQuery(productId, variantId, type, dateFrom, dateTo, createdBy);
 
         var totalCount = await query.CountAsync(ct);
         var items = await query
@@ -109,7 +92,9 @@ public class InventoryService : IInventoryService
                 m.UnitCost,
                 m.Reason,
                 m.CreatedBy,
-                m.CreatedAt))
+                m.CreatedAt,
+                m.PurchaseOrderId,
+                m.OrderId))
             .ToListAsync(ct);
 
         return new PagedResult<StockMovementDto>
@@ -121,8 +106,106 @@ public class InventoryService : IInventoryService
         };
     }
 
+    public async Task<byte[]> ExportMovementsToExcelAsync(
+        Guid? productId, Guid? variantId, string? type,
+        DateTime? dateFrom, DateTime? dateTo, string? createdBy,
+        CancellationToken ct = default)
+    {
+        var query = BuildMovementsQuery(productId, variantId, type, dateFrom, dateTo, createdBy);
+
+        var movements = await query
+            .Select(m => new StockMovementDto(
+                m.Id,
+                m.Variant != null ? m.Variant.Sku : m.Product.Sku,
+                m.Product.Name,
+                m.Type,
+                m.Quantity,
+                m.UnitCost,
+                m.Reason,
+                m.CreatedBy,
+                m.CreatedAt,
+                m.PurchaseOrderId,
+                m.OrderId))
+            .ToListAsync(ct);
+
+        using var workbook = new ClosedXML.Excel.XLWorkbook();
+        var ws = workbook.Worksheets.Add("Movimentações");
+
+        // Headers
+        ws.Cell(1, 1).Value = "Data";
+        ws.Cell(1, 2).Value = "SKU";
+        ws.Cell(1, 3).Value = "Produto";
+        ws.Cell(1, 4).Value = "Tipo";
+        ws.Cell(1, 5).Value = "Quantidade";
+        ws.Cell(1, 6).Value = "Custo Unitário";
+        ws.Cell(1, 7).Value = "Observação";
+        ws.Cell(1, 8).Value = "Usuário";
+
+        var headerRange = ws.Range(1, 1, 1, 8);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#1A237E");
+        headerRange.Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+
+        for (int i = 0; i < movements.Count; i++)
+        {
+            var m = movements[i];
+            var row = i + 2;
+            ws.Cell(row, 1).Value = m.CreatedAt.ToString("dd/MM/yyyy HH:mm");
+            ws.Cell(row, 2).Value = m.Sku;
+            ws.Cell(row, 3).Value = m.ProductName;
+            ws.Cell(row, 4).Value = m.Type;
+            ws.Cell(row, 5).Value = m.Quantity;
+            ws.Cell(row, 6).Value = m.UnitCost ?? 0;
+            ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 7).Value = m.Reason ?? "";
+            ws.Cell(row, 8).Value = m.CreatedBy ?? "";
+        }
+
+        ws.Columns().AdjustToContents();
+
+        using var ms = new MemoryStream();
+        workbook.SaveAs(ms);
+        return ms.ToArray();
+    }
+
+    private IQueryable<StockMovement> BuildMovementsQuery(
+        Guid? productId, Guid? variantId, string? type,
+        DateTime? dateFrom, DateTime? dateTo, string? createdBy)
+    {
+        var query = _db.StockMovements.AsNoTracking()
+            .Include(m => m.Product)
+            .Include(m => m.Variant)
+            .AsQueryable();
+
+        if (productId.HasValue)
+            query = query.Where(m => m.ProductId == productId.Value);
+
+        if (variantId.HasValue)
+            query = query.Where(m => m.VariantId == variantId.Value);
+
+        if (!string.IsNullOrWhiteSpace(type))
+            query = query.Where(m => m.Type == type);
+
+        if (dateFrom.HasValue)
+            query = query.Where(m => m.CreatedAt >= dateFrom.Value);
+
+        if (dateTo.HasValue)
+            query = query.Where(m => m.CreatedAt <= dateTo.Value);
+
+        if (!string.IsNullOrWhiteSpace(createdBy))
+        {
+            var cb = createdBy.Trim().ToLower();
+            query = query.Where(m => m.CreatedBy != null && m.CreatedBy.ToLower().Contains(cb));
+        }
+
+        return query.OrderByDescending(m => m.CreatedAt);
+    }
+
     public async Task<StockMovementDto> CreateMovementAsync(StockAdjustmentDto dto, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(dto.Reason))
+            throw new AppValidationException("Reason", "Motivo é obrigatório para ajustes manuais.");
+
         var variant = await _db.ProductVariants
             .Include(v => v.Product)
             .FirstOrDefaultAsync(v => v.Id == dto.VariantId && v.ProductId == dto.ProductId, ct)
@@ -158,7 +241,9 @@ public class InventoryService : IInventoryService
             movement.UnitCost,
             movement.Reason,
             movement.CreatedBy,
-            movement.CreatedAt);
+            movement.CreatedAt,
+            movement.PurchaseOrderId,
+            movement.OrderId);
     }
 
     public async Task<ProductAllocationsDto> GetAllocationsAsync(Guid productId, CancellationToken ct = default)
