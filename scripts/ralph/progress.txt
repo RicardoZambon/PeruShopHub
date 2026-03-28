@@ -500,3 +500,33 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - CostCalculationService now returns 6 cost categories (was 5) — any test asserting exact count needs updating
   - StorageCostDaily is nullable on the entity but defaults to 0 in cost calc when null (so products without storage cost configured won't have incorrect charges)
 ---
+
+## 2026-03-28 - US-REV-1
+- Phase 1 Review — Stock & Fulfillment gate review
+- **Build Results:**
+  - .NET build: PASS (0 errors, warnings only — EF Core version resolution MSB3277)
+  - Angular build: PASS (0 errors)
+  - .NET unit tests: 155/155 passed
+  - Angular tests: 57/57 passed
+- **Story-by-Story Review:**
+  - US-012 (PO Receive → Stock Adjustment): ALL 10/10 criteria MET
+  - US-013a (Stock Allocation Backend): ALL 7/7 criteria MET
+  - US-013b (Stock Allocation Frontend): ALL 4/4 criteria MET
+  - US-014 (Min/Max Stock Rules & Alerts): ALL 9/9 criteria MET
+  - US-015 (Stock Movement History): 7/8 criteria MET — 1 GAP found
+  - US-016 (Internal Stock Reconciliation): ALL 7/7 criteria MET
+  - US-017 (Product Cost History): ALL 6/6 criteria MET
+  - US-018 (Packaging & Storage Cost): ALL 7/7 criteria MET
+- **GAPS FOUND:**
+  - **US-015 GAP — CreatedBy not capturing authenticated user for manual adjustments:**
+    - File: `src/PeruShopHub.Application/Services/InventoryService.cs` line 228
+    - `CreatedBy = "system"` is hardcoded for manual stock adjustments (CreateMovementAsync)
+    - Should extract user name/email from HttpContext.User claims and pass to the service
+    - Note: Reconciliation endpoint (InventoryController line 86-88) correctly extracts user context
+    - Fix: InventoryController.Adjust() needs to extract user identity and pass it to CreateMovementAsync()
+- **No other gaps found across Phase 1 stories.**
+- Files changed: none (review-only story)
+- **Learnings for future iterations:**
+  - Angular test runner (vitest) may fail on first cold run due to cache; retry resolves it
+  - Reconciliation flow is a good reference for how to pass user context from controller to service
+---
