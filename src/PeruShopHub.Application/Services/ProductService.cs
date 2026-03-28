@@ -85,14 +85,28 @@ public class ProductService : IProductService
                 p.CreatedAt,
                 p.MinStock,
                 p.MaxStock,
-                (string?)null))
+                (string?)null,
+                false))
             .ToListAsync(ct);
 
         // Enrich with ABC classification from materialized view
         var productIds = products.Select(p => p.Id).ToList();
         var abcLookup = await GetAbcClassificationsAsync(productIds, ct);
+
+        // Enrich with marketplace listing presence
+        var listingLookup = await _db.MarketplaceListings
+            .AsNoTracking()
+            .Where(ml => ml.ProductId != null && productIds.Contains(ml.ProductId.Value))
+            .Select(ml => ml.ProductId!.Value)
+            .Distinct()
+            .ToListAsync(ct);
+        var listingSet = new HashSet<Guid>(listingLookup);
+
         var enriched = products.Select(p =>
-            p with { AbcClass = abcLookup.GetValueOrDefault(p.Id) }).ToList();
+            p with {
+                AbcClass = abcLookup.GetValueOrDefault(p.Id),
+                HasMarketplaceListing = listingSet.Contains(p.Id)
+            }).ToList();
 
         var result = new PagedResult<ProductListDto>
         {

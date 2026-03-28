@@ -14,6 +14,14 @@
     actionLabel="Novo Produto"
     [actionIcon]="plusIcon"
     (action)="onNewProduct()">
+    <app-button
+      variant="outline"
+      size="sm"
+      [icon]="downloadIcon"
+      [loading]="importTriggering()"
+      (click)="openImportDialog()">
+      Importar ML
+    </app-button>
   </app-page-header>
 
   <!-- Action Bar -->
@@ -61,7 +69,12 @@
 
     <!-- Name cell -->
     <ng-template appGridCell="name" let-row let-value="value">
-      <span class="cell-name">{{ value }}</span>
+      <span class="cell-name">
+        {{ value }}
+        @if (row.hasMarketplaceListing) {
+          <span class="ml-badge" title="Vinculado ao Mercado Livre">ML</span>
+        }
+      </span>
     </ng-template>
 
     <!-- SKU cell -->
@@ -130,7 +143,12 @@
           <lucide-icon [img]="packageIcon" [size]="16"></lucide-icon>
         </div>
         <div class="card-title">
-          <span class="card-name">{{ row.name }}</span>
+          <span class="card-name">
+            {{ row.name }}
+            @if (row.hasMarketplaceListing) {
+              <span class="ml-badge" title="Vinculado ao Mercado Livre">ML</span>
+            }
+          </span>
           <span class="card-sku">{{ row.sku }}</span>
           @if (row.variantCount > 0) {
             <span class="variant-chip" (click)="onVariantClick($event, row.id)">
@@ -170,3 +188,114 @@
     </ng-template>
   </app-data-grid>
 }
+
+<!-- Import Dialog -->
+<app-dialog
+  title="Importar Anúncios do Mercado Livre"
+  [open]="importDialogOpen()"
+  size="md"
+  (closed)="closeImportDialog()">
+  <div body class="import-dialog">
+    @if (!importStatus() || importStatus()!.status === 'None') {
+      <p class="import-dialog__desc">
+        Importa todos os seus anúncios ativos do Mercado Livre e cria/atualiza os produtos correspondentes no sistema.
+      </p>
+      <app-button
+        variant="accent"
+        [icon]="downloadIcon"
+        [loading]="importTriggering()"
+        [disabled]="importTriggering()"
+        (click)="startImport()">
+        Iniciar Importação
+      </app-button>
+    } @else {
+      <div class="import-status">
+        <!-- Status icon -->
+        <div class="import-status__header">
+          @switch (importStatus()!.status) {
+            @case ('Queued') {
+              <span class="import-status__icon import-status__icon--pending">
+                <lucide-icon [img]="downloadIcon" [size]="20"></lucide-icon>
+              </span>
+              <span class="import-status__label">Aguardando na fila...</span>
+            }
+            @case ('Running') {
+              <span class="import-status__icon import-status__icon--running">
+                <lucide-icon [img]="downloadIcon" [size]="20"></lucide-icon>
+              </span>
+              <span class="import-status__label">Importando...</span>
+            }
+            @case ('Completed') {
+              <span class="import-status__icon import-status__icon--success">
+                <lucide-icon [img]="checkCircleIcon" [size]="20"></lucide-icon>
+              </span>
+              <span class="import-status__label">Importação concluída</span>
+            }
+            @case ('Failed') {
+              <span class="import-status__icon import-status__icon--error">
+                <lucide-icon [img]="xCircleIcon" [size]="20"></lucide-icon>
+              </span>
+              <span class="import-status__label">Importação falhou</span>
+            }
+          }
+        </div>
+
+        <!-- Progress bar -->
+        @if (isImportActive()) {
+          <div class="import-progress">
+            <div class="import-progress__bar">
+              <div class="import-progress__fill" [style.width.%]="importProgress()"></div>
+            </div>
+            <span class="import-progress__text">
+              {{ importStatus()!.processedItems }} / {{ importStatus()!.totalItems }} itens
+            </span>
+          </div>
+        }
+
+        <!-- Results summary -->
+        @if (importStatus()!.status === 'Completed' || importStatus()!.status === 'Failed') {
+          <div class="import-results">
+            <div class="import-results__row">
+              <span class="import-results__label">Itens processados</span>
+              <span class="import-results__value">{{ importStatus()!.processedItems }}</span>
+            </div>
+            <div class="import-results__row">
+              <span class="import-results__label">Total de itens</span>
+              <span class="import-results__value">{{ importStatus()!.totalItems }}</span>
+            </div>
+            @if (importStatus()!.errorCount > 0) {
+              <div class="import-results__row import-results__row--error">
+                <span class="import-results__label">Erros</span>
+                <span class="import-results__value">{{ importStatus()!.errorCount }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Error log -->
+          @if (importStatus()!.errors?.length) {
+            <div class="import-errors">
+              <h4 class="import-errors__title">
+                <lucide-icon [img]="alertTriangleIcon" [size]="14"></lucide-icon>
+                Log de erros
+              </h4>
+              <ul class="import-errors__list">
+                @for (error of importStatus()!.errors!; track error) {
+                  <li>{{ error }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <!-- Restart button -->
+          <app-button
+            variant="outline"
+            [icon]="downloadIcon"
+            [loading]="importTriggering()"
+            (click)="startImport()">
+            Importar Novamente
+          </app-button>
+        }
+      </div>
+    }
+  </div>
+</app-dialog>

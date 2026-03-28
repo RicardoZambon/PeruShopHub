@@ -1,8 +1,8 @@
-import { Component, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Plus, Edit, Package } from 'lucide-angular';
+import { LucideAngularModule, Plus, Edit, Package, Download, CheckCircle, AlertTriangle, XCircle } from 'lucide-angular';
 import {
   DataGridComponent,
   GridCellDirective,
@@ -16,28 +16,39 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import { SelectDropdownComponent, type SelectOption } from '../../shared/components/select-dropdown/select-dropdown.component';
 import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
+import { DialogComponent } from '../../shared/components/dialog/dialog.component';
+import { ButtonComponent } from '../../shared/components/button/button.component';
 import { formatBrl as formatBrlUtil, getProductStatusVariant } from '../../shared/utils';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ProductService, Product } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
+import { SettingsService, type ImportJobStatus } from '../../services/settings.service';
+import { ToastService } from '../../services/toast.service';
 import type { Category } from '../../models/category.model';
+import { firstValueFrom } from 'rxjs';
 type ProductStatus = 'Ativo' | 'Pausado' | 'Encerrado';
 type FilterStatus = 'Todos' | ProductStatus | 'Revisão';
 
 @Component({
   selector: 'app-products-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, MarginBadgeComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, MarginBadgeComponent, DialogComponent, ButtonComponent],
   templateUrl: './products-list.component.html',
   styleUrl: './products-list.component.scss',
 })
-export class ProductsListComponent implements OnInit {
+export class ProductsListComponent implements OnInit, OnDestroy {
   private readonly productService = inject(ProductService);
   private readonly categoryService = inject(CategoryService);
+  private readonly settingsService = inject(SettingsService);
+  private readonly toastService = inject(ToastService);
 
   readonly plusIcon = Plus;
   readonly editIcon = Edit;
   readonly packageIcon = Package;
+  readonly downloadIcon = Download;
+  readonly checkCircleIcon = CheckCircle;
+  readonly alertTriangleIcon = AlertTriangle;
+  readonly xCircleIcon = XCircle;
 
   @ViewChild('grid') gridRef!: DataGridComponent;
 
@@ -91,6 +102,7 @@ export class ProductsListComponent implements OnInit {
       abcClass: p.abcClass ?? null,
       variantCount: p.variantCount,
       needsReview: p.needsReview,
+      hasMarketplaceListing: (p as any).hasMarketplaceListing ?? false,
     }));
   });
 
@@ -212,5 +224,93 @@ export class ProductsListComponent implements OnInit {
   onLoadMore(): void {
     this.currentPage.update(p => p + 1);
     this.loadProducts(false);
+  }
+
+  // --- ML Import ---
+  readonly importDialogOpen = signal(false);
+  readonly importStatus = signal<ImportJobStatus | null>(null);
+  readonly importTriggering = signal(false);
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+
+  readonly importProgress = computed(() => {
+    const s = this.importStatus();
+    if (!s || s.totalItems === 0) return 0;
+    return Math.round((s.processedItems / s.totalItems) * 100);
+  });
+
+  readonly isImportActive = computed(() => {
+    const s = this.importStatus();
+    return s?.status === 'Running' || s?.status === 'Queued';
+  });
+
+  openImportDialog(): void {
+    this.importDialogOpen.set(true);
+    this.checkImportStatus();
+  }
+
+  closeImportDialog(): void {
+    this.importDialogOpen.set(false);
+    this.stopPolling();
+    // Refresh products if import completed to show ML badges
+    const s = this.importStatus();
+    if (s?.status === 'Completed') {
+      this.loadProducts(true);
+    }
+  }
+
+  async startImport(): Promise<void> {
+    this.importTriggering.set(true);
+    try {
+      const status = await firstValueFrom(this.settingsService.triggerMlImport());
+      this.importStatus.set(status);
+      this.startPolling();
+    } catch (err: any) {
+      const msg = err?.error?.message || 'Erro ao iniciar importação.';
+      this.toastService.show(msg, 'danger');
+    } finally {
+      this.importTriggering.set(false);
+    }
+  }
+
+  private async checkImportStatus(): Promise<void> {
+    try {
+      const status = await firstValueFrom(this.settingsService.getMlImportStatus());
+      this.importStatus.set(status);
+      if (status.status === 'Running' || status.status === 'Queued') {
+        this.startPolling();
+      }
+    } catch {
+      // No status available
+      this.importStatus.set(null);
+    }
+  }
+
+  private startPolling(): void {
+    this.stopPolling();
+    this.pollTimer = setInterval(async () => {
+      try {
+        const status = await firstValueFrom(this.settingsService.getMlImportStatus());
+        this.importStatus.set(status);
+        if (status.status !== 'Running' && status.status !== 'Queued') {
+          this.stopPolling();
+          if (status.status === 'Completed') {
+            this.toastService.show('Importação concluída com sucesso!', 'success');
+          }
+        }
+      } catch {
+        this.stopPolling();
+      }
+    }, 2000);
+  }
+
+  private stopPolling(): void {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
   }
 }

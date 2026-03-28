@@ -30,6 +30,7 @@ export interface Product {
   variantCount: number;
   needsReview: boolean;
   abcClass?: string | null;
+  hasMarketplaceListing?: boolean;
   minStock?: number | null;
   maxStock?: number | null;
   variants?: any[];

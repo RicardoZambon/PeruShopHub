@@ -18,7 +18,8 @@ public record ProductListDto(
     DateTime CreatedAt,
     int? MinStock,
     int? MaxStock,
-    string? AbcClass);
+    string? AbcClass,
+    bool HasMarketplaceListing = false);
 
 public record ProductDetailDto(
     Guid Id,

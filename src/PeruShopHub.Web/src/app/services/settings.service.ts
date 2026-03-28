@@ -76,6 +76,16 @@ export interface ReportSchedule {
   createdAt: string;
 }
 
+export interface ImportJobStatus {
+  status: 'None' | 'Queued' | 'Running' | 'Completed' | 'Failed';
+  totalItems: number;
+  processedItems: number;
+  errorCount: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  errors: string[] | null;
+}
+
 export interface AlertRule {
   id: string;
   type: string;
@@ -197,5 +207,14 @@ export class SettingsService {
 
   deleteAlertRule(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/alert-rules/${id}`);
+  }
+
+  // ML Import
+  triggerMlImport(): Observable<ImportJobStatus> {
+    return this.http.post<ImportJobStatus>(`${environment.apiUrl}/integrations/mercadolivre/import`, {});
+  }
+
+  getMlImportStatus(): Observable<ImportJobStatus> {
+    return this.http.get<ImportJobStatus>(`${environment.apiUrl}/integrations/mercadolivre/import/status`);
   }
 }
