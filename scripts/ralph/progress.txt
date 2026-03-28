@@ -3,6 +3,8 @@ Started: Fri Mar 28 2026
 ---
 
 ## Codebase Patterns
+- **Marketplace adapter pattern**: `IMarketplaceAdapter` in Core/Interfaces, implementations in Infrastructure/Marketplace. Keyed DI: `AddKeyedScoped<IMarketplaceAdapter, XAdapter>("key")`. Named HttpClient per marketplace
+- **ML API DTOs**: Use `[JsonPropertyName("snake_case")]` on ML response models — ML API uses snake_case, not camelCase
 - All components are **standalone** (no NgModules) with `standalone: true`
 - Use `CommonModule` import for `*ngFor`, `*ngIf` directives
 - Barrel exports in `shared/components/index.ts` — export both component and types
@@ -927,4 +929,23 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
 - **Learnings for future iterations:**
   - Angular vitest can have transient failures on first run — re-run to confirm
   - EF Core MSB3277 warnings persist (version resolution between Infrastructure 9.0.14 and Application 9.0.1) — not blocking but worth unifying later
+---
+
+## 2026-03-28 - US-033
+- Implemented IMarketplaceAdapter interface in Core/Interfaces with DTOs (TokenResult, MarketplaceProduct, MarketplaceOrder, MarketplaceOrderDetails, MarketplaceFee, etc.)
+- Implemented MercadoLivreAdapter in Infrastructure/Marketplace with full HTTP helper pattern (SendAsync with logging, error deserialization, timing)
+- Created MercadoLivreModels.cs with ML API response DTOs (MlTokenResponse, MlItemResponse, MlOrderSearchResponse, MlShippingResponse, MlBillingInfoResponse)
+- Created MercadoLivreException for typed error handling with StatusCode and MlErrorResponse
+- Registered keyed DI service `AddKeyedScoped<IMarketplaceAdapter, MercadoLivreAdapter>("mercadolivre")` and named HttpClient "MercadoLivre" in Program.cs
+- Files changed:
+  - src/PeruShopHub.Core/Interfaces/IMarketplaceAdapter.cs (new)
+  - src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreAdapter.cs (new)
+  - src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreModels.cs (new)
+  - src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreException.cs (new)
+  - src/PeruShopHub.API/Program.cs (modified)
+- **Learnings for future iterations:**
+  - IHttpClientFactory is available via Microsoft.Extensions.Http which is transitively referenced — no extra package needed in Infrastructure
+  - Keyed DI services use `AddKeyedScoped<TService, TImplementation>(key)` — consumer resolves via `[FromKeyedServices("key")]` attribute
+  - ML API uses snake_case JSON — use `[JsonPropertyName]` on response DTOs rather than relying on naming policy
+  - The adapter doesn't store auth tokens — it receives them per-call or via HttpClient message handlers (to be added in token management story)
 ---
