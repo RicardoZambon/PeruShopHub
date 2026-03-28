@@ -306,3 +306,19 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Worker project is often overlooked when adding cross-cutting concerns (logging, error tracking)
   - Vitest + Angular analog plugin has cold-start quirks — always run tests twice if first run fails
 ---
+
+## 2026-03-28 - US-012
+- **Verification-only**: All acceptance criteria already implemented in previous work
+- Backend: `POST /api/purchase-orders/{id}/receive` endpoint in PurchaseOrdersController (line 58)
+- Backend: `CostCalculationService.ReceivePurchaseOrderAsync` handles full transactional flow: cost distribution → weighted avg cost → stock increment → ProductCostHistory → StockMovement → status change → SignalR broadcast
+- Frontend: "Receber Estoque" button in `purchase-order-detail.component.html` (line 7-16), only shown when `status === 'Rascunho'`
+- Frontend: `receiveStock()` method with loading state, success/error toasts
+- Frontend: `PurchaseOrderService.receive()` calls `POST /api/purchase-orders/{id}/receive`
+- SignalR: broadcasts `PurchaseOrder/received` and `product/updated` per item
+- All builds pass (0 errors), 142 .NET unit tests pass, 57 Angular tests pass
+- Files changed: `scripts/ralph/prd.json` (marked passes: true), `scripts/ralph/progress.txt`
+- **Learnings for future iterations:**
+  - US-012 was already fully implemented before this phase started — always check existing code before implementing
+  - The full PO receive flow is in CostCalculationService (lines 167-313), not in PurchaseOrderService which just delegates
+  - SignalR broadcasts both entity-level (`PurchaseOrder/received`) and per-product updates (`product/updated`) for frontend refresh
+---

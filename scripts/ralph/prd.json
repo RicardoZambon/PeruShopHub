@@ -256,7 +256,7 @@
         "Angular build passes"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 1 — Stock & Fulfillment."
     },
     {
