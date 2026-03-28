@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using PeruShopHub.Application.Services;
 using PeruShopHub.Core.Interfaces;
+using PeruShopHub.Infrastructure.Cache;
 using PeruShopHub.Infrastructure.Email;
 using PeruShopHub.Infrastructure.Marketplace;
 using PeruShopHub.Infrastructure.Persistence;
@@ -30,6 +32,18 @@ builder.Services.AddHttpClient("MercadoLivre", client =>
 }).AddMercadoLivreResilience();
 builder.Services.AddKeyedScoped<IMarketplaceAdapter, MercadoLivreAdapter>("mercadolivre");
 
+// Redis Cache (needed for import job queue)
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+    options.InstanceName = "perushophub:";
+});
+builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+
+// ML Listing Import
+builder.Services.AddScoped<IMlListingImportService, MlListingImportService>();
+
+builder.Services.AddHostedService<MlListingImportWorker>();
 builder.Services.AddHostedService<StockAlertWorker>();
 builder.Services.AddHostedService<NotificationCleanupWorker>();
 builder.Services.AddHostedService<SkuProfitabilityRefreshWorker>();

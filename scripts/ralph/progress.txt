@@ -1073,3 +1073,34 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Integration card already had most structure; the main gaps were status-specific badges, reconnect flow, sync trigger, and health indicators
   - MarketplaceConnection entity already tracks `RefreshErrorCount` — just needed to expose it through the DTO
 ---
+
+## 2026-03-28 - US-039a
+- Implemented ML listing import backend worker
+- Created `MarketplaceListing` entity with EF Core configuration and migration (links ML items to internal products via ExternalId)
+- Extended `IMarketplaceAdapter` with `SearchSellerItemsAsync` (scroll pagination) and `GetItemDetailsAsync` (full details with variations/pictures)
+- Added ML-specific response models: `MlItemSearchResponse`, `MlItemFullResponse`, `MlItemVariation`, `MlItemPicture`, `MlAttributeCombination`
+- Implemented `MlListingImportService` with: scroll pagination to fetch all seller items, batch processing (50 items), progress tracking via Redis, create/update logic for MarketplaceListing + Product + ProductVariant
+- Added `POST /api/integrations/mercadolivre/import` endpoint (enqueues job) and `GET /api/integrations/mercadolivre/import/status` (progress)
+- Created `MlListingImportWorker` (BackgroundService) that polls Redis for queued import requests
+- Registered new services in Worker Program.cs (Redis cache, import service, import worker)
+- Files changed:
+  - `src/PeruShopHub.Core/Entities/MarketplaceListing.cs` (new)
+  - `src/PeruShopHub.Core/Interfaces/IMarketplaceAdapter.cs` (extended with search/details methods + DTOs)
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreModels.cs` (added search/item/variation models)
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreAdapter.cs` (implemented search + details)
+  - `src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs` (added DbSet)
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/MarketplaceListingConfiguration.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Migrations/20260328213854_AddMarketplaceListing.cs` (new)
+  - `src/PeruShopHub.Application/Services/MlListingImportService.cs` (new)
+  - `src/PeruShopHub.Application/DependencyInjection.cs` (registered import service)
+  - `src/PeruShopHub.API/Controllers/IntegrationsController.cs` (added import/status endpoints)
+  - `src/PeruShopHub.Worker/Workers/MlListingImportWorker.cs` (new)
+  - `src/PeruShopHub.Worker/Program.cs` (registered Redis, import service, worker)
+- **Learnings for future iterations:**
+  - ML item search uses `search_type=scan` with `scroll_id` for pagination — different from offset-based pagination
+  - `MlItemFullResponse` has `variations` and `pictures` arrays not present in the simpler `MlItemResponse`
+  - Import worker uses Redis as a simple job queue: API writes to `import:ml:queue:{tenantId}`, worker polls and processes
+  - Progress tracking via `import:ml:{tenantId}` Redis key with 24h TTL
+  - `MarketplaceListing` has unique index on (TenantId, MarketplaceId, ExternalId) for upsert logic
+  - Worker needs its own Redis registration since it doesn't share API's DI container
+---

@@ -193,6 +193,53 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
             d.CurrencyId)).ToList();
     }
 
+    // ── Item Search & Details ─────────────────────────────────
+
+    public async Task<MarketplaceItemSearchResult> SearchSellerItemsAsync(
+        string sellerId, string? scrollId, int limit = 50, CancellationToken ct = default)
+    {
+        var url = $"/users/{sellerId}/items/search?search_type=scan&limit={limit}";
+        if (!string.IsNullOrEmpty(scrollId))
+            url += $"&scroll_id={Uri.EscapeDataString(scrollId)}";
+
+        var result = await SendAsync<MlItemSearchResponse>(HttpMethod.Get, url, null, ct);
+
+        return new MarketplaceItemSearchResult(
+            result.ScrollId,
+            result.Results,
+            result.Paging.Total);
+    }
+
+    public async Task<MarketplaceItemDetails> GetItemDetailsAsync(string externalId, CancellationToken ct = default)
+    {
+        var item = await SendAsync<MlItemFullResponse>(HttpMethod.Get, $"/items/{externalId}", null, ct);
+
+        var pictures = item.Pictures.Select(p =>
+            new MarketplaceItemPicture(p.Id, p.SecureUrl ?? p.Url)).ToList();
+
+        var variations = item.Variations.Select(v =>
+            new MarketplaceItemVariation(
+                v.Id.ToString(),
+                v.SellerCustomField,
+                v.Price,
+                v.AvailableQuantity,
+                v.AttributeCombinations.ToDictionary(a => a.Name, a => a.ValueName ?? string.Empty)
+            )).ToList();
+
+        return new MarketplaceItemDetails(
+            item.Id,
+            item.Title,
+            item.Status,
+            item.Price,
+            item.CurrencyId,
+            item.AvailableQuantity,
+            item.CategoryId,
+            item.Permalink,
+            item.Thumbnail,
+            pictures,
+            variations);
+    }
+
     // ── HTTP helpers ─────────────────────────────────────────
 
     private async Task<T> SendAsync<T>(HttpMethod method, string endpoint, HttpContent? content, CancellationToken ct)

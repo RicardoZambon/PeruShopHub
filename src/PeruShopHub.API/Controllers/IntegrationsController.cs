@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.Services;
+using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
@@ -12,11 +13,19 @@ namespace PeruShopHub.API.Controllers;
 public class IntegrationsController : ControllerBase
 {
     private readonly IIntegrationService _integrationService;
+    private readonly IMlListingImportService _importService;
+    private readonly ITenantContext _tenantContext;
     private readonly PeruShopHubDbContext _db;
 
-    public IntegrationsController(IIntegrationService integrationService, PeruShopHubDbContext db)
+    public IntegrationsController(
+        IIntegrationService integrationService,
+        IMlListingImportService importService,
+        ITenantContext tenantContext,
+        PeruShopHubDbContext db)
     {
         _integrationService = integrationService;
+        _importService = importService;
+        _tenantContext = tenantContext;
         _db = db;
     }
 
@@ -65,5 +74,28 @@ public class IntegrationsController : ControllerBase
         await _db.SaveChangesAsync(ct);
 
         return Ok(new { lastSyncAt = connection.LastSyncAt });
+    }
+
+    [HttpPost("mercadolivre/import")]
+    public async Task<ActionResult<ImportJobStatus>> TriggerImport(CancellationToken ct)
+    {
+        if (_tenantContext.TenantId is null)
+            return Unauthorized();
+
+        var status = await _importService.EnqueueImportAsync(_tenantContext.TenantId.Value, ct);
+        return Accepted(status);
+    }
+
+    [HttpGet("mercadolivre/import/status")]
+    public async Task<ActionResult<ImportJobStatus>> GetImportStatus(CancellationToken ct)
+    {
+        if (_tenantContext.TenantId is null)
+            return Unauthorized();
+
+        var status = await _importService.GetImportStatusAsync(_tenantContext.TenantId.Value, ct);
+        if (status is null)
+            return Ok(new { status = "None" });
+
+        return Ok(status);
     }
 }

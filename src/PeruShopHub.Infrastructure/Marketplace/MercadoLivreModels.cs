@@ -192,3 +192,115 @@ public class MlBillingDetail
     [JsonPropertyName("currency_id")]
     public string CurrencyId { get; set; } = string.Empty;
 }
+
+// ── ML Item search (scroll) response ───────────────────────
+
+public class MlItemSearchResponse
+{
+    [JsonPropertyName("seller_id")]
+    public string SellerId { get; set; } = string.Empty;
+
+    [JsonPropertyName("results")]
+    public List<string> Results { get; set; } = [];
+
+    [JsonPropertyName("paging")]
+    public MlPaging Paging { get; set; } = new();
+
+    [JsonPropertyName("scroll_id")]
+    public string? ScrollId { get; set; }
+}
+
+public class MlPaging
+{
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
+
+    [JsonPropertyName("offset")]
+    public int Offset { get; set; }
+
+    [JsonPropertyName("limit")]
+    public int Limit { get; set; }
+}
+
+// ── ML Item full details (with variations & pictures) ──────
+
+public class MlItemFullResponse
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("price")]
+    public decimal Price { get; set; }
+
+    [JsonPropertyName("currency_id")]
+    public string CurrencyId { get; set; } = string.Empty;
+
+    [JsonPropertyName("available_quantity")]
+    public int AvailableQuantity { get; set; }
+
+    [JsonPropertyName("category_id")]
+    public string? CategoryId { get; set; }
+
+    [JsonPropertyName("permalink")]
+    public string? Permalink { get; set; }
+
+    [JsonPropertyName("thumbnail")]
+    public string? Thumbnail { get; set; }
+
+    [JsonPropertyName("pictures")]
+    public List<MlItemPicture> Pictures { get; set; } = [];
+
+    [JsonPropertyName("variations")]
+    public List<MlItemVariation> Variations { get; set; } = [];
+}
+
+public class MlItemPicture
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("secure_url")]
+    public string? SecureUrl { get; set; }
+}
+
+public class MlItemVariation
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("price")]
+    public decimal Price { get; set; }
+
+    [JsonPropertyName("available_quantity")]
+    public int AvailableQuantity { get; set; }
+
+    [JsonPropertyName("seller_custom_field")]
+    public string? SellerCustomField { get; set; }
+
+    [JsonPropertyName("attribute_combinations")]
+    public List<MlAttributeCombination> AttributeCombinations { get; set; } = [];
+
+    [JsonPropertyName("picture_ids")]
+    public List<string> PictureIds { get; set; } = [];
+}
+
+public class MlAttributeCombination
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("value_name")]
+    public string? ValueName { get; set; }
+}

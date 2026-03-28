@@ -18,6 +18,12 @@ public interface IMarketplaceAdapter
     Task<IReadOnlyList<MarketplaceOrder>> GetOrdersAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct = default);
     Task<MarketplaceOrderDetails> GetOrderDetailsAsync(string orderId, CancellationToken ct = default);
     Task<IReadOnlyList<MarketplaceFee>> GetOrderFeesAsync(string orderId, CancellationToken ct = default);
+
+    /// <summary>Scroll-paginate through all seller items. Pass null scrollId for first page.</summary>
+    Task<MarketplaceItemSearchResult> SearchSellerItemsAsync(string sellerId, string? scrollId, int limit = 50, CancellationToken ct = default);
+
+    /// <summary>Fetch full item details including variations and pictures.</summary>
+    Task<MarketplaceItemDetails> GetItemDetailsAsync(string externalId, CancellationToken ct = default);
 }
 
 // ── DTOs returned by IMarketplaceAdapter ────────────────────
@@ -66,3 +72,32 @@ public record MarketplaceFee(
     string Type,
     decimal Amount,
     string CurrencyId);
+
+// ── Item search / import DTOs ───────────────────────────────
+
+public record MarketplaceItemSearchResult(
+    string? ScrollId,
+    IReadOnlyList<string> ItemIds,
+    int Total);
+
+public record MarketplaceItemDetails(
+    string ExternalId,
+    string Title,
+    string Status,
+    decimal Price,
+    string CurrencyId,
+    int AvailableQuantity,
+    string? CategoryId,
+    string? Permalink,
+    string? ThumbnailUrl,
+    IReadOnlyList<MarketplaceItemPicture> Pictures,
+    IReadOnlyList<MarketplaceItemVariation> Variations);
+
+public record MarketplaceItemPicture(string Id, string Url);
+
+public record MarketplaceItemVariation(
+    string? ExternalVariationId,
+    string? Sku,
+    decimal? Price,
+    int AvailableQuantity,
+    IReadOnlyDictionary<string, string> Attributes);

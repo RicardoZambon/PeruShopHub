@@ -44,6 +44,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<PricingRule> PricingRules => Set<PricingRule>();
     public DbSet<AlertRule> AlertRules => Set<AlertRule>();
+    public DbSet<MarketplaceListing> MarketplaceListings => Set<MarketplaceListing>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
