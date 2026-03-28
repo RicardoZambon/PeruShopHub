@@ -48,18 +48,20 @@ public class DashboardController : ControllerBase
     [HttpGet("top-products")]
     public async Task<ActionResult<IReadOnlyList<ProductRankingDto>>> GetTopProducts(
         [FromQuery] int limit = 5,
+        [FromQuery] string period = "30dias",
         CancellationToken ct = default)
     {
-        var products = await _dashboardService.GetTopProductsAsync(limit, ct);
+        var products = await _dashboardService.GetTopProductsAsync(limit, period, ct);
         return Ok(products);
     }
 
     [HttpGet("least-profitable")]
     public async Task<ActionResult<IReadOnlyList<ProductRankingDto>>> GetLeastProfitable(
         [FromQuery] int limit = 5,
+        [FromQuery] string period = "30dias",
         CancellationToken ct = default)
     {
-        var products = await _dashboardService.GetLeastProfitableAsync(limit, ct);
+        var products = await _dashboardService.GetLeastProfitableAsync(limit, period, ct);
         return Ok(products);
     }
 

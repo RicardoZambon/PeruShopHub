@@ -13,7 +13,8 @@ public record FinanceSummaryDto(
 public record CostBreakdownDto(
     string Category,
     decimal Total,
-    decimal Percentage);
+    decimal Percentage,
+    string? Color = null);
 
 public record SkuProfitabilityDto(
     Guid ProductId,

@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
@@ -8,10 +8,10 @@ import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.comp
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent } from '../../shared/components';
 import { DashboardService } from '../../services/dashboard.service';
-import type { KpiCard, ProductRow, PendingAction, ChartDataPoint, CostBreakdownItem } from '../../models/api.models';
+import type { KpiCard, ProductRanking, PendingAction, ChartDataPoint, CostBreakdownItem } from '../../models/api.models';
 import { formatBrl as formatBrlUtil } from '../../shared/utils';
 
-type Period = 'hoje' | '7dias' | '30dias' | 'personalizado';
+type Period = 'hoje' | '7dias' | '30dias' | 'estemes' | 'personalizado';
 
 interface KpiData {
   label: string;
@@ -32,6 +32,13 @@ const COST_COLORS = [
   '#BDBDBD',
 ];
 
+const PERIOD_LABELS: Record<string, string> = {
+  'hoje': 'vs dia anterior',
+  '7dias': 'vs 7 dias anteriores',
+  '30dias': 'vs 30 dias anteriores',
+  'estemes': 'vs mês anterior',
+};
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -51,6 +58,7 @@ export class DashboardComponent implements OnInit {
     { key: 'hoje', label: 'Hoje' },
     { key: '7dias', label: '7 dias' },
     { key: '30dias', label: '30 dias' },
+    { key: 'estemes', label: 'Este mês' },
     { key: 'personalizado', label: 'Personalizado' },
   ];
 
@@ -239,8 +247,8 @@ export class DashboardComponent implements OnInit {
 
   // Top products and pending actions
   hasData = signal(true);
-  topProfitable = signal<ProductRow[]>([]);
-  leastProfitable = signal<ProductRow[]>([]);
+  topProfitable = signal<ProductRanking[]>([]);
+  leastProfitable = signal<ProductRanking[]>([]);
   pendingActions = signal<PendingAction[]>([]);
 
   ngOnInit(): void {
@@ -266,20 +274,21 @@ export class DashboardComponent implements OnInit {
     const days = effectivePeriod === 'hoje' ? 1 : effectivePeriod === '7dias' ? 7 : 30;
 
     forkJoin({
-      kpis: this.dashboardService.getSummary(effectivePeriod),
+      summary: this.dashboardService.getSummary(effectivePeriod),
       chart: this.dashboardService.getRevenueProfit(days),
       costs: this.dashboardService.getCostBreakdown(effectivePeriod),
-      top: this.dashboardService.getTopProducts(5),
-      least: this.dashboardService.getLeastProfitable(5),
+      top: this.dashboardService.getTopProducts(5, effectivePeriod),
+      least: this.dashboardService.getLeastProfitable(5, effectivePeriod),
       pending: this.dashboardService.getPendingActions(),
     }).subscribe({
-      next: ({ kpis, chart, costs, top, least, pending }) => {
-        this.kpis.set(kpis);
+      next: ({ summary, chart, costs, top, least, pending }) => {
+        this.mapKpis(summary.kpis, effectivePeriod);
         this.updateLineChart(chart);
         this.updateDonutChart(costs);
         this.topProfitable.set(top);
         this.leastProfitable.set(least);
         this.pendingActions.set(pending);
+        this.hasData.set(summary.kpis.length > 0 || top.length > 0);
         this.loading.set(false);
       },
       error: () => {
@@ -288,13 +297,35 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  private mapKpis(kpis: KpiCard[], period: string): void {
+    const changeLabel = PERIOD_LABELS[period] ?? `vs período anterior`;
+    const costKpis = ['Total Custos'];
+    this.kpis.set(
+      kpis.map(kpi => ({
+        label: kpi.title,
+        value: this.formatKpiValue(kpi),
+        change: kpi.changePercent ?? 0,
+        changeLabel,
+        invertColors: costKpis.includes(kpi.title),
+      }))
+    );
+  }
+
+  private formatKpiValue(kpi: KpiCard): string {
+    const numValue = parseFloat(kpi.value);
+    if (isNaN(numValue)) return kpi.value;
+    if (kpi.title === 'Vendas') return kpi.value;
+    if (kpi.title === 'Margem Media') return `${numValue.toFixed(1)}%`;
+    return numValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
   private updateLineChart(data: ChartDataPoint[]): void {
     this.lineChartData.set({
       labels: data.map(d => d.label),
       datasets: [
         {
           label: 'Receita Bruta',
-          data: data.map(d => d.value1),
+          data: data.map(d => d.value),
           borderColor: '#1A237E',
           backgroundColor: 'rgba(26, 35, 126, 0.1)',
           fill: true,
@@ -305,7 +336,7 @@ export class DashboardComponent implements OnInit {
         },
         {
           label: 'Lucro Líquido',
-          data: data.map(d => d.value2 ?? 0),
+          data: data.map(d => d.secondaryValue ?? 0),
           borderColor: '#2E7D32',
           backgroundColor: 'rgba(46, 125, 50, 0.1)',
           fill: true,
@@ -320,14 +351,14 @@ export class DashboardComponent implements OnInit {
   }
 
   private updateDonutChart(costs: CostBreakdownItem[]): void {
-    const total = costs.reduce((sum, c) => sum + c.value, 0);
+    const total = costs.reduce((sum, c) => sum + c.total, 0);
     this.donutTotal.set(total);
     this.donutChartData.set({
-      labels: costs.map(c => c.label),
+      labels: costs.map(c => c.category),
       datasets: [
         {
-          data: costs.map(c => c.value),
-          backgroundColor: costs.map(c => c.color),
+          data: costs.map(c => c.total),
+          backgroundColor: costs.map((c, i) => c.color ?? COST_COLORS[i % COST_COLORS.length]),
           borderWidth: 0,
           hoverOffset: 6,
         },
@@ -337,12 +368,21 @@ export class DashboardComponent implements OnInit {
 
   formatBrl = formatBrlUtil;
 
-  onProductClick(id: number): void {
+  onProductClick(id: string): void {
     this.router.navigate(['/produtos', id]);
   }
 
   onConnectMarketplace(): void {
     this.router.navigate(['/configuracoes']);
+  }
+
+  getPendingActionVariant(action: PendingAction): string {
+    switch (action.type) {
+      case 'question': return 'accent';
+      case 'order': return 'warning';
+      case 'stock_alert': return 'danger';
+      default: return 'accent';
+    }
   }
 
   toggleEmptyState(): void {

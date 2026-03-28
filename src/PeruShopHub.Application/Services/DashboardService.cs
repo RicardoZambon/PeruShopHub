@@ -11,6 +11,23 @@ public class DashboardService : IDashboardService
     private readonly PeruShopHubDbContext _db;
     private readonly ICacheService _cache;
 
+    private static readonly Dictionary<string, string> CostCategoryColors = new()
+    {
+        ["product_cost"] = "#5C6BC0",
+        ["marketplace_commission"] = "#42A5F5",
+        ["shipping_seller"] = "#66BB6A",
+        ["tax"] = "#FFA726",
+        ["payment_fee"] = "#EF5350",
+        ["fulfillment_fee"] = "#AB47BC",
+        ["fixed_fee"] = "#26C6DA",
+        ["packaging"] = "#78909C",
+        ["storage_daily"] = "#8D6E63",
+        ["advertising"] = "#FF7043",
+    };
+
+    private static readonly string[] DefaultCostColors =
+        ["#5C6BC0", "#42A5F5", "#66BB6A", "#FFA726", "#EF5350", "#AB47BC", "#26C6DA", "#BDBDBD"];
+
     public DashboardService(PeruShopHubDbContext db, ICacheService cache)
     {
         _db = db;
@@ -52,6 +69,22 @@ public class DashboardService : IDashboardService
             ? Math.Round(prevNetProfit / prevGrossRevenue * 100, 2)
             : 0m;
 
+        var avgTicket = salesCount > 0 ? Math.Round(grossRevenue / salesCount, 2) : 0m;
+        var prevAvgTicket = prevSalesCount > 0 ? Math.Round(prevGrossRevenue / prevSalesCount, 2) : 0m;
+
+        var currentOrderIds = currentOrders.Select(o => o.Id).ToList();
+        var totalCosts = currentOrderIds.Count > 0
+            ? await _db.OrderCosts
+                .Where(c => currentOrderIds.Contains(c.OrderId))
+                .SumAsync(c => c.Value, ct)
+            : 0m;
+        var prevOrderIds = prevOrders.Select(o => o.Id).ToList();
+        var prevTotalCosts = prevOrderIds.Count > 0
+            ? await _db.OrderCosts
+                .Where(c => prevOrderIds.Contains(c.OrderId))
+                .SumAsync(c => c.Value, ct)
+            : 0m;
+
         var kpis = new List<KpiCardDto>
         {
             new("Vendas",
@@ -66,6 +99,12 @@ public class DashboardService : IDashboardService
                 CalculateChangePercent(grossRevenue, prevGrossRevenue),
                 GetChangeDirection(grossRevenue, prevGrossRevenue),
                 "attach_money"),
+            new("Total Custos",
+                totalCosts.ToString("F2"),
+                prevTotalCosts.ToString("F2"),
+                CalculateChangePercent(totalCosts, prevTotalCosts),
+                GetChangeDirection(totalCosts, prevTotalCosts),
+                "money_off"),
             new("Lucro Liquido",
                 netProfit.ToString("F2"),
                 prevNetProfit.ToString("F2"),
@@ -77,7 +116,13 @@ public class DashboardService : IDashboardService
                 prevAvgMargin.ToString("F2"),
                 avgMargin - prevAvgMargin,
                 GetChangeDirection(avgMargin, prevAvgMargin),
-                "percent")
+                "percent"),
+            new("Ticket Medio",
+                avgTicket.ToString("F2"),
+                prevAvgTicket.ToString("F2"),
+                CalculateChangePercent(avgTicket, prevAvgTicket),
+                GetChangeDirection(avgTicket, prevAvgTicket),
+                "receipt")
         };
 
         var pendingActions = await BuildPendingActionsAsync(ct);
@@ -146,26 +191,28 @@ public class DashboardService : IDashboardService
 
         var grandTotal = costs.Sum(c => c.Total);
 
+        var colorIndex = 0;
         var breakdown = costs
+            .OrderByDescending(c => c.Total)
             .Select(c => new CostBreakdownDto(
                 c.Category,
                 c.Total,
-                grandTotal != 0 ? Math.Round(c.Total / grandTotal * 100, 2) : 0))
-            .OrderByDescending(c => c.Total)
+                grandTotal != 0 ? Math.Round(c.Total / grandTotal * 100, 2) : 0,
+                CostCategoryColors.TryGetValue(c.Category, out var color) ? color : DefaultCostColors[colorIndex++ % DefaultCostColors.Length]))
             .ToList();
 
         return breakdown;
     }
 
-    public async Task<IReadOnlyList<ProductRankingDto>> GetTopProductsAsync(int limit, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ProductRankingDto>> GetTopProductsAsync(int limit, string period = "30dias", CancellationToken ct = default)
     {
-        var (start, end) = ParsePeriod("30dias");
+        var (start, end) = ParsePeriod(period);
         return await GetProductRankingsAsync(start, end, limit, descending: true, ct);
     }
 
-    public async Task<IReadOnlyList<ProductRankingDto>> GetLeastProfitableAsync(int limit, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ProductRankingDto>> GetLeastProfitableAsync(int limit, string period = "30dias", CancellationToken ct = default)
     {
-        var (start, end) = ParsePeriod("30dias");
+        var (start, end) = ParsePeriod(period);
         return await GetProductRankingsAsync(start, end, limit, descending: false, ct);
     }
 
@@ -253,6 +300,7 @@ public class DashboardService : IDashboardService
             "hoje" => DateTime.UtcNow.Date,
             "7dias" => end.AddDays(-7),
             "30dias" => end.AddDays(-30),
+            "estemes" => new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc),
             _ => end.AddDays(-30)
         };
         return (start, end);

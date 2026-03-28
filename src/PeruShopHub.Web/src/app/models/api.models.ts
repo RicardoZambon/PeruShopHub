@@ -7,17 +7,26 @@ export interface PagedResult<T> {
 }
 
 export interface KpiCard {
-  label: string;
+  title: string;
   value: string;
-  change: number;
-  changeLabel: string;
-  invertColors?: boolean;
+  previousValue: string | null;
+  changePercent: number | null;
+  changeDirection: string | null;
+  icon: string | null;
 }
 
 export interface ChartDataPoint {
   label: string;
-  value1: number;
-  value2?: number;
+  value: number;
+  secondaryValue?: number | null;
+}
+
+export interface DashboardSummary {
+  kpis: KpiCard[];
+  topProducts: ProductRanking[];
+  pendingActions: PendingAction[];
+  revenueChart: ChartDataPoint[];
+  ordersChart: ChartDataPoint[];
 }
 
 export interface SearchResult {
@@ -43,34 +52,45 @@ export interface DataChangeEvent {
   entityId: string;
 }
 
-export interface ProductRow {
-  id: number;
+export interface ProductRanking {
+  id: string;
   name: string;
   sku: string;
-  sales: number;
+  quantitySold: number;
   revenue: number;
   profit: number;
   margin: number;
-  imageUrl?: string;
 }
 
 export interface PendingAction {
-  id: string;
   type: string;
   title: string;
-  label: string;
   description: string;
-  severity: 'info' | 'warning' | 'danger';
-  variant: string;
+  navigationTarget: string | null;
   count: number;
-  actionLabel: string;
-  route?: string;
 }
 
 export interface CostBreakdownItem {
+  category: string;
+  total: number;
+  percentage: number;
+  color: string | null;
+}
+
+export interface MarginChartPoint {
   label: string;
-  value: number;
-  color: string;
+  margin: number;
+}
+
+export interface FinanceSummary {
+  totalRevenue: number;
+  totalCosts: number;
+  totalProfit: number;
+  averageMargin: number;
+  averageTicket: number;
+  revenueChange: number;
+  profitChange: number;
+  costBreakdown: CostBreakdownItem[];
 }
 
 export interface SkuProfitability {

@@ -732,3 +732,46 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Materialized view queries fail on SQLite (unit tests) — wrap in try-catch and return empty dict gracefully
   - ABC classification can be enriched post-query to avoid complex LINQ subqueries in expression trees
 ---
+
+## 2026-03-28 - US-027
+- Wired financial dashboard to real backend data with full DTO alignment
+- **Backend changes:**
+  - Added "estemes" (this month) period to DashboardService.ParsePeriod
+  - Added "Total Custos" and "Ticket Médio" KPIs to dashboard summary (6 KPIs total)
+  - Added color mapping for cost breakdown categories (CostBreakdownDto + Color field)
+  - Made top/least profitable products accept period parameter
+- **Frontend changes:**
+  - Aligned all frontend interfaces to match backend DTOs (camelCase field names):
+    - KpiCard: title/value/previousValue/changePercent/changeDirection/icon
+    - ChartDataPoint: label/value/secondaryValue
+    - CostBreakdownItem: category/total/percentage/color
+    - ProductRanking: id(string)/name/sku/quantitySold/revenue/profit/margin
+    - PendingAction: type/title/description/navigationTarget/count
+  - Added DashboardSummary interface wrapping full summary response
+  - Added FinanceSummary interface for finance page
+  - Added MarginChartPoint interface for margin chart data
+  - Dashboard component maps backend KpiCardDto to KpiCard component inputs
+  - Dashboard service now returns DashboardSummary (not KpiCard[])
+  - Finance service/component updated to use FinanceSummary and MarginChartPoint
+  - Added "Este mês" period option
+  - Period-aware comparison labels ("vs 30 dias anteriores", etc.)
+- Files changed:
+  - `src/PeruShopHub.Application/DTOs/Finance/FinanceDtos.cs` (Color field on CostBreakdownDto)
+  - `src/PeruShopHub.Application/Services/DashboardService.cs` (new KPIs, period, colors)
+  - `src/PeruShopHub.Application/Services/IDashboardService.cs` (period param)
+  - `src/PeruShopHub.Application/Services/FinanceService.cs` (CostBreakdownDto constructor fix)
+  - `src/PeruShopHub.API/Controllers/DashboardController.cs` (period param)
+  - `src/PeruShopHub.Web/src/app/models/api.models.ts` (all dashboard/finance interfaces)
+  - `src/PeruShopHub.Web/src/app/services/dashboard.service.ts` (DashboardSummary type)
+  - `src/PeruShopHub.Web/src/app/services/finance.service.ts` (FinanceSummary/MarginChartPoint)
+  - `src/PeruShopHub.Web/src/app/pages/dashboard/dashboard.component.ts` (data mapping)
+  - `src/PeruShopHub.Web/src/app/pages/dashboard/dashboard.component.html` (field names)
+  - `src/PeruShopHub.Web/src/app/pages/finance/finance.component.ts` (summary mapping)
+- **Learnings for future iterations:**
+  - Frontend DTOs were completely misaligned with backend — always verify camelCase field names match backend PascalCase properties
+  - DashboardController.GetSummary returns DashboardSummaryDto (wrapper), not KpiCard[] — don't assume list response
+  - FinanceController returns FinanceSummaryDto (flat object), not KpiCard[] — requires frontend mapping to KPI display format
+  - MarginChartPointDto has `Label`+`Margin` (not generic Value) — needs its own frontend interface
+  - Cost category colors should be assigned server-side for consistency across all dashboard consumers
+  - When changing shared interfaces (api.models.ts), check ALL pages that import them — finance page broke because ChartDataPoint fields changed
+---

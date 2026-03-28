@@ -51,7 +51,7 @@
   <div class="dashboard__charts">
     <div class="dashboard__chart-line">
       <div class="chart-card">
-        <h2 class="chart-card__title">Vendas e Lucro</h2>
+        <h2 class="chart-card__title">Receita vs Lucro</h2>
         <div class="chart-card__body">
           <canvas
             baseChart
@@ -98,7 +98,7 @@
             @for (product of topProfitable(); track product.id) {
               <tr class="product-table__row" (click)="onProductClick(product.id)">
                 <td class="product-table__td product-table__td--name">{{ product.name }}</td>
-                <td class="product-table__td product-table__td--mono product-table__td--right">{{ product.sales }}</td>
+                <td class="product-table__td product-table__td--mono product-table__td--right">{{ product.quantitySold }}</td>
                 <td class="product-table__td product-table__td--mono product-table__td--right">{{ formatBrl(product.revenue) }}</td>
                 <td class="product-table__td product-table__td--mono product-table__td--right" [class.product-table__td--profit]="product.profit >= 0" [class.product-table__td--loss]="product.profit < 0">{{ formatBrl(product.profit) }}</td>
                 <td class="product-table__td product-table__td--mono product-table__td--right">
@@ -128,7 +128,7 @@
             @for (product of leastProfitable(); track product.id) {
               <tr class="product-table__row" [class.product-table__row--negative]="product.margin < 0" (click)="onProductClick(product.id)">
                 <td class="product-table__td product-table__td--name">{{ product.name }}</td>
-                <td class="product-table__td product-table__td--mono product-table__td--right">{{ product.sales }}</td>
+                <td class="product-table__td product-table__td--mono product-table__td--right">{{ product.quantitySold }}</td>
                 <td class="product-table__td product-table__td--mono product-table__td--right">{{ formatBrl(product.revenue) }}</td>
                 <td class="product-table__td product-table__td--mono product-table__td--right" [class.product-table__td--profit]="product.profit >= 0" [class.product-table__td--loss]="product.profit < 0">{{ formatBrl(product.profit) }}</td>
                 <td class="product-table__td product-table__td--mono product-table__td--right">
@@ -143,17 +143,19 @@
   </div>
 
   <!-- Pending Actions -->
-  <div class="dashboard__pending">
-    <div class="chart-card">
-      <h2 class="chart-card__title">Ações Pendentes</h2>
-      <div class="pending-actions">
-        @for (action of pendingActions(); track action.label) {
-          <button class="pending-action" [ngClass]="'pending-action--' + action.variant">
-            <span class="pending-action__count">{{ action.count }}</span>
-            <span class="pending-action__label">{{ action.label }}</span>
-          </button>
-        }
+  @if (pendingActions().length > 0) {
+    <div class="dashboard__pending">
+      <div class="chart-card">
+        <h2 class="chart-card__title">Ações Pendentes</h2>
+        <div class="pending-actions">
+          @for (action of pendingActions(); track action.type) {
+            <button class="pending-action" [ngClass]="'pending-action--' + getPendingActionVariant(action)">
+              <span class="pending-action__count">{{ action.count }}</span>
+              <span class="pending-action__label">{{ action.title }}</span>
+            </button>
+          }
+        </div>
       </div>
     </div>
-  </div>
+  }
 }

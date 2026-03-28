@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { buildHttpParams } from '../shared/utils';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { KpiCard, ChartDataPoint, SkuProfitability, ReconciliationRow, AbcProduct, AbcProductApi } from '../models/api.models';
+import { FinanceSummary, ChartDataPoint, MarginChartPoint, SkuProfitability, ReconciliationRow, AbcProduct, AbcProductApi } from '../models/api.models';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -11,16 +11,16 @@ export class FinanceService {
   private http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/finance`;
 
-  getSummary(period: string): Observable<KpiCard[]> {
-    return this.http.get<KpiCard[]>(`${this.baseUrl}/summary`, { params: buildHttpParams({ period }) });
+  getSummary(period: string): Observable<FinanceSummary> {
+    return this.http.get<FinanceSummary>(`${this.baseUrl}/summary`, { params: buildHttpParams({ period }) });
   }
 
   getRevenueProfit(days: number): Observable<ChartDataPoint[]> {
     return this.http.get<ChartDataPoint[]>(`${this.baseUrl}/chart/revenue-profit`, { params: buildHttpParams({ days }) });
   }
 
-  getMarginChart(days: number): Observable<ChartDataPoint[]> {
-    return this.http.get<ChartDataPoint[]>(`${this.baseUrl}/chart/margin`, { params: buildHttpParams({ days }) });
+  getMarginChart(days: number): Observable<MarginChartPoint[]> {
+    return this.http.get<MarginChartPoint[]>(`${this.baseUrl}/chart/margin`, { params: buildHttpParams({ days }) });
   }
 
   getSkuProfitability(params: {

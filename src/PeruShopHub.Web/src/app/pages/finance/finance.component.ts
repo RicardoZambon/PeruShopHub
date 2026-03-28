@@ -17,8 +17,9 @@ import type { BadgeVariant } from '../../shared/components/badge/badge.component
 import { ToastService } from '../../services/toast.service';
 import { FinanceService } from '../../services/finance.service';
 import type {
-  KpiCard,
+  FinanceSummary,
   ChartDataPoint,
+  MarginChartPoint,
   SkuProfitability,
   ReconciliationRow,
   AbcProduct,
@@ -452,12 +453,12 @@ export class FinanceComponent implements OnInit {
     const days = effectivePeriod === 'hoje' ? 1 : effectivePeriod === '7dias' ? 7 : 30;
 
     forkJoin({
-      kpis: this.financeService.getSummary(effectivePeriod),
+      summary: this.financeService.getSummary(effectivePeriod),
       revenueProfit: this.financeService.getRevenueProfit(days),
       margin: this.financeService.getMarginChart(days),
     }).subscribe({
-      next: ({ kpis, revenueProfit, margin }) => {
-        this.kpis.set(kpis);
+      next: ({ summary, revenueProfit, margin }) => {
+        this.kpis.set(this.mapFinanceSummaryToKpis(summary));
         this.updateBarChart(revenueProfit);
         this.updateMarginChart(margin);
         this.loading.set(false);
@@ -466,6 +467,17 @@ export class FinanceComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  private mapFinanceSummaryToKpis(summary: FinanceSummary): KpiData[] {
+    const changeLabel = 'vs período anterior';
+    return [
+      { label: 'Receita Total', value: this.formatBrl(summary.totalRevenue), change: summary.revenueChange, changeLabel },
+      { label: 'Custos Totais', value: this.formatBrl(summary.totalCosts), change: 0, changeLabel, invertColors: true },
+      { label: 'Lucro Líquido', value: this.formatBrl(summary.totalProfit), change: summary.profitChange, changeLabel },
+      { label: 'Margem Média', value: `${summary.averageMargin.toFixed(1)}%`, change: 0, changeLabel },
+      { label: 'Ticket Médio', value: this.formatBrl(summary.averageTicket), change: 0, changeLabel },
+    ];
   }
 
   private loadSkuData(): void {
@@ -528,7 +540,7 @@ export class FinanceComponent implements OnInit {
       datasets: [
         {
           label: 'Receita Bruta',
-          data: data.map(d => d.value1),
+          data: data.map(d => d.value),
           backgroundColor: '#1A237E',
           borderRadius: 3,
           barPercentage: 0.7,
@@ -536,7 +548,7 @@ export class FinanceComponent implements OnInit {
         },
         {
           label: 'Lucro Líquido',
-          data: data.map(d => d.value2 ?? 0),
+          data: data.map(d => d.secondaryValue ?? 0),
           backgroundColor: '#2E7D32',
           borderRadius: 3,
           barPercentage: 0.7,
@@ -546,13 +558,13 @@ export class FinanceComponent implements OnInit {
     });
   }
 
-  private updateMarginChart(data: ChartDataPoint[]): void {
+  private updateMarginChart(data: MarginChartPoint[]): void {
     this.marginChartData.set({
       labels: data.map(d => d.label),
       datasets: [
         {
           label: 'Margem %',
-          data: data.map(d => d.value1),
+          data: data.map(d => d.margin),
           borderColor: '#1A237E',
           backgroundColor: 'rgba(26, 35, 126, 0.08)',
           fill: true,

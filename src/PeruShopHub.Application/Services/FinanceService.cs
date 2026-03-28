@@ -60,11 +60,11 @@ public class FinanceService : IFinanceService
 
         var costTotal = costs.Sum(c => c.Total);
         var breakdown = costs
+            .OrderByDescending(c => c.Total)
             .Select(c => new CostBreakdownDto(
                 c.Category,
                 c.Total,
                 costTotal != 0 ? Math.Round(c.Total / costTotal * 100, 2) : 0m))
-            .OrderByDescending(c => c.Total)
             .ToList();
 
         return new FinanceSummaryDto(

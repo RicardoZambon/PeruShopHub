@@ -593,7 +593,7 @@
         "Angular build passes"
       ],
       "priority": 32,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 2. Depends on US-022a, US-023."
     },
     {
