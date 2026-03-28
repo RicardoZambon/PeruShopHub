@@ -1,0 +1,101 @@
+<app-page-header title="Log de Atividades">
+  <app-button variant="ghost" (click)="goBack()">
+    <lucide-angular [img]="backIcon" [size]="16"></lucide-angular>
+    Voltar
+  </app-button>
+</app-page-header>
+
+<!-- Filters -->
+<div class="audit-log__filters">
+  <app-select-dropdown
+    label="Tipo"
+    [options]="entityTypeOptions"
+    [value]="entityTypeFilter()"
+    (valueChange)="entityTypeFilter.set($event); applyFilters()">
+  </app-select-dropdown>
+
+  <div class="audit-log__date-filter">
+    <label class="audit-log__label">De</label>
+    <input type="date" class="audit-log__input"
+      [ngModel]="dateFrom()"
+      (ngModelChange)="dateFrom.set($event)" />
+  </div>
+
+  <div class="audit-log__date-filter">
+    <label class="audit-log__label">Até</label>
+    <input type="date" class="audit-log__input"
+      [ngModel]="dateTo()"
+      (ngModelChange)="dateTo.set($event)" />
+  </div>
+
+  <app-button variant="outline" size="sm" (click)="applyFilters()">Filtrar</app-button>
+  <app-button variant="ghost" size="sm" (click)="clearFilters()">Limpar</app-button>
+</div>
+
+<!-- Loading skeleton -->
+@if (loading()) {
+  <div class="audit-log__skeleton">
+    @for (i of [1,2,3,4,5,6,7,8]; track i) {
+      <div class="audit-log__skeleton-row">
+        <div class="audit-log__skeleton-cell audit-log__skeleton-cell--date"></div>
+        <div class="audit-log__skeleton-cell audit-log__skeleton-cell--user"></div>
+        <div class="audit-log__skeleton-cell audit-log__skeleton-cell--action"></div>
+        <div class="audit-log__skeleton-cell audit-log__skeleton-cell--values"></div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Empty state -->
+@if (!loading() && items().length === 0) {
+  <app-empty-state
+    title="Nenhuma atividade registrada"
+    description="Quando preços, custos, estoque ou regras de comissão forem alterados, as atividades aparecerão aqui."
+    icon="file-text">
+  </app-empty-state>
+}
+
+<!-- Data table -->
+@if (!loading() && items().length > 0) {
+  <div class="audit-log__table-wrapper">
+    <table class="audit-log__table">
+      <thead>
+        <tr>
+          <th>Data/Hora</th>
+          <th>Usuário</th>
+          <th>Ação</th>
+          <th>Tipo</th>
+          <th>Valores Anteriores</th>
+          <th>Valores Novos</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td class="audit-log__cell--mono">{{ formatDate(item.createdAt) }}</td>
+            <td>{{ item.userName }}</td>
+            <td>{{ item.action }}</td>
+            <td>
+              <span class="audit-log__badge">{{ formatEntityType(item.entityType) }}</span>
+            </td>
+            <td class="audit-log__cell--values">{{ formatJson(item.oldValue) }}</td>
+            <td class="audit-log__cell--values">{{ formatJson(item.newValue) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (totalPages() > 1) {
+    <div class="audit-log__pagination">
+      <span class="audit-log__pagination-info">
+        {{ totalCount() }} registro(s) — Página {{ currentPage() }} de {{ totalPages() }}
+      </span>
+      <div class="audit-log__pagination-buttons">
+        <app-button variant="outline" size="sm" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">Anterior</app-button>
+        <app-button variant="outline" size="sm" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">Próximo</app-button>
+      </div>
+    </div>
+  }
+}

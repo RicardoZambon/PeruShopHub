@@ -46,7 +46,7 @@ public class ProductServiceTests : IDisposable
         _connection.Dispose();
     }
 
-    private ProductService CreateService() => new(_db, _cache.Object, _dispatcher.Object);
+    private ProductService CreateService() => new(_db, _cache.Object, _dispatcher.Object, new Mock<IAuditService>().Object);
 
     private Product SeedProduct(string sku = "PROD-001", string name = "Test Product", decimal price = 100m,
         decimal purchaseCost = 50m, decimal packagingCost = 5m, string status = "Ativo")

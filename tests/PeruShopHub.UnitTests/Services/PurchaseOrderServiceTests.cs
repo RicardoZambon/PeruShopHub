@@ -44,7 +44,7 @@ public class PurchaseOrderServiceTests : IDisposable
         _connection.Dispose();
     }
 
-    private PurchaseOrderService CreateService() => new(_db, _costService.Object);
+    private PurchaseOrderService CreateService() => new(_db, _costService.Object, new Mock<IAuditService>().Object);
 
     private (Product product, ProductVariant variant) SeedProductWithVariant(
         string name = "Test Product", string sku = "PROD-001")

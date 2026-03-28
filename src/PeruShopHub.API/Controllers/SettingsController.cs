@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Settings;
+using PeruShopHub.Application.Services;
 using PeruShopHub.Core.Entities;
 using PeruShopHub.Infrastructure.Persistence;
 
@@ -13,12 +14,14 @@ namespace PeruShopHub.API.Controllers;
 public class SettingsController : ControllerBase
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly IAuditService _auditService;
 
     private static decimal _taxRate = 6.0m;
 
-    public SettingsController(PeruShopHubDbContext db)
+    public SettingsController(PeruShopHubDbContext db, IAuditService auditService)
     {
         _db = db;
+        _auditService = auditService;
     }
 
     // --- Integrations ---
@@ -100,6 +103,9 @@ public class SettingsController : ControllerBase
         _db.CommissionRules.Add(rule);
         await _db.SaveChangesAsync();
 
+        await _auditService.LogAsync("Regra de comissão criada", "CommissionRule", rule.Id,
+            null, new { rule.MarketplaceId, rule.CategoryPattern, rule.ListingType, rule.Rate });
+
         var result = new CommissionRuleDto(
             rule.Id, rule.MarketplaceId, rule.CategoryPattern, rule.ListingType, rule.Rate, rule.IsDefault);
 
@@ -113,8 +119,12 @@ public class SettingsController : ControllerBase
         if (rule is null)
             return NotFound();
 
+        var oldRate = rule.Rate;
         rule.Rate = dto.Rate;
         await _db.SaveChangesAsync();
+
+        await _auditService.LogAsync("Regra de comissão atualizada", "CommissionRule", rule.Id,
+            new { Rate = oldRate }, new { Rate = rule.Rate });
 
         var result = new CommissionRuleDto(
             rule.Id, rule.MarketplaceId, rule.CategoryPattern, rule.ListingType, rule.Rate, rule.IsDefault);
@@ -131,6 +141,9 @@ public class SettingsController : ControllerBase
 
         if (rule.IsDefault)
             return Conflict(new { message = "Cannot delete a default commission rule." });
+
+        await _auditService.LogAsync("Regra de comissão removida", "CommissionRule", rule.Id,
+            new { rule.MarketplaceId, rule.CategoryPattern, rule.ListingType, rule.Rate }, null);
 
         _db.CommissionRules.Remove(rule);
         await _db.SaveChangesAsync();

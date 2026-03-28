@@ -12,11 +12,13 @@ public class PurchaseOrderService : IPurchaseOrderService
 {
     private readonly PeruShopHubDbContext _db;
     private readonly ICostCalculationService _costService;
+    private readonly IAuditService _auditService;
 
-    public PurchaseOrderService(PeruShopHubDbContext db, ICostCalculationService costService)
+    public PurchaseOrderService(PeruShopHubDbContext db, ICostCalculationService costService, IAuditService auditService)
     {
         _db = db;
         _costService = costService;
+        _auditService = auditService;
     }
 
     public async Task<PagedResult<PurchaseOrderListDto>> GetListAsync(
@@ -236,6 +238,9 @@ public class PurchaseOrderService : IPurchaseOrderService
             throw new ConflictException("Este pedido de compra já foi recebido.");
 
         await _costService.ReceivePurchaseOrderAsync(id);
+
+        await _auditService.LogAsync("Pedido de compra recebido", "PurchaseOrder", id,
+            new { Status = po.Status }, new { Status = "Recebido" }, ct);
 
         var received = await _db.PurchaseOrders.AsNoTracking()
             .Include(p => p.Items).ThenInclude(i => i.Product)

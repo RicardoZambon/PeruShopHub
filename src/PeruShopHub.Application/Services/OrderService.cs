@@ -11,11 +11,13 @@ public class OrderService : IOrderService
 {
     private readonly PeruShopHubDbContext _db;
     private readonly ICostCalculationService _costService;
+    private readonly IAuditService _auditService;
 
-    public OrderService(PeruShopHubDbContext db, ICostCalculationService costService)
+    public OrderService(PeruShopHubDbContext db, ICostCalculationService costService, IAuditService auditService)
     {
         _db = db;
         _costService = costService;
+        _auditService = auditService;
     }
 
     public async Task<PagedResult<OrderListDto>> GetListAsync(
@@ -140,6 +142,9 @@ public class OrderService : IOrderService
         _db.OrderCosts.Add(cost);
         await _db.SaveChangesAsync(ct);
 
+        await _auditService.LogAsync("Custo adicionado ao pedido", "Order", orderId,
+            null, new { cost.Category, cost.Description, cost.Value }, ct);
+
         return new OrderCostDto(cost.Id, cost.Category, cost.Description, cost.Value, cost.Source);
     }
 
@@ -151,10 +156,14 @@ public class OrderService : IOrderService
 
         ValidateCostRequest(request.Category, request.Value);
 
+        var oldValues = new { cost.Category, cost.Description, cost.Value };
         cost.Category = request.Category;
         cost.Description = request.Description;
         cost.Value = request.Value;
         await _db.SaveChangesAsync(ct);
+
+        await _auditService.LogAsync("Custo do pedido atualizado", "Order", orderId,
+            oldValues, new { cost.Category, cost.Description, cost.Value }, ct);
 
         return new OrderCostDto(cost.Id, cost.Category, cost.Description, cost.Value, cost.Source);
     }
@@ -164,6 +173,9 @@ public class OrderService : IOrderService
         var cost = await _db.OrderCosts.FirstOrDefaultAsync(c => c.Id == costId && c.OrderId == orderId, ct);
         if (cost is null)
             throw new NotFoundException("Custo do pedido", costId);
+
+        await _auditService.LogAsync("Custo do pedido removido", "Order", orderId,
+            new { cost.Category, cost.Description, cost.Value }, null, ct);
 
         _db.OrderCosts.Remove(cost);
         await _db.SaveChangesAsync(ct);

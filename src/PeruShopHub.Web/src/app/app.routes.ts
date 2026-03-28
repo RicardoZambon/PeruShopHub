@@ -120,6 +120,11 @@ export const routes: Routes = [
           import('./pages/settings/settings.component').then(m => m.SettingsComponent),
       },
       {
+        path: 'configuracoes/log-atividades',
+        loadComponent: () =>
+          import('./pages/audit-log/audit-log.component').then(m => m.AuditLogComponent),
+      },
+      {
         path: 'admin/tenants',
         canActivate: [superAdminGuard],
         loadComponent: () =>

@@ -13,12 +13,14 @@ public class ProductService : IProductService
     private readonly PeruShopHubDbContext _db;
     private readonly ICacheService _cache;
     private readonly INotificationDispatcher _dispatcher;
+    private readonly IAuditService _auditService;
 
-    public ProductService(PeruShopHubDbContext db, ICacheService cache, INotificationDispatcher dispatcher)
+    public ProductService(PeruShopHubDbContext db, ICacheService cache, INotificationDispatcher dispatcher, IAuditService auditService)
     {
         _db = db;
         _cache = cache;
         _dispatcher = dispatcher;
+        _auditService = auditService;
     }
 
     public async Task<PagedResult<ProductListDto>> GetListAsync(
@@ -243,6 +245,8 @@ public class ProductService : IProductService
 
         await ValidateUpdateAsync(id, dto, ct);
 
+        var oldValues = new { product.Price, product.PurchaseCost, product.PackagingCost };
+
         _db.Entry(product).Property(p => p.Version).OriginalValue = dto.Version;
 
         if (dto.Sku is not null) product.Sku = dto.Sku;
@@ -273,6 +277,12 @@ public class ProductService : IProductService
         catch (DbUpdateConcurrencyException)
         {
             throw new ConflictException();
+        }
+
+        var newValues = new { product.Price, product.PurchaseCost, product.PackagingCost };
+        if (oldValues.Price != newValues.Price || oldValues.PurchaseCost != newValues.PurchaseCost || oldValues.PackagingCost != newValues.PackagingCost)
+        {
+            await _auditService.LogAsync("Atualização de preço/custo", "Product", product.Id, oldValues, newValues, ct);
         }
 
         await _dispatcher.BroadcastDataChangeAsync("product", "updated", product.Id.ToString(), ct);

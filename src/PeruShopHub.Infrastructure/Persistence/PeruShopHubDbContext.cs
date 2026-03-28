@@ -41,6 +41,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<PaymentFeeRule> PaymentFeeRules => Set<PaymentFeeRule>();
     public DbSet<SkuProfitabilityView> SkuProfitabilityViews => Set<SkuProfitabilityView>();
     public DbSet<ReportSchedule> ReportSchedules => Set<ReportSchedule>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

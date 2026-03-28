@@ -1,6 +1,7 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
+import { Router } from '@angular/router';
 import { LucideAngularModule, Pencil, Trash2 } from 'lucide-angular';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
@@ -18,7 +19,7 @@ import { TenantService, type TenantMember } from '../../services/tenant.service'
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
 
-type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'relatorios' | 'aparencia';
+type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'relatorios' | 'aparencia' | 'log-atividades';
 
 interface FixedCost {
   id: number;
@@ -48,6 +49,7 @@ export class SettingsComponent implements OnInit {
   private readonly tenantService = inject(TenantService);
   private readonly toastService = inject(ToastService);
   private readonly confirmDialog = inject(ConfirmDialogService);
+  private readonly router = inject(Router);
 
   readonly pencilIcon = Pencil;
   readonly trashIcon = Trash2;
@@ -66,6 +68,7 @@ export class SettingsComponent implements OnInit {
     { key: 'alertas', label: 'Alertas' },
     { key: 'relatorios', label: 'Relatórios' },
     { key: 'aparencia', label: 'Aparência' },
+    { key: 'log-atividades', label: 'Log de Atividades' },
   ];
 
   users = signal<UserRow[]>([]);
@@ -180,6 +183,10 @@ export class SettingsComponent implements OnInit {
   }
 
   selectTab(tab: SettingsTab): void {
+    if (tab === 'log-atividades') {
+      this.router.navigate(['/configuracoes/log-atividades']);
+      return;
+    }
     const tabDef = this.tabs.find(t => t.key === tab);
     if (!tabDef?.disabled) {
       this.activeTab.set(tab);

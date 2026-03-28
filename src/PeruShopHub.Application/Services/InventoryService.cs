@@ -10,10 +10,12 @@ namespace PeruShopHub.Application.Services;
 public class InventoryService : IInventoryService
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly IAuditService _auditService;
 
-    public InventoryService(PeruShopHubDbContext db)
+    public InventoryService(PeruShopHubDbContext db, IAuditService auditService)
     {
         _db = db;
+        _auditService = auditService;
     }
 
     public async Task<PagedResult<InventoryItemDto>> GetOverviewAsync(
@@ -231,6 +233,10 @@ public class InventoryService : IInventoryService
 
         _db.StockMovements.Add(movement);
         await _db.SaveChangesAsync(ct);
+
+        await _auditService.LogAsync("Ajuste de estoque", "ProductVariant", variant.Id,
+            new { Stock = variant.Stock - dto.Quantity },
+            new { Stock = variant.Stock, Quantity = dto.Quantity, Reason = dto.Reason }, ct);
 
         return new StockMovementDto(
             movement.Id,

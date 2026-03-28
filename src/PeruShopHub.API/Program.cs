@@ -112,6 +112,7 @@ builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<ICostCalculationService, CostCalculationService>();
 
 // ── Application Services ─────────────────────────────────
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddApplicationServices();
 
 // -- Tenant Context --

@@ -44,7 +44,7 @@ public class OrderServiceTests : IDisposable
         _connection.Dispose();
     }
 
-    private OrderService CreateService() => new(_db, _costService.Object);
+    private OrderService CreateService() => new(_db, _costService.Object, new Mock<IAuditService>().Object);
 
     private Order SeedOrder(string externalId = "ML-12345", string buyerName = "João Silva",
         decimal totalAmount = 200m, string status = "Pago", DateTime? orderDate = null)
