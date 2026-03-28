@@ -1,3 +1,4 @@
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Infrastructure.Persistence;
 using QuestPDF.Fluent;
@@ -304,6 +305,185 @@ public class ReportService : IReportService
         });
 
         return document.GeneratePdf();
+    }
+
+    // --- Excel Export Methods ---
+
+    public async Task<byte[]> ExportProfitabilityToExcelAsync(DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default)
+    {
+        var start = dateFrom ?? DateTime.UtcNow.AddDays(-30);
+        var end = dateTo ?? DateTime.UtcNow;
+
+        var orders = await _db.Orders
+            .Include(o => o.Items)
+            .Include(o => o.Costs)
+            .Where(o => o.OrderDate >= start && o.OrderDate <= end)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync(ct);
+
+        var skuData = orders
+            .SelectMany(o => o.Items.Select(i => new { Item = i, Order = o }))
+            .GroupBy(x => x.Item.Sku ?? "N/A")
+            .Select(g =>
+            {
+                var revenue = g.Sum(x => x.Item.Quantity * x.Item.UnitPrice);
+                var unitsSold = g.Sum(x => x.Item.Quantity);
+                var productName = g.First().Item.Name ?? "N/A";
+                var totalOrderRevenue = g.Select(x => x.Order).Distinct().Sum(o => o.TotalAmount);
+                var totalOrderCosts = g.Select(x => x.Order).Distinct().Sum(o => o.Costs.Sum(c => c.Value));
+                var proportion = totalOrderRevenue != 0 ? revenue / totalOrderRevenue : 0;
+                var costs = totalOrderCosts * proportion;
+                var profit = revenue - costs;
+                var margin = revenue != 0 ? Math.Round(profit / revenue * 100, 2) : 0m;
+                return new { Sku = g.Key, Name = productName, UnitsSold = unitsSold, Revenue = revenue, Costs = costs, Profit = profit, Margin = margin };
+            })
+            .OrderByDescending(x => x.Revenue)
+            .ToList();
+
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("Lucratividade");
+
+        string[] headers = ["SKU", "Produto", "Qtd Vendida", "Receita (R$)", "Custos (R$)", "Lucro (R$)", "Margem (%)"];
+        for (int c = 0; c < headers.Length; c++)
+            ws.Cell(1, c + 1).Value = headers[c];
+
+        StyleHeaders(ws, headers.Length);
+
+        for (int i = 0; i < skuData.Count; i++)
+        {
+            var s = skuData[i];
+            var row = i + 2;
+            ws.Cell(row, 1).Value = s.Sku;
+            ws.Cell(row, 2).Value = s.Name;
+            ws.Cell(row, 3).Value = s.UnitsSold;
+            ws.Cell(row, 4).Value = s.Revenue;
+            ws.Cell(row, 4).Style.NumberFormat.Format = BrlNumberFormat;
+            ws.Cell(row, 5).Value = s.Costs;
+            ws.Cell(row, 5).Style.NumberFormat.Format = BrlNumberFormat;
+            ws.Cell(row, 6).Value = s.Profit;
+            ws.Cell(row, 6).Style.NumberFormat.Format = BrlNumberFormat;
+            ws.Cell(row, 7).Value = s.Margin;
+            ws.Cell(row, 7).Style.NumberFormat.Format = "0.00";
+        }
+
+        ws.Columns().AdjustToContents();
+        if (skuData.Count > 0)
+            ws.Range(1, 1, skuData.Count + 1, headers.Length).SetAutoFilter();
+
+        return WorkbookToBytes(workbook);
+    }
+
+    public async Task<byte[]> ExportOrdersToExcelAsync(DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default)
+    {
+        var start = dateFrom ?? DateTime.UtcNow.AddDays(-30);
+        var end = dateTo ?? DateTime.UtcNow;
+
+        var orders = await _db.Orders
+            .Include(o => o.Items)
+            .Include(o => o.Costs)
+            .Where(o => o.OrderDate >= start && o.OrderDate <= end)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync(ct);
+
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("Vendas");
+
+        string[] headers = ["Pedido", "Data", "Comprador", "Itens", "Valor (R$)", "Custos (R$)", "Lucro (R$)", "Margem (%)", "Status"];
+        for (int c = 0; c < headers.Length; c++)
+            ws.Cell(1, c + 1).Value = headers[c];
+
+        StyleHeaders(ws, headers.Length);
+
+        for (int i = 0; i < orders.Count; i++)
+        {
+            var o = orders[i];
+            var totalCosts = o.Costs.Sum(c => c.Value);
+            var margin = o.TotalAmount != 0 ? Math.Round(o.Profit / o.TotalAmount * 100, 2) : 0m;
+            var row = i + 2;
+
+            ws.Cell(row, 1).Value = o.ExternalOrderId ?? o.Id.ToString()[..8];
+            ws.Cell(row, 2).Value = o.OrderDate.ToString("dd/MM/yyyy HH:mm");
+            ws.Cell(row, 3).Value = o.BuyerName ?? "N/A";
+            ws.Cell(row, 4).Value = o.Items.Sum(item => item.Quantity);
+            ws.Cell(row, 5).Value = o.TotalAmount;
+            ws.Cell(row, 5).Style.NumberFormat.Format = BrlNumberFormat;
+            ws.Cell(row, 6).Value = totalCosts;
+            ws.Cell(row, 6).Style.NumberFormat.Format = BrlNumberFormat;
+            ws.Cell(row, 7).Value = o.Profit;
+            ws.Cell(row, 7).Style.NumberFormat.Format = BrlNumberFormat;
+            ws.Cell(row, 8).Value = margin;
+            ws.Cell(row, 8).Style.NumberFormat.Format = "0.00";
+            ws.Cell(row, 9).Value = o.Status ?? "N/A";
+        }
+
+        ws.Columns().AdjustToContents();
+        if (orders.Count > 0)
+            ws.Range(1, 1, orders.Count + 1, headers.Length).SetAutoFilter();
+
+        return WorkbookToBytes(workbook);
+    }
+
+    public async Task<byte[]> ExportInventoryToExcelAsync(CancellationToken ct = default)
+    {
+        var products = await _db.Products
+            .Include(p => p.Variants)
+            .OrderBy(p => p.Name)
+            .ToListAsync(ct);
+
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("Estoque");
+
+        string[] headers = ["SKU", "Produto", "Estoque", "Mín", "Máx", "Custo Unit. (R$)", "Valor Estoque (R$)"];
+        for (int c = 0; c < headers.Length; c++)
+            ws.Cell(1, c + 1).Value = headers[c];
+
+        StyleHeaders(ws, headers.Length);
+
+        var items = products.Select(p =>
+        {
+            var totalStock = p.Variants.Sum(v => v.Stock);
+            return new { p.Sku, p.Name, TotalStock = totalStock, UnitCost = p.PurchaseCost, StockValue = totalStock * p.PurchaseCost, p.MinStock, p.MaxStock };
+        }).ToList();
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var row = i + 2;
+            ws.Cell(row, 1).Value = item.Sku;
+            ws.Cell(row, 2).Value = item.Name;
+            ws.Cell(row, 3).Value = item.TotalStock;
+            ws.Cell(row, 4).Value = item.MinStock?.ToString() ?? "";
+            ws.Cell(row, 5).Value = item.MaxStock?.ToString() ?? "";
+            ws.Cell(row, 6).Value = item.UnitCost;
+            ws.Cell(row, 6).Style.NumberFormat.Format = BrlNumberFormat;
+            ws.Cell(row, 7).Value = item.StockValue;
+            ws.Cell(row, 7).Style.NumberFormat.Format = BrlNumberFormat;
+        }
+
+        ws.Columns().AdjustToContents();
+        if (items.Count > 0)
+            ws.Range(1, 1, items.Count + 1, headers.Length).SetAutoFilter();
+
+        return WorkbookToBytes(workbook);
+    }
+
+    // --- Shared Excel Helpers ---
+
+    private static readonly string BrlNumberFormat = "#,##0.00";
+
+    private static void StyleHeaders(IXLWorksheet ws, int columnCount)
+    {
+        var headerRange = ws.Range(1, 1, 1, columnCount);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#1A237E");
+        headerRange.Style.Font.FontColor = XLColor.White;
+    }
+
+    private static byte[] WorkbookToBytes(XLWorkbook workbook)
+    {
+        using var ms = new MemoryStream();
+        workbook.SaveAs(ms);
+        return ms.ToArray();
     }
 
     // --- Shared PDF Composition Helpers ---

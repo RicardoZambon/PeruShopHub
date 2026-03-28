@@ -56,4 +56,24 @@ export class FinanceService {
       responseType: 'blob',
     });
   }
+
+  exportProfitabilityExcel(dateFrom?: string, dateTo?: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/reports/profitability/excel`, {
+      params: buildHttpParams({ dateFrom, dateTo }),
+      responseType: 'blob',
+    });
+  }
+
+  exportOrdersExcel(dateFrom?: string, dateTo?: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/reports/orders/excel`, {
+      params: buildHttpParams({ dateFrom, dateTo }),
+      responseType: 'blob',
+    });
+  }
+
+  exportInventoryExcel(): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/reports/inventory/excel`, {
+      responseType: 'blob',
+    });
+  }
 }

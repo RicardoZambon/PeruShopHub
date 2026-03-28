@@ -375,30 +375,41 @@ export class FinanceComponent implements OnInit {
   }
 
   onExport(type: 'pdf' | 'excel'): void {
-    if (type === 'excel') {
-      this.toastService.show('Exportação Excel em desenvolvimento', 'info');
-      return;
-    }
-
     const now = new Date();
     const period = this.activePeriod();
     const days = period === 'hoje' ? 1 : period === '7dias' ? 7 : 30;
     const dateFrom = new Date(now.getTime() - days * 86400000).toISOString().split('T')[0];
     const dateTo = now.toISOString().split('T')[0];
 
+    if (type === 'excel') {
+      this.financeService.exportProfitabilityExcel(dateFrom, dateTo).subscribe({
+        next: (blob) => {
+          this.downloadBlob(blob, `lucratividade_${dateFrom}_${dateTo}.xlsx`);
+        },
+        error: () => {
+          this.toastService.show('Erro ao gerar Excel', 'danger');
+        },
+      });
+      return;
+    }
+
     this.financeService.exportProfitabilityPdf(dateFrom, dateTo).subscribe({
       next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `lucratividade_${dateFrom}_${dateTo}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        this.downloadBlob(blob, `lucratividade_${dateFrom}_${dateTo}.pdf`);
       },
       error: () => {
         this.toastService.show('Erro ao gerar PDF', 'danger');
       },
     });
+  }
+
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   onSkuSearch(event: Event): void {

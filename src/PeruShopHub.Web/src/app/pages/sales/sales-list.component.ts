@@ -186,16 +186,34 @@ export class SalesListComponent implements OnInit {
 
     this.financeService.exportOrdersPdf(dateFrom, dateTo).subscribe({
       next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `vendas_${new Date().toISOString().split('T')[0]}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        this.downloadBlob(blob, `vendas_${new Date().toISOString().split('T')[0]}.pdf`);
       },
       error: () => {
         this.toastService.show('Erro ao gerar PDF', 'danger');
       },
     });
+  }
+
+  onExportExcel(): void {
+    const dateFrom = this.dateFrom() || undefined;
+    const dateTo = this.dateTo() || undefined;
+
+    this.financeService.exportOrdersExcel(dateFrom, dateTo).subscribe({
+      next: (blob) => {
+        this.downloadBlob(blob, `vendas_${new Date().toISOString().split('T')[0]}.xlsx`);
+      },
+      error: () => {
+        this.toastService.show('Erro ao gerar Excel', 'danger');
+      },
+    });
+  }
+
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

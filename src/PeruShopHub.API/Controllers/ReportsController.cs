@@ -45,4 +45,38 @@ public class ReportsController : ControllerBase
         var fileName = $"estoque_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
         return File(bytes, "application/pdf", fileName);
     }
+
+    private const string ExcelContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+    [HttpGet("profitability/excel")]
+    public async Task<IActionResult> ProfitabilityExcel(
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        CancellationToken ct = default)
+    {
+        var bytes = await _reportService.ExportProfitabilityToExcelAsync(dateFrom, dateTo, ct);
+        var from = (dateFrom ?? DateTime.UtcNow.AddDays(-30)).ToString("yyyy-MM-dd");
+        var to = (dateTo ?? DateTime.UtcNow).ToString("yyyy-MM-dd");
+        return File(bytes, ExcelContentType, $"lucratividade_{from}_{to}.xlsx");
+    }
+
+    [HttpGet("orders/excel")]
+    public async Task<IActionResult> OrdersExcel(
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        CancellationToken ct = default)
+    {
+        var bytes = await _reportService.ExportOrdersToExcelAsync(dateFrom, dateTo, ct);
+        var from = (dateFrom ?? DateTime.UtcNow.AddDays(-30)).ToString("yyyy-MM-dd");
+        var to = (dateTo ?? DateTime.UtcNow).ToString("yyyy-MM-dd");
+        return File(bytes, ExcelContentType, $"vendas_{from}_{to}.xlsx");
+    }
+
+    [HttpGet("inventory/excel")]
+    public async Task<IActionResult> InventoryExcel(CancellationToken ct = default)
+    {
+        var bytes = await _reportService.ExportInventoryToExcelAsync(ct);
+        var fileName = $"estoque_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
+        return File(bytes, ExcelContentType, fileName);
+    }
 }
