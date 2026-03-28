@@ -23,6 +23,10 @@ Started: Fri Mar 28 2026
 - Product interface defined inline in `product.service.ts`, Category in `models/category.model.ts`, Supply in `supply.service.ts`, PO in `purchase-order.service.ts`
 - Error interceptor uses functional `HttpInterceptorFn` pattern (not class-based)
 - Remote is `RicardoZambon/PeruShopHub` on GitHub — use for badge URLs and ghcr.io paths
+- **Test infrastructure**: Unit tests in `tests/PeruShopHub.UnitTests/` (xUnit + FluentAssertions + Moq), integration tests in `tests/PeruShopHub.IntegrationTests/` (xUnit + TestContainers)
+- **Integration test pattern**: Use `[Collection("Integration")]` attribute + `IntegrationTestBase` base class. `CustomWebApplicationFactory` provides PostgreSQL 16 + Redis 7 via TestContainers, auto-migrates DB
+- **Program class accessibility**: `public partial class Program { }` at end of `Program.cs` enables `WebApplicationFactory<Program>` in tests
+- **TestContainers builder pattern**: Use `new PostgreSqlBuilder("postgres:16-alpine")` (image in constructor, not `.WithImage()`)
 
 ---
 
@@ -54,4 +58,24 @@ Started: Fri Mar 28 2026
   - `docker/build-push-action@v6` with `cache-from: type=gha` + `cache-to: type=gha,mode=max` is the standard GHA caching approach
   - Dockerfiles use repo root as build context (`.`) since they reference `src/` and `docker/` paths
   - `GITHUB_TOKEN` has built-in write access to ghcr.io when `permissions.packages: write` is set
+---
+
+## 2026-03-28 - US-003
+- Created `tests/PeruShopHub.UnitTests/` project with xUnit 2.x, FluentAssertions 8.x, Moq 4.x, coverlet
+- Created `tests/PeruShopHub.IntegrationTests/` project with xUnit 2.x, FluentAssertions 8.x, Testcontainers.PostgreSql 4.x, Testcontainers.Redis 4.x, Microsoft.AspNetCore.Mvc.Testing 9.x
+- Created `IntegrationTestBase` class providing HttpClient, scoped DbContext access, shared collection fixture
+- Created `CustomWebApplicationFactory<Program>` that spins up PostgreSQL 16 + Redis 7 via TestContainers, replaces DB/cache/SignalR registrations, auto-migrates database
+- Created `IntegrationTestCollection` for shared fixture across all integration tests
+- Added `public partial class Program { }` to API's Program.cs for WebApplicationFactory access
+- Added both projects to `PeruShopHub.sln`
+- Updated CI pipeline to run Unit Tests and Integration Tests as separate steps
+- Smoke tests: UnitTests (1 test passing), IntegrationTests (2 tests — health endpoint + DB migration, require Docker)
+- .NET build passes (0 errors, 5 pre-existing warnings)
+- Files changed: `tests/PeruShopHub.UnitTests/**`, `tests/PeruShopHub.IntegrationTests/**`, `src/PeruShopHub.API/Program.cs`, `.github/workflows/ci.yml`, `PeruShopHub.sln`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- **Learnings for future iterations:**
+  - TestContainers 4.x uses image string in constructor: `new PostgreSqlBuilder("postgres:16-alpine")`, not `new PostgreSqlBuilder().WithImage(...)`
+  - `WebApplicationFactory<Program>` requires Program class to be accessible — add `public partial class Program { }` at end of top-level statement file
+  - SignalR Redis backplane services are hard to cleanly remove from DI — simplest approach is to remove Redis-related SignalR descriptors and re-add plain SignalR
+  - Integration tests can't run without Docker — CI on `ubuntu-latest` has Docker, local dev may not
+  - xUnit collection fixtures (`ICollectionFixture<T>`) share a single instance across all tests in the collection — ideal for TestContainers to avoid spinning up containers per test class
 ---

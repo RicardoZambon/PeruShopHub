@@ -25,8 +25,11 @@ jobs:
       - name: Build
         run: dotnet build PeruShopHub.sln --no-restore --configuration Release
 
-      - name: Test
-        run: dotnet test PeruShopHub.sln --no-build --configuration Release --verbosity normal
+      - name: Unit Tests
+        run: dotnet test tests/PeruShopHub.UnitTests --no-build --configuration Release --verbosity normal
+
+      - name: Integration Tests
+        run: dotnet test tests/PeruShopHub.IntegrationTests --no-build --configuration Release --verbosity normal
 
   frontend:
     name: Frontend — Build & Test

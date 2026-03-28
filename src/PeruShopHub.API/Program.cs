@@ -141,3 +141,6 @@ app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHealthChecks("/health");
 
 app.Run();
+
+// Make the implicit Program class accessible for WebApplicationFactory<Program> in integration tests
+public partial class Program { }

@@ -52,7 +52,7 @@
         ".NET build passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 0.5. Foundation for all test stories."
     },
     {
