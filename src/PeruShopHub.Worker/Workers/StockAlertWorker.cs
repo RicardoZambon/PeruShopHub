@@ -33,6 +33,7 @@ public class StockAlertWorker : BackgroundService
         using var scope = _services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PeruShopHubDbContext>();
 
+        // Check supplies (legacy)
         var lowStock = await db.Supplies
             .Where(s => s.Status == "Ativo" && s.Stock <= s.MinimumStock)
             .ToListAsync(ct);
@@ -51,6 +52,34 @@ public class StockAlertWorker : BackgroundService
                 Timestamp = DateTime.UtcNow, NavigationTarget = "/suprimentos"
             });
         }
+
+        // Check products with MinStock configured
+        var products = await db.Products
+            .Include(p => p.Variants)
+            .Where(p => p.IsActive && p.MinStock != null)
+            .ToListAsync(ct);
+
+        foreach (var product in products)
+        {
+            var totalStock = product.Variants.Sum(v => v.Stock);
+            if (totalStock > product.MinStock!.Value) continue;
+
+            var exists = await db.Notifications.AnyAsync(n =>
+                n.Type == "stock_alert" && n.Title.Contains(product.Name) && !n.IsRead, ct);
+            if (exists) continue;
+
+            db.Notifications.Add(new Notification
+            {
+                Id = Guid.NewGuid(),
+                TenantId = product.TenantId,
+                Type = "stock_alert",
+                Title = $"Estoque baixo: {product.Name}",
+                Description = $"{product.Name} tem apenas {totalStock} unidades (mínimo: {product.MinStock})",
+                Timestamp = DateTime.UtcNow,
+                NavigationTarget = $"/produtos/{product.Id}"
+            });
+        }
+
         await db.SaveChangesAsync(ct);
     }
 }

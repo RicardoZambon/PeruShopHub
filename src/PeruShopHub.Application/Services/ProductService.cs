@@ -79,7 +79,9 @@ public class ProductService : IProductService
                     .OrderBy(f => f.SortOrder)
                     .Select(f => f.StoragePath)
                     .FirstOrDefault(),
-                p.CreatedAt))
+                p.CreatedAt,
+                p.MinStock,
+                p.MaxStock))
             .ToListAsync(ct);
 
         var result = new PagedResult<ProductListDto>
@@ -165,6 +167,8 @@ public class ProductService : IProductService
             Height = dto.Height,
             Width = dto.Width,
             Length = dto.Length,
+            MinStock = dto.MinStock,
+            MaxStock = dto.MaxStock,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -205,6 +209,8 @@ public class ProductService : IProductService
         if (dto.Height.HasValue) product.Height = dto.Height.Value;
         if (dto.Width.HasValue) product.Width = dto.Width.Value;
         if (dto.Length.HasValue) product.Length = dto.Length.Value;
+        if (dto.MinStock.HasValue) product.MinStock = dto.MinStock.Value == 0 ? null : dto.MinStock.Value;
+        if (dto.MaxStock.HasValue) product.MaxStock = dto.MaxStock.Value == 0 ? null : dto.MaxStock.Value;
 
         product.UpdatedAt = DateTime.UtcNow;
         product.Version++;
@@ -707,7 +713,9 @@ public class ProductService : IProductService
             product.UpdatedAt,
             (product.Variants ?? Array.Empty<ProductVariant>()).Select(v => MapToVariantDto(v)).ToList(),
             photoUrls,
-            product.Version);
+            product.Version,
+            product.MinStock,
+            product.MaxStock);
     }
 
     private static ProductVariantDto MapToVariantDto(ProductVariant v) => new(

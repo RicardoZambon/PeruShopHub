@@ -66,6 +66,7 @@
           <tr
             *ngFor="let row of data"
             [class.data-grid__row--clickable]="hasRowClick"
+            [ngClass]="row['_rowClass'] || ''"
             (click)="onRowClick($event, row)"
           >
             <td

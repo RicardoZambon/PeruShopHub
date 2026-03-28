@@ -14,7 +14,9 @@ public record ProductListDto(
     int Stock,
     decimal? Margin,
     string? PhotoUrl,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    int? MinStock = null,
+    int? MaxStock = null);
 
 public record ProductDetailDto(
     Guid Id,
@@ -37,7 +39,9 @@ public record ProductDetailDto(
     DateTime UpdatedAt,
     IReadOnlyList<ProductVariantDto> Variants,
     IReadOnlyList<string> PhotoUrls,
-    int Version);
+    int Version,
+    int? MinStock = null,
+    int? MaxStock = null);
 
 public record ProductVariantDto(
     Guid Id,
@@ -65,7 +69,9 @@ public record CreateProductDto(
     decimal Weight,
     decimal Height,
     decimal Width,
-    decimal Length);
+    decimal Length,
+    int? MinStock = null,
+    int? MaxStock = null);
 
 public record UpdateProductDto(
     string? Sku,
@@ -82,7 +88,9 @@ public record UpdateProductDto(
     decimal? Height,
     decimal? Width,
     decimal? Length,
-    int Version);
+    int Version,
+    int? MinStock = null,
+    int? MaxStock = null);
 
 public record CreateProductVariantDto(
     string Sku,

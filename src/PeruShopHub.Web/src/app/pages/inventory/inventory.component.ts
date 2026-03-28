@@ -78,6 +78,7 @@ export class InventoryComponent implements OnInit {
   readonly invGridData = computed(() => {
     return this.inventoryData().map(item => ({
       ...item,
+      _rowClass: item.minStock != null && item.totalStock <= item.minStock ? 'inv__row--low-stock' : '',
     }));
   });
 

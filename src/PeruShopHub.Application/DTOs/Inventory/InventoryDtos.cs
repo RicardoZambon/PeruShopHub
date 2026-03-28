@@ -1,6 +1,8 @@
 namespace PeruShopHub.Application.DTOs.Inventory;
 
-public record InventoryItemDto(Guid ProductId, string Sku, string ProductName, int TotalStock, int Reserved, int Available, decimal UnitCost, decimal StockValue);
+public record InventoryItemDto(Guid ProductId, string Sku, string ProductName, int TotalStock, int Reserved, int Available, decimal UnitCost, decimal StockValue, int? MinStock = null, int? MaxStock = null);
+
+public record StockAlertDto(Guid ProductId, string Sku, string ProductName, int TotalStock, int? MinStock, int Deficit);
 public record StockMovementDto(Guid Id, string Sku, string ProductName, string Type, int Quantity, decimal? UnitCost, string? Reason, string? CreatedBy, DateTime CreatedAt);
 public record StockAdjustmentDto(Guid ProductId, Guid VariantId, int Quantity, string Reason);
 

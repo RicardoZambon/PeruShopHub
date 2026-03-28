@@ -152,6 +152,33 @@
                   </span>
                 </div>
               }
+
+              <!-- Min/Max Stock -->
+              <div class="fields-row">
+                <app-form-field
+                  label="Estoque mínimo"
+                  [error]="form.get('estoqueMinimo')?.touched && form.get('estoqueMinimo')?.hasError('min') ? 'Valor deve ser maior que zero' : ''">
+                  <input
+                    id="estoqueMinimo"
+                    type="number"
+                    formControlName="estoqueMinimo"
+                    placeholder="Ex: 10"
+                    min="1"
+                  />
+                </app-form-field>
+
+                <app-form-field
+                  label="Estoque máximo"
+                  [error]="form.get('estoqueMaximo')?.touched && form.get('estoqueMaximo')?.hasError('min') ? 'Valor deve ser maior que zero' : ''">
+                  <input
+                    id="estoqueMaximo"
+                    type="number"
+                    formControlName="estoqueMaximo"
+                    placeholder="Ex: 100"
+                    min="1"
+                  />
+                </app-form-field>
+              </div>
             </div>
           </ng-template>
 

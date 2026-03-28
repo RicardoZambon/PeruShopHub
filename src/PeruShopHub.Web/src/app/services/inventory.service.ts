@@ -14,6 +14,17 @@ export interface InventoryItem {
   available: number;
   unitCost: number;
   stockValue: number;
+  minStock?: number | null;
+  maxStock?: number | null;
+}
+
+export interface StockAlert {
+  productId: string;
+  sku: string;
+  productName: string;
+  totalStock: number;
+  minStock: number | null;
+  deficit: number;
 }
 
 export interface StockAllocation {
@@ -106,5 +117,9 @@ export class InventoryService {
 
   updateAllocation(variantId: string, dto: UpdateStockAllocationDto): Observable<StockAllocation> {
     return this.http.put<StockAllocation>(`${this.baseUrl}/${variantId}/allocations`, dto);
+  }
+
+  getAlerts(): Observable<StockAlert[]> {
+    return this.http.get<StockAlert[]>(`${this.baseUrl}/alerts`);
   }
 }

@@ -41,7 +41,9 @@ public class InventoryService : IInventoryService
             0,
             p.Variants.Sum(v => v.Stock),
             p.PurchaseCost,
-            p.Variants.Sum(v => v.Stock) * p.PurchaseCost));
+            p.Variants.Sum(v => v.Stock) * p.PurchaseCost,
+            p.MinStock,
+            p.MaxStock));
 
         var desc = sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase);
         projected = sortBy.ToLower() switch
@@ -249,6 +251,28 @@ public class InventoryService : IInventoryService
             allocation.MarketplaceId,
             allocation.AllocatedQuantity,
             allocation.ReservedQuantity);
+    }
+
+    public async Task<IReadOnlyList<StockAlertDto>> GetAlertsAsync(CancellationToken ct = default)
+    {
+        var products = await _db.Products.AsNoTracking()
+            .Include(p => p.Variants)
+            .Where(p => p.IsActive && p.MinStock != null)
+            .ToListAsync(ct);
+
+        var alerts = new List<StockAlertDto>();
+        foreach (var p in products)
+        {
+            var totalStock = p.Variants.Sum(v => v.Stock);
+            if (totalStock <= p.MinStock!.Value)
+            {
+                alerts.Add(new StockAlertDto(
+                    p.Id, p.Sku, p.Name,
+                    totalStock, p.MinStock, p.MinStock.Value - totalStock));
+            }
+        }
+
+        return alerts.OrderBy(a => a.TotalStock).ToList();
     }
 
     private async Task AdjustAllocationsIfExceedingAsync(Guid variantId, int newStock, CancellationToken ct)

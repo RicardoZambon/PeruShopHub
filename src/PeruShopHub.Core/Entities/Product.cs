@@ -23,6 +23,8 @@ public class Product : ITenantScoped
     public decimal Length { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public int? MinStock { get; set; }
+    public int? MaxStock { get; set; }
     public int Version { get; set; }
     public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
 }

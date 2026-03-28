@@ -21,4 +21,6 @@ public interface IInventoryService
     Task<ProductAllocationsDto> GetAllocationsAsync(Guid productId, CancellationToken ct = default);
 
     Task<StockAllocationDto> UpdateAllocationAsync(Guid variantId, UpdateStockAllocationDto dto, CancellationToken ct = default);
+
+    Task<IReadOnlyList<StockAlertDto>> GetAlertsAsync(CancellationToken ct = default);
 }

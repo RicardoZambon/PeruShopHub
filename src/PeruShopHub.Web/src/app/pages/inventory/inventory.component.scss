@@ -1,5 +1,14 @@
 @use '../../../styles/mixins' as m;
 
+// Low-stock row highlighting in data grid
+:host ::ng-deep .inv__row--low-stock {
+  background: var(--danger-bg, #FFF5F5) !important;
+
+  td {
+    color: var(--danger);
+  }
+}
+
 .estoque {
   &__content {
     display: flex;

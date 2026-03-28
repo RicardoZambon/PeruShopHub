@@ -28,6 +28,8 @@ export interface Product {
   margin: number | null;
   variantCount: number;
   needsReview: boolean;
+  minStock?: number | null;
+  maxStock?: number | null;
   variants?: any[];
   version: number;
   createdAt?: string;

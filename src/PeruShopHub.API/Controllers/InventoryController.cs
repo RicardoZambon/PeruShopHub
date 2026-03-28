@@ -53,6 +53,13 @@ public class InventoryController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("alerts")]
+    public async Task<ActionResult<IReadOnlyList<StockAlertDto>>> GetAlerts(CancellationToken ct = default)
+    {
+        var result = await _inventoryService.GetAlertsAsync(ct);
+        return Ok(result);
+    }
+
     [HttpGet("{productId}/allocations")]
     public async Task<ActionResult<ProductAllocationsDto>> GetAllocations(Guid productId, CancellationToken ct = default)
     {
