@@ -1056,3 +1056,20 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Rate limiter is in-memory (single-instance); for multi-instance deployment, would need distributed rate limiting
   - The resilience handler name ("MercadoLivreResilience") must be unique per HttpClient registration
 ---
+
+## 2026-03-28 - US-038
+- Enhanced ML Integration Settings page in Settings > Integrações tab
+- Added proper status badges: Ativo (green/success), Erro (red/danger), Expirado (yellow/warning), Desconectado (gray/neutral)
+- Added "Reconectar" button for error state (triggers OAuth flow)
+- Added "Sincronizar Agora" button for active connections (triggers manual sync)
+- Added connection health indicator: green dot for healthy, red dot with error count for issues
+- Added `POST /api/integrations/{marketplaceId}/sync` backend endpoint
+- Added `refreshErrorCount` to IntegrationDto and frontend Integration interface
+- Added SCSS for health indicators, user ID, expiry, and action button layout
+- Files changed: IntegrationsController.cs, SettingsController.cs, SettingsDtos.cs, settings.component.html, settings.component.ts, settings.component.scss, settings.service.ts
+- **Learnings for future iterations:**
+  - Button component only supports: 'accent' | 'ghost' | 'outline' | 'danger' | 'icon' — no 'secondary' or 'primary'
+  - Badge component supports: 'success' | 'warning' | 'danger' | 'primary' | 'neutral' | 'accent'
+  - Integration card already had most structure; the main gaps were status-specific badges, reconnect flow, sync trigger, and health indicators
+  - MarketplaceConnection entity already tracks `RefreshErrorCount` — just needed to expose it through the DTO
+---
