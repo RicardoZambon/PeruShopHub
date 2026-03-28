@@ -30,6 +30,9 @@ Started: Fri Mar 28 2026
 - **Unit test DB pattern**: Use SQLite in-memory (`SqliteConnection("DataSource=:memory:")`) with `EnsureCreated()` for unit tests. Provide `ITenantContext` mock with `IsSuperAdmin=true` to bypass query filters
 - **SQLite + EF Core gotcha**: SQLite DELETE in batch with INSERT/UPDATE on same table causes `DbUpdateConcurrencyException`. Workaround: test delete logic separately or test the underlying calculation methods directly
 - **CostCalculationService testing**: Service uses DbContext directly (not repository), so tests need real DB (SQLite in-memory). Mock `INotificationDispatcher` and `ILogger`. Use `IConfiguration` in-memory collection for tax rate
+- **SQLite LINQ limitation**: Complex projections with `.Select()` containing subqueries (e.g., `Variants.Sum(v => v.Stock)`) followed by `.OrderBy()` on the projected result fail with SQLite. These queries need integration tests with PostgreSQL
+- **Moq expression tree gotcha**: When verifying methods with optional `CancellationToken` params, you must include `It.IsAny<CancellationToken>()` explicitly — Moq expression trees can't handle optional arguments
+- **PurchaseOrderService testing**: AddCost/UpdateCost/RemoveCost with Items involve INSERT+UPDATE batches that can trigger SQLite concurrency issues. Test validation paths and simpler operations; leave full CRUD cost tests for integration
 
 ---
 
@@ -115,4 +118,18 @@ Started: Fri Mar 28 2026
   - OrderService timeline and payment status are derived from order status using static helper methods BuildTimeline and DerivePaymentStatus
   - OrderService.FulfillAsync and RecalculateCostsAsync delegate to ICostCalculationService — mock verification is sufficient
   - SQLite in-memory DB works well for testing both services since they use DbContext directly
+---
+
+## 2026-03-28 - US-005b
+- Created 25 unit tests for CategoryService, 17 for PurchaseOrderService, and 14 for InventoryService (56 total new tests, 142 total passing)
+- CategoryService tests cover: GetCategories (root, filter by parent, HasChildren flag), SearchCategories (matching, ancestor inclusion, empty query), GetById (detail with children, not found), Create (valid, duplicate name, duplicate slug, invalid parent, empty name), Update (valid, self-reference, circular reference, duplicate slug), Delete (valid, not found, has children conflict), VariationFields (create valid, duplicate in category, duplicate from ancestor, invalid type, select <2 options, inherited fields, delete valid, delete not found)
+- PurchaseOrderService tests cover: GetList (pagination, filter by status, filter by supplier), GetById (detail, not found), Create (valid with totals, empty supplier, no items, with cost allocation), Update (status gating), Receive (delegates to cost service, already received conflict), Cancel (valid, not draft), AddCost (not found, invalid distribution method), RemoveCost (recalculates totals)
+- InventoryService tests cover: GetMovements (pagination, page size, filter by productId, filter by type, date range, date from only, ordering, no filters), CreateMovement (valid with stock update, negative quantity, not found, variant purchase cost, creates record, returns variant SKU)
+- Files changed: `tests/PeruShopHub.UnitTests/Services/CategoryServiceTests.cs` (new), `tests/PeruShopHub.UnitTests/Services/PurchaseOrderServiceTests.cs` (new), `tests/PeruShopHub.UnitTests/Services/InventoryServiceTests.cs` (new), `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- **Learnings for future iterations:**
+  - SQLite cannot translate complex LINQ projections with Sum() subqueries inside Select() followed by OrderBy() — InventoryService.GetOverviewAsync needs integration tests
+  - Moq expression trees fail on methods with optional CancellationToken params — must explicitly pass `It.IsAny<CancellationToken>()`
+  - PurchaseOrderService AddCost/UpdateCost involve INSERT+UPDATE batches that trigger SQLite DbUpdateConcurrencyException — test validation and simpler paths in unit tests, reserve full CRUD for integration
+  - CategoryService circular reference detection can be tested with a 3-level chain (A→B→C, then try A.Parent=C)
+  - PurchaseOrderService RemoveCost works in SQLite when the PO is seeded with costs already in it (no prior AddCost step)
 ---
