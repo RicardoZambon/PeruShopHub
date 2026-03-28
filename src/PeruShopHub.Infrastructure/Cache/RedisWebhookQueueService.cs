@@ -27,6 +27,21 @@ public class RedisWebhookQueueService : IWebhookQueueService
         _logger.LogDebug("Enqueued webhook to {Key}", key);
     }
 
+    public async Task<string?> DequeueAsync(string topic, CancellationToken ct = default)
+    {
+        var db = _redis.GetDatabase();
+        var key = $"ml:webhooks:{topic}";
+        var value = await db.ListRightPopAsync(key);
+        return value.IsNull ? null : value.ToString();
+    }
+
+    public async Task EnqueueDeadLetterAsync(string payload, CancellationToken ct = default)
+    {
+        var db = _redis.GetDatabase();
+        await db.ListLeftPushAsync("ml:webhooks:dead", payload);
+        _logger.LogWarning("Webhook moved to dead letter queue");
+    }
+
     public async Task<bool> IsDuplicateAsync(string notificationId, CancellationToken ct = default)
     {
         var db = _redis.GetDatabase();

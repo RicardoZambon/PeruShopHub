@@ -5,10 +5,13 @@ using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Cache;
 using PeruShopHub.Infrastructure.Email;
 using PeruShopHub.Infrastructure.Marketplace;
+using PeruShopHub.Infrastructure.Notifications;
 using PeruShopHub.Infrastructure.Persistence;
 using PeruShopHub.Infrastructure.Security;
+using PeruShopHub.Infrastructure.Services;
 using PeruShopHub.Infrastructure.Storage;
 using PeruShopHub.Worker.Workers;
+using StackExchange.Redis;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -41,6 +44,18 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
+// Redis Connection (needed for webhook queue operations)
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect(redisConnectionString));
+builder.Services.AddSingleton<IWebhookQueueService, RedisWebhookQueueService>();
+
+// Notification dispatcher (DB-only, no SignalR in Worker)
+builder.Services.AddScoped<INotificationDispatcher, DbOnlyNotificationDispatcher>();
+
+// Cost calculation service (needed for webhook order processing)
+builder.Services.AddScoped<ICostCalculationService, CostCalculationService>();
+
 // File Storage (needed for photo sync during import)
 builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
@@ -57,6 +72,7 @@ builder.Services.AddHostedService<ReportEmailWorker>();
 builder.Services.AddHostedService<AlertWorker>();
 builder.Services.AddHostedService<TokenRenewalWorker>();
 builder.Services.AddHostedService<ProductSyncWorker>();
+builder.Services.AddHostedService<WebhookProcessingWorker>();
 
 var host = builder.Build();
 host.Run();

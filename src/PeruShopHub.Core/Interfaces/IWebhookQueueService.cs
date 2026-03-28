@@ -8,6 +8,16 @@ public interface IWebhookQueueService
     Task EnqueueAsync(string topic, string payload, CancellationToken ct = default);
 
     /// <summary>
+    /// Pop the next webhook payload from a topic queue. Returns null if queue is empty.
+    /// </summary>
+    Task<string?> DequeueAsync(string topic, CancellationToken ct = default);
+
+    /// <summary>
+    /// Push a failed webhook payload to the dead letter queue.
+    /// </summary>
+    Task EnqueueDeadLetterAsync(string payload, CancellationToken ct = default);
+
+    /// <summary>
     /// Check if a webhook notification ID has already been processed (dedup).
     /// Returns true if it was already seen.
     /// </summary>

@@ -997,7 +997,7 @@
         ".NET build passes"
       ],
       "priority": 53,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Depends on US-045."
     },
     {

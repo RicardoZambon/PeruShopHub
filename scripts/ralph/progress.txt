@@ -61,6 +61,8 @@ Started: Fri Mar 28 2026
 - **Worker marketplace API access**: Worker needs its own DataProtection + ITokenEncryptionService + HttpClient("MercadoLivre") + keyed IMarketplaceAdapter registration (separate from API Program.cs). Add `Microsoft.AspNetCore.DataProtection` package to Worker .csproj
 - **ML API resilience**: `Microsoft.Extensions.Http.Resilience` (Polly v8) via `.AddMercadoLivreResilience()` on the named HttpClient. Chain: Rate Limiter → Retry → Circuit Breaker. Extension in `Infrastructure/Marketplace/MercadoLivreResilienceExtensions.cs`
 - **ProductVariantDto dual mapping**: `ProductVariantDto` is mapped in TWO places in `ProductService` — `GetVariantsAsync` (LINQ Select) AND `MapToVariantDto` helper. When adding new fields to ProductVariant, update BOTH.
+- **Worker DI for webhook processing**: Worker needs `IConnectionMultiplexer` (Redis RPOP), `IWebhookQueueService`, `ICostCalculationService`, and `INotificationDispatcher` (use `DbOnlyNotificationDispatcher` — no SignalR in Worker)
+- **Webhook queue pattern**: LPUSH to enqueue (WebhooksController), RPOP to dequeue (WebhookProcessingWorker) — FIFO ordering. Dead letter: `ml:webhooks:dead`
 
 ---
 
@@ -1266,4 +1268,21 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - ML webhooks are unauthenticated — use [AllowAnonymous] + IP allowlist, not JWT
   - Empty AllowedIPs array = allow all (dev mode); production should have ML IP ranges configured
   - ML webhook DTO uses snake_case field names via [JsonPropertyName] — consistent with ML API patterns
+---
+
+## 2026-03-28 - US-046
+- Implemented WebhookProcessingWorker that polls Redis `ml:webhooks:orders_v2` queue
+- Added `DequeueAsync` and `EnqueueDeadLetterAsync` to IWebhookQueueService interface and RedisWebhookQueueService
+- Worker: polls Redis every 5s, processes one webhook per topic per cycle (ordered processing)
+- Orders_v2 flow: extract order ID from resource → find ML connection by UserId → fetch order details + fees via IMarketplaceAdapter → create/update Order (idempotent by ExternalOrderId) → link OrderItems to internal products via MarketplaceListing → calculate costs via ICostCalculationService → merge API fee costs (overriding calculated) → stock decrement for fulfilled orders → create notification
+- Created DbOnlyNotificationDispatcher for Worker (saves to DB, no SignalR)
+- Registered IConnectionMultiplexer, IWebhookQueueService, ICostCalculationService, INotificationDispatcher in Worker DI
+- Dead letter queue: after 3 failures, payload moved to `ml:webhooks:dead`
+- Files changed: `src/PeruShopHub.Core/Interfaces/IWebhookQueueService.cs`, `src/PeruShopHub.Infrastructure/Cache/RedisWebhookQueueService.cs`, `src/PeruShopHub.Infrastructure/Notifications/DbOnlyNotificationDispatcher.cs`, `src/PeruShopHub.Worker/Workers/WebhookProcessingWorker.cs`, `src/PeruShopHub.Worker/Program.cs`
+- **Learnings for future iterations:**
+  - Worker doesn't have SignalR — use DbOnlyNotificationDispatcher for notification persistence without real-time push
+  - IMarketplaceAdapter doesn't set Authorization headers on data-fetching calls — accessToken is decrypted in services but not passed to the adapter's HTTP client (pre-existing gap, same pattern as ProductSyncService)
+  - MarketplaceListing.ExternalId links ML items to internal products — use this for OrderItem.ProductId resolution
+  - CostCalculationService depends on INotificationDispatcher — must register a dispatcher implementation in Worker
+  - Worker needs IConnectionMultiplexer (for RPOP) separately from IDistributedCache (for key-value). Both needed for webhook processing
 ---
