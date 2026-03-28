@@ -14,9 +14,36 @@ using PeruShopHub.Infrastructure.Persistence;
 using PeruShopHub.Infrastructure.Services;
 using PeruShopHub.Application;
 using PeruShopHub.Infrastructure.Storage;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 using StackExchange.Redis;
 
+// ── Bootstrap Logger (captures startup errors) ──────────────
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
+    .CreateBootstrapLogger();
+
+try
+{
+
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Serilog ──────────────────────────────────────────────────
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithProperty("Application", "PeruShopHub")
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
+    .WriteTo.File(
+        new RenderedCompactJsonFormatter(),
+        path: "logs/perushophub-.json",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        fileSizeLimitBytes: 100_000_000));
 
 // ── Database ──────────────────────────────────────────────
 builder.Services.AddDbContext<PeruShopHubDbContext>(options =>
@@ -124,6 +151,8 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 // ── Middleware Pipeline ───────────────────────────────────
+app.UseMiddleware<CorrelationIdMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -136,12 +165,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TenantMiddleware>();
 app.UseMiddleware<TenantRateLimitMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHealthChecks("/health");
 
 app.Run();
+
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 // Make the implicit Program class accessible for WebApplicationFactory<Program> in integration tests
 public partial class Program { }

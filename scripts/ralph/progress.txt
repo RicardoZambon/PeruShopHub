@@ -42,6 +42,7 @@ Started: Fri Mar 28 2026
 - **HttpTestingController URL matching**: In jsdom, relative URLs like `/api/auth/login` resolve to `http://localhost:5000/api/auth/login`. Use `req => req.url.endsWith('/auth/login')` predicate instead of string match
 - **Angular test script**: `npm test` runs `vitest run` (not `ng test`). CI uses `npx vitest run`
 - **Rate limiting middleware**: `TenantRateLimitMiddleware` uses `IDistributedCache` (Redis) for per-tenant counters. Placed after TenantMiddleware in pipeline. Config in `RateLimiting:RequestsPerMinute`
+- **Serilog logging**: Structured JSON logging via Serilog. Config in `Serilog:` section of appsettings.json. `CorrelationIdMiddleware` first in pipeline, `RequestLoggingMiddleware` after auth. Use `LogContext.PushProperty()` to enrich logs
 
 ---
 
@@ -198,4 +199,24 @@ Started: Fri Mar 28 2026
   - Fixed window with `DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 60` provides simple per-minute bucketing
   - `BitConverter.GetBytes(int)` / `BitConverter.ToInt32(bytes, 0)` is an efficient way to store counters in distributed cache
   - `context.Response.OnStarting()` is the correct way to add response headers that should appear even on successful responses
+---
+
+## 2026-03-28 - US-009
+- Implemented structured logging with Serilog (JSON format, daily file rotation, 30-day retention)
+- Created `CorrelationIdMiddleware` — reads `X-Correlation-Id` from request header or auto-generates, pushes to Serilog LogContext, returns in response header
+- Created `RequestLoggingMiddleware` — logs HTTP method, path, status code, elapsed time with TenantId/UserId/Endpoint enrichment. Configurable via `Serilog:RequestLogging:Enabled`. Skips health, swagger, SignalR paths
+- Configured Serilog in Program.cs with bootstrap logger (captures startup errors), `RenderedCompactJsonFormatter` for both console and file sinks
+- Log levels configurable per namespace via `Serilog:MinimumLevel:Override` in appsettings.json
+- Sensitive data excluded: request/response bodies are never logged; only metadata (method, path, status, timing)
+- Added `Serilog.Enrichers.Environment` for `WithMachineName()` enricher
+- Packages: `Serilog.AspNetCore` 10.0.0, `Serilog.Sinks.Console` 6.1.1, `Serilog.Sinks.File` 7.0.0, `Serilog.Enrichers.Environment` 3.0.1
+- .NET build passes (0 errors), 142 unit tests pass, Angular build passes
+- Files changed: `src/PeruShopHub.API/PeruShopHub.API.csproj`, `src/PeruShopHub.API/Program.cs`, `src/PeruShopHub.API/appsettings.json`, `src/PeruShopHub.API/Middleware/CorrelationIdMiddleware.cs` (new), `src/PeruShopHub.API/Middleware/RequestLoggingMiddleware.cs` (new)
+- **Learnings for future iterations:**
+  - `Serilog.AspNetCore` 10.x brings `Serilog.Extensions.Hosting` which provides `UseSerilog()` on `IHostBuilder`
+  - `RenderedCompactJsonFormatter` from `Serilog.Formatting.Compact` is included transitively — no extra package needed
+  - `LogContext.PushProperty()` requires `Enrich.FromLogContext()` in the Serilog config — without it, pushed properties are silently ignored
+  - Bootstrap logger pattern (`CreateBootstrapLogger` + try/catch/finally with `Log.CloseAndFlush()`) captures startup errors before DI is configured
+  - `ITenantContext` does not have `UserId` — get it from `ClaimTypes.NameIdentifier` on `HttpContext.User` instead
+  - CorrelationId middleware must be first in the pipeline to ensure all subsequent middleware/handlers have correlation context
 ---
