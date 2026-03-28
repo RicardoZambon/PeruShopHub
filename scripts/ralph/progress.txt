@@ -35,6 +35,12 @@ Started: Fri Mar 28 2026
 - **Integration test data seeding**: Orders (and other webhook-sourced entities) must be seeded via `CreateDbContext()` since there's no POST endpoint. Set TenantId from the auth response's `User.TenantId`
 - **Moq expression tree gotcha**: When verifying methods with optional `CancellationToken` params, you must include `It.IsAny<CancellationToken>()` explicitly — Moq expression trees can't handle optional arguments
 - **PurchaseOrderService testing**: AddCost/UpdateCost/RemoveCost with Items involve INSERT+UPDATE batches that can trigger SQLite concurrency issues. Test validation paths and simpler operations; leave full CRUD cost tests for integration
+- **Angular testing framework**: Vitest + `@analogjs/vite-plugin-angular` (not Karma/Jasmine). Config at `vitest.config.ts`, tests use `*.spec.ts` convention
+- **Angular TestBed init**: vitest `setupFiles` doesn't share module context with test files — import `test-setup.ts` directly in each spec file that uses TestBed
+- **Angular TestBed reset between files**: When tests run after other test files, call `TestBed.resetTestingModule()` + `ensureTestBedInit()` in `beforeEach` to avoid "module already instantiated" errors
+- **jsdom missing APIs**: Mock `IntersectionObserver` with `vi.stubGlobal()` — jsdom doesn't provide it
+- **HttpTestingController URL matching**: In jsdom, relative URLs like `/api/auth/login` resolve to `http://localhost:5000/api/auth/login`. Use `req => req.url.endsWith('/auth/login')` predicate instead of string match
+- **Angular test script**: `npm test` runs `vitest run` (not `ng test`). CI uses `npx vitest run`
 
 ---
 
@@ -154,4 +160,23 @@ Started: Fri Mar 28 2026
   - Optimistic locking works via Version field: first update increments version, second update with stale version throws ConflictException (409)
   - Integration tests need separate HttpClient instances per tenant (use Factory.CreateClient()) to test cross-tenant isolation
   - Docker not available in dev container — integration tests can only run in CI (ubuntu-latest has Docker)
+---
+
+## 2026-03-28 - US-007
+- Configured Vitest + `@analogjs/vite-plugin-angular` as the Angular test framework
+- Created 57 unit tests across 4 test files:
+  - **AuthService** (16 tests): login, register, token storage (null/valid/persistence), refresh (success, deduplication, no-token, failure), logout (with/without token, server call), computed signals (isSuperAdmin, tenantName, hasTenant)
+  - **DataGridComponent** (17 tests): empty state (display, custom text, not during loading), skeleton loading (with/without data), sorting (cycle asc→desc→null, column switch, non-sortable), data rendering (rows, headers), row click (emit, ignore interactive elements), footer (display, format, allLoaded)
+  - **FormFieldComponent** (11 tests): label (render, hide, required asterisk), hint (display, hide on error), error (display, hide, replaces hint), content projection
+  - **BrlCurrencyPipe** (13 tests): full mode (positive, zero, negative, null, undefined, 2 decimals), compact mode (millions M, thousands k, fallback, negative millions/thousands, null)
+- Updated CI pipeline to use `npx vitest run` instead of `ng test --watch=false --browsers=ChromeHeadless`
+- .NET build passes (0 errors), Angular build passes
+- Files changed: `src/PeruShopHub.Web/package.json`, `src/PeruShopHub.Web/package-lock.json`, `src/PeruShopHub.Web/vitest.config.ts` (new), `src/PeruShopHub.Web/src/test-setup.ts` (new), `src/PeruShopHub.Web/tsconfig.json`, `src/PeruShopHub.Web/src/app/services/auth.service.spec.ts` (new), `src/PeruShopHub.Web/src/app/shared/components/data-grid/data-grid.component.spec.ts` (new), `src/PeruShopHub.Web/src/app/shared/components/form-field/form-field.component.spec.ts` (new), `src/PeruShopHub.Web/src/app/shared/pipes/brl-currency.pipe.spec.ts` (new), `.github/workflows/ci.yml`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- **Learnings for future iterations:**
+  - `@analogjs/vitest-angular` v2.3.x `setupFiles` don't share module context with test files in vitest 4.x — must import `test-setup.ts` directly in each spec
+  - After `TestBed.resetTestingModule()`, `initTestEnvironment()` must be called again — use `ensureTestBedInit()` helper with try/catch
+  - jsdom lacks `IntersectionObserver` — mock with `vi.stubGlobal('IntersectionObserver', MockClass)`
+  - Angular `HttpClient` in jsdom resolves relative URLs to full `http://localhost:5000/...` — use URL predicate matching in `httpMock.expectOne()`
+  - `@analogjs/vite-plugin-angular` must be installed separately (peer dep of `@analogjs/vitest-angular`)
+  - Use `--legacy-peer-deps` when installing Angular 21 testing dependencies due to peer version conflicts
 ---
