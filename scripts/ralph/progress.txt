@@ -260,3 +260,49 @@ Started: Fri Mar 28 2026
   - Readiness probe filters by tag `"ready"` to check only infrastructure dependencies
   - `AddDiskStorageHealthCheck` requires a drive path (use `/` on Linux)
 ---
+
+## 2026-03-28 - US-REV-0.5
+- Phase 0.5 Review — DevOps & Quality Foundation
+- **Build verification**: dotnet build passes (0 errors, 6 warnings — EF Core version resolution MSB3277), Angular build passes (0 errors)
+- **Test verification**: 142 .NET unit tests pass, 57 Angular tests pass (vitest), integration tests build but require Docker
+- **Story-by-story review**: US-001 through US-011 all verified against acceptance criteria
+
+### Gaps Found
+
+#### US-001 (CI Pipeline)
+- **Frontend test command modified**: AC says `ng test --watch=false --browsers=ChromeHeadless`, actual is `npx vitest run` (changed in US-007 when test framework switched to Vitest). This is an improvement, not a regression.
+
+#### US-007 (Angular Test Setup)
+- **Vitest cold-start flakiness**: First run after clean state can fail with `vi is not defined` / `describe is not defined`. Second run always passes. Root cause appears to be Vitest 4.x + `@analogjs/vitest-angular` module context initialization. Not blocking CI (CI runs fresh each time).
+
+#### US-009 (Structured Logging)
+- **Worker project missing Serilog**: Only the API project has Serilog configured. The Worker project (`src/PeruShopHub.Worker`) still uses default `Microsoft.Extensions.Logging`. Background jobs won't produce structured JSON logs or have CorrelationId enrichment. **Severity: Medium** — should be added for log aggregation consistency.
+
+### Frontend ↔ Backend Wiring Gaps (Cross-cutting)
+
+These gaps exist in the current codebase and were not introduced by Phase 0.5, but are documented here for awareness before Phase 1:
+
+| Entity | Issue | Severity |
+|--------|-------|----------|
+| Supplies | Frontend missing `delete()` and `getById()` service methods (backend endpoints exist) | HIGH |
+| Purchase Orders | Frontend missing `updateCost()` method (backend `PUT /api/purchase-orders/{id}/costs/{costId}` exists) | HIGH |
+| Auth | Frontend missing `changePassword()` method (backend `POST /api/auth/change-password` exists) | MEDIUM |
+| Settings | Frontend calls `GET /api/settings/users` but no backend endpoint exists | HIGH |
+| Finance | Frontend `getSummary()` expects `KpiCard[]` but backend returns `FinanceSummaryDto` | HIGH |
+| Finance | Frontend `getSkuProfitability()` expects `SkuProfitability[]` but backend returns `PagedResult<SkuProfitabilityDetailDto>` | MEDIUM |
+| Tenant | Frontend `updateTenant()` only sends `{ name }` — may be incomplete vs backend DTO | MEDIUM |
+
+### Recommended Fixes (not done in this review story)
+1. Add Serilog to Worker project (US-009 gap)
+2. Add missing frontend service methods for Supplies, PurchaseOrders, Auth
+3. Create backend `GET /api/settings/users` endpoint or remove frontend call
+4. Fix Finance service return type mismatches
+5. Verify Tenant update DTO alignment
+
+- Files reviewed: `.github/workflows/ci.yml`, `.github/workflows/docker.yml`, `tests/PeruShopHub.UnitTests/**`, `tests/PeruShopHub.IntegrationTests/**`, `src/PeruShopHub.API/Middleware/`, `src/PeruShopHub.API/Filters/`, `src/PeruShopHub.API/Program.cs`, `src/PeruShopHub.API/Controllers/`, `src/PeruShopHub.Web/src/app/services/`
+- **Learnings for future iterations:**
+  - Phase reviews should be done after every phase gate to catch wiring mismatches early
+  - Frontend-backend type alignment is a common source of runtime errors — TypeScript types must match backend DTOs exactly
+  - Worker project is often overlooked when adding cross-cutting concerns (logging, error tracking)
+  - Vitest + Angular analog plugin has cold-start quirks — always run tests twice if first run fails
+---
