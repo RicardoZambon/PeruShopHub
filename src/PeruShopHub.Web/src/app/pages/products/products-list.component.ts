@@ -2,7 +2,7 @@ import { Component, signal, computed, inject, OnInit, OnDestroy, ViewChild } fro
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Plus, Edit, Package, Download, CheckCircle, AlertTriangle, XCircle } from 'lucide-angular';
+import { LucideAngularModule, Plus, Edit, Package, Download, CheckCircle, AlertTriangle, XCircle, Link2, Unlink } from 'lucide-angular';
 import {
   DataGridComponent,
   GridCellDirective,
@@ -20,10 +20,11 @@ import { DialogComponent } from '../../shared/components/dialog/dialog.component
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { formatBrl as formatBrlUtil, getProductStatusVariant } from '../../shared/utils';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
-import { ProductService, Product } from '../../services/product.service';
+import { ProductService, Product, type UnlinkedListing } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
 import { SettingsService, type ImportJobStatus } from '../../services/settings.service';
 import { ToastService } from '../../services/toast.service';
+import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
 import type { Category } from '../../models/category.model';
 import { firstValueFrom } from 'rxjs';
 type ProductStatus = 'Ativo' | 'Pausado' | 'Encerrado';
@@ -41,6 +42,7 @@ export class ProductsListComponent implements OnInit, OnDestroy {
   private readonly categoryService = inject(CategoryService);
   private readonly settingsService = inject(SettingsService);
   private readonly toastService = inject(ToastService);
+  private readonly confirmService = inject(ConfirmDialogService);
 
   readonly plusIcon = Plus;
   readonly editIcon = Edit;
@@ -49,6 +51,8 @@ export class ProductsListComponent implements OnInit, OnDestroy {
   readonly checkCircleIcon = CheckCircle;
   readonly alertTriangleIcon = AlertTriangle;
   readonly xCircleIcon = XCircle;
+  readonly linkIcon = Link2;
+  readonly unlinkIcon = Unlink;
 
   @ViewChild('grid') gridRef!: DataGridComponent;
 
@@ -85,7 +89,7 @@ export class ProductsListComponent implements OnInit, OnDestroy {
     { key: 'status', label: 'Status' },
     { key: 'margin', label: 'Margem', align: 'right', sortable: true },
     { key: 'abcClass', label: 'ABC', align: 'center', width: '56px' },
-    { key: 'actions', label: 'Ações', align: 'center', width: '56px' },
+    { key: 'actions', label: 'Ações', align: 'center', width: '88px' },
   ];
 
   readonly gridData = computed(() => {
@@ -307,6 +311,87 @@ export class ProductsListComponent implements OnInit, OnDestroy {
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
+    }
+  }
+
+  // --- Link/Unlink Marketplace ---
+  readonly linkDialogOpen = signal(false);
+  readonly linkDialogProductId = signal<string | null>(null);
+  readonly linkDialogProductName = signal('');
+  readonly linkDialogSearch = signal('');
+  readonly linkDialogLoading = signal(false);
+  readonly linkDialogLinking = signal(false);
+  readonly unlinkedListings = signal<UnlinkedListing[]>([]);
+
+  openLinkDialog(event: Event, product: Record<string, any>): void {
+    event.stopPropagation();
+    this.linkDialogProductId.set(product['id']);
+    this.linkDialogProductName.set(product['name']);
+    this.linkDialogSearch.set('');
+    this.linkDialogOpen.set(true);
+    this.loadUnlinkedListings();
+  }
+
+  closeLinkDialog(): void {
+    this.linkDialogOpen.set(false);
+    this.linkDialogProductId.set(null);
+    this.unlinkedListings.set([]);
+  }
+
+  onLinkSearchChange(value: string): void {
+    this.linkDialogSearch.set(value);
+    this.loadUnlinkedListings();
+  }
+
+  private async loadUnlinkedListings(): Promise<void> {
+    this.linkDialogLoading.set(true);
+    try {
+      const result = await this.productService.getUnlinkedListings(
+        this.linkDialogSearch() || undefined, 1, 50,
+      );
+      this.unlinkedListings.set(result.items);
+    } catch {
+      this.unlinkedListings.set([]);
+    } finally {
+      this.linkDialogLoading.set(false);
+    }
+  }
+
+  async linkListing(listing: UnlinkedListing): Promise<void> {
+    const productId = this.linkDialogProductId();
+    if (!productId) return;
+    this.linkDialogLinking.set(true);
+    try {
+      await this.productService.linkMarketplace(productId, listing.marketplaceId, listing.id);
+      this.toastService.show(`Anúncio "${listing.title}" vinculado com sucesso.`, 'success');
+      this.closeLinkDialog();
+      this.loadProducts(true);
+    } catch (err: any) {
+      const msg = err?.error?.message || 'Erro ao vincular anúncio.';
+      this.toastService.show(msg, 'danger');
+    } finally {
+      this.linkDialogLinking.set(false);
+    }
+  }
+
+  async unlinkProduct(event: Event, product: Record<string, any>): Promise<void> {
+    event.stopPropagation();
+    const confirmed = await this.confirmService.confirm({
+      title: 'Desvincular Marketplace',
+      message: `Deseja desvincular o produto "${product['name']}" do Mercado Livre?`,
+      confirmLabel: 'Desvincular',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+    try {
+      await this.productService.unlinkMarketplace(product['id'], 'mercadolivre');
+      this.confirmService.done();
+      this.toastService.show('Produto desvinculado do Mercado Livre.', 'success');
+      this.loadProducts(true);
+    } catch (err: any) {
+      this.confirmService.done();
+      const msg = err?.error?.message || 'Erro ao desvincular.';
+      this.toastService.show(msg, 'danger');
     }
   }
 

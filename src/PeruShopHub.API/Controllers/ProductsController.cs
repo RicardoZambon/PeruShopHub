@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PeruShopHub.Application.Common;
+using PeruShopHub.Application.DTOs.Listings;
 using PeruShopHub.Application.DTOs.Products;
 using PeruShopHub.Application.Services;
 
@@ -12,10 +13,12 @@ namespace PeruShopHub.API.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
+    private readonly IMarketplaceListingService _listingService;
 
-    public ProductsController(IProductService productService)
+    public ProductsController(IProductService productService, IMarketplaceListingService listingService)
     {
         _productService = productService;
+        _listingService = listingService;
     }
 
     [HttpGet]
@@ -132,6 +135,31 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> DeleteProduct(Guid id, CancellationToken ct = default)
     {
         await _productService.DeleteAsync(id, ct);
+        return NoContent();
+    }
+
+    // --- Marketplace Linking ---
+
+    [HttpGet("{id:guid}/listings")]
+    public async Task<ActionResult<IReadOnlyList<ProductListingDto>>> GetProductListings(Guid id, CancellationToken ct = default)
+    {
+        var result = await _listingService.GetProductListingsAsync(id, ct);
+        return Ok(result);
+    }
+
+    [HttpPut("{id:guid}/link-marketplace")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
+    public async Task<ActionResult<ProductListingDto>> LinkMarketplace(Guid id, LinkMarketplaceDto dto, CancellationToken ct = default)
+    {
+        var result = await _listingService.LinkListingToProductAsync(id, dto, ct);
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:guid}/link-marketplace/{marketplaceId}")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
+    public async Task<IActionResult> UnlinkMarketplace(Guid id, string marketplaceId, CancellationToken ct = default)
+    {
+        await _listingService.UnlinkListingFromProductAsync(id, marketplaceId, ct);
         return NoContent();
     }
 }

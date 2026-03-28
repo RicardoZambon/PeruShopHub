@@ -1118,3 +1118,34 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - PageHeaderComponent supports `<ng-content>` slot for extra buttons between title and primary action
   - Post-query enrichment pattern: Fetch main query, then batch-lookup supplementary data (marketplace listings) and merge with `record with { }` syntax — same pattern as ABC classification enrichment
 ---
+
+## 2026-03-28 - US-040
+- Implemented Product-Listing Mapping (Link/Unlink) for ML listings
+- Backend: Created `IMarketplaceListingService` + `MarketplaceListingService` with methods for get unlinked, get product listings, link, and unlink
+- Backend: Created `MarketplaceListingDtos.cs` with DTOs for listing operations
+- Backend: Added API endpoints:
+  - `GET /api/products/{id}/listings` — get linked listings for a product
+  - `PUT /api/products/{id}/link-marketplace` — link a listing to a product
+  - `DELETE /api/products/{id}/link-marketplace/{marketplaceId}` — unlink
+  - `GET /api/integrations/mercadolivre/unlinked-items` — paginated list of unlinked ML listings with search
+- Frontend: Added link/unlink buttons in products list actions column
+- Frontend: Added link dialog with search for unlinked ML listings
+- Frontend: Added unlink confirmation via ConfirmDialogService
+- Frontend: Added `ProductListing` and `UnlinkedListing` interfaces + service methods
+- Files changed:
+  - `src/PeruShopHub.Application/DTOs/Listings/MarketplaceListingDtos.cs` (new)
+  - `src/PeruShopHub.Application/Services/IMarketplaceListingService.cs` (new)
+  - `src/PeruShopHub.Application/Services/MarketplaceListingService.cs` (new)
+  - `src/PeruShopHub.Application/DependencyInjection.cs` (registered service)
+  - `src/PeruShopHub.API/Controllers/ProductsController.cs` (added link/unlink/listings endpoints)
+  - `src/PeruShopHub.API/Controllers/IntegrationsController.cs` (added unlinked-items endpoint)
+  - `src/PeruShopHub.Web/src/app/services/product.service.ts` (added linking interfaces + methods)
+  - `src/PeruShopHub.Web/src/app/pages/products/products-list.component.ts` (link/unlink UI)
+  - `src/PeruShopHub.Web/src/app/pages/products/products-list.component.html` (link dialog + action buttons)
+  - `src/PeruShopHub.Web/src/app/pages/products/products-list.component.scss` (link dialog styles)
+- **Learnings for future iterations:**
+  - `MarketplaceListing` entity already exists with nullable `ProductId` FK — no migration needed for linking. Just set/clear `ProductId`
+  - Linking is done through the existing `MarketplaceListing` table, not by adding fields to `Product`
+  - The `ConflictException` class exists in Application/Exceptions for 409 responses
+  - Product list already enriches with `HasMarketplaceListing` via post-query lookup, so no DTO changes needed for the badge
+---

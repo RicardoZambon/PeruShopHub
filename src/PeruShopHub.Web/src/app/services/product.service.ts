@@ -5,6 +5,29 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { PagedResult } from '../models/api.models';
 
+export interface ProductListing {
+  listingId: string;
+  marketplaceId: string;
+  externalId: string;
+  title: string;
+  status: string;
+  price: number;
+  permalink: string | null;
+  thumbnailUrl: string | null;
+  availableQuantity: number;
+}
+
+export interface UnlinkedListing {
+  id: string;
+  marketplaceId: string;
+  externalId: string;
+  title: string;
+  status: string;
+  price: number;
+  thumbnailUrl: string | null;
+  availableQuantity: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -135,5 +158,33 @@ export class ProductService {
 
   getRecentOrders(id: string, days = 30, page = 1, pageSize = 10): Observable<PagedResult<any>> {
     return this.http.get<PagedResult<any>>(`${this.baseUrl}/${id}/recent-orders`, { params: buildHttpParams({ days, page, pageSize }) });
+  }
+
+  // --- Marketplace Linking ---
+
+  async getProductListings(productId: string): Promise<ProductListing[]> {
+    return firstValueFrom(
+      this.http.get<ProductListing[]>(`${this.baseUrl}/${productId}/listings`),
+    );
+  }
+
+  async linkMarketplace(productId: string, marketplaceId: string, listingId: string): Promise<ProductListing> {
+    return firstValueFrom(
+      this.http.put<ProductListing>(`${this.baseUrl}/${productId}/link-marketplace`, { marketplaceId, listingId }),
+    );
+  }
+
+  async unlinkMarketplace(productId: string, marketplaceId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${this.baseUrl}/${productId}/link-marketplace/${marketplaceId}`),
+    );
+  }
+
+  async getUnlinkedListings(search?: string, page = 1, pageSize = 20): Promise<PagedResult<UnlinkedListing>> {
+    return firstValueFrom(
+      this.http.get<PagedResult<UnlinkedListing>>(`${environment.apiUrl}/integrations/mercadolivre/unlinked-items`, {
+        params: buildHttpParams({ search, page, pageSize }),
+      }),
+    );
   }
 }

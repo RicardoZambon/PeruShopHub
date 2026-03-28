@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PeruShopHub.Application.Common;
+using PeruShopHub.Application.DTOs.Listings;
 using PeruShopHub.Application.Services;
 using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Persistence;
@@ -14,17 +16,20 @@ public class IntegrationsController : ControllerBase
 {
     private readonly IIntegrationService _integrationService;
     private readonly IMlListingImportService _importService;
+    private readonly IMarketplaceListingService _listingService;
     private readonly ITenantContext _tenantContext;
     private readonly PeruShopHubDbContext _db;
 
     public IntegrationsController(
         IIntegrationService integrationService,
         IMlListingImportService importService,
+        IMarketplaceListingService listingService,
         ITenantContext tenantContext,
         PeruShopHubDbContext db)
     {
         _integrationService = integrationService;
         _importService = importService;
+        _listingService = listingService;
         _tenantContext = tenantContext;
         _db = db;
     }
@@ -97,5 +102,16 @@ public class IntegrationsController : ControllerBase
             return Ok(new { status = "None" });
 
         return Ok(status);
+    }
+
+    [HttpGet("mercadolivre/unlinked-items")]
+    public async Task<ActionResult<PagedResult<UnlinkedListingDto>>> GetUnlinkedItems(
+        [FromQuery] string? search = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var result = await _listingService.GetUnlinkedListingsAsync("mercadolivre", search, page, pageSize, ct);
+        return Ok(result);
     }
 }

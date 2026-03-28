@@ -131,9 +131,20 @@
 
     <!-- Actions cell -->
     <ng-template appGridCell="actions" let-row>
-      <button class="edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', row.id, 'editar'])">
-        <lucide-icon [img]="editIcon" [size]="16"></lucide-icon>
-      </button>
+      <div class="actions-group">
+        @if (row.hasMarketplaceListing) {
+          <button class="edit-btn" title="Desvincular do ML" (click)="unlinkProduct($event, row)">
+            <lucide-icon [img]="unlinkIcon" [size]="16"></lucide-icon>
+          </button>
+        } @else {
+          <button class="edit-btn" title="Vincular ao ML" (click)="openLinkDialog($event, row)">
+            <lucide-icon [img]="linkIcon" [size]="16"></lucide-icon>
+          </button>
+        }
+        <button class="edit-btn" (click)="$event.stopPropagation(); router.navigate(['/produtos', row.id, 'editar'])">
+          <lucide-icon [img]="editIcon" [size]="16"></lucide-icon>
+        </button>
+      </div>
     </ng-template>
 
     <!-- Mobile card template -->
@@ -294,6 +305,47 @@
             (click)="startImport()">
             Importar Novamente
           </app-button>
+        }
+      </div>
+    }
+  </div>
+</app-dialog>
+
+<!-- Link Marketplace Dialog -->
+<app-dialog
+  [title]="'Vincular: ' + linkDialogProductName()"
+  [open]="linkDialogOpen()"
+  size="md"
+  (closed)="closeLinkDialog()">
+  <div body class="link-dialog">
+    <p class="link-dialog__desc">Selecione um anúncio do Mercado Livre para vincular a este produto.</p>
+    <app-search-input
+      placeholder="Buscar por título ou ID do ML..."
+      [value]="linkDialogSearch()"
+      (valueChange)="onLinkSearchChange($event)"
+    ></app-search-input>
+
+    @if (linkDialogLoading()) {
+      <div class="link-dialog__loading">Carregando anúncios...</div>
+    } @else if (unlinkedListings().length === 0) {
+      <div class="link-dialog__empty">Nenhum anúncio não vinculado encontrado.</div>
+    } @else {
+      <div class="link-dialog__list">
+        @for (listing of unlinkedListings(); track listing.id) {
+          <button
+            class="link-item"
+            [disabled]="linkDialogLinking()"
+            (click)="linkListing(listing)">
+            <div class="link-item__info">
+              <span class="link-item__title">{{ listing.title }}</span>
+              <span class="link-item__meta">
+                <span class="cell-mono">{{ listing.externalId }}</span>
+                · {{ formatBrl(listing.price) }}
+                · Estoque: {{ listing.availableQuantity }}
+              </span>
+            </div>
+            <lucide-icon [img]="linkIcon" [size]="16"></lucide-icon>
+          </button>
         }
       </div>
     }
