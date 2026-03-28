@@ -867,3 +867,26 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - PricingService.CalculateAsync does backwards (margin→price); SimulateAsync does forward (price→profitability)
   - SimulationOverrides rates (commissionRate, taxRate, paymentFeeRate) come as percentages from frontend (e.g., 11) and are divided by 100 in the service
 ---
+
+## 2026-03-28 - US-032
+- Created `AlertRule` entity with Type (MarginBelow/CostIncrease/StockLow), Threshold, IsActive, optional ProductId
+- Added EF migration `AddAlertRules` creating alert_rules table with indexes on TenantId, TenantId+IsActive, and FK to Products
+- Added CRUD endpoints: GET/POST/PUT/DELETE `/api/settings/alert-rules` in SettingsController with validation
+- Created `AlertWorker` background service (runs hourly by default, configurable via `Workers:Alert:IntervalMinutes`)
+  - MarginBelow: checks avg margin over last 30 days against threshold
+  - CostIncrease: compares current PurchaseCost vs 30-day-old cost history
+  - StockLow: checks total variant stock against threshold
+  - All checks use `IgnoreQueryFilters()` for cross-tenant operation, filter by TenantId manually
+  - Creates Notification entities (avoids duplicates by checking unread notifications with same title)
+- Replaced static AlertConfig in frontend with dynamic AlertRule CRUD backed by API
+- Settings > Alertas tab shows table of alert rules with type, threshold, product, active toggle, edit/delete actions
+- Modal dialog for creating/editing rules with type selector, threshold input, optional product ID
+- Frontend service methods: getAlertRules, createAlertRule, updateAlertRule, deleteAlertRule
+- Files changed: AlertRule.cs, AlertRuleConfiguration.cs, PeruShopHubDbContext.cs, SettingsController.cs, AlertWorker.cs, Worker/Program.cs, settings.service.ts, settings.component.ts, settings.component.html, migration files
+- **Learnings for future iterations:**
+  - `OrderCost.Value` (not Amount) for cost values
+  - `ProductVariant.PurchaseCost` (nullable decimal, not `Cost`) for variant costs
+  - `ProductCostHistory.CreatedAt` (not RecordedAt), `NewCost` (not WeightedAverageCost) for cost history
+  - `OrderItem.ProductId` is a direct nullable Guid — no navigation to ProductVariant
+  - Worker cross-tenant pattern: use `IgnoreQueryFilters()` + manual TenantId filtering
+---
