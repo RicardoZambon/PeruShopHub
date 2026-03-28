@@ -22,7 +22,7 @@ import {
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 import { InventoryService } from '../../services/inventory.service';
-import type { InventoryItem, StockMovement, InventoryQueryParams } from '../../services/inventory.service';
+import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocations, VariantAllocations } from '../../services/inventory.service';
 import { firstValueFrom } from 'rxjs';
 
 type InventoryTab = 'visao-geral' | 'movimentacoes' | 'estoque-full';
@@ -72,6 +72,7 @@ export class InventoryComponent implements OnInit {
     { key: 'available', label: 'Disponível', align: 'right', sortable: true },
     { key: 'unitCost', label: 'Custo Unit.', align: 'right', sortable: true },
     { key: 'stockValue', label: 'Valor Estoque', align: 'right', sortable: true },
+    { key: 'actions', label: '', align: 'center' },
   ];
 
   readonly invGridData = computed(() => {
@@ -378,5 +379,146 @@ export class InventoryComponent implements OnInit {
     this.movementTypeFilter.set(type);
     this.loadMovementsGrid(true);
     this.movGridRef?.scrollToTop();
+  }
+
+  // Allocation dialog state
+  allocationDialogOpen = signal(false);
+  allocationLoading = signal(false);
+  allocationSaving = signal<string | null>(null); // variantId:marketplaceId being saved
+  allocationData = signal<ProductAllocations | null>(null);
+  allocationError = signal('');
+
+  // Tracks edited quantities keyed by "variantId:marketplaceId"
+  editedAllocations = signal<Record<string, number>>({});
+
+  openAllocations(item: InventoryItem): void {
+    this.allocationDialogOpen.set(true);
+    this.allocationData.set(null);
+    this.allocationError.set('');
+    this.editedAllocations.set({});
+    this.loadAllocations(item.productId);
+  }
+
+  closeAllocations(): void {
+    this.allocationDialogOpen.set(false);
+  }
+
+  private async loadAllocations(productId: string): Promise<void> {
+    this.allocationLoading.set(true);
+    try {
+      const data = await firstValueFrom(this.inventoryService.getAllocations(productId));
+      this.allocationData.set(data);
+    } catch {
+      this.allocationError.set('Erro ao carregar alocações');
+    } finally {
+      this.allocationLoading.set(false);
+    }
+  }
+
+  allocationKey(variantId: string, marketplaceId: string): string {
+    return `${variantId}:${marketplaceId}`;
+  }
+
+  onAllocationChange(variantId: string, marketplaceId: string, value: string): void {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 0) return;
+    this.editedAllocations.update(prev => ({
+      ...prev,
+      [this.allocationKey(variantId, marketplaceId)]: num,
+    }));
+  }
+
+  getAllocationValue(variant: VariantAllocations, marketplaceId: string): number {
+    const key = this.allocationKey(variant.variantId, marketplaceId);
+    const edited = this.editedAllocations();
+    if (key in edited) return edited[key];
+    const existing = variant.allocations.find(a => a.marketplaceId === marketplaceId);
+    return existing?.allocatedQuantity ?? 0;
+  }
+
+  getVariantTotalAllocated(variant: VariantAllocations): number {
+    const marketplaces = this.getMarketplaces();
+    return marketplaces.reduce((sum, mp) => sum + this.getAllocationValue(variant, mp), 0);
+  }
+
+  getVariantUnallocated(variant: VariantAllocations): number {
+    return variant.totalStock - this.getVariantTotalAllocated(variant);
+  }
+
+  isOverAllocated(variant: VariantAllocations): boolean {
+    return this.getVariantUnallocated(variant) < 0;
+  }
+
+  hasUnsavedChanges(variantId: string, marketplaceId: string): boolean {
+    const key = this.allocationKey(variantId, marketplaceId);
+    return key in this.editedAllocations();
+  }
+
+  getMarketplaces(): string[] {
+    const data = this.allocationData();
+    if (!data) return [];
+    const set = new Set<string>();
+    for (const v of data.variants) {
+      for (const a of v.allocations) {
+        set.add(a.marketplaceId);
+      }
+    }
+    // Ensure at least "mercadolivre" is shown
+    if (set.size === 0) set.add('mercadolivre');
+    return Array.from(set).sort();
+  }
+
+  getReservedQuantity(variant: VariantAllocations, marketplaceId: string): number {
+    const alloc = variant.allocations.find(a => a.marketplaceId === marketplaceId);
+    return alloc?.reservedQuantity ?? 0;
+  }
+
+  formatMarketplaceName(id: string): string {
+    const names: Record<string, string> = {
+      'mercadolivre': 'Mercado Livre',
+      'amazon': 'Amazon',
+      'shopee': 'Shopee',
+      'magalu': 'Magazine Luiza',
+    };
+    return names[id] ?? id;
+  }
+
+  async saveAllocation(variantId: string, marketplaceId: string): Promise<void> {
+    const key = this.allocationKey(variantId, marketplaceId);
+    const value = this.editedAllocations()[key];
+    if (value === undefined) return;
+
+    // Validate: check the variant won't be over-allocated
+    const data = this.allocationData();
+    if (!data) return;
+    const variant = data.variants.find(v => v.variantId === variantId);
+    if (variant && this.isOverAllocated(variant)) {
+      this.allocationError.set('Alocação excede o estoque total da variante');
+      return;
+    }
+
+    this.allocationSaving.set(key);
+    this.allocationError.set('');
+    try {
+      await firstValueFrom(this.inventoryService.updateAllocation(variantId, {
+        marketplaceId,
+        allocatedQuantity: value,
+      }));
+
+      // Remove from edited and reload allocations
+      this.editedAllocations.update(prev => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+      await this.loadAllocations(data.productId);
+    } catch (err: any) {
+      const msg = err?.error?.errors
+        ? Object.values(err.error.errors).flat().join(', ')
+        : 'Erro ao salvar alocação';
+      this.allocationError.set(msg as string);
+    } finally {
+      this.allocationSaving.set(null);
+    }
   }
 }

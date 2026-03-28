@@ -80,6 +80,18 @@
           <span class="inv__mono">{{ value | brlCurrency }}</span>
         </ng-template>
 
+        <!-- Actions cell -->
+        <ng-template appGridCell="actions" let-row>
+          <button class="inv__alloc-btn" (click)="openAllocations(row)" title="Gerenciar alocações por canal">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="5" cy="4" r="1.5" fill="currentColor"/>
+              <circle cx="11" cy="8" r="1.5" fill="currentColor"/>
+              <circle cx="7" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
+        </ng-template>
+
         <!-- Mobile card template -->
         <ng-template appGridCard let-row>
           <div class="inv__card-header">
@@ -111,6 +123,9 @@
               <span class="inv__card-label">Valor Estoque</span>
               <span class="inv__card-value inv__mono">{{ row.stockValue | brlCurrency }}</span>
             </div>
+          </div>
+          <div class="inv__card-actions">
+            <button class="inv__alloc-btn" (click)="openAllocations(row)">Alocações</button>
           </div>
         </ng-template>
       </app-data-grid>
@@ -356,4 +371,99 @@
       (save)="saveEntry()">
     </app-form-actions>
   </ng-container>
+</app-dialog>
+
+<!-- Allocation Dialog -->
+<app-dialog
+  title="Alocação por Canal"
+  [open]="allocationDialogOpen()"
+  size="lg"
+  (closed)="closeAllocations()">
+  <div body class="alloc">
+    @if (allocationLoading()) {
+      <div class="alloc__loading">
+        <app-skeleton type="text" width="100%" height="24px" />
+        <app-skeleton type="text" width="100%" height="200px" />
+      </div>
+    } @else if (allocationError() && !allocationData()) {
+      <div class="alloc__error">{{ allocationError() }}</div>
+    } @else if (allocationData(); as data) {
+      <div class="alloc__header">
+        <h3 class="alloc__product-name">{{ data.productName }}</h3>
+      </div>
+
+      @if (allocationError()) {
+        <div class="alloc__error">{{ allocationError() }}</div>
+      }
+
+      @for (variant of data.variants; track variant.variantId) {
+        <div class="alloc__variant">
+          <div class="alloc__variant-header">
+            <span class="alloc__variant-sku">{{ variant.variantSku }}</span>
+            <span class="alloc__variant-stock">
+              Estoque Total: <strong class="inv__mono">{{ variant.totalStock }}</strong>
+            </span>
+          </div>
+
+          <div class="alloc__table-wrap">
+            <table class="alloc__table">
+              <thead>
+                <tr>
+                  <th class="alloc__th">Canal</th>
+                  <th class="alloc__th alloc__th--right">Alocado</th>
+                  <th class="alloc__th alloc__th--right">Reservado</th>
+                  <th class="alloc__th alloc__th--center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (mp of getMarketplaces(); track mp) {
+                  <tr class="alloc__row">
+                    <td class="alloc__td">
+                      <span class="alloc__mp-name">{{ formatMarketplaceName(mp) }}</span>
+                    </td>
+                    <td class="alloc__td alloc__td--right">
+                      <input
+                        type="number"
+                        class="alloc__input"
+                        [value]="getAllocationValue(variant, mp)"
+                        (input)="onAllocationChange(variant.variantId, mp, $any($event.target).value)"
+                        min="0"
+                        [max]="variant.totalStock"
+                      />
+                    </td>
+                    <td class="alloc__td alloc__td--right alloc__td--mono">
+                      {{ getReservedQuantity(variant, mp) }}
+                    </td>
+                    <td class="alloc__td alloc__td--center">
+                      <button
+                        class="alloc__save-btn"
+                        [disabled]="!hasUnsavedChanges(variant.variantId, mp) || isOverAllocated(variant) || allocationSaving() === allocationKey(variant.variantId, mp)"
+                        (click)="saveAllocation(variant.variantId, mp)">
+                        @if (allocationSaving() === allocationKey(variant.variantId, mp)) {
+                          Salvando...
+                        } @else {
+                          Salvar
+                        }
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr class="alloc__footer">
+                  <td class="alloc__td alloc__td--bold">Não alocado</td>
+                  <td class="alloc__td alloc__td--right alloc__td--bold"
+                    [class.alloc__td--danger]="isOverAllocated(variant)">
+                    <span class="inv__mono">{{ getVariantUnallocated(variant) }}</span>
+                  </td>
+                  <td class="alloc__td"></td>
+                  <td class="alloc__td"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      }
+    }
+  </div>
 </app-dialog>

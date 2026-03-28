@@ -341,3 +341,22 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Proportional adjustment uses Math.Floor for each allocation then distributes rounding remainder to largest allocation
   - The `AdjustAllocationsIfExceedingAsync` private method is called in `CreateMovementAsync` — any code path that changes stock should also call this if directly modifying variant.Stock
 ---
+
+## 2026-03-28 - US-013b
+- Implemented stock allocation by channel frontend — allocation dialog accessible from inventory grid
+- Added `ProductId` to `InventoryItemDto` (backend DTO + projection) so frontend can call allocation endpoints
+- Added allocation interfaces and service methods to `inventory.service.ts`: `getAllocations(productId)`, `updateAllocation(variantId, dto)`
+- Allocation dialog shows per-variant tables with marketplace rows, inline editable quantity inputs, reserved column, and per-row save button
+- Unallocated quantity displayed prominently in table footer with red color when over-allocated
+- Validation: save button disabled when allocation exceeds total stock, error message displayed
+- Ghost-style icon button in grid "actions" column to open allocation dialog; text button on mobile card
+- SCSS styles follow existing patterns: CSS custom properties, monospace for quantities, responsive-aware
+- .NET build passes (0 errors), 154 unit tests pass, Angular build passes, 57 Angular tests pass
+- Files changed: `src/PeruShopHub.Application/DTOs/Inventory/InventoryDtos.cs` (added ProductId to InventoryItemDto), `src/PeruShopHub.Application/Services/InventoryService.cs` (added ProductId to projection), `src/PeruShopHub.Web/src/app/services/inventory.service.ts` (added allocation interfaces + methods), `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.ts` (allocation dialog state + methods), `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.html` (allocation dialog + actions column), `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.scss` (allocation dialog styles)
+- **Learnings for future iterations:**
+  - InventoryItemDto originally lacked ProductId — needed to add it to enable allocation API calls from the grid
+  - Allocation dialog uses method-based computed values (getVariantUnallocated, getAllocationValue) instead of pipes for complex per-row calculations
+  - editedAllocations signal uses "variantId:marketplaceId" composite key to track unsaved changes
+  - getMarketplaces() derives marketplace list from existing allocations — falls back to "mercadolivre" when no allocations exist
+  - Backend PUT endpoint is upsert — creates allocation if it doesn't exist, updates if it does
+---

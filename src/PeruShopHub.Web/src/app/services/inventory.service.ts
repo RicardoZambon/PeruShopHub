@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 import { PagedResult } from '../models/api.models';
 
 export interface InventoryItem {
+  productId: string;
   sku: string;
   productName: string;
   totalStock: number;
@@ -13,6 +14,35 @@ export interface InventoryItem {
   available: number;
   unitCost: number;
   stockValue: number;
+}
+
+export interface StockAllocation {
+  id: string;
+  productVariantId: string;
+  variantSku: string;
+  marketplaceId: string;
+  allocatedQuantity: number;
+  reservedQuantity: number;
+}
+
+export interface VariantAllocations {
+  variantId: string;
+  variantSku: string;
+  totalStock: number;
+  totalAllocated: number;
+  unallocated: number;
+  allocations: StockAllocation[];
+}
+
+export interface ProductAllocations {
+  productId: string;
+  productName: string;
+  variants: VariantAllocations[];
+}
+
+export interface UpdateStockAllocationDto {
+  marketplaceId: string;
+  allocatedQuantity: number;
 }
 
 export interface StockMovement {
@@ -68,5 +98,13 @@ export class InventoryService {
 
   adjust(dto: StockAdjustmentDto): Observable<unknown> {
     return this.http.post(`${this.baseUrl}/adjust`, dto);
+  }
+
+  getAllocations(productId: string): Observable<ProductAllocations> {
+    return this.http.get<ProductAllocations>(`${this.baseUrl}/${productId}/allocations`);
+  }
+
+  updateAllocation(variantId: string, dto: UpdateStockAllocationDto): Observable<StockAllocation> {
+    return this.http.put<StockAllocation>(`${this.baseUrl}/${variantId}/allocations`, dto);
   }
 }

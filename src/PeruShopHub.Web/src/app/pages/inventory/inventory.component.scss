@@ -459,3 +459,213 @@
   font-family: var(--font-mono);
   color: var(--neutral-500);
 }
+
+// Allocation button in grid
+.inv__alloc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--neutral-500);
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms;
+
+  &:hover {
+    background: var(--neutral-100);
+    color: var(--primary);
+  }
+}
+
+.inv__card-actions {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--neutral-100);
+
+  .inv__alloc-btn {
+    width: auto;
+    height: auto;
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-sm);
+  }
+}
+
+// Allocation dialog
+.alloc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  &__error {
+    padding: var(--space-3);
+    background: var(--danger-bg, #FFF5F5);
+    color: var(--danger);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__product-name {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--neutral-900);
+  }
+
+  &__variant {
+    background: var(--surface);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  &__variant-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: var(--neutral-50);
+    border-bottom: 1px solid var(--neutral-200);
+  }
+
+  &__variant-sku {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  &__variant-stock {
+    font-size: var(--text-sm);
+    color: var(--neutral-600);
+  }
+
+  &__table-wrap {
+    overflow-x: auto;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--body-small-size);
+  }
+
+  &__th {
+    padding: var(--space-2) var(--space-4);
+    text-align: left;
+    font-weight: 600;
+    color: var(--neutral-600);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--neutral-100);
+
+    &--right {
+      text-align: right;
+    }
+
+    &--center {
+      text-align: center;
+    }
+  }
+
+  &__row {
+    transition: background-color 150ms;
+
+    &:hover {
+      background: var(--neutral-50);
+    }
+  }
+
+  &__td {
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--neutral-100);
+    color: var(--neutral-800);
+    white-space: nowrap;
+
+    &--right {
+      text-align: right;
+    }
+
+    &--center {
+      text-align: center;
+    }
+
+    &--mono {
+      font-family: var(--font-mono);
+    }
+
+    &--bold {
+      font-weight: 600;
+    }
+
+    &--danger {
+      color: var(--danger);
+    }
+  }
+
+  &__footer {
+    background: var(--neutral-50);
+  }
+
+  &__mp-name {
+    font-weight: 500;
+  }
+
+  &__input {
+    width: 80px;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-sm);
+    font-family: var(--font-mono);
+    color: var(--neutral-900);
+    background: var(--surface);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    text-align: right;
+    outline: none;
+
+    &:focus {
+      border-color: var(--primary);
+      box-shadow: var(--focus-ring, 0 0 0 2px rgba(26, 35, 126, 0.15));
+    }
+  }
+
+  &__save-btn {
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--surface);
+    background: var(--primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity 150ms;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}

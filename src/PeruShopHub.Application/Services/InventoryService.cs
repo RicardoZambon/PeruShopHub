@@ -34,6 +34,7 @@ public class InventoryService : IInventoryService
         var totalCount = await query.CountAsync(ct);
 
         var projected = query.Select(p => new InventoryItemDto(
+            p.Id,
             p.Sku,
             p.Name,
             p.Variants.Sum(v => v.Stock),
