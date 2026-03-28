@@ -604,6 +604,28 @@
   }
 }
 
+.shipping-pending {
+  color: var(--neutral-500);
+  font-style: italic;
+  font-size: var(--text-sm);
+}
+
+.tracking-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 150ms;
+
+  &:hover {
+    color: var(--primary-dark, var(--primary));
+    text-decoration: underline;
+  }
+}
+
 // Timeline
 .timeline {
   margin-top: 16px;

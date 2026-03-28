@@ -90,11 +90,11 @@ public class OrderService : IOrderService
             order.BuyerName, order.BuyerNickname,
             order.BuyerEmail, order.BuyerPhone);
 
-        var timeline = BuildTimeline(order.Status, order.OrderDate);
+        var timeline = BuildTimeline(order.Status, order.OrderDate, order.ShippingStatus);
 
         var shipping = new ShippingInfoDto(
-            order.TrackingNumber, order.Carrier,
-            order.LogisticType, timeline);
+            order.TrackingNumber, order.TrackingUrl, order.Carrier,
+            order.LogisticType, order.ShippingStatus, timeline);
 
         var paymentStatus = DerivePaymentStatus(order.Status);
 
@@ -209,11 +209,22 @@ public class OrderService : IOrderService
             throw new AppValidationException(errors);
     }
 
-    private static IReadOnlyList<TimelineStepDto> BuildTimeline(string status, DateTime orderDate)
+    private static IReadOnlyList<TimelineStepDto> BuildTimeline(string status, DateTime orderDate, string? shippingStatus)
     {
         var isNotCancelled = status != "Cancelado";
         var isShippedOrDelivered = status == "Enviado" || status == "Entregue";
         var isDelivered = status == "Entregue";
+
+        // Use shipping status for more granular timeline when available
+        var shippingDesc = shippingStatus switch
+        {
+            "Em preparação" => "Em preparação para envio",
+            "Em trânsito" => "Em trânsito",
+            "Entregue" => "Entregue ao destinatário",
+            "Devolvido" => "Devolvido ao remetente",
+            "Não entregue" => "Tentativa de entrega sem sucesso",
+            _ => null
+        };
 
         return new List<TimelineStepDto>
         {

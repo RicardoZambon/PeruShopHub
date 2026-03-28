@@ -27,6 +27,12 @@ public interface IMarketplaceAdapter
 
     /// <summary>Fetch full item details including variations and pictures.</summary>
     Task<MarketplaceItemDetails> GetItemDetailsAsync(string externalId, CancellationToken ct = default);
+
+    /// <summary>Fetch full shipment details including tracking and status history.</summary>
+    Task<MarketplaceShipmentDetails> GetShipmentDetailsAsync(string shipmentId, CancellationToken ct = default);
+
+    /// <summary>Fetch payment/collection details.</summary>
+    Task<MarketplacePaymentDetails> GetPaymentDetailsAsync(string paymentId, CancellationToken ct = default);
 }
 
 // ── DTOs returned by IMarketplaceAdapter ────────────────────
@@ -113,3 +119,40 @@ public record MarketplaceItemVariation(
     int AvailableQuantity,
     IReadOnlyDictionary<string, string> Attributes,
     IReadOnlyList<string>? PictureIds = null);
+
+// ── Shipment details ──────────────────────────────────────
+
+public record MarketplaceShipmentDetails(
+    string ExternalShipmentId,
+    string Status,
+    string? TrackingNumber,
+    string? TrackingUrl,
+    string? Carrier,
+    string? ServiceName,
+    decimal? ShippingCost,
+    DateTimeOffset? DateCreated,
+    DateTimeOffset? LastUpdated,
+    long? OrderId,
+    IReadOnlyList<MarketplaceShipmentEvent> StatusHistory);
+
+public record MarketplaceShipmentEvent(
+    string Status,
+    string? SubStatus,
+    DateTimeOffset Date,
+    string? Description);
+
+// ── Payment details ───────────────────────────────────────
+
+public record MarketplacePaymentDetails(
+    string ExternalPaymentId,
+    string Status,
+    string? StatusDetail,
+    string? PaymentMethodId,
+    string? PaymentTypeId,
+    decimal TransactionAmount,
+    decimal? ShippingAmount,
+    int? Installments,
+    string? CurrencyId,
+    DateTimeOffset DateCreated,
+    DateTimeOffset? DateApproved,
+    long? OrderId);

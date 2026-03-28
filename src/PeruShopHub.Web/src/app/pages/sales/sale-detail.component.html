@@ -393,19 +393,38 @@
           Envio
         </h2>
         <div class="shipping-info">
+          @if (o.shipping.shippingStatus) {
+            <div class="shipping-row">
+              <span class="shipping-label">Status do envio</span>
+              <app-badge [label]="o.shipping.shippingStatus" [variant]="getShippingStatusVariant(o.shipping.shippingStatus)"></app-badge>
+            </div>
+          }
           <div class="shipping-row">
             <span class="shipping-label">Rastreio</span>
             <div class="tracking-row">
-              <span class="tracking-number">{{ o.shipping.trackingNumber }}</span>
-              <button class="copy-btn" (click)="copyTracking()" [title]="copySuccess() ? 'Copiado!' : 'Copiar'">
-                <lucide-icon [img]="copyIcon" [size]="14"></lucide-icon>
-                {{ copySuccess() ? 'Copiado!' : 'Copiar' }}
-              </button>
+              @if (o.shipping.trackingNumber) {
+                <span class="tracking-number">{{ o.shipping.trackingNumber }}</span>
+                <button class="copy-btn" (click)="copyTracking()" [title]="copySuccess() ? 'Copiado!' : 'Copiar'">
+                  <lucide-icon [img]="copyIcon" [size]="14"></lucide-icon>
+                  {{ copySuccess() ? 'Copiado!' : 'Copiar' }}
+                </button>
+              } @else {
+                <span class="shipping-value shipping-pending">Aguardando envio</span>
+              }
             </div>
           </div>
+          @if (o.shipping.trackingUrl) {
+            <div class="shipping-row">
+              <span class="shipping-label">Rastrear envio</span>
+              <a class="tracking-link" [href]="o.shipping.trackingUrl" target="_blank" rel="noopener noreferrer">
+                <lucide-icon [img]="mapPinIcon" [size]="14"></lucide-icon>
+                Acompanhar entrega
+              </a>
+            </div>
+          }
           <div class="shipping-row">
             <span class="shipping-label">Transportadora</span>
-            <span class="shipping-value">{{ o.shipping.carrier }}</span>
+            <span class="shipping-value">{{ o.shipping.carrier || 'N/A' }}</span>
           </div>
           <div class="shipping-row">
             <span class="shipping-label">Tipo logístico</span>

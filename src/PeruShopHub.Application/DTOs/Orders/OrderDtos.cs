@@ -66,8 +66,10 @@ public record BuyerDto(
 
 public record ShippingInfoDto(
     string? TrackingNumber,
+    string? TrackingUrl,
     string? Carrier,
     string? LogisticType,
+    string? ShippingStatus,
     IReadOnlyList<TimelineStepDto>? Timeline);
 
 public record TimelineStepDto(

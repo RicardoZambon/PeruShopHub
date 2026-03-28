@@ -20,7 +20,7 @@ public class WebhookProcessingWorker : BackgroundService
     private readonly TimeSpan _pollInterval;
 
     private const int MaxRetries = 3;
-    private static readonly string[] Topics = ["orders_v2"];
+    private static readonly string[] Topics = ["orders_v2", "items", "shipments", "payments"];
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -124,6 +124,15 @@ public class WebhookProcessingWorker : BackgroundService
         {
             case "orders_v2":
                 await ProcessOrderWebhookAsync(sp, webhook, ct);
+                break;
+            case "items":
+                await ProcessItemWebhookAsync(sp, webhook, ct);
+                break;
+            case "shipments":
+                await ProcessShipmentWebhookAsync(sp, webhook, ct);
+                break;
+            case "payments":
+                await ProcessPaymentWebhookAsync(sp, webhook, ct);
                 break;
             default:
                 _logger.LogDebug("Unhandled webhook topic: {Topic}", topic);
@@ -396,6 +405,310 @@ public class WebhookProcessingWorker : BackgroundService
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    // ── Items webhook ─────────────────────────────────────────
+
+    private async Task ProcessItemWebhookAsync(IServiceProvider sp, MercadoLivreWebhookDto webhook, CancellationToken ct)
+    {
+        // Extract item ID from resource (e.g., "/items/MLB123456")
+        var itemId = ExtractIdFromResource(webhook.Resource);
+        if (itemId is null)
+        {
+            _logger.LogWarning("Could not extract item ID from resource: {Resource}", webhook.Resource);
+            return;
+        }
+
+        var db = sp.GetRequiredService<PeruShopHubDbContext>();
+
+        var connection = await FindConnectionAsync(db, webhook.UserId, ct);
+        if (connection is null)
+        {
+            _logger.LogWarning("No active ML connection for UserId {UserId}. Skipping item {ItemId}", webhook.UserId, itemId);
+            return;
+        }
+
+        var adapter = sp.GetKeyedService<IMarketplaceAdapter>(connection.MarketplaceId);
+        if (adapter is null)
+        {
+            _logger.LogError("No adapter registered for marketplace '{Marketplace}'", connection.MarketplaceId);
+            return;
+        }
+
+        _logger.LogInformation("Processing items webhook: ItemId={ItemId}, TenantId={TenantId}", itemId, connection.TenantId);
+
+        var itemDetails = await adapter.GetItemDetailsAsync(itemId, ct);
+
+        // Update MarketplaceListing
+        var listing = await db.Set<MarketplaceListing>()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(l =>
+                l.TenantId == connection.TenantId
+                && l.MarketplaceId == "mercadolivre"
+                && l.ExternalId == itemId, ct);
+
+        if (listing is not null)
+        {
+            listing.Title = itemDetails.Title;
+            listing.Status = itemDetails.Status;
+            listing.Price = itemDetails.Price;
+            listing.AvailableQuantity = itemDetails.AvailableQuantity;
+            listing.ThumbnailUrl = itemDetails.ThumbnailUrl;
+            listing.UpdatedAt = DateTime.UtcNow;
+
+            // If linked to a product, update the product's price and status
+            if (listing.ProductId.HasValue)
+            {
+                var product = await db.Products
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(p => p.Id == listing.ProductId.Value, ct);
+
+                if (product is not null)
+                {
+                    product.Price = itemDetails.Price;
+                    product.Status = itemDetails.Status switch
+                    {
+                        "active" => "Ativo",
+                        "paused" => "Pausado",
+                        "closed" or "inactive" => "Inativo",
+                        _ => product.Status
+                    };
+                    product.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Item updated: ExternalId={ItemId}, TenantId={TenantId}, Status={Status}, Price={Price}, Stock={Stock}",
+            itemId, connection.TenantId, itemDetails.Status, itemDetails.Price, itemDetails.AvailableQuantity);
+    }
+
+    // ── Shipments webhook ─────────────────────────────────────
+
+    private async Task ProcessShipmentWebhookAsync(IServiceProvider sp, MercadoLivreWebhookDto webhook, CancellationToken ct)
+    {
+        // Extract shipment ID from resource (e.g., "/shipments/12345678")
+        var shipmentId = ExtractIdFromResource(webhook.Resource);
+        if (shipmentId is null)
+        {
+            _logger.LogWarning("Could not extract shipment ID from resource: {Resource}", webhook.Resource);
+            return;
+        }
+
+        var db = sp.GetRequiredService<PeruShopHubDbContext>();
+
+        var connection = await FindConnectionAsync(db, webhook.UserId, ct);
+        if (connection is null)
+        {
+            _logger.LogWarning("No active ML connection for UserId {UserId}. Skipping shipment {ShipmentId}", webhook.UserId, shipmentId);
+            return;
+        }
+
+        var adapter = sp.GetKeyedService<IMarketplaceAdapter>(connection.MarketplaceId);
+        if (adapter is null)
+        {
+            _logger.LogError("No adapter registered for marketplace '{Marketplace}'", connection.MarketplaceId);
+            return;
+        }
+
+        _logger.LogInformation("Processing shipment webhook: ShipmentId={ShipmentId}, TenantId={TenantId}", shipmentId, connection.TenantId);
+
+        var shipment = await adapter.GetShipmentDetailsAsync(shipmentId, ct);
+
+        // Find the order linked to this shipment
+        var order = await db.Orders
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(o =>
+                o.TenantId == connection.TenantId
+                && o.ExternalShippingId == shipmentId, ct);
+
+        // If not found by ExternalShippingId, try by order ID from the shipment
+        if (order is null && shipment.OrderId.HasValue)
+        {
+            order = await db.Orders
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(o =>
+                    o.TenantId == connection.TenantId
+                    && o.ExternalOrderId == shipment.OrderId.Value.ToString(), ct);
+        }
+
+        if (order is null)
+        {
+            _logger.LogWarning(
+                "No order found for shipment {ShipmentId} (OrderId={OrderId}), TenantId={TenantId}",
+                shipmentId, shipment.OrderId, connection.TenantId);
+            return;
+        }
+
+        // Update shipping fields
+        order.ExternalShippingId = shipmentId;
+        order.ShippingStatus = MapShippingStatus(shipment.Status);
+        order.Carrier = shipment.Carrier ?? order.Carrier;
+        order.LogisticType = shipment.ServiceName ?? order.LogisticType ?? "mercadolivre";
+
+        if (!string.IsNullOrWhiteSpace(shipment.TrackingNumber))
+            order.TrackingNumber = shipment.TrackingNumber;
+
+        if (!string.IsNullOrWhiteSpace(shipment.TrackingUrl))
+            order.TrackingUrl = shipment.TrackingUrl;
+
+        // Update order status based on shipping status
+        var newStatus = shipment.Status.ToLowerInvariant() switch
+        {
+            "shipped" or "active" => "Enviado",
+            "delivered" => "Entregue",
+            "not_delivered" or "returned_to_sender" => "Devolvido",
+            _ => null
+        };
+
+        if (newStatus is not null && order.Status != "Cancelado")
+            order.Status = newStatus;
+
+        await db.SaveChangesAsync(ct);
+
+        // Create notification for shipping events
+        var notification = new Notification
+        {
+            Id = Guid.NewGuid(),
+            TenantId = connection.TenantId,
+            Type = "shipping_update",
+            Title = $"Atualização de envio: Pedido #{order.ExternalOrderId}",
+            Description = $"Status: {order.ShippingStatus}. Rastreio: {order.TrackingNumber ?? "N/A"}",
+            Timestamp = DateTime.UtcNow,
+            NavigationTarget = $"/pedidos/{order.Id}"
+        };
+        db.Notifications.Add(notification);
+        await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Shipment updated: ShipmentId={ShipmentId}, OrderId={OrderId}, Status={Status}, Tracking={Tracking}",
+            shipmentId, order.ExternalOrderId, shipment.Status, shipment.TrackingNumber);
+    }
+
+    // ── Payments webhook ──────────────────────────────────────
+
+    private async Task ProcessPaymentWebhookAsync(IServiceProvider sp, MercadoLivreWebhookDto webhook, CancellationToken ct)
+    {
+        // Extract payment ID from resource (e.g., "/collections/12345678")
+        var paymentId = ExtractIdFromResource(webhook.Resource);
+        if (paymentId is null)
+        {
+            _logger.LogWarning("Could not extract payment ID from resource: {Resource}", webhook.Resource);
+            return;
+        }
+
+        var db = sp.GetRequiredService<PeruShopHubDbContext>();
+
+        var connection = await FindConnectionAsync(db, webhook.UserId, ct);
+        if (connection is null)
+        {
+            _logger.LogWarning("No active ML connection for UserId {UserId}. Skipping payment {PaymentId}", webhook.UserId, paymentId);
+            return;
+        }
+
+        var adapter = sp.GetKeyedService<IMarketplaceAdapter>(connection.MarketplaceId);
+        if (adapter is null)
+        {
+            _logger.LogError("No adapter registered for marketplace '{Marketplace}'", connection.MarketplaceId);
+            return;
+        }
+
+        _logger.LogInformation("Processing payment webhook: PaymentId={PaymentId}, TenantId={TenantId}", paymentId, connection.TenantId);
+
+        var payment = await adapter.GetPaymentDetailsAsync(paymentId, ct);
+
+        // Find the order linked to this payment
+        Order? order = null;
+        if (payment.OrderId.HasValue)
+        {
+            order = await db.Orders
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(o =>
+                    o.TenantId == connection.TenantId
+                    && o.ExternalOrderId == payment.OrderId.Value.ToString(), ct);
+        }
+
+        if (order is null)
+        {
+            _logger.LogWarning(
+                "No order found for payment {PaymentId} (OrderId={OrderId}), TenantId={TenantId}",
+                paymentId, payment.OrderId, connection.TenantId);
+            return;
+        }
+
+        // Update payment fields
+        order.PaymentMethod = MapPaymentMethod(payment.PaymentMethodId, payment.PaymentTypeId);
+        order.Installments = payment.Installments;
+        order.PaymentAmount = payment.TransactionAmount;
+        order.PaymentStatus = MapPaymentStatus(payment.Status);
+
+        await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Payment updated: PaymentId={PaymentId}, OrderId={OrderId}, Status={Status}, Amount={Amount}",
+            paymentId, order.ExternalOrderId, payment.Status, payment.TransactionAmount);
+    }
+
+    // ── Shared helpers ────────────────────────────────────────
+
+    private async Task<MarketplaceConnection?> FindConnectionAsync(
+        PeruShopHubDbContext db, long? userId, CancellationToken ct)
+    {
+        if (userId is null) return null;
+
+        return await db.MarketplaceConnections
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c =>
+                c.MarketplaceId == "mercadolivre"
+                && c.ExternalUserId == userId.ToString()
+                && c.IsConnected
+                && c.Status == "Active", ct);
+    }
+
+    private static string? ExtractIdFromResource(string? resource)
+    {
+        if (string.IsNullOrWhiteSpace(resource)) return null;
+        var parts = resource.TrimStart('/').Split('/');
+        return parts.Length >= 2 ? parts[^1] : null;
+    }
+
+    private static string MapShippingStatus(string mlStatus) => mlStatus.ToLowerInvariant() switch
+    {
+        "pending" => "Pendente",
+        "handling" or "ready_to_ship" => "Em preparação",
+        "shipped" or "active" => "Em trânsito",
+        "delivered" => "Entregue",
+        "not_delivered" => "Não entregue",
+        "returned_to_sender" or "returned_to_agency" => "Devolvido",
+        "cancelled" => "Cancelado",
+        _ => mlStatus
+    };
+
+    private static string MapPaymentStatus(string mlStatus) => mlStatus.ToLowerInvariant() switch
+    {
+        "approved" => "Aprovado",
+        "pending" or "in_process" or "in_mediation" => "Pendente",
+        "authorized" => "Autorizado",
+        "refunded" => "Reembolsado",
+        "cancelled" or "rejected" => "Cancelado",
+        "charged_back" => "Estornado",
+        _ => mlStatus
+    };
+
+    private static string MapPaymentMethod(string? methodId, string? typeId)
+    {
+        return methodId?.ToLowerInvariant() switch
+        {
+            "pix" => "Pix",
+            "account_money" => "Mercado Pago",
+            "bolbradesco" or "boleto" => "Boleto",
+            "master" or "visa" or "elo" or "amex" or "hipercard" => $"Cartão ({methodId})",
+            _ when typeId == "credit_card" => "Cartão de Crédito",
+            _ when typeId == "debit_card" => "Cartão de Débito",
+            _ => methodId ?? "Desconhecido"
+        };
     }
 
 }

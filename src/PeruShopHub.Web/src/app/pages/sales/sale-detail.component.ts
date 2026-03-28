@@ -47,8 +47,10 @@ interface Buyer {
 
 interface ShippingInfo {
   trackingNumber: string;
+  trackingUrl: string;
   carrier: string;
   logisticType: LogisticType;
+  shippingStatus: string;
   timeline: TimelineStep[];
 }
 
@@ -202,8 +204,10 @@ function mapApiToView(api: ApiOrderDetail): OrderDetailView {
     },
     shipping: {
       trackingNumber: api.shipping?.trackingNumber ?? '',
+      trackingUrl: api.shipping?.trackingUrl ?? '',
       carrier: api.shipping?.carrier ?? '',
       logisticType: (api.shipping?.logisticType as LogisticType) ?? 'Coleta',
+      shippingStatus: api.shipping?.shippingStatus ?? '',
       timeline,
     },
     payment: {
@@ -487,6 +491,19 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
 
   formatDate(dateStr: string): string {
     return formatDateUtil(dateStr, true);
+  }
+
+  getShippingStatusVariant(status: string): BadgeVariant {
+    const map: Record<string, BadgeVariant> = {
+      'Pendente': 'neutral',
+      'Em preparação': 'warning',
+      'Em trânsito': 'primary',
+      'Entregue': 'success',
+      'Devolvido': 'danger',
+      'Não entregue': 'danger',
+      'Cancelado': 'danger',
+    };
+    return map[status] ?? 'neutral';
   }
 
   getLogisticVariant(type: LogisticType): BadgeVariant {

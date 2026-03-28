@@ -265,6 +265,66 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
             variations);
     }
 
+    // ── Shipments ──────────────────────────────────────────────
+
+    public async Task<MarketplaceShipmentDetails> GetShipmentDetailsAsync(string shipmentId, CancellationToken ct = default)
+    {
+        var ship = await SendAsync<MlShippingResponse>(HttpMethod.Get, $"/shipments/{shipmentId}", null, ct);
+
+        var statusHistory = new List<MarketplaceShipmentEvent>();
+        if (ship.StatusHistory is not null)
+        {
+            if (ship.StatusHistory.DateHandling.HasValue)
+                statusHistory.Add(new MarketplaceShipmentEvent("handling", null, ship.StatusHistory.DateHandling.Value, "Em preparação"));
+            if (ship.StatusHistory.DateShipped.HasValue)
+                statusHistory.Add(new MarketplaceShipmentEvent("shipped", null, ship.StatusHistory.DateShipped.Value, "Enviado"));
+            if (ship.StatusHistory.DateDelivered.HasValue)
+                statusHistory.Add(new MarketplaceShipmentEvent("delivered", null, ship.StatusHistory.DateDelivered.Value, "Entregue"));
+            if (ship.StatusHistory.DateReturned.HasValue)
+                statusHistory.Add(new MarketplaceShipmentEvent("returned", null, ship.StatusHistory.DateReturned.Value, "Devolvido"));
+            if (ship.StatusHistory.DateNotDelivered.HasValue)
+                statusHistory.Add(new MarketplaceShipmentEvent("not_delivered", null, ship.StatusHistory.DateNotDelivered.Value, "Não entregue"));
+            if (ship.StatusHistory.DateCancelled.HasValue)
+                statusHistory.Add(new MarketplaceShipmentEvent("cancelled", null, ship.StatusHistory.DateCancelled.Value, "Cancelado"));
+        }
+
+        statusHistory.Sort((a, b) => a.Date.CompareTo(b.Date));
+
+        return new MarketplaceShipmentDetails(
+            ship.Id.ToString(),
+            ship.Status,
+            ship.TrackingNumber,
+            ship.TrackingMethod?.Url,
+            ship.TrackingMethod?.Name,
+            ship.ShippingOption?.Name,
+            ship.ShippingOption?.Cost,
+            ship.DateCreated,
+            ship.LastUpdated,
+            ship.OrderId,
+            statusHistory);
+    }
+
+    // ── Payments ────────────────────────────────────────────────
+
+    public async Task<MarketplacePaymentDetails> GetPaymentDetailsAsync(string paymentId, CancellationToken ct = default)
+    {
+        var payment = await SendAsync<MlPaymentResponse>(HttpMethod.Get, $"/collections/{paymentId}", null, ct);
+
+        return new MarketplacePaymentDetails(
+            payment.Id.ToString(),
+            payment.Status,
+            payment.StatusDetail,
+            payment.PaymentMethodId,
+            payment.PaymentTypeId,
+            payment.TransactionAmount,
+            payment.ShippingAmount,
+            payment.Installments,
+            payment.CurrencyId,
+            payment.DateCreated,
+            payment.DateApproved,
+            payment.Order?.Id);
+    }
+
     // ── HTTP helpers ─────────────────────────────────────────
 
     private async Task<T> SendAsync<T>(HttpMethod method, string endpoint, HttpContent? content, CancellationToken ct)

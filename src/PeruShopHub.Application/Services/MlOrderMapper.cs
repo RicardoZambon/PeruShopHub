@@ -56,6 +56,7 @@ public class MlOrderMapper : IMlOrderMapper
         if (details.Shipping is not null)
         {
             order.LogisticType = "mercadolivre";
+            order.ExternalShippingId = details.Shipping.ExternalShippingId;
 
             if (!string.IsNullOrWhiteSpace(details.Shipping.ExternalShippingId))
                 order.TrackingNumber ??= details.Shipping.ExternalShippingId;

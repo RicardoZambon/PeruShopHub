@@ -17,8 +17,11 @@ public class Order : ITenantScoped
     public string Status { get; set; } = "Pago";
     public DateTime OrderDate { get; set; }
     public string? TrackingNumber { get; set; }
+    public string? TrackingUrl { get; set; }
     public string? Carrier { get; set; }
     public string? LogisticType { get; set; }
+    public string? ShippingStatus { get; set; }
+    public string? ExternalShippingId { get; set; }
     public string? PaymentMethod { get; set; }
     public int? Installments { get; set; }
     public decimal? PaymentAmount { get; set; }
