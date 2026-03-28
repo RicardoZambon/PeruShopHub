@@ -591,3 +591,16 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - RecalculateOrderCostsAsync preserves Manual and API costs, only replaces Calculated ones — the 3 new API/Manual costs will be replaced by real API data when available
   - CostCalculationService uses string-based categories (no enum) — consistent with rest of codebase
 ---
+
+## 2026-03-28 - US-022b
+- Added doughnut pie chart to order detail cost breakdown section using ng2-charts (Chart.js)
+- Filtered zero-value costs from the UI (table and charts) per acceptance criteria
+- Layout: side-by-side stacked bar + pie chart on desktop, stacked on mobile
+- Pie chart shows total costs in center text, tooltips with BRL formatting and percentage
+- Legend hidden on pie (cost breakdown table serves as interactive legend)
+- Files changed: `sale-detail.component.ts`, `sale-detail.component.html`, `sale-detail.component.scss`
+- **Learnings for future iterations:**
+  - ng2-charts doughnut pattern: `BaseChartDirective` import + `type="doughnut"` on canvas + `ChartData<'doughnut'>` signal
+  - Dashboard already has a doughnut chart with center text plugin — reusable pattern for any donut chart
+  - Cost visualization already existed (stacked bar, table with percentages, source badges) — US-022b only needed pie chart + zero-value filtering
+---
