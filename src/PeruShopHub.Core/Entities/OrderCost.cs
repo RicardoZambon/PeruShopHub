@@ -11,5 +11,6 @@ public class OrderCost : ITenantScoped
     public string? Description { get; set; }
     public decimal Value { get; set; }
     public string Source { get; set; } = "Manual";
+    public bool IsZeroValue { get; set; }
     public Order Order { get; set; } = null!;
 }

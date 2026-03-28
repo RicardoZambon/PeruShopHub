@@ -430,9 +430,9 @@ public class CostCalculationServiceTests : IDisposable
         var service = CreateService();
         var costs = await service.CalculateOrderCostsAsync(order);
 
-        costs.Should().HaveCount(7);
+        costs.Should().HaveCount(10);
         costs.Select(c => c.Category).Should().BeEquivalentTo(
-            new[] { "product_cost", "packaging", "storage_daily", "marketplace_commission", "fixed_fee", "tax", "payment_fee" });
+            new[] { "product_cost", "packaging", "storage_daily", "marketplace_commission", "fixed_fee", "tax", "payment_fee", "shipping_seller", "fulfillment_fee", "advertising" });
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -515,9 +515,10 @@ public class CostCalculationServiceTests : IDisposable
         foreach (var cost in newCosts)
             order.Costs.Add(cost);
 
-        // 7 calculated + 1 manual = 8 total
-        order.Costs.Should().HaveCount(8);
+        // 7 Calculated + 2 API + 1 Manual(advertising) from new costs + 1 pre-existing Manual = 11 total
+        order.Costs.Should().HaveCount(11);
         order.Costs.Count(c => c.Source == "Calculated").Should().Be(7);
+        order.Costs.Count(c => c.Source == "API").Should().Be(2);
         order.Costs.Should().Contain(c => c.Source == "Manual" && c.Category == "shipping_seller" && c.Value == 15m);
 
         // Step 3: Recalculate profit (same as RecalculateOrderCostsAsync line 160)
@@ -1113,7 +1114,175 @@ public class CostCalculationServiceTests : IDisposable
         var service = CreateService();
         var costs = await service.CalculateOrderCostsAsync(order);
 
-        costs.Should().HaveCount(7);
+        costs.Should().HaveCount(10);
         costs.Sum(c => c.Value).Should().Be(0m); // All zero
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CalculateOrderCostsAsync — all 10 cost categories present
+    // ═══════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task CalculateOrderCosts_Produces_All10CostCategories()
+    {
+        var product = CreateProduct(packagingCost: 2m);
+        var variant = CreateVariant(product, "SKU-ALL", purchaseCost: 10m);
+        _db.Products.Add(product);
+        _db.ProductVariants.Add(variant);
+        await _db.SaveChangesAsync();
+
+        var order = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-ALL", quantity: 1, unitPrice: 100m),
+        });
+
+        var service = CreateService();
+        var costs = await service.CalculateOrderCostsAsync(order);
+
+        costs.Should().HaveCount(10);
+        var categories = costs.Select(c => c.Category).ToHashSet();
+        categories.Should().Contain("product_cost");
+        categories.Should().Contain("packaging");
+        categories.Should().Contain("storage_daily");
+        categories.Should().Contain("marketplace_commission");
+        categories.Should().Contain("fixed_fee");
+        categories.Should().Contain("tax");
+        categories.Should().Contain("payment_fee");
+        categories.Should().Contain("shipping_seller");
+        categories.Should().Contain("fulfillment_fee");
+        categories.Should().Contain("advertising");
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CalculateOrderCostsAsync — shipping_seller, fulfillment_fee, advertising
+    // ═══════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task CalculateOrderCosts_ShippingSeller_IsZeroWithSourceAPI()
+    {
+        var order = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-SH", quantity: 1, unitPrice: 100m),
+        });
+
+        var service = CreateService();
+        var costs = await service.CalculateOrderCostsAsync(order);
+
+        var shipping = costs.Single(c => c.Category == "shipping_seller");
+        shipping.Value.Should().Be(0m);
+        shipping.Source.Should().Be("API");
+    }
+
+    [Fact]
+    public async Task CalculateOrderCosts_FulfillmentFee_IsZeroWithSourceAPI()
+    {
+        var order = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-FF", quantity: 1, unitPrice: 100m),
+        });
+
+        var service = CreateService();
+        var costs = await service.CalculateOrderCostsAsync(order);
+
+        var fulfillment = costs.Single(c => c.Category == "fulfillment_fee");
+        fulfillment.Value.Should().Be(0m);
+        fulfillment.Source.Should().Be("API");
+    }
+
+    [Fact]
+    public async Task CalculateOrderCosts_Advertising_IsZeroWithSourceManual()
+    {
+        var order = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-AD", quantity: 1, unitPrice: 100m),
+        });
+
+        var service = CreateService();
+        var costs = await service.CalculateOrderCostsAsync(order);
+
+        var advertising = costs.Single(c => c.Category == "advertising");
+        advertising.Value.Should().Be(0m);
+        advertising.Source.Should().Be("Manual");
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CalculateOrderCostsAsync — IsZeroValue flag
+    // ═══════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task CalculateOrderCosts_IsZeroValue_TrueForZeroCosts()
+    {
+        var order = CreateOrder(0m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-ZV", quantity: 1, unitPrice: 0m),
+        });
+
+        var service = CreateService();
+        var costs = await service.CalculateOrderCostsAsync(order);
+
+        costs.Should().OnlyContain(c => c.IsZeroValue);
+    }
+
+    [Fact]
+    public async Task CalculateOrderCosts_IsZeroValue_FalseForNonZeroCosts()
+    {
+        var product = CreateProduct(packagingCost: 5m);
+        var variant = CreateVariant(product, "SKU-NZ", purchaseCost: 20m);
+        _db.Products.Add(product);
+        _db.ProductVariants.Add(variant);
+        await _db.SaveChangesAsync();
+
+        var order = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-NZ", quantity: 1, unitPrice: 100m),
+        });
+
+        var service = CreateService();
+        var costs = await service.CalculateOrderCostsAsync(order);
+
+        // Non-zero calculated costs should NOT be flagged
+        costs.Single(c => c.Category == "product_cost").IsZeroValue.Should().BeFalse();
+        costs.Single(c => c.Category == "packaging").IsZeroValue.Should().BeFalse();
+        costs.Single(c => c.Category == "marketplace_commission").IsZeroValue.Should().BeFalse();
+        costs.Single(c => c.Category == "tax").IsZeroValue.Should().BeFalse();
+        costs.Single(c => c.Category == "payment_fee").IsZeroValue.Should().BeFalse();
+
+        // API/Manual placeholder costs at zero should be flagged
+        costs.Single(c => c.Category == "shipping_seller").IsZeroValue.Should().BeTrue();
+        costs.Single(c => c.Category == "fulfillment_fee").IsZeroValue.Should().BeTrue();
+        costs.Single(c => c.Category == "advertising").IsZeroValue.Should().BeTrue();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // CalculateOrderCostsAsync — correct Source values
+    // ═══════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task CalculateOrderCosts_CorrectSources_ForAllCategories()
+    {
+        var product = CreateProduct(packagingCost: 1m);
+        var variant = CreateVariant(product, "SKU-SRC", purchaseCost: 10m);
+        _db.Products.Add(product);
+        _db.ProductVariants.Add(variant);
+        await _db.SaveChangesAsync();
+
+        var order = CreateOrder(100m, new List<OrderItem>
+        {
+            CreateOrderItem("SKU-SRC", quantity: 1, unitPrice: 100m),
+        });
+
+        var service = CreateService();
+        var costs = await service.CalculateOrderCostsAsync(order);
+
+        costs.Single(c => c.Category == "product_cost").Source.Should().Be("Calculated");
+        costs.Single(c => c.Category == "packaging").Source.Should().Be("Calculated");
+        costs.Single(c => c.Category == "storage_daily").Source.Should().Be("Calculated");
+        costs.Single(c => c.Category == "marketplace_commission").Source.Should().Be("Calculated");
+        costs.Single(c => c.Category == "fixed_fee").Source.Should().Be("Calculated");
+        costs.Single(c => c.Category == "tax").Source.Should().Be("Calculated");
+        costs.Single(c => c.Category == "payment_fee").Source.Should().Be("Calculated");
+        costs.Single(c => c.Category == "shipping_seller").Source.Should().Be("API");
+        costs.Single(c => c.Category == "fulfillment_fee").Source.Should().Be("API");
+        costs.Single(c => c.Category == "advertising").Source.Should().Be("Manual");
     }
 }

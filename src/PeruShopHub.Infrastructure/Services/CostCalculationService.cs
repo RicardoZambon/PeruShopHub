@@ -183,6 +183,48 @@ public class CostCalculationService : ICostCalculationService
             Source = "Calculated"
         });
 
+        // ── shipping_seller ──────────────────────────────
+        // Actual shipping cost comes from the marketplace API; placeholder until webhook populates it
+        costs.Add(new OrderCost
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            Category = "shipping_seller",
+            Description = "Custo de frete (vendedor)",
+            Value = 0m,
+            Source = "API"
+        });
+
+        // ── fulfillment_fee ──────────────────────────────
+        // Fulfillment fee from marketplace (e.g., Mercado Envios Full); populated via API
+        costs.Add(new OrderCost
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            Category = "fulfillment_fee",
+            Description = "Taxa de fulfillment",
+            Value = 0m,
+            Source = "API"
+        });
+
+        // ── advertising ──────────────────────────────────
+        // Advertising cost is manually attributed or imported from Ads API
+        costs.Add(new OrderCost
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            Category = "advertising",
+            Description = "Custo de publicidade",
+            Value = 0m,
+            Source = "Manual"
+        });
+
+        // Flag zero-value costs
+        foreach (var cost in costs)
+        {
+            cost.IsZeroValue = cost.Value == 0m;
+        }
+
         return costs;
     }
 
