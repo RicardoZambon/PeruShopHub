@@ -1196,20 +1196,7 @@ This PRD covers all remaining work to take PeruShopHub from its current foundati
 - [ ] Docker Compose `docker-compose.prod.yml` for production (separate from dev)
 - [ ] README.md updated with: project overview, quick start, architecture diagram, links to docs
 
-### US-087: Waitlist Landing Page
-**Description:** As a product owner, I want a public landing page so potential sellers can sign up for the beta waitlist.
-
-**Acceptance Criteria:**
-- [ ] Landing page at root URL (when not logged in) or separate subdomain
-- [ ] Hero section: headline ("Saiba exatamente quanto voce lucra em cada venda"), subtitle, CTA
-- [ ] Value proposition: 3-4 key features with icons (profit per sale, auto sync, cost decomposition, alerts)
-- [ ] Screenshot/mockup of dashboard
-- [ ] Waitlist form: email + name + monthly ML revenue (range selector)
-- [ ] New entity `WaitlistEntry`: Email, Name, RevenueRange, CreatedAt
-- [ ] `POST /api/waitlist` stores entry (no auth required, rate limited)
-- [ ] Confirmation message after signup: "Voce esta na lista! Entraremos em contato em breve."
-- [ ] Admin page: list waitlist entries with export to CSV
-- [ ] Page is SEO-friendly: title, meta description, Open Graph tags
+### ~~US-087: Waitlist Landing Page~~ — REMOVED (separate project)
 
 ---
 
@@ -1300,7 +1287,7 @@ This PRD covers all remaining work to take PeruShopHub from its current foundati
 | FR-81 | OWASP security review and hardening | 5 |
 | FR-82 | UX review of all screens (responsive, dark mode, consistency) | 5 |
 | FR-83 | Technical documentation (deployment, env vars, troubleshooting) | 5 |
-| FR-84 | Waitlist landing page with email capture | 5 |
+| ~~FR-84~~ | ~~Waitlist landing page~~ — removed (separate project) | — |
 
 ---
 
@@ -1318,6 +1305,7 @@ This PRD covers all remaining work to take PeruShopHub from its current foundati
 - **Competitor analysis** — Phase 10
 - **Public API** — Phase 10
 - **Simples Nacional full tax table** — simplified percentage for MVP, full table in Phase 7
+- **Landing page / waitlist** — separate project, not part of this PRD
 
 ---
 
@@ -1360,15 +1348,19 @@ This PRD covers all remaining work to take PeruShopHub from its current foundati
 
 ---
 
+## Decisions
+
+- **Landing page**: Separate project (not part of this PRD). US-087 removed from scope.
+- **Beta invite process**: Self-registration, no approval required. Registration is open.
+- **VPS provider**: TBD — decide closer to Phase 5 deploy.
+
 ## Open Questions
 
-1. **VPS provider**: Hetzner vs Contabo? Hetzner has better performance, Contabo is cheaper.
-2. **Email provider**: Resend vs SendGrid? Resend is simpler, SendGrid has more features.
-3. **ML test users**: How many test users to create (max 10)? Need at least 2 (buyer + seller).
-4. **Backup storage**: S3-compatible (Backblaze B2 cheapest) or cloud provider's built-in?
-5. **Monitoring**: Self-hosted Grafana stack vs external service (Betteruptime + Sentry)?
-6. **Landing page**: Built in Angular (same app) or separate static site (faster, better SEO)?
-7. **Beta invite process**: Waitlist → manual invite, or self-registration with approval?
+1. **Email provider**: Resend vs SendGrid? Resend is simpler, SendGrid has more features.
+2. **ML test users**: How many test users to create (max 10)? Need at least 2 (buyer + seller).
+3. **Backup storage**: S3-compatible (Backblaze B2 cheapest) or cloud provider's built-in?
+4. **Monitoring**: Self-hosted Grafana stack vs external service (Betteruptime + Sentry)?
+5. **VPS provider**: Hetzner vs Contabo? Decide before Phase 5.
 
 ---
 
@@ -1430,5 +1422,4 @@ Phase 5 (depends on all previous phases)
   US-084 (security review) after US-080
   US-085 (UX review) after all UI stories
   US-086 (docs) after US-081
-  US-087 (landing page) independent
 ```
