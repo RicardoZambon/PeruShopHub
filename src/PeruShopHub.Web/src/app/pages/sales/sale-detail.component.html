@@ -349,6 +349,72 @@
           </app-button>
         }
       </section>
+
+      <!-- Messages Section -->
+      <section class="detail-section messages-section">
+        <div class="section-title-row">
+          <h2 class="section-title">
+            <lucide-icon [img]="messageCircleIcon" [size]="18"></lucide-icon>
+            Mensagens
+            @if (messagesUnreadCount() > 0) {
+              <span class="messages-badge">{{ messagesUnreadCount() }}</span>
+            }
+          </h2>
+        </div>
+
+        @if (messagesLoading()) {
+          <div class="messages-skeleton">
+            <div class="skeleton-block" style="width: 60%; height: 36px; margin-bottom: 8px;"></div>
+            <div class="skeleton-block" style="width: 80%; height: 36px; margin-left: auto; margin-bottom: 8px;"></div>
+            <div class="skeleton-block" style="width: 50%; height: 36px;"></div>
+          </div>
+        } @else {
+          <div class="messages-thread" #messagesContainer>
+            @if (messages().length === 0) {
+              <div class="messages-empty">
+                <lucide-icon [img]="messageCircleIcon" [size]="32"></lucide-icon>
+                <p>Nenhuma mensagem neste pedido</p>
+              </div>
+            } @else {
+              @for (msg of messages(); track msg.id) {
+                <div class="message-bubble" [class.message-seller]="msg.senderType === 'seller'" [class.message-buyer]="msg.senderType === 'buyer'">
+                  <div class="message-text">{{ msg.text }}</div>
+                  <div class="message-meta">
+                    <span class="message-sender">{{ msg.senderType === 'seller' ? 'Você' : 'Comprador' }}</span>
+                    <span class="message-time">{{ formatDate(msg.sentAt) }}</span>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Message Input -->
+          <div class="message-input-area">
+            <div class="message-input-wrapper">
+              <textarea
+                class="message-input"
+                [(ngModel)]="messageText"
+                placeholder="Digite sua mensagem..."
+                maxlength="350"
+                rows="2"
+                (keydown.enter)="onMessageKeydown($event)"
+              ></textarea>
+              <span class="message-char-count" [class.near-limit]="messageText.length > 300">
+                {{ messageText.length }}/350
+              </span>
+            </div>
+            <app-button
+              variant="accent"
+              size="sm"
+              [icon]="sendIcon"
+              [disabled]="!messageText.trim() || sendingMessage()"
+              (click)="sendMessage()"
+            >
+              Enviar
+            </app-button>
+          </div>
+        }
+      </section>
     </div>
 
     <!-- Right Column -->

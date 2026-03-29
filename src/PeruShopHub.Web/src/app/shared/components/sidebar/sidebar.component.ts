@@ -56,7 +56,7 @@ export class SidebarComponent {
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: LayoutDashboard },
 
-    { label: 'Vendas', route: '/vendas', icon: ShoppingCart, group: 'COMERCIAL' },
+    { label: 'Vendas', route: '/vendas', icon: ShoppingCart, group: 'COMERCIAL', badgeKey: 'unreadMessages' },
     { label: 'Perguntas', route: '/perguntas', icon: MessageCircle, group: 'COMERCIAL', badgeKey: 'unansweredQuestions' },
     { label: 'Anúncios', route: '/anuncios', icon: Megaphone, group: 'COMERCIAL' },
     { label: 'Clientes', route: '/clientes', icon: Users, group: 'COMERCIAL' },
@@ -98,6 +98,9 @@ export class SidebarComponent {
   getBadgeCount(item: NavItem): number {
     if (item.badgeKey === 'unansweredQuestions') {
       return this.badges.unansweredQuestions();
+    }
+    if (item.badgeKey === 'unreadMessages') {
+      return this.badges.unreadMessages();
     }
     return 0;
   }

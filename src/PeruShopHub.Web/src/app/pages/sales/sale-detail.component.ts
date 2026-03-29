@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 import {
   LucideAngularModule, Package, Copy, Truck, CreditCard,
   User, MapPin, Clock, Check, Circle, Plus, Lock, Unlock, Pencil,
-  Trash2, X, Search, ChevronDown, RefreshCw
+  Trash2, X, Search, ChevronDown, RefreshCw, MessageCircle, Send
 } from 'lucide-angular';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, Plugin } from 'chart.js';
@@ -18,6 +18,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
 import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { OrderService, OrderDetail as ApiOrderDetail } from '../../services/order.service';
+import { MessageService, MessageDto } from '../../services/message.service';
 import { ToastService } from '../../services/toast.service';
 import { formatBrl as formatBrlUtil, formatDate as formatDateUtil } from '../../shared/utils';
 
@@ -255,6 +256,8 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
   readonly searchIcon = Search;
   readonly chevronDownIcon = ChevronDown;
   readonly refreshCwIcon = RefreshCw;
+  readonly messageCircleIcon = MessageCircle;
+  readonly sendIcon = Send;
 
   // Cost categories reference
   readonly costCategories = COST_CATEGORIES;
@@ -264,6 +267,7 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
 
   // Injected services
   private readonly orderService = inject(OrderService);
+  private readonly messageService = inject(MessageService);
   private readonly toastService = inject(ToastService);
   private readonly confirmDialog = inject(ConfirmDialogService);
 
@@ -277,6 +281,13 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
   copySuccess = signal(false);
   recalculating = signal(false);
   orderId = '';
+
+  // US-069: Messages
+  messages = signal<MessageDto[]>([]);
+  messagesLoading = signal(false);
+  messagesUnreadCount = signal(0);
+  sendingMessage = signal(false);
+  messageText = '';
 
   // US-056: Manual cost CRUD — costs are now managed within order().costs
   showCostForm = signal(false);
@@ -482,6 +493,7 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
         this.apiOrderId = apiOrder.id;
         this.order.set(mapApiToView(apiOrder));
         this.loading.set(false);
+        this.loadMessages(apiOrder.id);
       },
       error: () => {
         this.loading.set(false);
@@ -834,5 +846,53 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
       },
     });
     this.subscriptions.add(sub);
+  }
+
+  // --- US-069: Messages ---
+
+  private loadMessages(orderId: string): void {
+    this.messagesLoading.set(true);
+    const sub = this.messageService.getThread(orderId).subscribe({
+      next: (thread) => {
+        this.messages.set(thread.messages);
+        this.messagesUnreadCount.set(thread.unreadCount);
+        this.messagesLoading.set(false);
+        // Mark as read when thread is opened
+        if (thread.unreadCount > 0) {
+          this.messageService.markAsRead(orderId).subscribe();
+        }
+      },
+      error: () => {
+        this.messagesLoading.set(false);
+      },
+    });
+    this.subscriptions.add(sub);
+  }
+
+  sendMessage(): void {
+    const text = this.messageText.trim();
+    if (!text || !this.apiOrderId || this.sendingMessage()) return;
+
+    this.sendingMessage.set(true);
+    const sub = this.messageService.sendMessage(this.apiOrderId, text).subscribe({
+      next: (msg) => {
+        this.messages.set([...this.messages(), msg]);
+        this.messageText = '';
+        this.sendingMessage.set(false);
+      },
+      error: () => {
+        this.sendingMessage.set(false);
+        this.toastService.show('Erro ao enviar mensagem', 'danger');
+      },
+    });
+    this.subscriptions.add(sub);
+  }
+
+  onMessageKeydown(event: Event): void {
+    const keyEvent = event as KeyboardEvent;
+    if (!keyEvent.shiftKey) {
+      keyEvent.preventDefault();
+      this.sendMessage();
+    }
   }
 }

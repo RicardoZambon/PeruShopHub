@@ -21,7 +21,7 @@ public class WebhookProcessingWorker : BackgroundService
     private readonly TimeSpan _pollInterval;
 
     private const int MaxRetries = 3;
-    private static readonly string[] Topics = ["orders_v2", "items", "shipments", "payments", "questions"];
+    private static readonly string[] Topics = ["orders_v2", "items", "shipments", "payments", "questions", "messages"];
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -138,6 +138,9 @@ public class WebhookProcessingWorker : BackgroundService
                 break;
             case "questions":
                 await ProcessQuestionWebhookAsync(sp, webhook, ct);
+                break;
+            case "messages":
+                await ProcessMessageWebhookAsync(sp, webhook, ct);
                 break;
             default:
                 _logger.LogDebug("Unhandled webhook topic: {Topic}", topic);
@@ -863,6 +866,29 @@ public class WebhookProcessingWorker : BackgroundService
         await questionService.SyncSingleQuestionAsync(questionId, connection.TenantId, ct);
 
         _logger.LogInformation("Question webhook processed: QuestionId={QuestionId}", questionId);
+    }
+
+    // ── Messages webhook ─────────────────────────────────────
+
+    private async Task ProcessMessageWebhookAsync(IServiceProvider sp, MercadoLivreWebhookDto webhook, CancellationToken ct)
+    {
+        var db = sp.GetRequiredService<PeruShopHubDbContext>();
+
+        var connection = await FindConnectionAsync(db, webhook.UserId, ct);
+        if (connection is null)
+        {
+            _logger.LogWarning("No active ML connection for UserId {UserId}. Skipping message webhook", webhook.UserId);
+            return;
+        }
+
+        _logger.LogInformation("Processing messages webhook: Resource={Resource}, TenantId={TenantId}",
+            webhook.Resource, connection.TenantId);
+
+        // Messages webhook usually contains pack ID in resource
+        // For now, log the event — full sync will be handled by the message service
+        // when ML adapter supports GET /messages/packs/{packId}/sellers/{sellerId}
+        _logger.LogInformation("Message webhook received for tenant {TenantId}. Resource: {Resource}",
+            connection.TenantId, webhook.Resource);
     }
 
     // ── Shared helpers ────────────────────────────────────────

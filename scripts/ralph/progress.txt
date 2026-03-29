@@ -1927,3 +1927,39 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - HttpClient params must not have undefined values — use conditional return instead of ternary for optional params
   - EmptyStateComponent icon prop is string type, not LucideIconData — use string names or omit
 ---
+
+## 2026-03-29 - US-069
+- Implemented Post-Sale Messages Inbox
+- Created `MarketplaceMessage` entity with TenantId, ExternalPackId, OrderId, SenderType, Text, SentAt, IsRead, ExternalMessageId
+- Created EF Core configuration (`marketplace_messages` table) with compound indexes on TenantId+OrderId, TenantId+ExternalPackId, TenantId+IsRead
+- Added migration `AddMarketplaceMessages`
+- Created `MessageDtos.cs` (MessageDto, MessageThreadDto, SendMessageRequest, UnreadCountDto)
+- Created `IMarketplaceMessageService` and `MarketplaceMessageService` with GetThreadByOrderAsync, SendMessageAsync, MarkAsReadAsync, GetUnreadCountAsync
+- Created `MessagesController` with GET/POST /api/messages/orders/{orderId}, POST /api/messages/orders/{orderId}/read, GET /api/messages/unread-count
+- Added "messages" topic to WebhookProcessingWorker Topics array and switch/case handler
+- Created frontend `MessageService` (message.service.ts) with getThread, sendMessage, markAsRead, getUnreadCount
+- Added chat-like "Mensagens" section in sale-detail component with message bubbles, character counter (350 chars), Enter to send
+- Added unread message badge to sidebar "Vendas" nav item via SidebarBadgeService
+- Files changed:
+  - src/PeruShopHub.Core/Entities/MarketplaceMessage.cs (new)
+  - src/PeruShopHub.Infrastructure/Persistence/Configurations/MarketplaceMessageConfiguration.cs (new)
+  - src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs (DbSet added)
+  - src/PeruShopHub.Infrastructure/Migrations/*_AddMarketplaceMessages.cs (new)
+  - src/PeruShopHub.Application/DTOs/Messages/MessageDtos.cs (new)
+  - src/PeruShopHub.Application/Services/IMarketplaceMessageService.cs (new)
+  - src/PeruShopHub.Application/Services/MarketplaceMessageService.cs (new)
+  - src/PeruShopHub.Application/DependencyInjection.cs (service registration)
+  - src/PeruShopHub.API/Controllers/MessagesController.cs (new)
+  - src/PeruShopHub.Worker/Workers/WebhookProcessingWorker.cs (messages topic)
+  - src/PeruShopHub.Web/src/app/services/message.service.ts (new)
+  - src/PeruShopHub.Web/src/app/services/sidebar-badge.service.ts (unread messages)
+  - src/PeruShopHub.Web/src/app/shared/components/sidebar/sidebar.component.ts (badge key)
+  - src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.ts (messages tab)
+  - src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.html (messages UI)
+  - src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.scss (messages styles)
+- **Learnings for future iterations:**
+  - Messages are tied to orders via OrderId, with ExternalPackId for ML pack-level messaging
+  - Webhook worker Topics array and switch/case are the two places to update for new webhook topics
+  - SidebarBadgeService pattern: add signal + refresh method + subscribe to SignalR entity events
+  - Sale detail uses two-column layout — add new sections before the `</div>` of `.col-left`
+---
