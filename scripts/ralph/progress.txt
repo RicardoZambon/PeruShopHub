@@ -1888,3 +1888,42 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Sidebar badge pattern: add `badgeKey` to NavItem, create a service with signals, inject in sidebar, use `getBadgeCount()` method
   - PagedResult API response shape: `{ items, totalCount, page, pageSize }` — use `pageSize: 1` trick to get just the count
 ---
+
+## 2026-03-29 - US-068
+- Implemented Response Templates CRUD feature (backend + frontend)
+- **Backend:**
+  - Created `ResponseTemplate` entity with TenantId, Name, Category, Body, Placeholders (jsonb), UsageCount, Order, IsActive, Version
+  - Created `ResponseTemplateConfiguration` with unique index on TenantId+Name
+  - Created `ResponseTemplateDtos` (List, Detail, Create, Update records)
+  - Created `IResponseTemplateService` + `ResponseTemplateService` with full CRUD + IncrementUsage
+  - Created `ResponseTemplatesController` with GET/POST/PUT/DELETE + POST usage endpoint
+  - Added migration `AddResponseTemplates` + seed migration with 5 common templates
+  - Registered service in `DependencyInjection.cs`
+- **Frontend:**
+  - Created `ResponseTemplateService` with list/getById/create/update/delete/incrementUsage
+  - Created `ResponseTemplatesComponent` page under `configuracoes/templates` route
+  - Added "Templates de Resposta" tab to Settings nav (navigates to separate page, like audit log)
+  - Added template selector dropdown to Questions page reply form
+  - Template dropdown shows active templates, applies body text, increments usage count
+- **Files changed:**
+  - src/PeruShopHub.Core/Entities/ResponseTemplate.cs (new)
+  - src/PeruShopHub.Infrastructure/Persistence/Configurations/ResponseTemplateConfiguration.cs (new)
+  - src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs (added DbSet)
+  - src/PeruShopHub.Infrastructure/Persistence/Seeds/SeedResponseTemplates.sql (new)
+  - src/PeruShopHub.Infrastructure/PeruShopHub.Infrastructure.csproj (embedded resource)
+  - src/PeruShopHub.Infrastructure/Migrations/ (2 new migrations)
+  - src/PeruShopHub.Application/DTOs/ResponseTemplates/ResponseTemplateDtos.cs (new)
+  - src/PeruShopHub.Application/Services/IResponseTemplateService.cs (new)
+  - src/PeruShopHub.Application/Services/ResponseTemplateService.cs (new)
+  - src/PeruShopHub.Application/DependencyInjection.cs (registered service)
+  - src/PeruShopHub.API/Controllers/ResponseTemplatesController.cs (new)
+  - src/PeruShopHub.Web/src/app/services/response-template.service.ts (new)
+  - src/PeruShopHub.Web/src/app/pages/response-templates/ (new component)
+  - src/PeruShopHub.Web/src/app/pages/questions/ (template dropdown)
+  - src/PeruShopHub.Web/src/app/pages/settings/settings.component.ts (new tab)
+  - src/PeruShopHub.Web/src/app/app.routes.ts (new route)
+- **Learnings for future iterations:**
+  - Sub-settings pages (like audit log, templates) use navigate-away pattern from settings tabs rather than inline content
+  - HttpClient params must not have undefined values — use conditional return instead of ternary for optional params
+  - EmptyStateComponent icon prop is string type, not LucideIconData — use string names or omit
+---
