@@ -1659,7 +1659,7 @@
         ".NET build passes"
       ],
       "priority": 88,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 5."
     },
     {

@@ -2212,3 +2212,38 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - DashboardService.GetSummaryAsync calls chart queries internally that fail on SQLite — can only test cache-hit path in unit tests
   - Record property names in DTOs differ from what you might guess (e.g., `ExternalOrderId` not `ExternalId`, `ExternalShipmentId` not `ShipmentId`, `ExpiresInSeconds` not `ExpiresIn`)
 ---
+
+## 2026-03-29 - US-077
+- Implemented comprehensive integration tests covering all 28 controllers (71 tests total, up from ~15)
+- Files created (20 new test files):
+  - Controllers/SuppliesControllerTests.cs — CRUD flow
+  - Controllers/PurchaseOrdersControllerTests.cs — Create + Receive flow
+  - Controllers/CustomersControllerTests.cs — List with seeded data
+  - Controllers/DashboardControllerTests.cs — Summary + charts endpoints
+  - Controllers/FinanceControllerTests.cs — Summary, charts, SKU profitability, reconciliation, ABC curve
+  - Controllers/SettingsControllerTests.cs — Cost settings, commission rules, payment fee rules, tax profile, alert rules, response time, notifications, report schedules (9 tests)
+  - Controllers/TenantControllerTests.cs — Get/update tenant, member list/invite
+  - Controllers/ProfileControllerTests.cs — Get/update profile, change password, deletion status
+  - Controllers/NotificationsControllerTests.cs — List + mark all read
+  - Controllers/OnboardingControllerTests.cs — Progress + complete step
+  - Controllers/SearchControllerTests.cs — Global search
+  - Controllers/ResponseTemplatesControllerTests.cs — Full CRUD + usage increment
+  - Controllers/InventoryControllerTests.cs — List, adjust, alerts, fulfillment, reconciliation, export (6 tests)
+  - Controllers/VariationFieldsControllerTests.cs — CRUD on category variation fields
+  - Controllers/AuditLogControllerTests.cs — Get logs
+  - Controllers/ReportsControllerTests.cs — PDF + Excel for profitability, orders, inventory + accounting export (7 tests)
+  - Controllers/WebhookAndOAuthTests.cs — ML webhook enqueue, OAuth URL, callback, listings, import/sync status (6 tests)
+  - Controllers/TokenRenewalTests.cs — Expired→refresh→retry flow with token rotation
+  - Controllers/MultiTenantIsolationExtendedTests.cs — Isolation for categories, supplies, orders (3 tests)
+  - Controllers/ConcurrentStockTests.cs — Concurrent PO receive + order fulfill, stock consistency
+- **Learnings for future iterations:**
+  - Docker not available in dev container — integration tests can only run in CI (TestContainers needs Docker)
+  - SettingsController has many inline DTOs defined at the bottom of the controller file (namespace `PeruShopHub.API.Controllers`), not in Application/DTOs
+  - MarketplaceConnection uses `AccessTokenProtected`/`RefreshTokenProtected` (not `AccessToken`/`RefreshToken`) and `Name`/`Status` instead of `IsActive`
+  - Customer entity uses `TotalOrders` (not `OrderCount`), `LastPurchase` (not `LastOrderDate`), has no `ExternalBuyerId` or `FirstOrderDate`
+  - ResponseTemplate DTOs are in `PeruShopHub.Application.DTOs.ResponseTemplates` namespace
+  - TaxProfile valid regime values: `SimplesNacional`, `LucroPresumido`, `LucroReal` (not Portuguese phrases)
+  - AlertRule valid types: `StockLow`, `MarginBelow`, `CostIncrease` (PascalCase)
+  - NotificationPreference types: `LowStock`, `NewSale` (PascalCase enum names)
+  - ProfileController.ChangePassword returns `NoContent()` not `Ok()`
+---
