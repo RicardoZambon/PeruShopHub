@@ -22,7 +22,7 @@ import { ToastService } from '../../services/toast.service';
 import { formatBrl as formatBrlUtil, formatDate as formatDateUtil } from '../../shared/utils';
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
-type LogisticType = 'Full' | 'Coleta' | 'Agência';
+type LogisticType = 'Full' | 'Coleta' | 'Agência' | 'mercadolivre' | 'Envio próprio';
 type CostSource = 'API' | 'Manual' | 'Calculated' | 'Calculado';
 
 interface OrderItem {
@@ -51,6 +51,8 @@ interface ShippingInfo {
   carrier: string;
   logisticType: LogisticType;
   shippingStatus: string;
+  shippingCost: number | null;
+  isFreeShipping: boolean;
   timeline: TimelineStep[];
 }
 
@@ -208,6 +210,8 @@ function mapApiToView(api: ApiOrderDetail): OrderDetailView {
       carrier: api.shipping?.carrier ?? '',
       logisticType: (api.shipping?.logisticType as LogisticType) ?? 'Coleta',
       shippingStatus: api.shipping?.shippingStatus ?? '',
+      shippingCost: api.shipping?.shippingCost ?? null,
+      isFreeShipping: api.shipping?.isFreeShipping ?? false,
       timeline,
     },
     payment: {
@@ -511,8 +515,10 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
       'Full': 'success',
       'Coleta': 'primary',
       'Agência': 'warning',
+      'mercadolivre': 'primary',
+      'Envio próprio': 'neutral',
     };
-    return map[type];
+    return map[type] ?? 'neutral';
   }
 
   getSourceVariant(source: CostSource): BadgeVariant {

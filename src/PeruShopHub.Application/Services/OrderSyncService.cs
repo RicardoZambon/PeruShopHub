@@ -248,6 +248,66 @@ public class OrderSyncService : IOrderSyncService
         // Merge API-sourced fee costs
         await MergeApiFeeCostsAsync(order, fees, tenantId, ct);
 
+        // Fetch real shipping cost from shipment API
+        if (!string.IsNullOrWhiteSpace(order.ExternalShippingId))
+        {
+            try
+            {
+                var shipment = await adapter.GetShipmentDetailsAsync(order.ExternalShippingId, ct);
+
+                // Update shipping fields
+                order.Carrier = shipment.Carrier ?? order.Carrier;
+                order.LogisticType = shipment.ServiceName ?? order.LogisticType ?? "mercadolivre";
+
+                if (!string.IsNullOrWhiteSpace(shipment.TrackingNumber))
+                    order.TrackingNumber = shipment.TrackingNumber;
+                if (!string.IsNullOrWhiteSpace(shipment.TrackingUrl))
+                    order.TrackingUrl = shipment.TrackingUrl;
+
+                order.ShippingStatus = shipment.Status switch
+                {
+                    "shipped" or "active" => "Em trânsito",
+                    "delivered" => "Entregue",
+                    "handling" or "ready_to_ship" => "Em preparação",
+                    _ => order.ShippingStatus
+                };
+
+                // Update shipping_seller cost with real value
+                if (shipment.ShippingCost.HasValue && shipment.ShippingCost.Value > 0)
+                {
+                    var shippingCost = await _db.OrderCosts
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(c =>
+                            c.OrderId == order.Id && c.Category == "shipping_seller", ct);
+
+                    if (shippingCost is not null)
+                    {
+                        shippingCost.Value = shipment.ShippingCost.Value;
+                        shippingCost.Source = "API";
+                        shippingCost.Description = $"Frete real: {shipment.Carrier ?? "Mercado Envios"}";
+                    }
+                    else
+                    {
+                        _db.OrderCosts.Add(new OrderCost
+                        {
+                            Id = Guid.NewGuid(),
+                            TenantId = tenantId,
+                            OrderId = order.Id,
+                            Category = "shipping_seller",
+                            Description = $"Frete real: {shipment.Carrier ?? "Mercado Envios"}",
+                            Value = shipment.ShippingCost.Value,
+                            Source = "API"
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not fetch shipment details for order {OrderId}, ShipmentId={ShipmentId}",
+                    orderId, order.ExternalShippingId);
+            }
+        }
+
         // Recalculate profit
         var totalCosts = await _db.OrderCosts
             .IgnoreQueryFilters()

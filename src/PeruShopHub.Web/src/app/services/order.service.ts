@@ -46,7 +46,7 @@ export interface OrderDetail {
   isFulfilled: boolean;
   fulfilledAt?: string;
   orderDate: string;
-  shipping: { trackingNumber?: string; trackingUrl?: string; carrier?: string; logisticType?: string; shippingStatus?: string; timeline?: { status: string; timestamp?: string; description?: string }[] };
+  shipping: { trackingNumber?: string; trackingUrl?: string; carrier?: string; logisticType?: string; shippingStatus?: string; shippingCost?: number | null; isFreeShipping?: boolean; timeline?: { status: string; timestamp?: string; description?: string }[] };
   payment: { method?: string; installments?: number; amount?: number; status?: string };
   items: { id: string; productId?: string; name: string; sku: string; variation?: string; quantity: number; unitPrice: number; subtotal: number }[];
   costs: { id: string; category: string; description?: string; value: number; source: string }[];

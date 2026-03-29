@@ -575,6 +575,42 @@ public class WebhookProcessingWorker : BackgroundService
         if (newStatus is not null && order.Status != "Cancelado")
             order.Status = newStatus;
 
+        // Update shipping_seller cost from real shipment data
+        if (shipment.ShippingCost.HasValue && shipment.ShippingCost.Value > 0)
+        {
+            var shippingCost = await db.OrderCosts
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c =>
+                    c.OrderId == order.Id && c.Category == "shipping_seller", ct);
+
+            if (shippingCost is not null)
+            {
+                shippingCost.Value = shipment.ShippingCost.Value;
+                shippingCost.Source = "API";
+                shippingCost.Description = $"Frete real: {shipment.Carrier ?? "Mercado Envios"}";
+            }
+            else
+            {
+                db.OrderCosts.Add(new OrderCost
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = connection.TenantId,
+                    OrderId = order.Id,
+                    Category = "shipping_seller",
+                    Description = $"Frete real: {shipment.Carrier ?? "Mercado Envios"}",
+                    Value = shipment.ShippingCost.Value,
+                    Source = "API"
+                });
+            }
+
+            // Recalculate profit
+            var totalCosts = await db.OrderCosts
+                .IgnoreQueryFilters()
+                .Where(c => c.OrderId == order.Id)
+                .SumAsync(c => c.Value, ct);
+            order.Profit = order.TotalAmount - totalCosts;
+        }
+
         await db.SaveChangesAsync(ct);
 
         // Create notification for shipping events

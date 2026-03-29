@@ -70,6 +70,8 @@ public record ShippingInfoDto(
     string? Carrier,
     string? LogisticType,
     string? ShippingStatus,
+    decimal? ShippingCost,
+    bool IsFreeShipping,
     IReadOnlyList<TimelineStepDto>? Timeline);
 
 public record TimelineStepDto(

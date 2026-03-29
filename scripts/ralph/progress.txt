@@ -1396,3 +1396,26 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - BillingReconciliationWorker uses RetryDelays array indexed by BillingRetryCount for progressive retry
   - Model snapshot must be updated manually when creating migrations by hand
 ---
+
+## 2026-03-29 - US-051
+- Implemented real shipping cost from ML shipment API
+- Updated `ProcessShipmentWebhookAsync` to create/update `shipping_seller` OrderCost from `shipment.ShippingCost`
+- Updated `OrderSyncService.ProcessSingleOrderAsync` to fetch shipment details and populate shipping cost + tracking/carrier during historical sync
+- Added `ShippingCost` and `IsFreeShipping` fields to `ShippingInfoDto`
+- Updated `OrderService.GetByIdAsync` to derive shipping cost from OrderCost and detect free shipping (>R$79)
+- Frontend: Added shipping cost display with "Frete grátis absorvido" badge in shipping section
+- Frontend: Extended `LogisticType` to include 'mercadolivre' and 'Envio próprio'
+- Files changed:
+  - `src/PeruShopHub.Application/DTOs/Orders/OrderDtos.cs`
+  - `src/PeruShopHub.Application/Services/OrderService.cs`
+  - `src/PeruShopHub.Application/Services/OrderSyncService.cs`
+  - `src/PeruShopHub.Worker/Workers/WebhookProcessingWorker.cs`
+  - `src/PeruShopHub.Web/src/app/services/order.service.ts`
+  - `src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.html`
+  - `src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.scss`
+- **Learnings for future iterations:**
+  - Shipment webhook handler and OrderSyncService both need to update shipping_seller cost — keep them in sync
+  - ShippingInfoDto changes require updates in both backend (OrderService) and frontend (order.service.ts + sale-detail.component.ts)
+  - Free shipping detection: order total >= R$79 with non-zero shipping_seller cost indicates seller absorbed shipping
+---

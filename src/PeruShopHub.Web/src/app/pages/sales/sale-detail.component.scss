@@ -572,6 +572,18 @@
   }
 }
 
+.shipping-cost-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .shipping-cost-amount {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--neutral-900);
+  }
+}
+
 .tracking-row {
   display: flex;
   align-items: center;

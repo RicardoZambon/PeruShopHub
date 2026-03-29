@@ -430,6 +430,17 @@
             <span class="shipping-label">Tipo logístico</span>
             <app-badge [label]="o.shipping.logisticType" [variant]="getLogisticVariant(o.shipping.logisticType)"></app-badge>
           </div>
+          @if (o.shipping.shippingCost != null) {
+            <div class="shipping-row">
+              <span class="shipping-label">Custo de frete</span>
+              <div class="shipping-cost-value">
+                <span class="mono shipping-cost-amount">{{ formatBrl(o.shipping.shippingCost) }}</span>
+                @if (o.shipping.isFreeShipping) {
+                  <app-badge label="Frete grátis absorvido" variant="warning"></app-badge>
+                }
+              </div>
+            </div>
+          }
           <div class="timeline">
             @for (step of o.shipping.timeline; track step.label; let i = $index; let last = $last) {
               <div class="timeline-step" [class.completed]="step.completed" [class.last]="last">

@@ -92,9 +92,15 @@ public class OrderService : IOrderService
 
         var timeline = BuildTimeline(order.Status, order.OrderDate, order.ShippingStatus);
 
+        var shippingCost = order.Costs
+            .Where(c => c.Category == "shipping_seller" && c.Value > 0)
+            .Sum(c => c.Value);
+        var isFreeShipping = shippingCost > 0 && order.TotalAmount >= 79m;
+
         var shipping = new ShippingInfoDto(
             order.TrackingNumber, order.TrackingUrl, order.Carrier,
-            order.LogisticType, order.ShippingStatus, timeline);
+            order.LogisticType, order.ShippingStatus,
+            shippingCost > 0 ? shippingCost : null, isFreeShipping, timeline);
 
         var paymentStatus = DerivePaymentStatus(order.Status);
 
