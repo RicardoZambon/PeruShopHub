@@ -62,7 +62,7 @@ Started: Fri Mar 28 2026
 - **ToastService types**: 'success' | 'warning' | 'danger' | 'info' — use 'danger' not 'error'
 - **Materialized view in unit tests**: `SkuProfitabilityViews` fails on SQLite — wrap queries in try-catch and return empty result gracefully
 - **EF Core expression tree + optional params**: Record constructors with optional params (e.g., `string? X = null`) fail in `Select()` projections — use explicit `(Type?)null` instead
-- **IEmailService**: Stub `NoOpEmailService` registered in both API and Worker. When US-059 adds real provider, swap in both `Program.cs` files
+- **IEmailService**: `AddEmailService(config)` in both API and Worker. Uses `ResendEmailService` when `EMAIL_API_KEY` is set, otherwise `NoOpEmailService`. When calling `SendAsync` with `CancellationToken`, use named param `textBody: null` to avoid ambiguity
 - **Worker cross-tenant queries**: Use `IgnoreQueryFilters()` in workers since there's no tenant context — filter by TenantId manually
 - **Post-query enrichment pattern**: For data from materialized views/cross-entity lookups, fetch the main query first, then batch-lookup supplementary data and merge with `record with { }` syntax
 - **Worker marketplace API access**: Worker needs its own DataProtection + ITokenEncryptionService + HttpClient("MercadoLivre") + keyed IMarketplaceAdapter registration (separate from API Program.cs). Add `Microsoft.AspNetCore.DataProtection` package to Worker .csproj
@@ -1606,4 +1606,27 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Historical averages for fulfillment fee and shipping cost come from `OrderCosts` table with categories `fulfillment_fee` and `shipping_seller`
   - Average days in stock comes from `StorageCostAccumulations.DaysStored`
   - Config fallback keys: `FulfillmentSettings:DefaultDailyStorageCost`, `DefaultFulfillmentFee`, `DefaultShippingCost`, `DefaultLaborCostPerShipment`
+---
+
+## 2026-03-29 - US-059
+- Implemented Resend HTTP API email provider integration
+- Updated `IEmailService` to include optional `textBody` parameter
+- Created `ResendEmailService` with 3-attempt retry + exponential backoff
+- Created `EmailTemplateBuilder` for branded HTML email templates
+- Created `EmailServiceExtensions.AddEmailService()` for DI registration with env var switching
+- Updated both API and Worker `Program.cs` to use `AddEmailService()`
+- Fixed `ReportEmailWorker.SendAsync()` call to use named `textBody` param (avoids ambiguity with new optional param)
+- Files changed:
+  - `src/PeruShopHub.Core/Interfaces/IEmailService.cs`
+  - `src/PeruShopHub.Infrastructure/Email/NoOpEmailService.cs`
+  - `src/PeruShopHub.Infrastructure/Email/ResendEmailService.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Email/EmailTemplateBuilder.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Email/EmailServiceExtensions.cs` (new)
+  - `src/PeruShopHub.API/Program.cs`
+  - `src/PeruShopHub.Worker/Program.cs`
+  - `src/PeruShopHub.Worker/Workers/ReportEmailWorker.cs`
+- **Learnings for future iterations:**
+  - Adding optional params before `CancellationToken` in interface methods breaks existing callers that pass `ct` positionally — use named parameter `textBody: null` at call sites
+  - `AddHttpClient<IEmailService, ResendEmailService>()` registers as scoped with typed HttpClient — API key set in client config via `DefaultRequestHeaders`
+  - `EmailTemplateBuilder` is static — use `BuildLayout()` to wrap content in branded layout, `Button()`/`Heading()`/`Paragraph()`/`List()` for content blocks
 ---

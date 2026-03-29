@@ -1234,7 +1234,7 @@
         ".NET build passes"
       ],
       "priority": 66,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Email chain start."
     },
     {
