@@ -2331,3 +2331,19 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Certbot container runs renewal loop every 12h; initial cert must be generated manually
   - nginx-prod.conf uses `${DOMAIN}` variable — must be set in the env or templated
 ---
+
+## 2026-03-29 - US-082
+- Implemented automated PostgreSQL backup system with daily pg_dump + gzip compression
+- Created `scripts/backup/backup.sh` — daily backup with retention policy (7 daily, 4 weekly, 3 monthly)
+- Created `scripts/backup/verify-restore.sh` — weekly restore into temp DB with integrity checks
+- Created `scripts/backup/monitor.sh` — hourly check alerting if no backup in 25h
+- Created `docker/Dockerfile.backup` + `docker/backup-crontab` — Alpine-based cron service
+- Added `backup` service to `docker-compose.yml` with env vars for offsite sync (S3/B2)
+- Created `Docs/guides/Backup-Recovery.md` — full recovery procedure documentation
+- Files changed: scripts/backup/backup.sh, scripts/backup/verify-restore.sh, scripts/backup/monitor.sh, docker/Dockerfile.backup, docker/backup-crontab, docker-compose.yml, Docs/guides/Backup-Recovery.md
+- **Learnings for future iterations:**
+  - `.gitignore` has `Backup*/` pattern from VS template that case-insensitively matches `backup/` — use `git add -f` for scripts in backup directories
+  - Offsite sync uses `aws s3 sync` which works with both AWS S3 and Backblaze B2 (via `--endpoint-url`)
+  - Retention logic: promote daily→weekly on Sundays, daily→monthly on 1st; then prune oldest beyond threshold
+  - Restore verification creates temp DB, restores, checks table existence + count, then drops — all in a trap-cleanup pattern
+---
