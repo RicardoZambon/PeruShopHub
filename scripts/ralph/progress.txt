@@ -3,6 +3,8 @@ Started: Fri Mar 28 2026
 ---
 
 ## Codebase Patterns
+- **ML logistic_type mapping**: `shipping.logistic_type` from ML item API → `MarketplaceListing.FulfillmentType`: "fulfillment" (ML Full), "cross_docking", "drop_off", "xd_drop_off"; `mode="me2"` → "self"
+- **Cost estimation fallback pattern**: After MergeApiFeeCostsAsync, check if a cost category is still zero, then estimate from product dimensions/attributes as a "Calculated" source fallback
 - **ButtonComponent variants**: 'accent' | 'ghost' | 'outline' | 'danger' | 'icon' — no 'primary' variant. Use 'accent' for primary actions
 - **On-demand sync pattern**: Redis cache key for queue (`prefix:queue:{tenantId}`), polling worker checks for queued requests, status tracked via cache with TTL. Same pattern for listing import and order sync
 - **Redis queue pattern**: Use `IConnectionMultiplexer` + `ListLeftPushAsync` for Redis LIST operations (queues). `IDistributedCache`/`ICacheService` only supports key-value, not lists
@@ -1418,4 +1420,50 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Shipment webhook handler and OrderSyncService both need to update shipping_seller cost — keep them in sync
   - ShippingInfoDto changes require updates in both backend (OrderService) and frontend (order.service.ts + sale-detail.component.ts)
   - Free shipping detection: order total >= R$79 with non-zero shipping_seller cost indicates seller absorbed shipping
+---
+
+## 2026-03-29 - US-052
+- Implemented Fulfillment Fee Lookup (ML Full) across backend and frontend
+- **Backend changes:**
+  - Added `fulfillment_fee`/`fulfillment` mapping to `MlOrderMapper.MapFeeTypeToCategory`
+  - Added `FulfillmentType` field to `MarketplaceListing` entity + EF configuration + migration
+  - Added `MlItemShipping` model to capture `logistic_type` and `mode` from ML item API
+  - Updated `MarketplaceItemDetails` with `FulfillmentType` property
+  - `MercadoLivreAdapter.GetItemDetailsAsync` now extracts fulfillment type from shipping info
+  - Updated listing import/sync services to persist `FulfillmentType`
+  - Added dimension-based fulfillment fee estimation (`EstimateFulfillmentFeeIfMissingAsync`) in `OrderSyncService` — uses volumetric weight brackets when billing API doesn't return fulfillment fee
+  - Added `GetFulfillmentStockAsync` to `IMarketplaceAdapter` + ML adapter implementation
+  - Added `GET /api/inventory/{inventoryId}/stock/fulfillment` endpoint
+  - Added `FulfillmentType` to `ProductListDto` + enrichment from `MarketplaceListing`
+  - Added `IsFulfillment` flag to `ShippingInfoDto` (derived from fulfillment_fee > 0)
+- **Frontend changes:**
+  - Order detail: "Full" purple badge next to fulfillment_fee cost row when order uses fulfillment
+  - Products list: "Full" purple badge and "Próprio" neutral badge for shipping indicator
+  - Updated Product interface and OrderDetail interface with new fields
+- **Files changed:**
+  - `src/PeruShopHub.Core/Entities/MarketplaceListing.cs`
+  - `src/PeruShopHub.Core/Interfaces/IMarketplaceAdapter.cs`
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreAdapter.cs`
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreModels.cs`
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/MarketplaceListingConfiguration.cs`
+  - `src/PeruShopHub.Infrastructure/Migrations/20260329020000_AddFulfillmentTypeToMarketplaceListing.cs`
+  - `src/PeruShopHub.Application/Services/MlOrderMapper.cs`
+  - `src/PeruShopHub.Application/Services/OrderSyncService.cs`
+  - `src/PeruShopHub.Application/Services/OrderService.cs`
+  - `src/PeruShopHub.Application/Services/ProductService.cs`
+  - `src/PeruShopHub.Application/Services/MlListingImportService.cs`
+  - `src/PeruShopHub.Application/Services/ProductSyncService.cs`
+  - `src/PeruShopHub.Application/DTOs/Orders/OrderDtos.cs`
+  - `src/PeruShopHub.Application/DTOs/Products/ProductDtos.cs`
+  - `src/PeruShopHub.API/Controllers/InventoryController.cs`
+  - `src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.*`
+  - `src/PeruShopHub.Web/src/app/pages/products/products-list.component.*`
+  - `src/PeruShopHub.Web/src/app/services/order.service.ts`
+  - `src/PeruShopHub.Web/src/app/services/product.service.ts`
+- **Learnings for future iterations:**
+  - ML item API `shipping.logistic_type` = "fulfillment" indicates ML Full; "cross_docking"/"drop_off" for other ML logistics; `mode` = "me2" for self-shipping
+  - Adding optional params to records used in EF LINQ `.Select()` requires passing explicit `(Type?)null` to avoid CS0854 expression tree error
+  - Fulfillment fee estimation uses volumetric weight: max(actual_weight, H×W×L/6000) then bracket lookup
+  - `ProductListDto` enrichment pattern: query main data, then batch-lookup supplementary fields and merge with `with { }` syntax
+  - `MarketplaceListing.FulfillmentType` is the source of truth for Full vs own shipping indicator on products
 ---
