@@ -1982,3 +1982,40 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Be careful with `replace_all` — replacing `new Claim` with `new MarketplaceClaim` also caught `ClaimSummaryDto` → `MarketplaceClaimSummaryDto`. Prefer targeted replacements
   - ML claims API: `GET /post-purchase/v1/claims/search` for search, `GET /post-purchase/v1/claims/{id}` for details. Response uses `data` array with `paging` object (different from questions which use `questions` array with `total`)
 ---
+
+## 2026-03-29 - US-071
+- Implemented unanswered question/message alert system
+- Created `ResponseTimeSettings` entity (tenant-scoped, stores question/message thresholds)
+- Added `ResponseTimeSettingsConfiguration` with unique index on TenantId
+- Added DbSet to `PeruShopHubDbContext`
+- Added `UnansweredQuestion` and `UnansweredMessage` to `NotificationType` enum
+- Updated `NotificationEmailTemplates.MapNotificationType` for new types
+- Added GET/PUT `/api/settings/response-time-settings` endpoints to SettingsController
+- Created `ResponseTimeAlertWorker` (runs every 30 min, configurable via `Workers:ResponseTimeAlert:IntervalMinutes`)
+  - Checks unanswered questions (Status == "UNANSWERED") older than threshold (default 4h)
+  - Checks unread buyer messages (SenderType == "buyer", IsRead == false) older than threshold (default 12h)
+  - Creates notifications with count and age, deduplicates via unread notification check
+  - Sends email if enabled in preferences
+- Registered worker in Worker/Program.cs
+- Frontend: Added `ResponseTimeSettings` interface and service methods
+- Frontend: Added response time form (questionThresholdHours, messageThresholdHours) to settings component
+- Frontend: Added response time configuration UI in the Notificações tab
+- Frontend: Added notification type labels for UnansweredQuestion and UnansweredMessage
+- Files changed:
+  - `src/PeruShopHub.Core/Entities/ResponseTimeSettings.cs` (new)
+  - `src/PeruShopHub.Core/Enums/NotificationType.cs`
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/ResponseTimeSettingsConfiguration.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs`
+  - `src/PeruShopHub.Infrastructure/Email/NotificationEmailTemplates.cs`
+  - `src/PeruShopHub.API/Controllers/SettingsController.cs`
+  - `src/PeruShopHub.Worker/Workers/ResponseTimeAlertWorker.cs` (new)
+  - `src/PeruShopHub.Worker/Program.cs`
+  - `src/PeruShopHub.Web/src/app/services/settings.service.ts`
+  - `src/PeruShopHub.Web/src/app/pages/settings/settings.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/settings/settings.component.html`
+- **Learnings for future iterations:**
+  - ResponseTimeSettings follows the TaxProfile pattern: single-row per tenant, upsert on PUT, defaults when no row exists
+  - Worker iterates all active tenants with IgnoreQueryFilters, catches per-tenant errors to prevent cascading failures
+  - For "unanswered messages", the key is SenderType == "buyer" + IsRead == false (not just any unread message)
+  - Notification deduplication: check for existing unread notification of same type before creating new one
+---

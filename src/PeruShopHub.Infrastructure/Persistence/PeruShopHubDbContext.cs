@@ -55,6 +55,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<ResponseTemplate> ResponseTemplates => Set<ResponseTemplate>();
     public DbSet<MarketplaceMessage> MarketplaceMessages => Set<MarketplaceMessage>();
     public DbSet<MarketplaceClaim> Claims => Set<MarketplaceClaim>();
+    public DbSet<ResponseTimeSettings> ResponseTimeSettings => Set<ResponseTimeSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

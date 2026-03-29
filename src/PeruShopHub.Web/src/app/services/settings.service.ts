@@ -107,6 +107,12 @@ export interface AlertRule {
   createdAt: string;
 }
 
+export interface ResponseTimeSettings {
+  id: string;
+  questionThresholdHours: number;
+  messageThresholdHours: number;
+}
+
 export interface NotificationPreference {
   id: string;
   type: string;
@@ -255,5 +261,14 @@ export class SettingsService {
 
   updateNotificationPreferences(prefs: { type: string; emailEnabled: boolean; inAppEnabled: boolean }[]): Observable<NotificationPreference[]> {
     return this.http.put<NotificationPreference[]>(`${this.baseUrl}/notification-preferences`, prefs);
+  }
+
+  // Response Time Settings
+  getResponseTimeSettings(): Observable<ResponseTimeSettings> {
+    return this.http.get<ResponseTimeSettings>(`${this.baseUrl}/response-time-settings`);
+  }
+
+  updateResponseTimeSettings(dto: { questionThresholdHours: number; messageThresholdHours: number }): Observable<ResponseTimeSettings> {
+    return this.http.put<ResponseTimeSettings>(`${this.baseUrl}/response-time-settings`, dto);
   }
 }

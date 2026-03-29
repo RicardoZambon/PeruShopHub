@@ -15,7 +15,7 @@ import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/tog
 import { ThemeService } from '../../services/theme.service';
 import { TooltipService } from '../../services/tooltip.service';
 import type { ThemePreference } from '../../services/theme.service';
-import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule, type ReportSchedule, type AlertRule, type NotificationPreference } from '../../services/settings.service';
+import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule, type ReportSchedule, type AlertRule, type NotificationPreference, type ResponseTimeSettings } from '../../services/settings.service';
 import { TenantService, type TenantMember } from '../../services/tenant.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
@@ -115,7 +115,15 @@ export class SettingsComponent implements OnInit {
     'MarginAlert': 'Alerta de Margem',
     'MLConnectionError': 'Erro de Conexão ML',
     'SyncError': 'Erro de Sincronização',
+    'UnansweredQuestion': 'Pergunta Sem Resposta',
+    'UnansweredMessage': 'Mensagem Não Lida',
   };
+
+  // Response Time Settings
+  responseTimeSettings = signal<ResponseTimeSettings | null>(null);
+  savingResponseTime = signal(false);
+  loadingResponseTime = signal(false);
+  responseTimeForm!: FormGroup;
 
   // Report schedules
   reportSchedules = signal<ReportSchedule[]>([]);
@@ -185,6 +193,11 @@ export class SettingsComponent implements OnInit {
       threshold: [10, [Validators.required, Validators.min(0)]],
       productId: [null as string | null],
     });
+
+    this.responseTimeForm = this.fb.group({
+      questionThresholdHours: [4, [Validators.required, Validators.min(1), Validators.max(168)]],
+      messageThresholdHours: [12, [Validators.required, Validators.min(1), Validators.max(168)]],
+    });
   }
 
   ngOnInit(): void {
@@ -197,6 +210,7 @@ export class SettingsComponent implements OnInit {
     this.loadReportSchedules();
     this.loadAlertRules();
     this.loadNotificationPreferences();
+    this.loadResponseTimeSettings();
   }
 
   selectTab(tab: SettingsTab): void {
@@ -1044,6 +1058,42 @@ export class SettingsComponent implements OnInit {
       error: () => {
         this.savingNotificationPrefs.set(false);
         this.toastService.show('Erro ao salvar preferências', 'danger');
+      },
+    });
+  }
+
+  // Response Time Settings
+  loadResponseTimeSettings(): void {
+    this.loadingResponseTime.set(true);
+    this.settingsService.getResponseTimeSettings().subscribe({
+      next: (settings) => {
+        this.responseTimeSettings.set(settings);
+        this.responseTimeForm.patchValue({
+          questionThresholdHours: settings.questionThresholdHours,
+          messageThresholdHours: settings.messageThresholdHours,
+        });
+        this.loadingResponseTime.set(false);
+      },
+      error: () => this.loadingResponseTime.set(false),
+    });
+  }
+
+  saveResponseTimeSettings(): void {
+    if (!this.responseTimeForm.valid) {
+      this.responseTimeForm.markAllAsTouched();
+      return;
+    }
+    this.savingResponseTime.set(true);
+    const dto = this.responseTimeForm.value;
+    this.settingsService.updateResponseTimeSettings(dto).subscribe({
+      next: (result) => {
+        this.responseTimeSettings.set(result);
+        this.savingResponseTime.set(false);
+        this.toastService.show('Configurações de tempo de resposta salvas', 'success');
+      },
+      error: () => {
+        this.savingResponseTime.set(false);
+        this.toastService.show('Erro ao salvar configurações', 'danger');
       },
     });
   }

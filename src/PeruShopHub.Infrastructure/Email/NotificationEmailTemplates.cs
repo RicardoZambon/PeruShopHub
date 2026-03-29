@@ -13,6 +13,8 @@ public static class NotificationEmailTemplates
             "margin" or "margin_alert" => NotificationType.MarginAlert,
             "token_renewal_failed" or "connection" or "connection_error" => NotificationType.MLConnectionError,
             "product_sync_errors" or "stock_reconciliation" or "sync_error" or "shipping_update" => NotificationType.SyncError,
+            "unanswered_question" => NotificationType.UnansweredQuestion,
+            "unanswered_message" => NotificationType.UnansweredMessage,
             _ => null
         };
     }

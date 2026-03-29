@@ -646,6 +646,40 @@
           </div>
         }
       </div>
+
+      <div class="settings__section" style="margin-top: var(--space-6)">
+        <h2 class="settings__section-title">Tempo de Resposta</h2>
+        <p class="settings__section-description">Configure os limites de tempo para alertas de perguntas e mensagens sem resposta.</p>
+
+        @if (loadingResponseTime()) {
+          <div class="notification-prefs__loading">Carregando configurações...</div>
+        } @else {
+          <form [formGroup]="responseTimeForm" class="form-layout" style="max-width: 480px">
+            <app-form-field
+              label="Limite para perguntas (horas)"
+              hint="Alerta quando uma pergunta ficar sem resposta por mais tempo que o limite."
+              [error]="responseTimeForm.get('questionThresholdHours')?.touched && responseTimeForm.get('questionThresholdHours')?.invalid ? 'Informe um valor entre 1 e 168 horas' : ''">
+              <input type="number" formControlName="questionThresholdHours" min="1" max="168" />
+            </app-form-field>
+
+            <app-form-field
+              label="Limite para mensagens (horas)"
+              hint="Alerta quando uma mensagem de comprador ficar não lida por mais tempo que o limite."
+              [error]="responseTimeForm.get('messageThresholdHours')?.touched && responseTimeForm.get('messageThresholdHours')?.invalid ? 'Informe um valor entre 1 e 168 horas' : ''">
+              <input type="number" formControlName="messageThresholdHours" min="1" max="168" />
+            </app-form-field>
+
+            <div class="settings__form-actions">
+              <app-button
+                variant="accent"
+                [disabled]="savingResponseTime()"
+                (click)="saveResponseTimeSettings()">
+                {{ savingResponseTime() ? 'Salvando...' : 'Salvar Configurações' }}
+              </app-button>
+            </div>
+          </form>
+        }
+      </div>
     }
 
     <!-- Relatórios Tab -->

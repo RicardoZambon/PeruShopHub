@@ -87,6 +87,7 @@ builder.Services.AddScoped<IMarketplaceQuestionService, MarketplaceQuestionServi
 builder.Services.AddHostedService<QuestionSyncWorker>();
 builder.Services.AddScoped<IClaimService, ClaimService>();
 builder.Services.AddHostedService<ClaimSyncWorker>();
+builder.Services.AddHostedService<ResponseTimeAlertWorker>();
 
 var host = builder.Build();
 host.Run();

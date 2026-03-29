@@ -6,5 +6,7 @@ public enum NotificationType
     LowStock,
     MarginAlert,
     MLConnectionError,
-    SyncError
+    SyncError,
+    UnansweredQuestion,
+    UnansweredMessage
 }

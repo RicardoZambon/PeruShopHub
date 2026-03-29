@@ -1504,7 +1504,7 @@
         "Angular build passes"
       ],
       "priority": 80,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 4. Depends on US-066, US-069."
     },
     {

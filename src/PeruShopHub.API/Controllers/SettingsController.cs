@@ -503,6 +503,62 @@ public class SettingsController : ControllerBase
         return NoContent();
     }
 
+    // --- Response Time Settings ---
+
+    [HttpGet("response-time-settings")]
+    public async Task<ActionResult<ResponseTimeSettingsDto>> GetResponseTimeSettings()
+    {
+        var settings = await _db.ResponseTimeSettings.FirstOrDefaultAsync();
+
+        if (settings is null)
+        {
+            return Ok(new ResponseTimeSettingsDto(Guid.Empty, 4, 12));
+        }
+
+        return Ok(new ResponseTimeSettingsDto(settings.Id, settings.QuestionThresholdHours, settings.MessageThresholdHours));
+    }
+
+    [HttpPut("response-time-settings")]
+    public async Task<ActionResult<ResponseTimeSettingsDto>> UpdateResponseTimeSettings([FromBody] UpdateResponseTimeSettingsDto dto)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (dto.QuestionThresholdHours < 1 || dto.QuestionThresholdHours > 168)
+            errors["QuestionThresholdHours"] = new[] { "Limite de perguntas deve estar entre 1 e 168 horas" };
+
+        if (dto.MessageThresholdHours < 1 || dto.MessageThresholdHours > 168)
+            errors["MessageThresholdHours"] = new[] { "Limite de mensagens deve estar entre 1 e 168 horas" };
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        var settings = await _db.ResponseTimeSettings.FirstOrDefaultAsync();
+
+        if (settings is null)
+        {
+            settings = new ResponseTimeSettings
+            {
+                Id = Guid.NewGuid(),
+                QuestionThresholdHours = dto.QuestionThresholdHours,
+                MessageThresholdHours = dto.MessageThresholdHours,
+            };
+            _db.ResponseTimeSettings.Add(settings);
+        }
+        else
+        {
+            settings.QuestionThresholdHours = dto.QuestionThresholdHours;
+            settings.MessageThresholdHours = dto.MessageThresholdHours;
+            settings.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+
+        await _auditService.LogAsync("Configurações de tempo de resposta atualizadas", "ResponseTimeSettings", settings.Id,
+            null, new { settings.QuestionThresholdHours, settings.MessageThresholdHours });
+
+        return Ok(new ResponseTimeSettingsDto(settings.Id, settings.QuestionThresholdHours, settings.MessageThresholdHours));
+    }
+
     // --- Notification Preferences ---
 
     [HttpGet("notification-preferences")]
@@ -610,3 +666,5 @@ public record CreateReportScheduleDto(string Frequency, string Recipients, bool 
 public record UpdateReportScheduleDto(string Frequency, string Recipients, bool IsActive);
 public record NotificationPreferenceDto(Guid Id, string Type, bool EmailEnabled, bool InAppEnabled);
 public record UpdateNotificationPreferenceDto(string Type, bool EmailEnabled, bool InAppEnabled);
+public record ResponseTimeSettingsDto(Guid Id, int QuestionThresholdHours, int MessageThresholdHours);
+public record UpdateResponseTimeSettingsDto(int QuestionThresholdHours, int MessageThresholdHours);
