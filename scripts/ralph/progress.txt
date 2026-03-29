@@ -2315,3 +2315,19 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - AdminController uses `[Authorize(Roles = "SuperAdmin")]` — regular Owner/Admin roles get 403
   - Docker not available in dev container — integration tests with TestContainers only run in CI
 ---
+
+## 2026-03-29 - US-081
+- Created `.github/workflows/deploy.yml` — automated deploy workflow with manual dispatch and v* tag triggers
+- Created `docker-compose.prod.yml` — production compose with GHCR images, Let's Encrypt certbot, env-var-driven config
+- Created `docker/nginx-prod.conf` — SSL/TLS nginx config with HTTP→HTTPS redirect, HSTS, security headers, gzip, static asset caching
+- Created `Docs/guides/Deployment.md` — full deployment guide with VPS setup, SSL setup, rollback procedures, troubleshooting
+- Deploy flow: build → push GHCR → SSH to VPS → pull → docker compose up -d → health check → rollback on failure
+- Zero-downtime: pulls new images before stopping old containers
+- .NET build passes
+- Files changed: `.github/workflows/deploy.yml`, `docker-compose.prod.yml`, `docker/nginx-prod.conf`, `Docs/guides/Deployment.md`
+- **Learnings for future iterations:**
+  - Production compose uses `${VAR:-default}` syntax for env vars loaded from `.env` on VPS
+  - appleboy/ssh-action and appleboy/scp-action are standard GH Actions for SSH/SCP operations
+  - Certbot container runs renewal loop every 12h; initial cert must be generated manually
+  - nginx-prod.conf uses `${DOMAIN}` variable — must be set in the env or templated
+---
