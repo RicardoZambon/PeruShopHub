@@ -2194,3 +2194,21 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - MarketplaceMessageService.SyncMessagesForOrderAsync needs ML adapter wiring when message pack API methods are added
   - All workers follow consistent pattern: configurable interval, iterate tenants, use adapter for ML API calls
 ---
+
+## 2026-03-29 - US-076
+- Added FinanceService unit tests (28 tests): summary metrics, period parsing, revenue/profit change calculations, cost breakdown, reconciliation, SKU profitability with date filters, ABC curve analysis, sorting, edge cases
+- Added DashboardService unit tests (14 tests): caching, cost breakdown, top/least profitable products, pending actions (questions, orders, stock alerts, claims), edge cases
+- Added MercadoLivreAdapter unit tests (22 tests): OAuth flow, token refresh, product/order/item/shipment/payment/fulfillment/question/claim API methods, error handling (HTTP errors, non-success status), fulfillment type mapping, billing fallback
+- Updated CI pipeline (.github/workflows/ci.yml) to collect coverage with coverlet and fail if below 50% threshold using reportgenerator
+- Files changed:
+  - tests/PeruShopHub.UnitTests/Services/FinanceServiceTests.cs (new)
+  - tests/PeruShopHub.UnitTests/Services/DashboardServiceTests.cs (new)
+  - tests/PeruShopHub.UnitTests/Services/MercadoLivreAdapterTests.cs (new)
+  - .github/workflows/ci.yml (updated)
+- **Learnings for future iterations:**
+  - SQLite cannot translate GroupBy + Select with Sum/Count projections (e.g., `GroupBy(o => o.OrderDate.Date).Select(g => new { g.Key, g.Sum(o => o.Total) })`). These queries need PostgreSQL integration tests
+  - FinanceService.GetSkuProfitabilityFromSourceAsync calculates profit as `revenue - allocatedCosts`, NOT from Order.Profit field. Tests must seed actual OrderCosts for margin assertions
+  - MercadoLivreAdapter uses Moq.Protected() to mock HttpMessageHandler.SendAsync for testing HTTP calls. Pattern: Mock handler → create HttpClient → Mock IHttpClientFactory
+  - DashboardService.GetSummaryAsync calls chart queries internally that fail on SQLite — can only test cache-hit path in unit tests
+  - Record property names in DTOs differ from what you might guess (e.g., `ExternalOrderId` not `ExternalId`, `ExternalShipmentId` not `ShipmentId`, `ExpiresInSeconds` not `ExpiresIn`)
+---
