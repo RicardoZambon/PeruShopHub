@@ -22,12 +22,14 @@ import {
 } from 'lucide-angular';
 import { SidebarService } from '../../../services/sidebar.service';
 import { AuthService } from '../../../services/auth.service';
+import { SidebarBadgeService } from '../../../services/sidebar-badge.service';
 
 interface NavItem {
   label: string;
   route: string;
   icon: LucideIconData;
   group?: string;
+  badgeKey?: string;
 }
 
 interface NavGroup {
@@ -45,6 +47,7 @@ interface NavGroup {
 export class SidebarComponent {
   readonly sidebar = inject(SidebarService);
   private readonly auth = inject(AuthService);
+  readonly badges = inject(SidebarBadgeService);
 
   readonly shopName = computed(() => this.auth.tenantName() || 'PeruShopHub');
   readonly isSuperAdmin = computed(() => this.auth.isSuperAdmin());
@@ -54,7 +57,7 @@ export class SidebarComponent {
     { label: 'Dashboard', route: '/dashboard', icon: LayoutDashboard },
 
     { label: 'Vendas', route: '/vendas', icon: ShoppingCart, group: 'COMERCIAL' },
-    { label: 'Perguntas', route: '/perguntas', icon: MessageCircle, group: 'COMERCIAL' },
+    { label: 'Perguntas', route: '/perguntas', icon: MessageCircle, group: 'COMERCIAL', badgeKey: 'unansweredQuestions' },
     { label: 'Anúncios', route: '/anuncios', icon: Megaphone, group: 'COMERCIAL' },
     { label: 'Clientes', route: '/clientes', icon: Users, group: 'COMERCIAL' },
 
@@ -90,6 +93,13 @@ export class SidebarComponent {
     if (this.sidebar.mobileOpen()) {
       this.sidebar.closeMobile();
     }
+  }
+
+  getBadgeCount(item: NavItem): number {
+    if (item.badgeKey === 'unansweredQuestions') {
+      return this.badges.unansweredQuestions();
+    }
+    return 0;
   }
 
   private buildNavGroups(): NavGroup[] {

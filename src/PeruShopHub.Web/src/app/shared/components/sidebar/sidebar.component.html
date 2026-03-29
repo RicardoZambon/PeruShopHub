@@ -41,9 +41,17 @@
             [title]="sidebar.collapsed() ? item.label : ''"
             (click)="onNavClick()"
           >
-            <lucide-angular [img]="item.icon" [size]="20" class="nav-icon" />
+            <span class="nav-icon-wrapper">
+              <lucide-angular [img]="item.icon" [size]="20" class="nav-icon" />
+              @if (sidebar.collapsed() && !sidebar.mobileOpen() && item.badgeKey && getBadgeCount(item) > 0) {
+                <span class="nav-badge-dot"></span>
+              }
+            </span>
             @if (!sidebar.collapsed() || sidebar.mobileOpen()) {
               <span class="nav-label">{{ item.label }}</span>
+              @if (item.badgeKey && getBadgeCount(item) > 0) {
+                <span class="nav-badge">{{ getBadgeCount(item) }}</span>
+              }
             }
           </a>
         </li>

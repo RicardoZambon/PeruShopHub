@@ -1,4 +1,25 @@
-<app-page-header title="Perguntas"></app-page-header>
+<app-page-header title="Perguntas">
+  @if (unansweredCount() > 0) {
+    <app-badge [label]="unansweredCount() + ' pendentes'" variant="accent"></app-badge>
+  }
+</app-page-header>
+
+<!-- Search -->
+<div class="search-bar">
+  <lucide-angular [img]="searchIcon" [size]="16" class="search-icon"></lucide-angular>
+  <input
+    type="text"
+    class="search-input"
+    placeholder="Buscar por produto, comprador ou texto..."
+    [ngModel]="searchQuery()"
+    (ngModelChange)="searchQuery.set($event)"
+  />
+  @if (searchQuery()) {
+    <button class="search-clear" (click)="searchQuery.set('')">
+      <lucide-angular [img]="xIcon" [size]="14"></lucide-angular>
+    </button>
+  }
+</div>
 
 <!-- Tab filters -->
 <app-tab-bar
@@ -26,7 +47,9 @@
   <div class="empty-state">
     <lucide-angular [img]="messageCircleIcon" [size]="48" class="empty-icon"></lucide-angular>
     <h3 class="empty-title">
-      @if (activeTab() === 'unanswered') {
+      @if (searchQuery()) {
+        Nenhuma pergunta encontrada
+      } @else if (activeTab() === 'unanswered') {
         Nenhuma pergunta pendente
       } @else if (activeTab() === 'answered') {
         Nenhuma pergunta respondida
@@ -35,7 +58,9 @@
       }
     </h3>
     <p class="empty-description">
-      @if (activeTab() === 'unanswered') {
+      @if (searchQuery()) {
+        Tente buscar com outros termos.
+      } @else if (activeTab() === 'unanswered') {
         Todas as perguntas foram respondidas. Bom trabalho!
       } @else {
         As perguntas dos compradores aparecerão aqui.
@@ -45,44 +70,46 @@
 } @else {
   <div class="questions-list">
     @for (question of filteredQuestions(); track question.id) {
-      <div class="question-card" [class.unanswered]="question.status === 'unanswered'">
+      <div class="question-card" [class.unanswered]="question.status === 'UNANSWERED'">
         <div class="question-header">
           <div class="product-info">
             <div class="product-icon">
               <lucide-angular [img]="packageIcon" [size]="20"></lucide-angular>
             </div>
             <div>
-              <span class="product-name">{{ question.productName }}</span>
-              <span class="product-id">{{ question.productId }}</span>
+              <span class="product-name">{{ question.externalItemId }}</span>
             </div>
           </div>
           <div class="question-meta">
-            <span class="time-indicator" [class.old]="question.status === 'unanswered' && isOld(question.createdAt)">
+            <span class="time-indicator" [class.old]="question.status === 'UNANSWERED' && isOld(question.questionDate)">
               <lucide-angular [img]="clockIcon" [size]="14"></lucide-angular>
-              {{ question.createdAt | relativeDate }}
+              {{ question.questionDate | relativeDate }}
             </span>
             <app-badge
-              [label]="question.status === 'answered' ? 'Respondida' : 'Pendente'"
+              [label]="getStatusLabel(question.status)"
               [variant]="getStatusVariant(question.status)"
             ></app-badge>
           </div>
         </div>
 
         <div class="question-body">
-          <span class="buyer-nickname">{{ question.buyerNickname }}</span>
-          <p class="question-text">{{ question.text }}</p>
+          <span class="buyer-nickname">{{ question.buyerName }}</span>
+          <p class="question-text">{{ question.questionText }}</p>
         </div>
 
         <!-- Answer display for answered questions -->
-        @if (question.status === 'answered' && question.answer) {
+        @if (question.status === 'ANSWERED' && question.answerText) {
           <div class="answer-section">
             <div class="answer-label">Sua resposta:</div>
-            <p class="answer-text">{{ question.answer }}</p>
+            <p class="answer-text">{{ question.answerText }}</p>
+            @if (question.answerDate) {
+              <span class="answer-date">{{ question.answerDate | relativeDate }}</span>
+            }
           </div>
         }
 
         <!-- Reply button for unanswered questions -->
-        @if (question.status === 'unanswered' && replyingTo() !== question.id) {
+        @if (question.status === 'UNANSWERED' && replyingTo() !== question.id) {
           <div class="question-actions">
             <app-button variant="outline" [icon]="messageCircleIcon" (click)="startReply(question.id)">
               Responder
@@ -99,15 +126,16 @@
               [ngModel]="replyText()"
               (ngModelChange)="replyText.set($event)"
               rows="3"
+              [disabled]="submitting()"
             ></textarea>
             <div class="reply-actions">
-              <app-button variant="ghost" (click)="cancelReply()">Cancelar</app-button>
+              <app-button variant="ghost" (click)="cancelReply()" [disabled]="submitting()">Cancelar</app-button>
               <app-button
                 variant="accent"
                 [icon]="sendIcon"
-                [disabled]="!replyText().trim()"
+                [disabled]="!replyText().trim() || submitting()"
                 (click)="submitReply(question)">
-                Enviar
+                {{ submitting() ? 'Enviando...' : 'Enviar' }}
               </app-button>
             </div>
           </div>
