@@ -35,3 +35,4 @@ export { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.componen
 export { ConfirmDialogService } from './confirm-dialog/confirm-dialog.service';
 export type { ConfirmOptions } from './confirm-dialog/confirm-dialog.service';
 export { ContextualTooltipComponent } from './contextual-tooltip/contextual-tooltip.component';
+export { CookieConsentBannerComponent } from './cookie-consent-banner/cookie-consent-banner.component';

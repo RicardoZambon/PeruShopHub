@@ -1,0 +1,120 @@
+@use '../../../../styles/mixins' as m;
+
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  background: var(--surface);
+  border-top: 1px solid var(--neutral-200);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  padding: var(--space-4) var(--space-6);
+  animation: slideUp 200ms ease;
+
+  &__content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+
+    @include m.mobile {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    font-size: var(--body-size);
+    color: var(--neutral-700);
+    line-height: var(--body-height);
+
+    strong {
+      display: block;
+      color: var(--neutral-900);
+      margin-bottom: var(--space-1);
+    }
+
+    p {
+      margin: 0;
+    }
+
+    a {
+      color: var(--primary);
+      text-decoration: underline;
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-shrink: 0;
+
+    @include m.mobile {
+      flex-direction: column;
+    }
+  }
+
+  &__settings {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  &__settings-header {
+    font-size: var(--body-size);
+    color: var(--neutral-900);
+  }
+
+  &__category {
+    background: var(--neutral-50);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
+  }
+
+  &__category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-1);
+  }
+
+  &__category-name {
+    font-weight: 500;
+    font-size: var(--body-size);
+    color: var(--neutral-900);
+  }
+
+  &__category-badge {
+    font-size: var(--body-small-size);
+    color: var(--success);
+    font-weight: 500;
+  }
+
+  &__category-desc {
+    font-size: var(--body-small-size);
+    color: var(--neutral-500);
+    margin: 0;
+    line-height: 1.4;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

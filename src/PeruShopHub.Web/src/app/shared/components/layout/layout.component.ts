@@ -4,6 +4,7 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
 import { SidebarService } from '../../../services/sidebar.service';
+import { CookieConsentService } from '../../../services/cookie-consent.service';
 
 @Component({
   selector: 'app-layout',
@@ -18,4 +19,9 @@ import { SidebarService } from '../../../services/sidebar.service';
 })
 export class LayoutComponent {
   readonly sidebar = inject(SidebarService);
+  private readonly cookieConsent = inject(CookieConsentService);
+
+  openCookieSettings(): void {
+    this.cookieConsent.resetConsent();
+  }
 }

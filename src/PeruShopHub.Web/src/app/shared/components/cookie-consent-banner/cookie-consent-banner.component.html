@@ -1,0 +1,68 @@
+@if (showBanner()) {
+  <div class="cookie-banner" role="dialog" aria-label="Consentimento de cookies">
+    @if (!showSettings()) {
+      <!-- Main Banner -->
+      <div class="cookie-banner__content">
+        <div class="cookie-banner__text">
+          <strong>Este site utiliza cookies</strong>
+          <p>
+            Utilizamos cookies essenciais para o funcionamento do site e cookies opcionais para análise de uso.
+            Saiba mais em nossa
+            <a routerLink="/politica-de-privacidade" target="_blank">Política de Privacidade</a>.
+          </p>
+        </div>
+        <div class="cookie-banner__actions">
+          <app-button variant="accent" size="sm" (click)="acceptAll()">
+            Aceitar todos
+          </app-button>
+          <app-button variant="outline" size="sm" (click)="acceptEssentialOnly()">
+            Apenas essenciais
+          </app-button>
+          <app-button variant="ghost" size="sm" (click)="openSettings()">
+            Configurar
+          </app-button>
+        </div>
+      </div>
+    } @else {
+      <!-- Settings Panel -->
+      <div class="cookie-banner__settings">
+        <div class="cookie-banner__settings-header">
+          <strong>Configurações de cookies</strong>
+        </div>
+
+        <div class="cookie-banner__category">
+          <div class="cookie-banner__category-header">
+            <span class="cookie-banner__category-name">Essenciais</span>
+            <span class="cookie-banner__category-badge">Sempre ativos</span>
+          </div>
+          <p class="cookie-banner__category-desc">
+            Necessários para autenticação, preferências de tema e funcionamento básico do site.
+          </p>
+        </div>
+
+        <div class="cookie-banner__category">
+          <div class="cookie-banner__category-header">
+            <span class="cookie-banner__category-name">Análise de uso</span>
+            <app-toggle-switch
+              [checked]="analyticsToggle()"
+              (checkedChange)="onAnalyticsToggle($event)"
+              label=""
+            />
+          </div>
+          <p class="cookie-banner__category-desc">
+            Ajudam a entender como os usuários interagem com o site para melhorar a experiência.
+          </p>
+        </div>
+
+        <div class="cookie-banner__actions">
+          <app-button variant="accent" size="sm" (click)="saveSettings()">
+            Salvar preferências
+          </app-button>
+          <app-button variant="ghost" size="sm" (click)="acceptAll()">
+            Aceitar todos
+          </app-button>
+        </div>
+      </div>
+    }
+  </div>
+}
