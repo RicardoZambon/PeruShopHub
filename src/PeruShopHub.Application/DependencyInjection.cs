@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IStockReconciliationService, StockReconciliationService>();
         services.AddScoped<IOnboardingService, OnboardingService>();
         services.AddScoped<IMarketplaceQuestionService, MarketplaceQuestionService>();
+        services.AddScoped<IResponseTemplateService, ResponseTemplateService>();
 
         return services;
     }

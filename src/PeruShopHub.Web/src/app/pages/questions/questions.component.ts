@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { LucideAngularModule, MessageCircle, Clock, Package, Send, X, Search } from 'lucide-angular';
+import { LucideAngularModule, MessageCircle, Clock, Package, Send, X, Search, FileText } from 'lucide-angular';
 import { BadgeComponent, type BadgeVariant } from '../../shared/components';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { TabBarComponent, type TabItem } from '../../shared/components/tab-bar/tab-bar.component';
@@ -10,6 +10,7 @@ import { ButtonComponent } from '../../shared/components/button/button.component
 import { RelativeDatePipe } from '../../shared/pipes';
 import { ToastService } from '../../services/toast.service';
 import { QuestionService, type QuestionListItem } from '../../services/question.service';
+import { ResponseTemplateService, type ResponseTemplate } from '../../services/response-template.service';
 import { SignalRService } from '../../services/signalr.service';
 
 type TabFilter = 'unanswered' | 'answered' | 'all';
@@ -23,6 +24,7 @@ type TabFilter = 'unanswered' | 'answered' | 'all';
 })
 export class QuestionsComponent implements OnInit, OnDestroy {
   private readonly questionService = inject(QuestionService);
+  private readonly templateService = inject(ResponseTemplateService);
   private readonly signalR = inject(SignalRService);
   private readonly toastService = inject(ToastService);
   private subs = new Subscription();
@@ -33,6 +35,7 @@ export class QuestionsComponent implements OnInit, OnDestroy {
   readonly sendIcon = Send;
   readonly xIcon = X;
   readonly searchIcon = Search;
+  readonly fileTextIcon = FileText;
 
   readonly tabItems: TabItem[] = [
     { key: 'unanswered', label: 'Sem Resposta' },
@@ -48,6 +51,8 @@ export class QuestionsComponent implements OnInit, OnDestroy {
   readonly searchQuery = signal('');
 
   readonly questions = signal<QuestionListItem[]>([]);
+  readonly responseTemplates = signal<ResponseTemplate[]>([]);
+  readonly showTemplateDropdown = signal(false);
 
   readonly unansweredCount = computed(() =>
     this.questions().filter(q => q.status === 'UNANSWERED').length
@@ -87,6 +92,7 @@ export class QuestionsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadQuestions();
+    this.loadTemplates();
 
     // Listen for real-time question updates
     this.subs.add(
@@ -115,11 +121,27 @@ export class QuestionsComponent implements OnInit, OnDestroy {
   startReply(questionId: string): void {
     this.replyingTo.set(questionId);
     this.replyText.set('');
+    this.showTemplateDropdown.set(false);
   }
 
   cancelReply(): void {
     this.replyingTo.set(null);
     this.replyText.set('');
+    this.showTemplateDropdown.set(false);
+  }
+
+  toggleTemplateDropdown(): void {
+    this.showTemplateDropdown.update(v => !v);
+  }
+
+  applyTemplate(template: ResponseTemplate): void {
+    let text = template.body;
+    // Placeholders like {produto}, {preco}, {prazo} stay as-is for user to fill
+    this.replyText.set(text);
+    this.showTemplateDropdown.set(false);
+
+    // Track usage
+    this.templateService.incrementUsage(template.id).subscribe();
   }
 
   submitReply(question: QuestionListItem): void {
@@ -151,6 +173,13 @@ export class QuestionsComponent implements OnInit, OnDestroy {
 
   getStatusLabel(status: string): string {
     return status === 'ANSWERED' ? 'Respondida' : 'Pendente';
+  }
+
+  private loadTemplates(): void {
+    this.templateService.list().subscribe({
+      next: (data) => this.responseTemplates.set(data.filter(t => t.isActive)),
+      error: () => {}, // silently fail — templates are optional
+    });
   }
 
   private loadQuestions(): void {

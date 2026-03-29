@@ -120,6 +120,24 @@
         <!-- Reply form -->
         @if (replyingTo() === question.id) {
           <div class="reply-form">
+            @if (responseTemplates().length > 0) {
+              <div class="template-selector">
+                <button class="template-selector__trigger" type="button" (click)="toggleTemplateDropdown()">
+                  <lucide-angular [img]="fileTextIcon" [size]="14"></lucide-angular>
+                  Templates
+                </button>
+                @if (showTemplateDropdown()) {
+                  <div class="template-selector__dropdown">
+                    @for (tpl of responseTemplates(); track tpl.id) {
+                      <button class="template-selector__item" type="button" (click)="applyTemplate(tpl)">
+                        <span class="template-selector__item-name">{{ tpl.name }}</span>
+                        <span class="template-selector__item-category">{{ tpl.category }}</span>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
             <textarea
               class="reply-textarea"
               placeholder="Digite sua resposta..."

@@ -20,7 +20,7 @@ import { TenantService, type TenantMember } from '../../services/tenant.service'
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
 
-type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'notificacoes' | 'relatorios' | 'aparencia' | 'log-atividades';
+type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'notificacoes' | 'relatorios' | 'aparencia' | 'templates' | 'log-atividades';
 
 interface FixedCost {
   id: number;
@@ -62,6 +62,7 @@ export class SettingsComponent implements OnInit {
     { key: 'notificacoes', label: 'Notificações' },
     { key: 'relatorios', label: 'Relatórios' },
     { key: 'aparencia', label: 'Aparência' },
+    { key: 'templates', label: 'Templates de Resposta' },
     { key: 'log-atividades', label: 'Log de Atividades' },
   ];
 
@@ -201,6 +202,10 @@ export class SettingsComponent implements OnInit {
   selectTab(tab: SettingsTab): void {
     if (tab === 'log-atividades') {
       this.router.navigate(['/configuracoes/log-atividades']);
+      return;
+    }
+    if (tab === 'templates') {
+      this.router.navigate(['/configuracoes/templates']);
       return;
     }
     const tabDef = this.tabs.find(t => t.key === tab);

@@ -52,6 +52,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<OnboardingProgress> OnboardingProgresses => Set<OnboardingProgress>();
     public DbSet<MarketplaceQuestion> MarketplaceQuestions => Set<MarketplaceQuestion>();
+    public DbSet<ResponseTemplate> ResponseTemplates => Set<ResponseTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -151,6 +151,11 @@ export const routes: Routes = [
           import('./pages/settings/settings.component').then(m => m.SettingsComponent),
       },
       {
+        path: 'configuracoes/templates',
+        loadComponent: () =>
+          import('./pages/response-templates/response-templates.component').then(m => m.ResponseTemplatesComponent),
+      },
+      {
         path: 'configuracoes/log-atividades',
         loadComponent: () =>
           import('./pages/audit-log/audit-log.component').then(m => m.AuditLogComponent),
