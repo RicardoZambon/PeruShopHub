@@ -1811,7 +1811,7 @@
         "Angular build passes"
       ],
       "priority": 96,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 5. After all UI stories."
     },
     {
