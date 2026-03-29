@@ -21,7 +21,7 @@ public class WebhookProcessingWorker : BackgroundService
     private readonly TimeSpan _pollInterval;
 
     private const int MaxRetries = 3;
-    private static readonly string[] Topics = ["orders_v2", "items", "shipments", "payments", "questions", "messages"];
+    private static readonly string[] Topics = ["orders_v2", "items", "shipments", "payments", "questions", "messages", "claims"];
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -141,6 +141,9 @@ public class WebhookProcessingWorker : BackgroundService
                 break;
             case "messages":
                 await ProcessMessageWebhookAsync(sp, webhook, ct);
+                break;
+            case "claims":
+                await ProcessClaimWebhookAsync(sp, webhook, ct);
                 break;
             default:
                 _logger.LogDebug("Unhandled webhook topic: {Topic}", topic);
@@ -889,6 +892,34 @@ public class WebhookProcessingWorker : BackgroundService
         // when ML adapter supports GET /messages/packs/{packId}/sellers/{sellerId}
         _logger.LogInformation("Message webhook received for tenant {TenantId}. Resource: {Resource}",
             connection.TenantId, webhook.Resource);
+    }
+
+    // ── Claims webhook ─────────────────────────────────────
+
+    private async Task ProcessClaimWebhookAsync(IServiceProvider sp, MercadoLivreWebhookDto webhook, CancellationToken ct)
+    {
+        var claimId = ExtractIdFromResource(webhook.Resource);
+        if (claimId is null)
+        {
+            _logger.LogWarning("Could not extract claim ID from resource: {Resource}", webhook.Resource);
+            return;
+        }
+
+        var db = sp.GetRequiredService<PeruShopHubDbContext>();
+
+        var connection = await FindConnectionAsync(db, webhook.UserId, ct);
+        if (connection is null)
+        {
+            _logger.LogWarning("No active ML connection for UserId {UserId}. Skipping claim {ClaimId}", webhook.UserId, claimId);
+            return;
+        }
+
+        _logger.LogInformation("Processing claim webhook: ClaimId={ClaimId}, TenantId={TenantId}", claimId, connection.TenantId);
+
+        var claimService = sp.GetRequiredService<IClaimService>();
+        await claimService.SyncSingleClaimAsync(claimId, connection.TenantId, ct);
+
+        _logger.LogInformation("Claim webhook processed: ClaimId={ClaimId}", claimId);
     }
 
     // ── Shared helpers ────────────────────────────────────────

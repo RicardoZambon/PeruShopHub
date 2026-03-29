@@ -91,6 +91,11 @@ export const routes: Routes = [
           import('./pages/questions/questions.component').then(m => m.QuestionsComponent),
       },
       {
+        path: 'reclamacoes',
+        loadComponent: () =>
+          import('./pages/claims/claims.component').then(m => m.ClaimsComponent),
+      },
+      {
         path: 'clientes',
         loadComponent: () =>
           import('./pages/customers/customers.component').then(m => m.CustomersComponent),

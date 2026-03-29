@@ -500,6 +500,95 @@ public class MlQuestionFrom
     public string? Nickname { get; set; }
 }
 
+// ── ML Claims/Returns response ──────────────────────────
+
+public class MlClaimSearchResponse
+{
+    [JsonPropertyName("data")]
+    public List<MlClaimResponse> Data { get; set; } = [];
+
+    [JsonPropertyName("paging")]
+    public MlClaimPaging? Paging { get; set; }
+}
+
+public class MlClaimPaging
+{
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
+
+    [JsonPropertyName("offset")]
+    public int Offset { get; set; }
+
+    [JsonPropertyName("limit")]
+    public int Limit { get; set; }
+}
+
+public class MlClaimResponse
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("reason_id")]
+    public string? ReasonId { get; set; }
+
+    [JsonPropertyName("fulfilled")]
+    public bool Fulfilled { get; set; }
+
+    [JsonPropertyName("date_created")]
+    public DateTimeOffset DateCreated { get; set; }
+
+    [JsonPropertyName("last_updated")]
+    public DateTimeOffset? LastUpdated { get; set; }
+
+    [JsonPropertyName("date_closed")]
+    public DateTimeOffset? DateClosed { get; set; }
+
+    [JsonPropertyName("resolution")]
+    public string? Resolution { get; set; }
+
+    [JsonPropertyName("resource_id")]
+    public long? ResourceId { get; set; }
+
+    [JsonPropertyName("players")]
+    public List<MlClaimPlayer>? Players { get; set; }
+
+    [JsonPropertyName("resource")]
+    public MlClaimResource? Resource { get; set; }
+}
+
+public class MlClaimPlayer
+{
+    [JsonPropertyName("role")]
+    public string Role { get; set; } = string.Empty;
+
+    [JsonPropertyName("user_id")]
+    public long UserId { get; set; }
+
+    [JsonPropertyName("nickname")]
+    public string? Nickname { get; set; }
+}
+
+public class MlClaimResource
+{
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("quantity")]
+    public int Quantity { get; set; }
+
+    [JsonPropertyName("amount")]
+    public decimal? Amount { get; set; }
+}
+
 // ── ML Fulfillment Stock response ────────────────────────
 
 public class MlFulfillmentStockResponse

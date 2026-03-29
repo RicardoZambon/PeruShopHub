@@ -424,6 +424,62 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
         await SendAsync(HttpMethod.Post, "/answers", content, ct);
     }
 
+    // ── Claims / Returns ────────────────────────────────────
+
+    public async Task<MarketplaceClaimSearchResult> SearchClaimsAsync(
+        string? status, int offset, int limit, CancellationToken ct = default)
+    {
+        var url = $"/post-purchase/v1/claims/search?offset={offset}&limit={limit}&sort=date_created:DESC";
+        if (!string.IsNullOrWhiteSpace(status))
+            url += $"&status={Uri.EscapeDataString(status)}";
+
+        var result = await SendAsync<MlClaimSearchResponse>(HttpMethod.Get, url, null, ct);
+
+        var claims = result.Data.Select(c =>
+        {
+            var buyer = c.Players?.FirstOrDefault(p => p.Role == "complainant");
+            return new MarketplaceClaimDetail(
+                c.Id.ToString(),
+                c.Type,
+                c.Status,
+                c.ReasonId ?? "unknown",
+                null, // BuyerComment not available in search
+                buyer?.Nickname,
+                c.ResourceId?.ToString(),
+                c.Resource?.Id,
+                c.Resource?.Description,
+                c.Resource?.Quantity ?? 0,
+                c.Resource?.Amount,
+                c.DateCreated,
+                c.DateClosed,
+                c.Resolution);
+        }).ToList();
+
+        return new MarketplaceClaimSearchResult(claims, result.Paging?.Total ?? claims.Count);
+    }
+
+    public async Task<MarketplaceClaimDetail> GetClaimAsync(string claimId, CancellationToken ct = default)
+    {
+        var c = await SendAsync<MlClaimResponse>(HttpMethod.Get, $"/post-purchase/v1/claims/{claimId}", null, ct);
+
+        var buyer = c.Players?.FirstOrDefault(p => p.Role == "complainant");
+        return new MarketplaceClaimDetail(
+            c.Id.ToString(),
+            c.Type,
+            c.Status,
+            c.ReasonId ?? "unknown",
+            null,
+            buyer?.Nickname,
+            c.ResourceId?.ToString(),
+            c.Resource?.Id,
+            c.Resource?.Description,
+            c.Resource?.Quantity ?? 0,
+            c.Resource?.Amount,
+            c.DateCreated,
+            c.DateClosed,
+            c.Resolution);
+    }
+
     // ── HTTP helpers ─────────────────────────────────────────
 
     private async Task<T> SendAsync<T>(HttpMethod method, string endpoint, HttpContent? content, CancellationToken ct)

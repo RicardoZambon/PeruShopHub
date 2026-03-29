@@ -46,6 +46,12 @@ public interface IMarketplaceAdapter
 
     /// <summary>Post an answer to a question.</summary>
     Task PostAnswerAsync(string questionId, string answerText, CancellationToken ct = default);
+
+    /// <summary>Search claims/returns via ML post-purchase API.</summary>
+    Task<MarketplaceClaimSearchResult> SearchClaimsAsync(string? status, int offset, int limit, CancellationToken ct = default);
+
+    /// <summary>Get a single claim by ID.</summary>
+    Task<MarketplaceClaimDetail> GetClaimAsync(string claimId, CancellationToken ct = default);
 }
 
 // ── DTOs returned by IMarketplaceAdapter ────────────────────
@@ -186,6 +192,28 @@ public record MarketplaceQuestionDetail(
     string Status,
     DateTimeOffset QuestionDate,
     DateTimeOffset? AnswerDate);
+
+// ── Claims / Returns ─────────────────────────────────────
+
+public record MarketplaceClaimSearchResult(
+    IReadOnlyList<MarketplaceClaimDetail> Claims,
+    int Total);
+
+public record MarketplaceClaimDetail(
+    string ExternalId,
+    string Type,
+    string Status,
+    string Reason,
+    string? BuyerComment,
+    string? BuyerNickname,
+    string? OrderId,
+    string? ItemId,
+    string? ItemTitle,
+    int Quantity,
+    decimal? ClaimAmount,
+    DateTimeOffset DateCreated,
+    DateTimeOffset? DateClosed,
+    string? Resolution);
 
 // ── Fulfillment stock ────────────────────────────────────
 

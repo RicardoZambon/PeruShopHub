@@ -246,6 +246,13 @@ public class DashboardService : IDashboardService
             pendingActions.Add(new PendingActionDto("stock_alert", "Alertas de estoque",
                 $"{stockAlertCount} produto(s) com estoque baixo", "/products", stockAlertCount));
 
+        var openClaimsCount = await _db.Claims
+            .Where(c => c.Status == "opened")
+            .CountAsync(ct);
+        if (openClaimsCount > 0)
+            pendingActions.Add(new PendingActionDto("claim", "Reclamações abertas",
+                $"{openClaimsCount} reclamação(ões) pendente(s)", "/reclamacoes", openClaimsCount));
+
         return pendingActions;
     }
 

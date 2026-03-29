@@ -1,0 +1,276 @@
+<app-page-header title="Reclamações">
+  @if (openCount() > 0) {
+    <app-badge [label]="openCount() + ' abertas'" variant="accent"></app-badge>
+  }
+</app-page-header>
+
+<!-- Search -->
+<div class="search-bar">
+  <lucide-angular [img]="searchIcon" [size]="16" class="search-icon"></lucide-angular>
+  <input
+    type="text"
+    class="search-input"
+    placeholder="Buscar por comprador, produto ou motivo..."
+    [ngModel]="searchQuery()"
+    (ngModelChange)="searchQuery.set($event)"
+  />
+  @if (searchQuery()) {
+    <button class="search-clear" (click)="searchQuery.set('')">
+      <lucide-angular [img]="xIcon" [size]="14"></lucide-angular>
+    </button>
+  }
+</div>
+
+<!-- Tab filters -->
+<app-tab-bar
+  [tabs]="tabItems"
+  [activeTab]="activeTab()"
+  (tabChange)="setTab($any($event))">
+</app-tab-bar>
+
+<!-- Loading state -->
+@if (loading()) {
+  <div class="claims-list">
+    @for (i of [1, 2, 3]; track i) {
+      <div class="claim-card skeleton-card">
+        <div class="skeleton skeleton--rect" style="width: 40px; height: 40px; border-radius: 8px;"></div>
+        <div class="skeleton-content">
+          <div class="skeleton skeleton--text" style="width: 60%; height: 16px;"></div>
+          <div class="skeleton skeleton--text" style="width: 40%; height: 14px; margin-top: 8px;"></div>
+          <div class="skeleton skeleton--text" style="width: 90%; height: 14px; margin-top: 12px;"></div>
+        </div>
+      </div>
+    }
+  </div>
+} @else if (filteredClaims().length === 0) {
+  <div class="empty-state">
+    <lucide-angular [img]="shieldIcon" [size]="48" class="empty-icon"></lucide-angular>
+    <h3 class="empty-title">
+      @if (searchQuery()) {
+        Nenhuma reclamação encontrada
+      } @else if (activeTab() === 'opened') {
+        Nenhuma reclamação aberta
+      } @else if (activeTab() === 'closed') {
+        Nenhuma reclamação fechada
+      } @else {
+        Nenhuma reclamação encontrada
+      }
+    </h3>
+    <p class="empty-description">
+      @if (searchQuery()) {
+        Tente buscar com outros termos.
+      } @else if (activeTab() === 'opened') {
+        Ótimo! Nenhuma reclamação pendente.
+      } @else {
+        As reclamações dos compradores aparecerão aqui.
+      }
+    </p>
+  </div>
+} @else {
+  <div class="claims-layout">
+    <!-- Claims list -->
+    <div class="claims-list">
+      @for (claim of filteredClaims(); track claim.id) {
+        <div
+          class="claim-card"
+          [class.opened]="claim.status === 'opened'"
+          [class.selected]="selectedClaim()?.id === claim.id"
+          (click)="openDetail(claim)">
+          <div class="claim-header">
+            <div class="claim-info">
+              <div class="claim-icon">
+                <lucide-angular [img]="alertIcon" [size]="20"></lucide-angular>
+              </div>
+              <div>
+                <span class="claim-title">{{ claim.productName || claim.externalId }}</span>
+                <span class="claim-type">{{ getTypeLabel(claim.type) }}</span>
+              </div>
+            </div>
+            <div class="claim-meta">
+              <span class="time-indicator">
+                <lucide-angular [img]="clockIcon" [size]="14"></lucide-angular>
+                {{ claim.createdAt | relativeDate }}
+              </span>
+              <app-badge
+                [label]="getStatusLabel(claim.status)"
+                [variant]="getStatusVariant(claim.status)"
+              ></app-badge>
+            </div>
+          </div>
+
+          <div class="claim-body">
+            @if (claim.buyerName) {
+              <span class="buyer-nickname">{{ claim.buyerName }}</span>
+            }
+            <p class="claim-reason">{{ claim.reason }}</p>
+            <div class="claim-details-row">
+              @if (claim.quantity > 0) {
+                <span class="detail-tag">{{ claim.quantity }} un.</span>
+              }
+              @if (claim.amount != null) {
+                <span class="detail-tag amount">{{ formatAmount(claim.amount) }}</span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Detail panel -->
+    @if (selectedClaim(); as detail) {
+      <div class="claim-detail-panel">
+        <div class="detail-header">
+          <h3 class="detail-title">Detalhes da Reclamação</h3>
+          <button class="detail-close" (click)="closeDetail()">
+            <lucide-angular [img]="xIcon" [size]="18"></lucide-angular>
+          </button>
+        </div>
+
+        <div class="detail-content">
+          <div class="detail-section">
+            <div class="detail-row">
+              <span class="detail-label">ID</span>
+              <span class="detail-value mono">{{ detail.externalId }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Tipo</span>
+              <span class="detail-value">{{ getTypeLabel(detail.type) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status</span>
+              <app-badge [label]="getStatusLabel(detail.status)" [variant]="getStatusVariant(detail.status)"></app-badge>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Motivo</span>
+              <span class="detail-value">{{ detail.reason }}</span>
+            </div>
+            @if (detail.resolution) {
+              <div class="detail-row">
+                <span class="detail-label">Resolução</span>
+                <span class="detail-value">{{ detail.resolution }}</span>
+              </div>
+            }
+          </div>
+
+          @if (detail.buyerName || detail.productName) {
+            <div class="detail-section">
+              <h4 class="section-title">Contexto</h4>
+              @if (detail.buyerName) {
+                <div class="detail-row">
+                  <span class="detail-label">Comprador</span>
+                  <span class="detail-value">{{ detail.buyerName }}</span>
+                </div>
+              }
+              @if (detail.productName) {
+                <div class="detail-row">
+                  <span class="detail-label">Produto</span>
+                  <span class="detail-value">{{ detail.productName }}</span>
+                </div>
+              }
+              @if (detail.externalOrderId) {
+                <div class="detail-row">
+                  <span class="detail-label">Pedido</span>
+                  <span class="detail-value mono">
+                    @if (detail.orderId) {
+                      <a [routerLink]="['/vendas', detail.orderId]" class="order-link">
+                        #{{ detail.externalOrderId }}
+                      </a>
+                    } @else {
+                      #{{ detail.externalOrderId }}
+                    }
+                  </span>
+                </div>
+              }
+              @if (detail.amount != null) {
+                <div class="detail-row">
+                  <span class="detail-label">Valor</span>
+                  <span class="detail-value mono">{{ formatAmount(detail.amount) }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Timeline -->
+          <div class="detail-section">
+            <h4 class="section-title">Timeline</h4>
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-dot opened"></div>
+                <div class="timeline-content">
+                  <span class="timeline-label">Aberta</span>
+                  <span class="timeline-date">{{ detail.createdAt | relativeDate }}</span>
+                </div>
+              </div>
+              @if (detail.resolvedAt) {
+                <div class="timeline-item">
+                  <div class="timeline-dot closed"></div>
+                  <div class="timeline-content">
+                    <span class="timeline-label">Fechada</span>
+                    <span class="timeline-date">{{ detail.resolvedAt | relativeDate }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Buyer comment -->
+          @if (detail.buyerComment) {
+            <div class="detail-section">
+              <h4 class="section-title">Comentário do Comprador</h4>
+              <p class="comment-text">{{ detail.buyerComment }}</p>
+            </div>
+          }
+
+          <!-- Seller comment -->
+          @if (detail.sellerComment) {
+            <div class="detail-section seller-comment">
+              <h4 class="section-title">Sua Resposta</h4>
+              <p class="comment-text">{{ detail.sellerComment }}</p>
+            </div>
+          }
+
+          <!-- Respond form -->
+          @if (detail.status === 'opened') {
+            @if (respondingTo() === detail.id) {
+              <div class="respond-form">
+                <textarea
+                  class="respond-textarea"
+                  placeholder="Digite sua resposta..."
+                  [ngModel]="responseText()"
+                  (ngModelChange)="responseText.set($event)"
+                  rows="3"
+                  [disabled]="submitting()"
+                ></textarea>
+                <div class="respond-actions">
+                  <app-button variant="ghost" (click)="cancelRespond()" [disabled]="submitting()">Cancelar</app-button>
+                  <app-button
+                    variant="accent"
+                    [icon]="sendIcon"
+                    [disabled]="!responseText().trim() || submitting()"
+                    (click)="submitResponse()">
+                    {{ submitting() ? 'Enviando...' : 'Enviar' }}
+                  </app-button>
+                </div>
+              </div>
+            } @else {
+              <div class="respond-trigger">
+                <app-button variant="outline" [icon]="sendIcon" (click)="startRespond(detail.id)">
+                  Responder
+                </app-button>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    } @else if (loadingDetail()) {
+      <div class="claim-detail-panel">
+        <div class="skeleton-detail">
+          <div class="skeleton skeleton--text" style="width: 60%; height: 20px;"></div>
+          <div class="skeleton skeleton--text" style="width: 100%; height: 14px; margin-top: 16px;"></div>
+          <div class="skeleton skeleton--text" style="width: 80%; height: 14px; margin-top: 8px;"></div>
+          <div class="skeleton skeleton--text" style="width: 70%; height: 14px; margin-top: 8px;"></div>
+        </div>
+      </div>
+    }
+  </div>
+}

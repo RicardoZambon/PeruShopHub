@@ -19,6 +19,7 @@ import {
   ClipboardList,
   Shield,
   Calculator,
+  AlertTriangle,
 } from 'lucide-angular';
 import { SidebarService } from '../../../services/sidebar.service';
 import { AuthService } from '../../../services/auth.service';
@@ -58,6 +59,7 @@ export class SidebarComponent {
 
     { label: 'Vendas', route: '/vendas', icon: ShoppingCart, group: 'COMERCIAL', badgeKey: 'unreadMessages' },
     { label: 'Perguntas', route: '/perguntas', icon: MessageCircle, group: 'COMERCIAL', badgeKey: 'unansweredQuestions' },
+    { label: 'Reclamações', route: '/reclamacoes', icon: AlertTriangle, group: 'COMERCIAL', badgeKey: 'openClaims' },
     { label: 'Anúncios', route: '/anuncios', icon: Megaphone, group: 'COMERCIAL' },
     { label: 'Clientes', route: '/clientes', icon: Users, group: 'COMERCIAL' },
 
@@ -101,6 +103,9 @@ export class SidebarComponent {
     }
     if (item.badgeKey === 'unreadMessages') {
       return this.badges.unreadMessages();
+    }
+    if (item.badgeKey === 'openClaims') {
+      return this.badges.openClaims();
     }
     return 0;
   }

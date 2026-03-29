@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IMarketplaceQuestionService, MarketplaceQuestionService>();
         services.AddScoped<IResponseTemplateService, ResponseTemplateService>();
         services.AddScoped<IMarketplaceMessageService, MarketplaceMessageService>();
+        services.AddScoped<IClaimService, ClaimService>();
 
         return services;
     }
