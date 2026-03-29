@@ -549,6 +549,12 @@ namespace PeruShopHub.Infrastructure.Migrations
                     b.Property<string>("ExternalShippingId")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("BillingFetchedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("BillingRetryCount")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("FulfilledAt")
                         .HasColumnType("timestamp with time zone");
 

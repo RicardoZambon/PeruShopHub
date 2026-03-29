@@ -29,6 +29,8 @@ public class Order : ITenantScoped
     public Guid? CustomerId { get; set; }
     public bool IsFulfilled { get; set; }
     public DateTime? FulfilledAt { get; set; }
+    public DateTime? BillingFetchedAt { get; set; }
+    public int BillingRetryCount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public Customer? Customer { get; set; }
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

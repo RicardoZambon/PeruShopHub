@@ -76,6 +76,7 @@ builder.Services.AddHostedService<AlertWorker>();
 builder.Services.AddHostedService<TokenRenewalWorker>();
 builder.Services.AddHostedService<ProductSyncWorker>();
 builder.Services.AddHostedService<WebhookProcessingWorker>();
+builder.Services.AddHostedService<BillingReconciliationWorker>();
 
 var host = builder.Build();
 host.Run();

@@ -1366,3 +1366,33 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - FindConnectionAsync pattern can be shared across all topic handlers — extracted to helper method
   - ExtractIdFromResource works for all ML webhook resources: /orders/{id}, /items/{id}, /shipments/{id}, /collections/{id}
 ---
+
+## 2026-03-29 - US-050
+- Implemented Billing API Integration for real cost tracking from Mercado Livre
+- Updated MercadoLivreAdapter with real billing endpoint: GET /billing/integration/group/ML/order/details?order_id=
+- Added MlBillingOrderDetailsResponse/MlBillingOrderDetail DTOs for the billing integration API
+- GetOrderFeesAsync now tries real billing API first, falls back to /orders/{id}/billing_info
+- Added BillingFetchedAt and BillingRetryCount fields to Order entity for retry tracking
+- Created BillingReconciliationWorker: checks orders missing billing data (up to 7 days old) with retry schedule (1h, 6h, 24h)
+- WebhookProcessingWorker now tracks billing fetch status on order creation
+- Frontend cost breakdown badge now shows "Fonte: API" / "Fonte: Calculado" / "Fonte: Manual"
+- Fixed CostSource type to accept both "Calculated" (backend) and "Calculado" (legacy)
+- EF migration 20260329010000_AddBillingTrackingToOrder added for new Order fields
+- Files changed:
+  - src/PeruShopHub.Core/Entities/Order.cs
+  - src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreAdapter.cs
+  - src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreModels.cs
+  - src/PeruShopHub.Infrastructure/Migrations/20260329010000_AddBillingTrackingToOrder.cs
+  - src/PeruShopHub.Infrastructure/Migrations/PeruShopHubDbContextModelSnapshot.cs
+  - src/PeruShopHub.Worker/Workers/BillingReconciliationWorker.cs (new)
+  - src/PeruShopHub.Worker/Workers/WebhookProcessingWorker.cs
+  - src/PeruShopHub.Worker/Program.cs
+  - src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.ts
+  - src/PeruShopHub.Web/src/app/pages/sales/sale-detail.component.html
+- **Learnings for future iterations:**
+  - ML Billing Integration API endpoint: /billing/integration/group/ML/order/details?order_id= — different from /orders/{id}/billing_info
+  - Existing workers don't explicitly set access tokens on adapters — the adapter just works via DI
+  - Backend stores Source="Calculated" but frontend historically used "Calculado" — handle both
+  - BillingReconciliationWorker uses RetryDelays array indexed by BillingRetryCount for progressive retry
+  - Model snapshot must be updated manually when creating migrations by hand
+---

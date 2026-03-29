@@ -188,9 +188,11 @@ public class WebhookProcessingWorker : BackgroundService
 
         // Try to fetch fees (may fail for some order states)
         IReadOnlyList<MarketplaceFee> fees = [];
+        bool billingFetched = false;
         try
         {
             fees = await adapter.GetOrderFeesAsync(orderId, ct);
+            billingFetched = fees.Count > 0;
         }
         catch (Exception ex)
         {
@@ -236,6 +238,13 @@ public class WebhookProcessingWorker : BackgroundService
 
         // Merge API-sourced fee costs (override calculated ones for the same category)
         await MergeApiFeeCostsAsync(db, mapper, order, fees, tenantId, ct);
+
+        // Track billing fetch status
+        if (billingFetched)
+        {
+            order.BillingFetchedAt = DateTime.UtcNow;
+        }
+        order.BillingRetryCount = billingFetched ? 0 : 1;
 
         // Recalculate profit
         var totalCosts = await db.OrderCosts

@@ -153,7 +153,7 @@
                   <td class="col-value mono">{{ formatBrl(cost.value) }}</td>
                   <td class="col-pct mono">{{ costPct(cost.value).toFixed(1) }}%</td>
                   <td class="col-source">
-                    <app-badge [label]="cost.source" [variant]="getSourceVariant(cost.source)"></app-badge>
+                    <app-badge [label]="getSourceLabel(cost.source)" [variant]="getSourceVariant(cost.source)"></app-badge>
                   </td>
                   <td class="col-actions">
                     @if (isManualCost(cost) && !isLocked()) {

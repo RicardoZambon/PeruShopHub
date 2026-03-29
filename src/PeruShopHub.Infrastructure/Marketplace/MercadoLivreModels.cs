@@ -294,6 +294,29 @@ public class MlBillingDetail
     public string CurrencyId { get; set; } = string.Empty;
 }
 
+// ── ML Billing Integration API (real charges) ───────────────
+
+public class MlBillingOrderDetailsResponse
+{
+    [JsonPropertyName("results")]
+    public List<MlBillingOrderDetail> Results { get; set; } = [];
+}
+
+public class MlBillingOrderDetail
+{
+    [JsonPropertyName("detail_id")]
+    public string DetailId { get; set; } = string.Empty;
+
+    [JsonPropertyName("fee_type")]
+    public string FeeType { get; set; } = string.Empty;
+
+    [JsonPropertyName("fee_amount")]
+    public decimal FeeAmount { get; set; }
+
+    [JsonPropertyName("currency_id")]
+    public string CurrencyId { get; set; } = "BRL";
+}
+
 // ── ML Item search (scroll) response ───────────────────────
 
 public class MlItemSearchResponse

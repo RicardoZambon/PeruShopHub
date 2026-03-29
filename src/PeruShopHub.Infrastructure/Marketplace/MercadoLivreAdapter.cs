@@ -208,12 +208,37 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
 
     public async Task<IReadOnlyList<MarketplaceFee>> GetOrderFeesAsync(string orderId, CancellationToken ct = default)
     {
+        // Try real Billing Integration API first (actual charges)
+        try
+        {
+            var fees = await GetBillingOrderDetailsAsync(orderId, ct);
+            if (fees.Count > 0) return fees;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Billing integration API unavailable for order {OrderId}, falling back to billing_info", orderId);
+        }
+
+        // Fallback to /orders/{id}/billing_info
         var billing = await SendAsync<MlBillingInfoResponse>(
             HttpMethod.Get, $"/orders/{orderId}/billing_info", null, ct);
 
         return billing.Detail.Select(d => new MarketplaceFee(
             d.Type,
             d.Amount,
+            d.CurrencyId)).ToList();
+    }
+
+    public async Task<IReadOnlyList<MarketplaceFee>> GetBillingOrderDetailsAsync(string orderId, CancellationToken ct = default)
+    {
+        var response = await SendAsync<MlBillingOrderDetailsResponse>(
+            HttpMethod.Get,
+            $"/billing/integration/group/ML/order/details?order_id={Uri.EscapeDataString(orderId)}",
+            null, ct);
+
+        return response.Results.Select(d => new MarketplaceFee(
+            d.FeeType,
+            d.FeeAmount,
             d.CurrencyId)).ToList();
     }
 

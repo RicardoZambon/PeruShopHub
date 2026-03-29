@@ -23,7 +23,7 @@ import { formatBrl as formatBrlUtil, formatDate as formatDateUtil } from '../../
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
 type LogisticType = 'Full' | 'Coleta' | 'Agência';
-type CostSource = 'API' | 'Manual' | 'Calculado';
+type CostSource = 'API' | 'Manual' | 'Calculated' | 'Calculado';
 
 interface OrderItem {
   id?: string;
@@ -516,12 +516,15 @@ export class SaleDetailComponent implements OnInit, OnDestroy {
   }
 
   getSourceVariant(source: CostSource): BadgeVariant {
-    const map: Record<CostSource, BadgeVariant> = {
-      'API': 'primary',
-      'Manual': 'accent',
-      'Calculado': 'success',
-    };
-    return map[source];
+    if (source === 'API') return 'primary';
+    if (source === 'Manual') return 'accent';
+    return 'success'; // Calculated / Calculado
+  }
+
+  getSourceLabel(source: CostSource): string {
+    if (source === 'API') return 'Fonte: API';
+    if (source === 'Manual') return 'Fonte: Manual';
+    return 'Fonte: Calculado';
   }
 
   costPct(value: number): number {
