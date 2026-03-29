@@ -1515,3 +1515,34 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - `Product.Variants` must be `.Include()`d when loading product for stock reconciliation
   - `StockAllocation` available = `AllocatedQuantity - ReservedQuantity` (reserved = committed to orders)
 ---
+
+## 2026-03-29 - US-055
+- Implemented StockReconciliationWorker as BackgroundService in Worker project
+  - Runs every 6 hours (configurable via Workers:StockReconciliation:IntervalHours)
+  - Auto-correct threshold configurable via Workers:StockReconciliation:AutoCorrectThreshold (default: 2)
+  - For each tenant with active ML connection: runs full reconciliation
+  - Sends notification for reports with manual review items
+- Fixed pre-existing build errors in StockReconciliationService.cs:
+  - Added missing `using PeruShopHub.Application.Exceptions` for NotFoundException
+  - Fixed PagedResult constructor to use init properties pattern
+- Added API endpoints: GET /api/inventory/reconciliation-reports (list) and GET /api/inventory/reconciliation-reports/{id} (detail)
+- Registered IStockReconciliationService in DependencyInjection.cs (API) and Worker Program.cs
+- Frontend: Added "Reconciliação ML" tab to inventory page with reports list + detail views
+  - Date range filter, paginated list with load more
+  - Detail view shows summary cards + item-level comparison table
+  - Status/resolution badges with proper color coding
+- Files changed:
+  - src/PeruShopHub.Worker/Workers/StockReconciliationWorker.cs (new)
+  - src/PeruShopHub.Worker/Program.cs
+  - src/PeruShopHub.Application/DependencyInjection.cs
+  - src/PeruShopHub.Application/Services/StockReconciliationService.cs (fix)
+  - src/PeruShopHub.API/Controllers/InventoryController.cs
+  - src/PeruShopHub.Web/src/app/services/inventory.service.ts
+  - src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.ts
+  - src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.html
+  - src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.scss
+- **Learnings for future iterations:**
+  - PagedResult<T> uses init properties, not a positional constructor — use object initializer syntax
+  - INotificationDispatcher.DispatchAsync takes a Notification entity, not individual params
+  - StockReconciliationService was already written but had two build errors (missing using + wrong PagedResult constructor) — always build before committing
+---
