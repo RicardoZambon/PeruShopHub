@@ -34,3 +34,4 @@ export { PageSkeletonComponent } from './page-skeleton/page-skeleton.component';
 export { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 export { ConfirmDialogService } from './confirm-dialog/confirm-dialog.service';
 export type { ConfirmOptions } from './confirm-dialog/confirm-dialog.service';
+export { ContextualTooltipComponent } from './contextual-tooltip/contextual-tooltip.component';

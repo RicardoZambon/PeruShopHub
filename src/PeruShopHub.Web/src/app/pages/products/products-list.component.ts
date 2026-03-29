@@ -25,6 +25,7 @@ import { CategoryService } from '../../services/category.service';
 import { SettingsService, type ImportJobStatus } from '../../services/settings.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
+import { ContextualTooltipComponent } from '../../shared/components/contextual-tooltip/contextual-tooltip.component';
 import type { Category } from '../../models/category.model';
 import { firstValueFrom } from 'rxjs';
 type ProductStatus = 'Ativo' | 'Pausado' | 'Encerrado';
@@ -33,7 +34,7 @@ type FilterStatus = 'Todos' | ProductStatus | 'Revisão';
 @Component({
   selector: 'app-products-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, MarginBadgeComponent, DialogComponent, ButtonComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, DataGridComponent, GridCellDirective, GridCardDirective, BadgeComponent, EmptyStateComponent, PageHeaderComponent, SearchInputComponent, SelectDropdownComponent, MarginBadgeComponent, DialogComponent, ButtonComponent, ContextualTooltipComponent],
   templateUrl: './products-list.component.html',
   styleUrl: './products-list.component.scss',
 })

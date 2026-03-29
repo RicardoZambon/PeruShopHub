@@ -1,13 +1,14 @@
 import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, Plugin } from 'chart.js';
 import { forkJoin } from 'rxjs';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent } from '../../shared/components';
+import { PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent, ContextualTooltipComponent } from '../../shared/components';
 import { DashboardService } from '../../services/dashboard.service';
+import { OnboardingService, type OnboardingProgress } from '../../services/onboarding.service';
 import type { KpiCard, ProductRanking, PendingAction, ChartDataPoint, CostBreakdownItem } from '../../models/api.models';
 import { formatBrl as formatBrlUtil } from '../../shared/utils';
 
@@ -42,12 +43,13 @@ const PERIOD_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent, BaseChartDirective, EmptyStateComponent, PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent],
+  imports: [CommonModule, RouterLink, KpiCardComponent, BaseChartDirective, EmptyStateComponent, PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent, ContextualTooltipComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
+  private readonly onboardingService = inject(OnboardingService);
   private readonly router = inject(Router);
 
   activePeriod = signal<Period>('30dias');
@@ -245,14 +247,47 @@ export class DashboardComponent implements OnInit {
     },
   };
 
+  // Onboarding checklist
+  onboardingProgress = signal<OnboardingProgress | null>(null);
+  showChecklist = signal(false);
+
   // Top products and pending actions
   hasData = signal(true);
   topProfitable = signal<ProductRanking[]>([]);
   leastProfitable = signal<ProductRanking[]>([]);
   pendingActions = signal<PendingAction[]>([]);
 
+  readonly stepRoutes: Record<string, string> = {
+    profile: '/configuracoes',
+    connect_ml: '/configuracoes',
+    import_products: '/produtos',
+    set_costs: '/configuracoes',
+    view_profitability: '/financeiro',
+  };
+
+  readonly stepLabels: Record<string, string> = {
+    profile: 'Completar perfil',
+    connect_ml: 'Conectar Mercado Livre',
+    import_products: 'Importar produtos',
+    set_costs: 'Configurar custos',
+    view_profitability: 'Ver lucratividade',
+  };
+
   ngOnInit(): void {
     this.loadData();
+    this.loadOnboarding();
+  }
+
+  private loadOnboarding(): void {
+    this.onboardingService.getProgress().subscribe({
+      next: (progress) => {
+        this.onboardingProgress.set(progress);
+        this.showChecklist.set(!progress.isCompleted);
+      },
+      error: () => {
+        this.showChecklist.set(false);
+      },
+    });
   }
 
   selectPeriod(period: Period): void {

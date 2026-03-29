@@ -13,6 +13,7 @@ import { FormFieldComponent } from '../../shared/components/form-field/form-fiel
 import { FormActionsComponent } from '../../shared/components/form-actions/form-actions.component';
 import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/toggle-switch.component';
 import { ThemeService } from '../../services/theme.service';
+import { TooltipService } from '../../services/tooltip.service';
 import type { ThemePreference } from '../../services/theme.service';
 import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule, type ReportSchedule, type AlertRule, type NotificationPreference } from '../../services/settings.service';
 import { TenantService, type TenantMember } from '../../services/tenant.service';
@@ -40,6 +41,7 @@ export class SettingsComponent implements OnInit {
   private readonly tenantService = inject(TenantService);
   private readonly toastService = inject(ToastService);
   private readonly confirmDialog = inject(ConfirmDialogService);
+  private readonly tooltipService = inject(TooltipService);
   private readonly router = inject(Router);
 
   readonly pencilIcon = Pencil;
@@ -762,6 +764,11 @@ export class SettingsComponent implements OnInit {
   // Appearance
   selectTheme(theme: ThemePreference): void {
     this.themeService.setTheme(theme);
+  }
+
+  resetTooltips(): void {
+    this.tooltipService.resetAll();
+    this.toastService.show('Dicas contextuais foram reativadas', 'success');
   }
 
   private loadUsers(): void {

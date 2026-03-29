@@ -13,6 +13,7 @@ import { ButtonComponent } from '../../shared/components/button/button.component
 import { TabPanelsComponent, TabPanelDirective } from '../../shared/components/tab-panels/tab-panels.component';
 import type { TabItem } from '../../shared/components/tab-bar/tab-bar.component';
 import { MarginBadgeComponent } from '../../shared/components/margin-badge/margin-badge.component';
+import { ContextualTooltipComponent } from '../../shared/components/contextual-tooltip/contextual-tooltip.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ToastService } from '../../services/toast.service';
 import { FinanceService } from '../../services/finance.service';
@@ -42,7 +43,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-finance',
   standalone: true,
-  imports: [CommonModule, FormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, PageHeaderComponent, ButtonComponent, TabPanelsComponent, TabPanelDirective, MarginBadgeComponent, BaseChartDirective],
+  imports: [CommonModule, FormsModule, KpiCardComponent, SkeletonComponent, BadgeComponent, PageHeaderComponent, ButtonComponent, TabPanelsComponent, TabPanelDirective, MarginBadgeComponent, BaseChartDirective, ContextualTooltipComponent],
   templateUrl: './finance.component.html',
   styleUrl: './finance.component.scss',
 })

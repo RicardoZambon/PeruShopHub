@@ -855,6 +855,26 @@
   }
 }
 
+.tips-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+
+  &__label {
+    font-size: var(--body-size);
+    font-weight: 600;
+    color: var(--neutral-700);
+    margin: 0;
+  }
+
+  &__description {
+    font-size: var(--body-small-size);
+    color: var(--neutral-500);
+    margin: 0;
+  }
+}
+
 .settings__empty-state {
   text-align: center;
   padding: var(--space-6) var(--space-4);

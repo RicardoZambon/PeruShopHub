@@ -6,6 +6,11 @@
   </div>
 </div>
 
+<app-contextual-tooltip
+  tooltipId="finance-costs"
+  message="Aqui você vê a decomposição completa de custos por venda: comissão, frete, impostos, embalagem e mais. Configure seus custos fixos em Configurações para cálculos precisos.">
+</app-contextual-tooltip>
+
 <!-- Sub-navigation tabs -->
 <app-tab-panels [tabs]="tabItems" [activeTab]="activeTab()" (activeTabChange)="activeTab.set($any($event))" [lazy]="true">
   <ng-template appTabPanel="resumo">

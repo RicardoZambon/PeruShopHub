@@ -1,0 +1,57 @@
+.contextual-tooltip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--info-bg, rgba(33, 150, 243, 0.08));
+  border: 1px solid var(--info-border, rgba(33, 150, 243, 0.2));
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  animation: tooltipSlideIn 0.3s ease-out;
+
+  &__icon {
+    flex-shrink: 0;
+    color: var(--info, #1976D2);
+    margin-top: 1px;
+  }
+
+  &__message {
+    flex: 1;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  &__dismiss {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      background: var(--neutral-100);
+      color: var(--text-secondary);
+    }
+  }
+}
+
+@keyframes tooltipSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
