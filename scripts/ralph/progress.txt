@@ -72,6 +72,7 @@ Started: Fri Mar 28 2026
 - **ProductVariantDto dual mapping**: `ProductVariantDto` is mapped in TWO places in `ProductService` — `GetVariantsAsync` (LINQ Select) AND `MapToVariantDto` helper. When adding new fields to ProductVariant, update BOTH.
 - **Worker DI for webhook processing**: Worker needs `IConnectionMultiplexer` (Redis RPOP), `IWebhookQueueService`, `ICostCalculationService`, and `INotificationDispatcher` (use `DbOnlyNotificationDispatcher` — no SignalR in Worker)
 - **Webhook queue pattern**: LPUSH to enqueue (WebhooksController), RPOP to dequeue (WebhookProcessingWorker) — FIFO ordering. Dead letter: `ml:webhooks:dead`
+- **ML Questions API**: Search via `GET /my/received_questions/search?status=X`, single question via `GET /questions/{id}`, answer via `POST /answers` with `{question_id, text}`
 
 ---
 
@@ -1840,4 +1841,29 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Angular anyComponentStyle budget of 20KB is too tight for complex pages — 30KB is more realistic
   - Integration tests require Docker — they will fail in environments without Docker daemon
   - All Phase 3 webhook/sync patterns follow the same Redis queue → worker → adapter pattern consistently
+---
+
+## 2026-03-29 - US-066
+- Implemented Questions API Integration for Mercado Livre
+- New entity `MarketplaceQuestion` with migration `AddMarketplaceQuestions` (marketplace_questions table)
+- Added ML API models: `MlQuestionSearchResponse`, `MlQuestionResponse`, `MlQuestionAnswer`, `MlQuestionFrom`
+- Extended `IMarketplaceAdapter` with `SearchQuestionsAsync`, `GetQuestionAsync`, `PostAnswerAsync`
+- Implemented adapter methods in `MercadoLivreAdapter` using ML endpoints:
+  - `GET /my/received_questions/search` for searching
+  - `GET /questions/{id}` for single question
+  - `POST /answers` for posting answers
+- Created `IMarketplaceQuestionService` + `MarketplaceQuestionService` with:
+  - `GetListAsync` — paginated list with status/productId filters
+  - `AnswerAsync` — posts answer to ML API and updates local state
+  - `SyncQuestionsAsync` — full sync for a tenant (unanswered + answered)
+  - `SyncSingleQuestionAsync` — webhook-triggered single question sync
+- `QuestionsController`: `GET /api/questions` (with filters) + `POST /api/questions/{id}/answer`
+- Added "questions" topic to `WebhookProcessingWorker` Topics array and switch/case
+- Created `QuestionSyncWorker` — 5-minute periodic sync across all tenants
+- Registered services in `DependencyInjection.cs` and Worker `Program.cs`
+- Files changed: 17 files (10 new, 7 modified)
+- **Learnings for future iterations:**
+  - ML Questions API: `GET /my/received_questions/search?status=UNANSWERED` for searching, `POST /answers` with `question_id` + `text` body for answering
+  - Questions link to products via MarketplaceListing ExternalId lookup (same pattern as OrderItems)
+  - Webhook resource format for questions: `/questions/{id}` — same ExtractIdFromResource helper works
 ---
