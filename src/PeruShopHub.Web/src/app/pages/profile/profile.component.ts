@@ -1,7 +1,7 @@
 import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { LucideAngularModule, Camera, Trash2, User, Mail, Lock, Users, Shield, Download } from 'lucide-angular';
+import { LucideAngularModule, Camera, Trash2, User, Mail, Lock, Users, Shield, Download, AlertTriangle, X } from 'lucide-angular';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
@@ -10,7 +10,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import type { BadgeVariant } from '../../shared/components/badge/badge.component';
 import { DialogComponent } from '../../shared/components/dialog/dialog.component';
 import { ConfirmDialogService } from '../../shared/components';
-import { ProfileService, type Profile, type UserDataExport } from '../../services/profile.service';
+import { ProfileService, type Profile, type UserDataExport, type AccountDeletion } from '../../services/profile.service';
 import { TenantService, type TenantMember } from '../../services/tenant.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
@@ -51,6 +51,8 @@ export class ProfileComponent implements OnInit {
   readonly usersIcon = Users;
   readonly shieldIcon = Shield;
   readonly downloadIcon = Download;
+  readonly alertIcon = AlertTriangle;
+  readonly xIcon = X;
 
   // State
   readonly activeTab = signal<ProfileTab>('perfil');
@@ -76,6 +78,14 @@ export class ProfileComponent implements OnInit {
   readonly isOwnerOrAdmin = signal(false);
   readonly exportingData = signal(false);
   readonly dataExport = signal<UserDataExport | null>(null);
+
+  // Account Deletion
+  readonly showDeleteModal = signal(false);
+  readonly deletionStep = signal<1 | 2>(1);
+  readonly deletingAccount = signal(false);
+  readonly cancellingDeletion = signal(false);
+  readonly pendingDeletion = signal<AccountDeletion | null>(null);
+  deleteForm!: FormGroup;
 
   ngOnInit(): void {
     const role = this.auth.tenantRole();
@@ -103,7 +113,13 @@ export class ProfileComponent implements OnInit {
       role: ['Viewer', Validators.required],
     });
 
+    this.deleteForm = this.fb.group({
+      password: ['', Validators.required],
+      confirmPhrase: ['', Validators.required],
+    });
+
     this.loadProfile();
+    this.loadDeletionStatus();
   }
 
   loadProfile(): void {
@@ -365,6 +381,72 @@ export class ProfileComponent implements OnInit {
       },
       error: () => {
         this.toast.show('Erro ao baixar dados. O link pode ter expirado.', 'danger');
+      },
+    });
+  }
+
+  // Account Deletion
+  loadDeletionStatus(): void {
+    this.profileService.getDeletionStatus().subscribe({
+      next: (d) => this.pendingDeletion.set(d),
+      error: () => {},
+    });
+  }
+
+  openDeleteModal(): void {
+    this.deleteForm.reset();
+    this.deletionStep.set(1);
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal.set(false);
+  }
+
+  nextDeleteStep(): void {
+    this.deletionStep.set(2);
+  }
+
+  submitAccountDeletion(): void {
+    if (this.deleteForm.invalid) {
+      this.deleteForm.markAllAsTouched();
+      return;
+    }
+    const { password, confirmPhrase } = this.deleteForm.value;
+    this.deletingAccount.set(true);
+    this.profileService.requestAccountDeletion(password, confirmPhrase).subscribe({
+      next: (d) => {
+        this.pendingDeletion.set(d);
+        this.closeDeleteModal();
+        this.toast.show('Solicitação de exclusão registrada. Sua conta será excluída em 30 dias.', 'warning');
+        this.deletingAccount.set(false);
+      },
+      error: () => {
+        this.toast.show('Erro ao solicitar exclusão. Verifique os dados informados.', 'danger');
+        this.deletingAccount.set(false);
+      },
+    });
+  }
+
+  async cancelDeletion(): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Cancelar exclusão',
+      message: 'Deseja cancelar a solicitação de exclusão da conta? Sua conta será reativada.',
+      confirmLabel: 'Sim, cancelar exclusão',
+      variant: 'primary',
+    });
+    if (!confirmed) return;
+
+    this.cancellingDeletion.set(true);
+    this.profileService.cancelAccountDeletion().subscribe({
+      next: () => {
+        this.pendingDeletion.set(null);
+        this.toast.show('Exclusão cancelada. Sua conta foi reativada.', 'success');
+        this.cancellingDeletion.set(false);
+      },
+      error: () => {
+        this.toast.show('Erro ao cancelar exclusão.', 'danger');
+        this.cancellingDeletion.set(false);
       },
     });
   }

@@ -18,3 +18,12 @@ public record UserDataExportDto(
     DateTime CreatedAt,
     DateTime? CompletedAt,
     DateTime? ExpiresAt);
+
+public record DeleteAccountRequest(string Password, string ConfirmPhrase);
+
+public record AccountDeletionDto(
+    Guid Id,
+    string Status,
+    DateTime CreatedAt,
+    DateTime ScheduledDeletionAt,
+    DateTime? CancelledAt);

@@ -20,6 +20,14 @@ export interface UserDataExport {
   expiresAt: string | null;
 }
 
+export interface AccountDeletion {
+  id: string;
+  status: string;
+  createdAt: string;
+  scheduledDeletionAt: string;
+  cancelledAt: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
   private readonly http = inject(HttpClient);
@@ -63,5 +71,17 @@ export class ProfileService {
     return this.http.get(`${this.baseUrl}/export-data/${id}/download`, {
       responseType: 'blob',
     });
+  }
+
+  requestAccountDeletion(password: string, confirmPhrase: string): Observable<AccountDeletion> {
+    return this.http.post<AccountDeletion>(`${this.baseUrl}/delete-account`, { password, confirmPhrase });
+  }
+
+  cancelAccountDeletion(): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/cancel-deletion`, {});
+  }
+
+  getDeletionStatus(): Observable<AccountDeletion | null> {
+    return this.http.get<AccountDeletion | null>(`${this.baseUrl}/deletion-status`);
   }
 }

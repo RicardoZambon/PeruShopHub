@@ -190,6 +190,41 @@
         }
       </div>
     </section>
+
+    <!-- Account Deletion Section (LGPD) -->
+    <section class="profile-section profile-section--danger">
+      <h3 class="profile-section__title profile-section__title--danger">
+        <lucide-icon [img]="alertIcon" [size]="18" />
+        Excluir minha conta
+      </h3>
+      @if (pendingDeletion()) {
+        <div class="deletion-pending">
+          <div class="deletion-pending__info">
+            <p class="deletion-pending__text">
+              Sua conta está agendada para exclusão em
+              <strong>{{ pendingDeletion()!.scheduledDeletionAt | date:'dd/MM/yyyy' }}</strong>.
+              Após essa data, todos os seus dados serão permanentemente removidos.
+            </p>
+            <p class="deletion-pending__hint">
+              Você pode cancelar a exclusão a qualquer momento antes dessa data.
+            </p>
+          </div>
+          <app-button variant="accent" (clicked)="cancelDeletion()" [disabled]="cancellingDeletion()">
+            {{ cancellingDeletion() ? 'Cancelando...' : 'Cancelar exclusão' }}
+          </app-button>
+        </div>
+      } @else {
+        <p class="profile-section__desc">
+          Ao excluir sua conta, seus dados pessoais serão anonimizados após um período de 30 dias.
+          Durante esse período, você pode cancelar a exclusão e recuperar sua conta.
+          Esta ação é irreversível após o prazo de 30 dias.
+        </p>
+        <app-button variant="danger" (clicked)="openDeleteModal()">
+          <lucide-icon [img]="trashIcon" [size]="14" />
+          Excluir minha conta
+        </app-button>
+      }
+    </section>
   }
 }
 
@@ -277,5 +312,56 @@
         </app-button>
       </app-form-actions>
     </form>
+  </app-dialog>
+}
+
+<!-- Account Deletion Modal -->
+@if (showDeleteModal()) {
+  <app-dialog title="Excluir minha conta" (closed)="closeDeleteModal()">
+    @if (deletionStep() === 1) {
+      <div class="delete-step">
+        <div class="delete-step__warning">
+          <lucide-icon [img]="alertIcon" [size]="24" />
+          <p>
+            <strong>Atenção:</strong> Esta ação não pode ser desfeita após 30 dias.
+            Ao confirmar, sua conta será desativada imediatamente e todos os seus dados
+            serão permanentemente excluídos após o período de carência.
+          </p>
+        </div>
+        <ul class="delete-step__list">
+          <li>Sua conta será desativada imediatamente</li>
+          <li>Você perderá acesso a todas as lojas</li>
+          <li>Após 30 dias, seus dados serão permanentemente removidos</li>
+          <li>Você pode cancelar a exclusão durante o período de 30 dias</li>
+        </ul>
+        <app-form-actions>
+          <app-button variant="ghost" (clicked)="closeDeleteModal()">Cancelar</app-button>
+          <app-button variant="danger" (clicked)="nextDeleteStep()">
+            Entendo, continuar
+          </app-button>
+        </app-form-actions>
+      </div>
+    } @else {
+      <form [formGroup]="deleteForm" (ngSubmit)="submitAccountDeletion()" class="form-layout" [class.form-layout--saving]="deletingAccount()">
+        <app-form-field
+          label="Senha"
+          [error]="deleteForm.get('password')?.touched && deleteForm.get('password')?.hasError('required') ? 'Senha é obrigatória' : ''"
+        >
+          <input type="password" formControlName="password" placeholder="Digite sua senha" />
+        </app-form-field>
+        <app-form-field
+          label="Digite 'EXCLUIR MINHA CONTA' para confirmar"
+          [error]="deleteForm.get('confirmPhrase')?.touched && deleteForm.get('confirmPhrase')?.hasError('required') ? 'Confirmação é obrigatória' : ''"
+        >
+          <input type="text" formControlName="confirmPhrase" placeholder="EXCLUIR MINHA CONTA" />
+        </app-form-field>
+        <app-form-actions>
+          <app-button variant="ghost" (clicked)="closeDeleteModal()">Cancelar</app-button>
+          <app-button type="submit" variant="danger" [disabled]="deletingAccount()">
+            {{ deletingAccount() ? 'Excluindo...' : 'Excluir minha conta' }}
+          </app-button>
+        </app-form-actions>
+      </form>
+    }
   </app-dialog>
 }

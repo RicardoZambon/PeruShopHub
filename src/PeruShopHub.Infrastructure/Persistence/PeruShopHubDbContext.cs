@@ -57,6 +57,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<MarketplaceClaim> Claims => Set<MarketplaceClaim>();
     public DbSet<ResponseTimeSettings> ResponseTimeSettings => Set<ResponseTimeSettings>();
     public DbSet<UserDataExport> UserDataExports => Set<UserDataExport>();
+    public DbSet<AccountDeletionRequest> AccountDeletionRequests => Set<AccountDeletionRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

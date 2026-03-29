@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PeruShopHub.Application.DTOs.Profile;
 using PeruShopHub.Application.DTOs.Settings;
 using PeruShopHub.Application.Exceptions;
@@ -11,15 +12,17 @@ namespace PeruShopHub.Application.Services;
 public class UserService : IUserService
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly ILogger<UserService> _logger;
 
     private static readonly HashSet<string> ValidRoles = new(StringComparer.OrdinalIgnoreCase)
     {
         "Admin", "Manager", "Viewer"
     };
 
-    public UserService(PeruShopHubDbContext db)
+    public UserService(PeruShopHubDbContext db, ILogger<UserService> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<ProfileDto> GetProfileAsync(Guid userId, CancellationToken ct = default)
@@ -296,6 +299,155 @@ public class UserService : IUserService
         user.RefreshToken = null;
         user.RefreshTokenExpiresAt = null;
         await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task<AccountDeletionDto> RequestAccountDeletionAsync(Guid userId, DeleteAccountRequest request, CancellationToken ct = default)
+    {
+        var user = await _db.SystemUsers.FindAsync(new object[] { userId }, ct)
+            ?? throw new NotFoundException("Usuário", userId);
+
+        var errors = new Dictionary<string, List<string>>();
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+            AddError(errors, "Password", "Senha é obrigatória.");
+        else if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            AddError(errors, "Password", "Senha incorreta.");
+
+        if (string.IsNullOrWhiteSpace(request.ConfirmPhrase) ||
+            !request.ConfirmPhrase.Equals("EXCLUIR MINHA CONTA", StringComparison.OrdinalIgnoreCase))
+            AddError(errors, "ConfirmPhrase", "Digite 'EXCLUIR MINHA CONTA' para confirmar.");
+
+        if (errors.Count > 0)
+            throw new AppValidationException(errors);
+
+        // Check for existing pending deletion
+        var existing = await _db.AccountDeletionRequests
+            .FirstOrDefaultAsync(d => d.UserId == userId && d.Status == "Pending", ct);
+
+        if (existing is not null)
+            return MapToDeletionDto(existing);
+
+        // Check if user is the only owner of any tenant
+        var ownerships = await _db.TenantUsers
+            .Where(tu => tu.UserId == userId && tu.Role == "Owner")
+            .Select(tu => tu.TenantId)
+            .ToListAsync(ct);
+
+        foreach (var tenantId in ownerships)
+        {
+            var otherOwners = await _db.TenantUsers
+                .CountAsync(tu => tu.TenantId == tenantId && tu.Role == "Owner" && tu.UserId != userId, ct);
+
+            if (otherOwners == 0)
+            {
+                var tenant = await _db.Tenants.FindAsync(new object[] { tenantId }, ct);
+                AddError(errors, "Account",
+                    $"Você é o único proprietário da loja '{tenant?.Name}'. Transfira a propriedade ou exclua a loja antes de excluir sua conta.");
+            }
+        }
+
+        if (errors.Count > 0)
+            throw new AppValidationException(errors);
+
+        var deletion = new AccountDeletionRequest
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow,
+            ScheduledDeletionAt = DateTime.UtcNow.AddDays(30),
+        };
+
+        _db.AccountDeletionRequests.Add(deletion);
+
+        // Deactivate account immediately
+        user.IsActive = false;
+        user.RefreshToken = null;
+        user.RefreshTokenExpiresAt = null;
+
+        await _db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Account deletion requested for user {UserId}, scheduled for {ScheduledAt}",
+            userId, deletion.ScheduledDeletionAt);
+
+        return MapToDeletionDto(deletion);
+    }
+
+    public async Task CancelAccountDeletionAsync(Guid userId, CancellationToken ct = default)
+    {
+        var deletion = await _db.AccountDeletionRequests
+            .FirstOrDefaultAsync(d => d.UserId == userId && d.Status == "Pending", ct)
+            ?? throw new NotFoundException("Solicitação de exclusão", userId);
+
+        deletion.Status = "Cancelled";
+        deletion.CancelledAt = DateTime.UtcNow;
+
+        // Reactivate account
+        var user = await _db.SystemUsers.FindAsync(new object[] { userId }, ct);
+        if (user is not null)
+            user.IsActive = true;
+
+        await _db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Account deletion cancelled for user {UserId}", userId);
+    }
+
+    public async Task<AccountDeletionDto?> GetPendingDeletionAsync(Guid userId, CancellationToken ct = default)
+    {
+        var deletion = await _db.AccountDeletionRequests
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.UserId == userId && d.Status == "Pending", ct);
+
+        return deletion is null ? null : MapToDeletionDto(deletion);
+    }
+
+    public async Task ProcessExpiredDeletionsAsync(CancellationToken ct = default)
+    {
+        var expiredDeletions = await _db.AccountDeletionRequests
+            .Include(d => d.User)
+            .Where(d => d.Status == "Pending" && d.ScheduledDeletionAt <= DateTime.UtcNow)
+            .ToListAsync(ct);
+
+        foreach (var deletion in expiredDeletions)
+        {
+            try
+            {
+                var user = deletion.User;
+
+                // Remove all tenant memberships
+                var memberships = await _db.TenantUsers
+                    .Where(tu => tu.UserId == user.Id)
+                    .ToListAsync(ct);
+                _db.TenantUsers.RemoveRange(memberships);
+
+                // Anonymize user data
+                user.Email = $"deleted_{user.Id:N}@anonymized.local";
+                user.Name = "Usuário Excluído";
+                user.PasswordHash = string.Empty;
+                user.AvatarUrl = null;
+                user.RefreshToken = null;
+                user.RefreshTokenExpiresAt = null;
+                user.IsActive = false;
+
+                deletion.Status = "Completed";
+                deletion.CompletedAt = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync(ct);
+
+                _logger.LogInformation("Account hard-deleted (anonymized) for user {UserId}", user.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process account deletion for user {UserId}", deletion.UserId);
+            }
+        }
+    }
+
+    private static AccountDeletionDto MapToDeletionDto(AccountDeletionRequest deletion)
+    {
+        return new AccountDeletionDto(
+            deletion.Id, deletion.Status, deletion.CreatedAt,
+            deletion.ScheduledDeletionAt, deletion.CancelledAt);
     }
 
     private static void AddError(Dictionary<string, List<string>> errors, string field, string message)

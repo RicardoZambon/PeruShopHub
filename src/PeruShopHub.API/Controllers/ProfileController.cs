@@ -117,4 +117,25 @@ public class ProfileController : ControllerBase
         if (result is null) return NotFound(new { message = "Exportação não encontrada ou expirada." });
         return File(result.Value.Data, "application/zip", result.Value.FileName);
     }
+
+    [HttpPost("delete-account")]
+    public async Task<ActionResult<AccountDeletionDto>> DeleteAccount([FromBody] DeleteAccountRequest request, CancellationToken ct)
+    {
+        var result = await _userService.RequestAccountDeletionAsync(GetUserId(), request, ct);
+        return Ok(result);
+    }
+
+    [HttpPost("cancel-deletion")]
+    public async Task<IActionResult> CancelDeletion(CancellationToken ct)
+    {
+        await _userService.CancelAccountDeletionAsync(GetUserId(), ct);
+        return NoContent();
+    }
+
+    [HttpGet("deletion-status")]
+    public async Task<ActionResult<AccountDeletionDto?>> GetDeletionStatus(CancellationToken ct)
+    {
+        var result = await _userService.GetPendingDeletionAsync(GetUserId(), ct);
+        return Ok(result);
+    }
 }

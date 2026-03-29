@@ -90,6 +90,8 @@ builder.Services.AddHostedService<ClaimSyncWorker>();
 builder.Services.AddHostedService<ResponseTimeAlertWorker>();
 builder.Services.AddScoped<IUserDataExportService, UserDataExportService>();
 builder.Services.AddHostedService<UserDataExportWorker>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddHostedService<AccountDeletionWorker>();
 
 var host = builder.Build();
 host.Run();

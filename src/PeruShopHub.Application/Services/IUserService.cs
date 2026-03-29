@@ -16,4 +16,8 @@ public interface IUserService
     Task RemoveMemberAsync(Guid tenantId, Guid userId, CancellationToken ct = default);
     Task ResetPasswordAsync(Guid id, ResetPasswordRequest request, CancellationToken ct = default);
     Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default);
+    Task<AccountDeletionDto> RequestAccountDeletionAsync(Guid userId, DeleteAccountRequest request, CancellationToken ct = default);
+    Task CancelAccountDeletionAsync(Guid userId, CancellationToken ct = default);
+    Task<AccountDeletionDto?> GetPendingDeletionAsync(Guid userId, CancellationToken ct = default);
+    Task ProcessExpiredDeletionsAsync(CancellationToken ct = default);
 }

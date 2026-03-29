@@ -64,6 +64,46 @@ namespace PeruShopHub.Infrastructure.Migrations
                     b.ToTable("AlertRules");
                 });
 
+            modelBuilder.Entity("PeruShopHub.Core.Entities.AccountDeletionRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("ScheduledDeletionAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "ScheduledDeletionAt");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("AccountDeletionRequests");
+                });
+
             modelBuilder.Entity("PeruShopHub.Core.Entities.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2227,6 +2267,17 @@ namespace PeruShopHub.Infrastructure.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("VariationFields");
+                });
+
+            modelBuilder.Entity("PeruShopHub.Core.Entities.AccountDeletionRequest", b =>
+                {
+                    b.HasOne("PeruShopHub.Core.Entities.SystemUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PeruShopHub.Core.Entities.AlertRule", b =>
