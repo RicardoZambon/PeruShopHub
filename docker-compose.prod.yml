@@ -1,0 +1,122 @@
+# Production Docker Compose — deployed to VPS via GitHub Actions
+# Env vars loaded from .env file on the VPS (not committed to repo)
+#
+# Required .env vars:
+#   DOMAIN=yourdomain.com
+#   IMAGE_TAG=latest
+#   POSTGRES_PASSWORD=<strong-password>
+#   REDIS_PASSWORD=<strong-password>
+#   JWT_SECRET=<min-32-char-secret>
+#   SENTRY_DSN=<optional>
+#   EMAIL_API_KEY=<optional>
+#   ML_APP_ID=<optional>
+#   ML_SECRET_KEY=<optional>
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: perushophub
+      POSTGRES_USER: perushophub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - perushophub-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U perushophub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - perushophub-net
+
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-ricardozambon}/perushophub-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=perushophub;Username=perushophub;Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD},abortConnect=false"
+      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Issuer: PeruShopHub
+      Jwt__Audience: PeruShopHub
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      EMAIL_API_KEY: ${EMAIL_API_KEY:-}
+      MercadoLivre__AppId: ${ML_APP_ID:-}
+      MercadoLivre__SecretKey: ${ML_SECRET_KEY:-}
+    volumes:
+      - uploads:/app/wwwroot/uploads
+      - dataprotection:/app/keys
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - perushophub-net
+
+  worker:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-ricardozambon}/perushophub-worker:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=perushophub;Username=perushophub;Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD},abortConnect=false"
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      EMAIL_API_KEY: ${EMAIL_API_KEY:-}
+      MercadoLivre__AppId: ${ML_APP_ID:-}
+      MercadoLivre__SecretKey: ${ML_SECRET_KEY:-}
+    volumes:
+      - dataprotection:/app/keys
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - perushophub-net
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-ricardozambon}/perushophub-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx-prod.conf:/etc/nginx/nginx.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - api
+    networks:
+      - perushophub-net
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # Initial cert: docker compose run certbot certonly --webroot -w /var/www/certbot -d yourdomain.com
+    # Renewal (cron): docker compose run certbot renew
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+  dataprotection:
+  certbot_conf:
+  certbot_www:
+
+networks:
+  perushophub-net:
+    driver: bridge

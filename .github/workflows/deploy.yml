@@ -1,0 +1,175 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/perushophub
+  COMPOSE_FILE: docker-compose.prod.yml
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+
+    strategy:
+      matrix:
+        include:
+          - image: api
+            dockerfile: docker/Dockerfile.api
+          - image: worker
+            dockerfile: docker/Dockerfile.worker
+          - image: web
+            dockerfile: docker/Dockerfile.web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="${{ github.event.inputs.tag || 'latest' }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ steps.tag.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Production VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="${{ github.event.inputs.tag || 'latest' }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Copy compose file to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose.prod.yml,docker/nginx-prod.conf"
+          target: "~/perushophub"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd ~/perushophub
+
+            # Login to GHCR
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Set image tag
+            export IMAGE_TAG="${{ steps.tag.outputs.tag }}"
+
+            # Pull new images (before stopping old containers)
+            docker compose -f docker-compose.prod.yml pull
+
+            # Zero-downtime: start new containers (old ones stop automatically)
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Wait for API to be ready
+            echo "Waiting for API to become healthy..."
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost/health > /dev/null 2>&1; then
+                echo "Health check passed!"
+                exit 0
+              fi
+              echo "Attempt $i/30 — waiting 5s..."
+              sleep 5
+            done
+
+            echo "Health check failed after 150 seconds"
+            exit 1
+
+      - name: Post-deploy health check
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/perushophub
+
+            # Verify all containers are running
+            RUNNING=$(docker compose -f docker-compose.prod.yml ps --status running --format json | wc -l)
+            echo "Running containers: $RUNNING"
+
+            # Check health endpoint
+            HEALTH=$(curl -sf http://localhost/health)
+            echo "Health response: $HEALTH"
+
+            if echo "$HEALTH" | grep -qi "healthy"; then
+              echo "Deployment verified successfully!"
+            else
+              echo "WARNING: Health check returned unexpected response"
+              exit 1
+            fi
+
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/perushophub
+            echo "Deployment failed — rolling back to previous images..."
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            echo "Rollback complete. Check logs with: docker compose -f docker-compose.prod.yml logs"
