@@ -169,6 +169,39 @@
   line-height: 1.4;
 }
 
+// Fulfillment (Full) badge
+.full-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  background: #7E57C2;
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-left: var(--space-1);
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+// Own shipping badge
+.ship-own-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  background: var(--neutral-100, #f0f0f0);
+  color: var(--neutral-600, #666);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: var(--space-1);
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
 // Mobile variant/review chips
 .variant-chip {
   display: inline-block;

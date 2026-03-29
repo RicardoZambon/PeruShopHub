@@ -19,6 +19,8 @@ public class MarketplaceListingConfiguration : IEntityTypeConfiguration<Marketpl
         builder.Property(l => l.Permalink).HasMaxLength(1000);
         builder.Property(l => l.ThumbnailUrl).HasMaxLength(1000);
 
+        builder.Property(l => l.FulfillmentType).HasMaxLength(50);
+
         builder.HasIndex(l => new { l.TenantId, l.MarketplaceId, l.ExternalId }).IsUnique();
         builder.HasIndex(l => l.TenantId);
         builder.HasIndex(l => l.ProductId);

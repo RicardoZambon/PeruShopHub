@@ -33,6 +33,9 @@ public interface IMarketplaceAdapter
 
     /// <summary>Fetch payment/collection details.</summary>
     Task<MarketplacePaymentDetails> GetPaymentDetailsAsync(string paymentId, CancellationToken ct = default);
+
+    /// <summary>Fetch fulfillment (Full) stock levels for an inventory/item.</summary>
+    Task<MarketplaceFulfillmentStock> GetFulfillmentStockAsync(string inventoryId, CancellationToken ct = default);
 }
 
 // ── DTOs returned by IMarketplaceAdapter ────────────────────
@@ -108,7 +111,8 @@ public record MarketplaceItemDetails(
     string? Permalink,
     string? ThumbnailUrl,
     IReadOnlyList<MarketplaceItemPicture> Pictures,
-    IReadOnlyList<MarketplaceItemVariation> Variations);
+    IReadOnlyList<MarketplaceItemVariation> Variations,
+    string? FulfillmentType = null);
 
 public record MarketplaceItemPicture(string Id, string Url);
 
@@ -156,3 +160,12 @@ public record MarketplacePaymentDetails(
     DateTimeOffset DateCreated,
     DateTimeOffset? DateApproved,
     long? OrderId);
+
+// ── Fulfillment stock ────────────────────────────────────
+
+public record MarketplaceFulfillmentStock(
+    string InventoryId,
+    int AvailableQuantity,
+    int? NotAvailableQuantity,
+    string? WarehouseId,
+    string? Status);

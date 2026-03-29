@@ -146,6 +146,9 @@
                   <td class="col-category">
                     <span class="category-dot" [style.background]="cost.color"></span>
                     {{ cost.category }}
+                    @if (cost.categoryKey === 'fulfillment_fee' && order()?.shipping?.isFulfillment) {
+                      <span class="full-badge">Full</span>
+                    }
                     @if (cost.description) {
                       <span class="cost-description">{{ cost.description }}</span>
                     }

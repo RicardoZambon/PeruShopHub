@@ -54,6 +54,7 @@ export interface Product {
   needsReview: boolean;
   abcClass?: string | null;
   hasMarketplaceListing?: boolean;
+  fulfillmentType?: string | null;
   minStock?: number | null;
   maxStock?: number | null;
   variants?: any[];

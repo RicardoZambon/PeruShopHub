@@ -120,6 +120,7 @@ public class MlOrderMapper : IMlOrderMapper
         "shipping" or "shipping_fee" => "shipping_seller",
         "financing_fee" or "financing" => "payment_fee",
         "fixed_fee" => "fixed_fee",
+        "fulfillment_fee" or "fulfillment" => "fulfillment_fee",
         _ => feeType.ToLowerInvariant()
     };
 

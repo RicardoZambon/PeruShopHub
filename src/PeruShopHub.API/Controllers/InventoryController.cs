@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Inventory;
 using PeruShopHub.Application.Services;
+using PeruShopHub.Core.Interfaces;
 
 namespace PeruShopHub.API.Controllers;
 
@@ -12,10 +14,12 @@ namespace PeruShopHub.API.Controllers;
 public class InventoryController : ControllerBase
 {
     private readonly IInventoryService _inventoryService;
+    private readonly IServiceProvider _serviceProvider;
 
-    public InventoryController(IInventoryService inventoryService)
+    public InventoryController(IInventoryService inventoryService, IServiceProvider serviceProvider)
     {
         _inventoryService = inventoryService;
+        _serviceProvider = serviceProvider;
     }
 
     [HttpGet]
@@ -106,5 +110,14 @@ public class InventoryController : ControllerBase
     {
         var result = await _inventoryService.UpdateAllocationAsync(variantId, dto, ct);
         return Ok(result);
+    }
+
+    /// <summary>Fetch ML Full (fulfillment) stock levels for an inventory/item.</summary>
+    [HttpGet("{inventoryId}/stock/fulfillment")]
+    public async Task<IActionResult> GetFulfillmentStock(string inventoryId, CancellationToken ct = default)
+    {
+        var adapter = _serviceProvider.GetRequiredKeyedService<IMarketplaceAdapter>("mercadolivre");
+        var stock = await adapter.GetFulfillmentStockAsync(inventoryId, ct);
+        return Ok(stock);
     }
 }

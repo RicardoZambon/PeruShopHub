@@ -146,6 +146,7 @@ public class ProductSyncService : IProductSyncService
             existing.AvailableQuantity = details.AvailableQuantity;
             existing.PicturesJson = picturesJson;
             existing.VariationsJson = variationsJson;
+            existing.FulfillmentType = details.FulfillmentType;
             existing.UpdatedAt = DateTime.UtcNow;
 
             // Update linked product
@@ -182,6 +183,7 @@ public class ProductSyncService : IProductSyncService
                 AvailableQuantity = details.AvailableQuantity,
                 PicturesJson = picturesJson,
                 VariationsJson = variationsJson,
+                FulfillmentType = details.FulfillmentType,
             };
 
             _db.MarketplaceListings.Add(listing);

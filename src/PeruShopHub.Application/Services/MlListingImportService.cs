@@ -233,6 +233,7 @@ public class MlListingImportService : IMlListingImportService
             existing.AvailableQuantity = details.AvailableQuantity;
             existing.PicturesJson = picturesJson;
             existing.VariationsJson = variationsJson;
+            existing.FulfillmentType = details.FulfillmentType;
             existing.UpdatedAt = DateTime.UtcNow;
 
             // Update linked product if exists
@@ -264,6 +265,7 @@ public class MlListingImportService : IMlListingImportService
                 AvailableQuantity = details.AvailableQuantity,
                 PicturesJson = picturesJson,
                 VariationsJson = variationsJson,
+                FulfillmentType = details.FulfillmentType,
             };
 
             _db.MarketplaceListings.Add(listing);

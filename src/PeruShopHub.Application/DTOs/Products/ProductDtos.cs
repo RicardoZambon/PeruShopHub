@@ -19,7 +19,8 @@ public record ProductListDto(
     int? MinStock,
     int? MaxStock,
     string? AbcClass,
-    bool HasMarketplaceListing = false);
+    bool HasMarketplaceListing = false,
+    string? FulfillmentType = null);
 
 public record ProductDetailDto(
     Guid Id,

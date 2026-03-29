@@ -308,6 +308,9 @@ public class OrderSyncService : IOrderSyncService
             }
         }
 
+        // Fulfillment fee: if billing API didn't provide one, estimate from product dimensions
+        await EstimateFulfillmentFeeIfMissingAsync(order, tenantId, ct);
+
         // Recalculate profit
         var totalCosts = await _db.OrderCosts
             .IgnoreQueryFilters()
@@ -448,6 +451,121 @@ public class OrderSyncService : IOrderSyncService
         await _db.SaveChangesAsync(ct);
     }
 
+
+    /// <summary>
+    /// If the billing API didn't populate a fulfillment_fee, estimate it from product dimensions
+    /// using ML Full fee brackets based on volumetric weight.
+    /// </summary>
+    private async Task EstimateFulfillmentFeeIfMissingAsync(Order order, Guid tenantId, CancellationToken ct)
+    {
+        try
+        {
+            var fulfillmentCost = await _db.OrderCosts
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.OrderId == order.Id && c.Category == "fulfillment_fee", ct);
+
+            // Already populated from billing API — skip estimation
+            if (fulfillmentCost is not null && fulfillmentCost.Value > 0)
+                return;
+
+            // Check if any order item is a fulfillment product
+            var orderItems = await _db.OrderItems
+                .IgnoreQueryFilters()
+                .Where(i => i.OrderId == order.Id)
+                .ToListAsync(ct);
+
+            if (orderItems.Count == 0) return;
+
+            // Look up product variants to get dimensions
+            var skus = orderItems.Select(i => i.Sku).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+            var variants = await _db.Set<ProductVariant>()
+                .IgnoreQueryFilters()
+                .Where(v => v.TenantId == tenantId && skus.Contains(v.Sku))
+                .ToListAsync(ct);
+
+            if (variants.Count == 0) return;
+
+            // Check if any of these products use ML Full (fulfillment)
+            var productIds = variants.Select(v => v.ProductId).Distinct().ToList();
+            var hasFulfillment = await _db.Set<MarketplaceListing>()
+                .IgnoreQueryFilters()
+                .AnyAsync(ml => ml.TenantId == tenantId
+                    && ml.ProductId != null
+                    && productIds.Contains(ml.ProductId.Value)
+                    && ml.FulfillmentType == "fulfillment", ct);
+
+            if (!hasFulfillment) return;
+
+            // Estimate fulfillment fee based on volumetric weight
+            decimal totalEstimate = 0m;
+            foreach (var item in orderItems)
+            {
+                var variant = variants.FirstOrDefault(v => v.Sku == item.Sku);
+                if (variant is null) continue;
+
+                var volumetricWeight = CalculateVolumetricWeight(
+                    variant.Height ?? 0, variant.Width ?? 0, variant.Length ?? 0);
+                var actualWeight = variant.Weight ?? 0;
+                var billableWeight = Math.Max(volumetricWeight, actualWeight);
+
+                var feePerUnit = EstimateFulfillmentFeeByWeight(billableWeight);
+                totalEstimate += feePerUnit * item.Quantity;
+            }
+
+            if (totalEstimate <= 0) return;
+
+            if (fulfillmentCost is not null)
+            {
+                fulfillmentCost.Value = totalEstimate;
+                fulfillmentCost.Source = "Calculated";
+                fulfillmentCost.Description = "Taxa de fulfillment (estimativa por dimensões)";
+            }
+            else
+            {
+                _db.OrderCosts.Add(new OrderCost
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    OrderId = order.Id,
+                    Category = "fulfillment_fee",
+                    Description = "Taxa de fulfillment (estimativa por dimensões)",
+                    Value = totalEstimate,
+                    Source = "Calculated"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not estimate fulfillment fee for order {OrderId}", order.Id);
+        }
+    }
+
+    /// <summary>Volumetric weight in kg: (H × W × L) / 6000 (cm³ to kg).</summary>
+    private static decimal CalculateVolumetricWeight(decimal heightCm, decimal widthCm, decimal lengthCm)
+    {
+        if (heightCm <= 0 || widthCm <= 0 || lengthCm <= 0) return 0;
+        return (heightCm * widthCm * lengthCm) / 6000m;
+    }
+
+    /// <summary>
+    /// ML Full fee estimate by billable weight bracket (approximate BRL values).
+    /// Source: ML's published fulfillment fee table for standard items.
+    /// </summary>
+    private static decimal EstimateFulfillmentFeeByWeight(decimal weightKg) => weightKg switch
+    {
+        <= 0 => 0m,
+        <= 0.3m => 6.00m,
+        <= 0.5m => 6.50m,
+        <= 1.0m => 7.50m,
+        <= 2.0m => 9.00m,
+        <= 5.0m => 11.50m,
+        <= 9.0m => 14.50m,
+        <= 13.0m => 17.50m,
+        <= 17.0m => 20.50m,
+        <= 23.0m => 24.00m,
+        <= 30.0m => 28.00m,
+        _ => 35.00m,
+    };
 
     private async Task SetStatusAsync(Guid tenantId, OrderSyncStatus status, CancellationToken ct)
     {

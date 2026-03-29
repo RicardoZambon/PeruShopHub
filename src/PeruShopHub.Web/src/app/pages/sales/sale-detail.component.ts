@@ -54,6 +54,7 @@ interface ShippingInfo {
   shippingCost: number | null;
   isFreeShipping: boolean;
   timeline: TimelineStep[];
+  isFulfillment: boolean;
 }
 
 interface TimelineStep {
@@ -213,6 +214,7 @@ function mapApiToView(api: ApiOrderDetail): OrderDetailView {
       shippingCost: api.shipping?.shippingCost ?? null,
       isFreeShipping: api.shipping?.isFreeShipping ?? false,
       timeline,
+      isFulfillment: api.shipping?.isFulfillment ?? false,
     },
     payment: {
       method: api.payment?.method ?? '',

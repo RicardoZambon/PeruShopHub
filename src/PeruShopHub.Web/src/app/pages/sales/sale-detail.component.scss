@@ -313,6 +313,20 @@
     gap: 8px;
     flex-wrap: wrap;
 
+    .full-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #fff;
+      background: #7E57C2;
+      border-radius: var(--radius-sm, 4px);
+      line-height: 1.4;
+    }
+
     .cost-description {
       display: block;
       width: 100%;

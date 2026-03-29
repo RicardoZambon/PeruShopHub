@@ -86,26 +86,31 @@ public class ProductService : IProductService
                 p.MinStock,
                 p.MaxStock,
                 (string?)null,
-                false))
+                false,
+                (string?)null))
             .ToListAsync(ct);
 
         // Enrich with ABC classification from materialized view
         var productIds = products.Select(p => p.Id).ToList();
         var abcLookup = await GetAbcClassificationsAsync(productIds, ct);
 
-        // Enrich with marketplace listing presence
-        var listingLookup = await _db.MarketplaceListings
+        // Enrich with marketplace listing presence and fulfillment type
+        var listingData = await _db.MarketplaceListings
             .AsNoTracking()
             .Where(ml => ml.ProductId != null && productIds.Contains(ml.ProductId.Value))
-            .Select(ml => ml.ProductId!.Value)
-            .Distinct()
+            .Select(ml => new { ml.ProductId, ml.FulfillmentType })
             .ToListAsync(ct);
-        var listingSet = new HashSet<Guid>(listingLookup);
+        var listingSet = new HashSet<Guid>(listingData.Select(l => l.ProductId!.Value).Distinct());
+        var fulfillmentLookup = listingData
+            .Where(l => l.FulfillmentType != null)
+            .GroupBy(l => l.ProductId!.Value)
+            .ToDictionary(g => g.Key, g => g.First().FulfillmentType);
 
         var enriched = products.Select(p =>
             p with {
                 AbcClass = abcLookup.GetValueOrDefault(p.Id),
-                HasMarketplaceListing = listingSet.Contains(p.Id)
+                HasMarketplaceListing = listingSet.Contains(p.Id),
+                FulfillmentType = fulfillmentLookup.GetValueOrDefault(p.Id)
             }).ToList();
 
         var result = new PagedResult<ProductListDto>

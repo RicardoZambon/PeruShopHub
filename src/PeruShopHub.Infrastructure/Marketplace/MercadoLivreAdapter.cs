@@ -276,6 +276,16 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
                 v.PictureIds
             )).ToList();
 
+        // Map ML logistic_type to internal fulfillment type
+        var fulfillmentType = item.Shipping?.LogisticType?.ToLowerInvariant() switch
+        {
+            "fulfillment" => "fulfillment",
+            "cross_docking" => "cross_docking",
+            "drop_off" => "drop_off",
+            "xd_drop_off" => "xd_drop_off",
+            _ => item.Shipping?.Mode?.ToLowerInvariant() == "me2" ? "self" : null
+        };
+
         return new MarketplaceItemDetails(
             item.Id,
             item.Title,
@@ -287,7 +297,8 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
             item.Permalink,
             item.Thumbnail,
             pictures,
-            variations);
+            variations,
+            fulfillmentType);
     }
 
     // ── Shipments ──────────────────────────────────────────────
@@ -348,6 +359,21 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
             payment.DateCreated,
             payment.DateApproved,
             payment.Order?.Id);
+    }
+
+    // ── Fulfillment Stock ──────────────────────────────────────
+
+    public async Task<MarketplaceFulfillmentStock> GetFulfillmentStockAsync(string inventoryId, CancellationToken ct = default)
+    {
+        var stock = await SendAsync<MlFulfillmentStockResponse>(
+            HttpMethod.Get, $"/inventories/{inventoryId}/stock/fulfillment", null, ct);
+
+        return new MarketplaceFulfillmentStock(
+            inventoryId,
+            stock.AvailableQuantity,
+            stock.NotAvailableQuantity,
+            stock.WarehouseId,
+            stock.Status);
     }
 
     // ── HTTP helpers ─────────────────────────────────────────

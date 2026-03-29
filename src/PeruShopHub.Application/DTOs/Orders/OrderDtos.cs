@@ -72,7 +72,8 @@ public record ShippingInfoDto(
     string? ShippingStatus,
     decimal? ShippingCost,
     bool IsFreeShipping,
-    IReadOnlyList<TimelineStepDto>? Timeline);
+    IReadOnlyList<TimelineStepDto>? Timeline,
+    bool IsFulfillment = false);
 
 public record TimelineStepDto(
     string Status,

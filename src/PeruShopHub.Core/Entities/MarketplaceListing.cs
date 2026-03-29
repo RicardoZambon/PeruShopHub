@@ -22,6 +22,8 @@ public class MarketplaceListing : ITenantScoped
     public int AvailableQuantity { get; set; }
     public string? VariationsJson { get; set; }
     public string? PicturesJson { get; set; }
+    /// <summary>Shipping/fulfillment type: "fulfillment" (ML Full), "cross_docking", "drop_off", "self", etc.</summary>
+    public string? FulfillmentType { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public Product? Product { get; set; }

@@ -107,6 +107,7 @@ export class ProductsListComponent implements OnInit, OnDestroy {
       variantCount: p.variantCount,
       needsReview: p.needsReview,
       hasMarketplaceListing: (p as any).hasMarketplaceListing ?? false,
+      fulfillmentType: p.fulfillmentType ?? null,
     }));
   });
 

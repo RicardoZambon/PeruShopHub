@@ -96,11 +96,13 @@ public class OrderService : IOrderService
             .Where(c => c.Category == "shipping_seller" && c.Value > 0)
             .Sum(c => c.Value);
         var isFreeShipping = shippingCost > 0 && order.TotalAmount >= 79m;
+        var hasFulfillmentFee = order.Costs.Any(c => c.Category == "fulfillment_fee" && c.Value > 0);
 
         var shipping = new ShippingInfoDto(
             order.TrackingNumber, order.TrackingUrl, order.Carrier,
             order.LogisticType, order.ShippingStatus,
-            shippingCost > 0 ? shippingCost : null, isFreeShipping, timeline);
+            shippingCost > 0 ? shippingCost : null, isFreeShipping, timeline,
+            hasFulfillmentFee);
 
         var paymentStatus = DerivePaymentStatus(order.Status);
 

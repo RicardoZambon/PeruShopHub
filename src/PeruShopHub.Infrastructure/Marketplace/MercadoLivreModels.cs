@@ -382,6 +382,21 @@ public class MlItemFullResponse
 
     [JsonPropertyName("variations")]
     public List<MlItemVariation> Variations { get; set; } = [];
+
+    [JsonPropertyName("shipping")]
+    public MlItemShipping? Shipping { get; set; }
+}
+
+public class MlItemShipping
+{
+    [JsonPropertyName("logistic_type")]
+    public string? LogisticType { get; set; }
+
+    [JsonPropertyName("mode")]
+    public string? Mode { get; set; }
+
+    [JsonPropertyName("free_shipping")]
+    public bool FreeShipping { get; set; }
 }
 
 public class MlItemPicture
@@ -427,4 +442,21 @@ public class MlAttributeCombination
 
     [JsonPropertyName("value_name")]
     public string? ValueName { get; set; }
+}
+
+// ── ML Fulfillment Stock response ────────────────────────
+
+public class MlFulfillmentStockResponse
+{
+    [JsonPropertyName("available_quantity")]
+    public int AvailableQuantity { get; set; }
+
+    [JsonPropertyName("not_available_quantity")]
+    public int? NotAvailableQuantity { get; set; }
+
+    [JsonPropertyName("warehouse_id")]
+    public string? WarehouseId { get; set; }
+
+    [JsonPropertyName("status")]
+    public string? Status { get; set; }
 }

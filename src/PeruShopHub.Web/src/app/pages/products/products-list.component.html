@@ -74,6 +74,11 @@
         @if (row.hasMarketplaceListing) {
           <span class="ml-badge" title="Vinculado ao Mercado Livre">ML</span>
         }
+        @if (row.fulfillmentType === 'fulfillment') {
+          <span class="full-badge" title="Mercado Envios Full">Full</span>
+        } @else if (row.hasMarketplaceListing && !row.fulfillmentType) {
+          <span class="ship-own-badge" title="Envio próprio">Próprio</span>
+        }
       </span>
     </ng-template>
 
@@ -158,6 +163,11 @@
             {{ row.name }}
             @if (row.hasMarketplaceListing) {
               <span class="ml-badge" title="Vinculado ao Mercado Livre">ML</span>
+            }
+            @if (row.fulfillmentType === 'fulfillment') {
+              <span class="full-badge" title="Mercado Envios Full">Full</span>
+            } @else if (row.hasMarketplaceListing && !row.fulfillmentType) {
+              <span class="ship-own-badge" title="Envio próprio">Próprio</span>
             }
           </span>
           <span class="card-sku">{{ row.sku }}</span>
