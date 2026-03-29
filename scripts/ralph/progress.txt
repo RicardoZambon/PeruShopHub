@@ -1784,3 +1784,20 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Sass `random()` needs `@use 'sass:math'` + `math.random()` in modern Sass
   - Lucide icons like `Rocket`, `PartyPopper`, `Link` are available in `lucide-angular`
 ---
+
+## 2026-03-29 - US-065
+- Implemented Setup Checklist card on dashboard (visible when onboarding not complete)
+- Created `TooltipService` with localStorage persistence for per-tooltip-ID dismissal
+- Created `ContextualTooltipComponent` (shared, reusable info banner with dismiss button)
+- Added contextual tooltips to Dashboard (KPI explanation), Products (ML linking), Finance (cost decomposition)
+- Added "Mostrar dicas novamente" button in Settings > Aparência tab to reset all tooltips
+- Files changed:
+  - NEW: `src/PeruShopHub.Web/src/app/services/tooltip.service.ts`
+  - NEW: `src/PeruShopHub.Web/src/app/shared/components/contextual-tooltip/*`
+  - Modified: dashboard component (HTML, TS, SCSS), finance component (HTML, TS), products-list component (HTML, TS), settings component (HTML, TS, SCSS), shared/components/index.ts
+- **Learnings for future iterations:**
+  - `OnboardingService.getProgress()` returns `OnboardingProgress` with `steps[]` array containing `key`, `label`, `completed` — reuse for any step-dependent UI
+  - Dashboard already has `hasData()` empty state guard — checklist card goes inside the `@else` block after header
+  - Settings Aparência tab follows the same section pattern as theme/language: `h3.{section}__label` + content + margin-top spacing
+  - Manual browser verification needed for tooltip dismiss behavior and localStorage persistence
+---
