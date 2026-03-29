@@ -2074,3 +2074,32 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - `CookieConsentService` uses versioned consent (`CONSENT_VERSION`) — bump version to force re-consent on policy change
   - Footer "Cookies" link calls `resetConsent()` which clears localStorage and shows banner again
 ---
+
+## 2026-03-29 - US-074a
+- Implemented LGPD data portability: user can request export of all personal data as JSON/ZIP
+- Backend: UserDataExport entity, UserDataExportService (generates JSON with profile, tenant, products, orders, costs, customers, stock movements, questions, messages, notifications), UserDataExportWorker (polls pending exports every 30s)
+- API: POST /api/profile/export-data (request), GET /api/profile/export-data/{id} (status), GET /api/profile/export-data/{id}/download (download ZIP, 24h valid)
+- Frontend: "Exportar meus dados" button on Profile page with status feedback and download link
+- Files changed:
+  - src/PeruShopHub.Core/Entities/UserDataExport.cs (new)
+  - src/PeruShopHub.Core/Enums/NotificationType.cs (added DataExportReady)
+  - src/PeruShopHub.Application/Services/IUserDataExportService.cs (new)
+  - src/PeruShopHub.Application/Services/UserDataExportService.cs (new)
+  - src/PeruShopHub.Application/DTOs/Profile/ProfileDtos.cs (added UserDataExportDto)
+  - src/PeruShopHub.Application/DependencyInjection.cs (registered service)
+  - src/PeruShopHub.API/Controllers/ProfileController.cs (3 new endpoints)
+  - src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs (added DbSet)
+  - src/PeruShopHub.Infrastructure/Persistence/Configurations/UserDataExportConfiguration.cs (new)
+  - src/PeruShopHub.Worker/Workers/UserDataExportWorker.cs (new)
+  - src/PeruShopHub.Worker/Program.cs (registered worker + service)
+  - src/PeruShopHub.Web/src/app/services/profile.service.ts (3 new methods + interface)
+  - src/PeruShopHub.Web/src/app/pages/profile/profile.component.ts (export logic)
+  - src/PeruShopHub.Web/src/app/pages/profile/profile.component.html (export section)
+  - src/PeruShopHub.Web/src/app/pages/profile/profile.component.scss (export styles)
+  - EF migration: AddUserDataExport
+- **Learnings for future iterations:**
+  - UserDataExport entity is NOT ITenantScoped — it stores TenantId explicitly but isn't filtered by tenant middleware (user-level, not tenant-level)
+  - Worker uses IgnoreQueryFilters() for processing since it has no tenant context
+  - Export service cleanup: expired exports get status set to "Expired" and file deleted
+  - Duplicate export prevention: if a Pending/Processing export exists, return it instead of creating a new one
+---
