@@ -1581,3 +1581,29 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Full product detection: join MarketplaceListings where FulfillmentType == "fulfillment" and ProductId != null
   - ng2-charts dual-axis pattern: two datasets with yAxisID 'y' and 'y1', second axis has grid.drawOnChartArea: false
 ---
+
+## 2026-03-29 - US-058
+- Implemented Full vs Own Shipping Simulator (Fulfillment comparison)
+- Backend: `POST /api/pricing/fulfillment-compare` endpoint with `FulfillmentCompareService`
+  - Full cost = (dailyStorageCost × avgDaysInStock) + fulfillmentFeePerSale
+  - Own cost = avgShippingCost + packagingCost + laborCostPerShipment (configurable)
+  - Uses historical data from `StorageCostAccumulations`, `OrderCosts` (fulfillment_fee, shipping_seller)
+  - Config fallbacks via `FulfillmentSettings:*` in appsettings
+- Frontend: New "Simulador Full" tab in Inventory page with product selector, labor cost override, comparison cards
+  - Green highlight for recommended option, savings banner
+- Files changed:
+  - `src/PeruShopHub.Application/DTOs/Pricing/FulfillmentCompareDtos.cs` (new)
+  - `src/PeruShopHub.Application/Services/IFulfillmentCompareService.cs` (new)
+  - `src/PeruShopHub.Application/Services/FulfillmentCompareService.cs` (new)
+  - `src/PeruShopHub.Application/DependencyInjection.cs` (DI registration)
+  - `src/PeruShopHub.API/Controllers/PricingController.cs` (new endpoint)
+  - `src/PeruShopHub.Web/src/app/services/pricing.service.ts` (frontend DTOs + service method)
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.ts` (simulator state/methods)
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.html` (simulator tab template)
+  - `src/PeruShopHub.Web/src/app/pages/inventory/inventory.component.scss` (simulator styles)
+- **Learnings for future iterations:**
+  - `FulfillmentCompareService` follows same pattern as PricingService — DbContext + IConfiguration injection, NotFoundException for missing products
+  - Historical averages for fulfillment fee and shipping cost come from `OrderCosts` table with categories `fulfillment_fee` and `shipping_seller`
+  - Average days in stock comes from `StorageCostAccumulations.DaysStored`
+  - Config fallback keys: `FulfillmentSettings:DefaultDailyStorageCost`, `DefaultFulfillmentFee`, `DefaultShippingCost`, `DefaultLaborCostPerShipment`
+---
