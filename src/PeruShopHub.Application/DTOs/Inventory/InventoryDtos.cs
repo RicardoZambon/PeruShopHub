@@ -92,3 +92,28 @@ public record ReconciliationReportItemDto(
     int Difference,
     string Resolution,
     string? Notes);
+
+// Fulfillment (ML Full) Stock DTOs
+public record FulfillmentStockItemDto(
+    string ExternalId,
+    string Sku,
+    string ProductName,
+    string? VariantName,
+    int AvailableQuantity,
+    int? NotAvailableQuantity,
+    string? WarehouseId,
+    string? Status);
+
+public record ProductFulfillmentStockDto(
+    Guid ProductId,
+    string ProductName,
+    string Sku,
+    List<FulfillmentStockItemDto> Items,
+    int TotalAvailable,
+    int TotalNotAvailable);
+
+public record FulfillmentStockOverviewDto(
+    List<ProductFulfillmentStockDto> Products,
+    int TotalProducts,
+    int TotalAvailable,
+    int TotalNotAvailable);

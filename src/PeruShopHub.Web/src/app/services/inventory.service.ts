@@ -163,6 +163,34 @@ export interface ReconciliationReportQueryParams {
   pageSize?: number;
 }
 
+// Fulfillment (ML Full) Stock interfaces
+export interface FulfillmentStockItem {
+  externalId: string;
+  sku: string;
+  productName: string;
+  variantName?: string | null;
+  availableQuantity: number;
+  notAvailableQuantity?: number | null;
+  warehouseId?: string | null;
+  status?: string | null;
+}
+
+export interface ProductFulfillmentStock {
+  productId: string;
+  productName: string;
+  sku: string;
+  items: FulfillmentStockItem[];
+  totalAvailable: number;
+  totalNotAvailable: number;
+}
+
+export interface FulfillmentStockOverview {
+  products: ProductFulfillmentStock[];
+  totalProducts: number;
+  totalAvailable: number;
+  totalNotAvailable: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class InventoryService {
   private readonly http = inject(HttpClient);
@@ -207,6 +235,10 @@ export class InventoryService {
 
   getReconciliationReportDetail(reportId: string): Observable<ReconciliationReportDetail> {
     return this.http.get<ReconciliationReportDetail>(`${this.baseUrl}/reconciliation-reports/${reportId}`);
+  }
+
+  getFulfillmentStock(): Observable<FulfillmentStockOverview> {
+    return this.http.get<FulfillmentStockOverview>(`${this.baseUrl}/fulfillment-stock`);
   }
 
   exportMovements(params: Omit<MovementQueryParams, 'page' | 'pageSize'>): Observable<Blob> {

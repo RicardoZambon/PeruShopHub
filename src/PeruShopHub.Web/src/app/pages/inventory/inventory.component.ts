@@ -23,7 +23,7 @@ import {
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 import { InventoryService } from '../../services/inventory.service';
-import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocations, VariantAllocations, ReconciliationResult, ReconciliationResultItem, ReconciliationReport, ReconciliationReportDetail, ReconciliationReportItem } from '../../services/inventory.service';
+import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocations, VariantAllocations, ReconciliationResult, ReconciliationResultItem, ReconciliationReport, ReconciliationReportDetail, ReconciliationReportItem, FulfillmentStockOverview, ProductFulfillmentStock, FulfillmentStockItem } from '../../services/inventory.service';
 import { ProductService } from '../../services/product.service';
 import type { Product } from '../../services/product.service';
 import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
@@ -144,7 +144,7 @@ export class InventoryComponent implements OnInit {
     { key: 'movimentacoes', label: 'Movimentações' },
     { key: 'reconciliacao', label: 'Reconciliação' },
     { key: 'reconciliacao-ml', label: 'Reconciliação ML' },
-    { key: 'estoque-full', label: 'Estoque Full', disabled: true },
+    { key: 'estoque-full', label: 'Estoque Full' },
   ];
 
   movementTypeOptions: SelectOption[] = [
@@ -272,6 +272,8 @@ export class InventoryComponent implements OnInit {
       this.loadReconciliationProducts();
     } else if (tab === 'reconciliacao-ml') {
       this.loadMlReports(true);
+    } else if (tab === 'estoque-full') {
+      this.loadFulfillmentStock();
     }
   }
 
@@ -851,5 +853,54 @@ export class InventoryComponent implements OnInit {
       'ManualReview': 'Revisão Manual',
     };
     return labels[resolution] ?? resolution;
+  }
+
+  // ── Fulfillment Stock (Estoque Full) ──────────────────────
+  fullStockLoading = signal(false);
+  fullStockData = signal<FulfillmentStockOverview | null>(null);
+
+  async loadFulfillmentStock(): Promise<void> {
+    if (this.fullStockData()) return; // already loaded
+    this.fullStockLoading.set(true);
+    try {
+      const data = await firstValueFrom(this.inventoryService.getFulfillmentStock());
+      this.fullStockData.set(data);
+    } catch {
+      this.fullStockData.set(null);
+    } finally {
+      this.fullStockLoading.set(false);
+    }
+  }
+
+  async refreshFulfillmentStock(): Promise<void> {
+    this.fullStockData.set(null);
+    this.fullStockLoading.set(true);
+    try {
+      const data = await firstValueFrom(this.inventoryService.getFulfillmentStock());
+      this.fullStockData.set(data);
+    } catch {
+      this.fullStockData.set(null);
+    } finally {
+      this.fullStockLoading.set(false);
+    }
+  }
+
+  getFullStatusLabel(status: string | null | undefined): string {
+    if (!status) return 'N/A';
+    const labels: Record<string, string> = {
+      'active': 'Ativo',
+      'inactive': 'Inativo',
+      'error': 'Erro',
+    };
+    return labels[status] ?? status;
+  }
+
+  getFullStatusVariant(status: string | null | undefined): BadgeVariant {
+    if (!status) return 'primary';
+    switch (status) {
+      case 'active': return 'success';
+      case 'error': return 'danger';
+      default: return 'primary';
+    }
   }
 }

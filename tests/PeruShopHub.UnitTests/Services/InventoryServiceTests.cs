@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using PeruShopHub.Application.DTOs.Inventory;
 using PeruShopHub.Application.Exceptions;
@@ -41,7 +42,13 @@ public class InventoryServiceTests : IDisposable
         _connection.Dispose();
     }
 
-    private InventoryService CreateService() => new(_db, new Mock<IAuditService>().Object, new Mock<IStockSyncService>().Object);
+    private InventoryService CreateService() => new(
+        _db,
+        new Mock<IAuditService>().Object,
+        new Mock<IStockSyncService>().Object,
+        new Mock<ICacheService>().Object,
+        new Mock<IServiceProvider>().Object,
+        new Mock<ILogger<InventoryService>>().Object);
 
     private (Product product, ProductVariant variant) SeedProductWithVariant(
         string name = "Test Product", string sku = "PROD-001",

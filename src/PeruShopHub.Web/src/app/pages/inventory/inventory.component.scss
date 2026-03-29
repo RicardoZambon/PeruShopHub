@@ -1143,3 +1143,108 @@
   color: var(--text-tertiary);
   margin-top: var(--space-2);
 }
+
+// ── Fulfillment Stock (Estoque Full) ────────────────────────
+.full-stock {
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+
+    @include m.mobile {
+      flex-direction: column;
+    }
+  }
+
+  &__header-info {
+    flex: 1;
+  }
+
+  &__kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--card-gap-desktop);
+
+    @include m.mobile {
+      grid-template-columns: 1fr;
+      gap: var(--card-gap-tablet);
+    }
+  }
+
+  &__product-card {
+    background: var(--surface);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+
+    & + & {
+      margin-top: var(--space-4);
+    }
+  }
+
+  &__product-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    background: var(--neutral-50);
+    border-bottom: 1px solid var(--neutral-200);
+
+    @include m.mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-2);
+    }
+  }
+
+  &__product-info {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+  }
+
+  &__product-name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+  }
+
+  &__product-sku {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
+  }
+
+  &__product-totals {
+    display: flex;
+    gap: var(--space-4);
+  }
+
+  &__total {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+
+    &--available {
+      color: var(--success);
+    }
+
+    &--unavailable {
+      color: var(--warning, var(--danger));
+    }
+  }
+
+  &__qty {
+    font-family: var(--font-mono);
+    font-weight: 500;
+
+    &--available {
+      color: var(--success);
+    }
+
+    &--unavailable {
+      color: var(--danger);
+    }
+  }
+}

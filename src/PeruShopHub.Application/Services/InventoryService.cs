@@ -1,8 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Inventory;
 using PeruShopHub.Application.Exceptions;
 using PeruShopHub.Core.Entities;
+using PeruShopHub.Core.Interfaces;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.Application.Services;
@@ -12,12 +15,24 @@ public class InventoryService : IInventoryService
     private readonly PeruShopHubDbContext _db;
     private readonly IAuditService _auditService;
     private readonly IStockSyncService _stockSyncService;
+    private readonly ICacheService _cache;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<InventoryService> _logger;
 
-    public InventoryService(PeruShopHubDbContext db, IAuditService auditService, IStockSyncService stockSyncService)
+    public InventoryService(
+        PeruShopHubDbContext db,
+        IAuditService auditService,
+        IStockSyncService stockSyncService,
+        ICacheService cache,
+        IServiceProvider serviceProvider,
+        ILogger<InventoryService> logger)
     {
         _db = db;
         _auditService = auditService;
         _stockSyncService = stockSyncService;
+        _cache = cache;
+        _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
     public async Task<PagedResult<InventoryItemDto>> GetOverviewAsync(
@@ -501,5 +516,86 @@ public class InventoryService : IInventoryService
         {
             allocations.OrderByDescending(a => a.AllocatedQuantity).First().AllocatedQuantity += remainder;
         }
+    }
+
+    public async Task<FulfillmentStockOverviewDto> GetFulfillmentStockOverviewAsync(CancellationToken ct = default)
+    {
+        // Find all ML listings with fulfillment type that are linked to a product
+        var fullListings = await _db.MarketplaceListings.AsNoTracking()
+            .Where(l => l.FulfillmentType == "fulfillment" && l.ProductId != null)
+            .Include(l => l.Product)
+            .ToListAsync(ct);
+
+        if (fullListings.Count == 0)
+            return new FulfillmentStockOverviewDto(new List<ProductFulfillmentStockDto>(), 0, 0, 0);
+
+        var adapter = _serviceProvider.GetRequiredKeyedService<IMarketplaceAdapter>("mercadolivre");
+        var productGroups = fullListings.GroupBy(l => l.ProductId!.Value);
+        var products = new List<ProductFulfillmentStockDto>();
+
+        foreach (var group in productGroups)
+        {
+            var product = group.First().Product!;
+            var items = new List<FulfillmentStockItemDto>();
+
+            foreach (var listing in group)
+            {
+                var cacheKey = $"fulfillment-stock:{listing.ExternalId}";
+                var cached = await _cache.GetAsync<FulfillmentStockItemDto>(cacheKey, ct);
+
+                if (cached != null)
+                {
+                    items.Add(cached);
+                    continue;
+                }
+
+                try
+                {
+                    var stock = await adapter.GetFulfillmentStockAsync(listing.ExternalId, ct);
+                    var item = new FulfillmentStockItemDto(
+                        listing.ExternalId,
+                        product.Sku,
+                        product.Name,
+                        listing.Title != product.Name ? listing.Title : null,
+                        stock.AvailableQuantity,
+                        stock.NotAvailableQuantity,
+                        stock.WarehouseId,
+                        stock.Status);
+
+                    await _cache.SetAsync(cacheKey, item, TimeSpan.FromMinutes(15), ct);
+                    items.Add(item);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch fulfillment stock for listing {ExternalId}", listing.ExternalId);
+                    items.Add(new FulfillmentStockItemDto(
+                        listing.ExternalId,
+                        product.Sku,
+                        product.Name,
+                        listing.Title != product.Name ? listing.Title : null,
+                        listing.AvailableQuantity,
+                        null,
+                        null,
+                        "error"));
+                }
+            }
+
+            var totalAvailable = items.Sum(i => i.AvailableQuantity);
+            var totalNotAvailable = items.Sum(i => i.NotAvailableQuantity ?? 0);
+
+            products.Add(new ProductFulfillmentStockDto(
+                product.Id,
+                product.Name,
+                product.Sku,
+                items,
+                totalAvailable,
+                totalNotAvailable));
+        }
+
+        return new FulfillmentStockOverviewDto(
+            products,
+            products.Count,
+            products.Sum(p => p.TotalAvailable),
+            products.Sum(p => p.TotalNotAvailable));
     }
 }

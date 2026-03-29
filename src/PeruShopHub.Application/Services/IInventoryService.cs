@@ -30,4 +30,6 @@ public interface IInventoryService
     Task<IReadOnlyList<StockAlertDto>> GetAlertsAsync(CancellationToken ct = default);
 
     Task<ReconciliationResultDto> ReconcileAsync(ReconciliationRequestDto dto, string createdBy, CancellationToken ct = default);
+
+    Task<FulfillmentStockOverviewDto> GetFulfillmentStockOverviewAsync(CancellationToken ct = default);
 }

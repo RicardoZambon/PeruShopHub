@@ -121,6 +121,14 @@ public class InventoryController : ControllerBase
         return Ok(stock);
     }
 
+    /// <summary>Get fulfillment stock overview for all Full products.</summary>
+    [HttpGet("fulfillment-stock")]
+    public async Task<ActionResult<FulfillmentStockOverviewDto>> GetFulfillmentStockOverview(CancellationToken ct = default)
+    {
+        var result = await _inventoryService.GetFulfillmentStockOverviewAsync(ct);
+        return Ok(result);
+    }
+
     /// <summary>List ML stock reconciliation reports with date filter and pagination.</summary>
     [HttpGet("reconciliation-reports")]
     public async Task<ActionResult<PagedResult<ReconciliationReportDto>>> GetReconciliationReports(

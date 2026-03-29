@@ -645,6 +645,122 @@
       }
     </div>
   </ng-template>
+
+  <ng-template appTabPanel="estoque-full">
+    <div class="estoque__content">
+      <div class="full-stock__header">
+        <div class="full-stock__header-info">
+          <h3 class="recon__title">Estoque Full — Mercado Livre</h3>
+          <p class="recon__subtitle">Estoque armazenado no centro de distribuição do Mercado Livre (Fulfillment). Dados atualizados a cada 15 minutos.</p>
+        </div>
+        <button class="recon__btn recon__btn--secondary" [disabled]="fullStockLoading()" (click)="refreshFulfillmentStock()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 2.5v4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 13.5v-4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 6A5 5 0 0 1 13 5l.5.5M11.5 10a5 5 0 0 1-8.5 1l-.5-.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Atualizar
+        </button>
+      </div>
+
+      @if (fullStockLoading() && !fullStockData()) {
+        <!-- KPI Skeletons -->
+        <div class="full-stock__kpis">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="ml-recon__stat-card">
+              <app-skeleton type="text" width="60%" height="14px" />
+              <app-skeleton type="text" width="40%" height="28px" />
+            </div>
+          }
+        </div>
+        <!-- Table Skeletons -->
+        <div class="recon__loading">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="recon__skeleton-row">
+              <app-skeleton type="text" width="15%" height="20px" />
+              <app-skeleton type="text" width="25%" height="20px" />
+              <app-skeleton type="text" width="10%" height="20px" />
+              <app-skeleton type="text" width="10%" height="20px" />
+              <app-skeleton type="text" width="12%" height="20px" />
+              <app-skeleton type="text" width="10%" height="20px" />
+            </div>
+          }
+        </div>
+      } @else if (!fullStockData() || fullStockData()!.products.length === 0) {
+        <div class="recon__empty">
+          <p>Nenhum produto com Fulfillment (Full) encontrado.</p>
+          <p class="recon__empty-hint">Produtos precisam estar vinculados a anúncios ML com logística Fulfillment para aparecer aqui.</p>
+        </div>
+      } @else {
+        <!-- Summary KPIs -->
+        <div class="full-stock__kpis">
+          <div class="ml-recon__stat-card">
+            <span class="ml-recon__stat-label">Produtos Full</span>
+            <span class="ml-recon__stat-value">{{ fullStockData()!.totalProducts }}</span>
+          </div>
+          <div class="ml-recon__stat-card ml-recon__stat-card--success">
+            <span class="ml-recon__stat-label">Disponível</span>
+            <span class="ml-recon__stat-value">{{ fullStockData()!.totalAvailable }}</span>
+          </div>
+          <div class="ml-recon__stat-card ml-recon__stat-card--warning">
+            <span class="ml-recon__stat-label">Indisponível</span>
+            <span class="ml-recon__stat-value">{{ fullStockData()!.totalNotAvailable }}</span>
+          </div>
+        </div>
+
+        <!-- Products Table -->
+        @for (product of fullStockData()!.products; track product.productId) {
+          <div class="full-stock__product-card">
+            <div class="full-stock__product-header">
+              <div class="full-stock__product-info">
+                <span class="full-stock__product-name">{{ product.productName }}</span>
+                <span class="full-stock__product-sku">{{ product.sku }}</span>
+              </div>
+              <div class="full-stock__product-totals">
+                <span class="full-stock__total full-stock__total--available">{{ product.totalAvailable }} disponível</span>
+                @if (product.totalNotAvailable > 0) {
+                  <span class="full-stock__total full-stock__total--unavailable">{{ product.totalNotAvailable }} indisponível</span>
+                }
+              </div>
+            </div>
+
+            <div class="recon__table-wrap">
+              <table class="recon__table">
+                <thead>
+                  <tr>
+                    <th class="recon__th">ID Externo</th>
+                    <th class="recon__th">Variação</th>
+                    <th class="recon__th recon__th--right">Disponível</th>
+                    <th class="recon__th recon__th--right">Indisponível</th>
+                    <th class="recon__th">Armazém</th>
+                    <th class="recon__th">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of product.items; track item.externalId) {
+                    <tr class="recon__row">
+                      <td class="recon__td recon__td--mono">{{ item.externalId }}</td>
+                      <td class="recon__td">{{ item.variantName || '—' }}</td>
+                      <td class="recon__td recon__td--mono recon__td--right">
+                        <span class="full-stock__qty full-stock__qty--available">{{ item.availableQuantity }}</span>
+                      </td>
+                      <td class="recon__td recon__td--mono recon__td--right">
+                        @if (item.notAvailableQuantity != null && item.notAvailableQuantity > 0) {
+                          <span class="full-stock__qty full-stock__qty--unavailable">{{ item.notAvailableQuantity }}</span>
+                        } @else {
+                          <span class="recon__td--muted">0</span>
+                        }
+                      </td>
+                      <td class="recon__td recon__td--mono">{{ item.warehouseId || '—' }}</td>
+                      <td class="recon__td">
+                        <app-badge [label]="getFullStatusLabel(item.status)" [variant]="getFullStatusVariant(item.status)" />
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </ng-template>
 </app-tab-panels>
 
 <!-- Entry Modal -->
