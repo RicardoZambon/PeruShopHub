@@ -18,7 +18,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddDbContext<PeruShopHubDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<IEmailService, NoOpEmailService>();
+builder.Services.AddEmailService(builder.Configuration);
 
 // Data Protection + Token Encryption (needed for token renewal)
 var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"] ?? "keys";

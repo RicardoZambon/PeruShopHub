@@ -23,6 +23,7 @@ using Serilog.Formatting.Compact;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using PeruShopHub.Infrastructure.Email;
 using StackExchange.Redis;
 
 // ── Bootstrap Logger (captures startup errors) ──────────────
@@ -119,7 +120,7 @@ builder.Services.AddSignalR()
     });
 builder.Services.AddSingleton<INotificationHubContext, NotificationHubContextAdapter>();
 builder.Services.AddScoped<INotificationDispatcher, SignalRNotificationDispatcher>();
-builder.Services.AddScoped<IEmailService, PeruShopHub.Infrastructure.Email.NoOpEmailService>();
+builder.Services.AddEmailService(builder.Configuration);
 
 // ── File Storage ──────────────────────────────────────────
 builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();

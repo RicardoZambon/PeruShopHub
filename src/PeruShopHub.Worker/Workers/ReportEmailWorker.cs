@@ -61,7 +61,7 @@ public class ReportEmailWorker : BackgroundService
                 if (recipients.Length == 0) continue;
 
                 var subject = $"PeruShopHub — Relatório {(schedule.Frequency == "weekly" ? "Semanal" : "Mensal")} ({periodLabel})";
-                await emailService.SendAsync(recipients, subject, html, ct);
+                await emailService.SendAsync(recipients, subject, html, textBody: null, ct);
 
                 schedule.LastSentAt = now;
                 await db.SaveChangesAsync(ct);
