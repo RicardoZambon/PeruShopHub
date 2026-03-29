@@ -1579,7 +1579,7 @@
         "Angular build passes"
       ],
       "priority": 84,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 4. LGPD."
     },
     {

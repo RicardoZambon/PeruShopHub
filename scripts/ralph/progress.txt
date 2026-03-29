@@ -3,6 +3,7 @@ Started: Fri Mar 28 2026
 ---
 
 ## Codebase Patterns
+- **ConfirmDialogService variants**: 'warning' | 'danger' | 'primary' — NOT 'accent'
 - **SCSS mixins path from pages**: `@use '../../../styles/mixins' as m;` (3 levels up from `src/app/pages/*/`)
 - **Modern Sass**: Use `@use 'sass:math'` + `math.random()` instead of global `random()`. Use `@if/@else` blocks instead of `if()` function
 - **ML logistic_type mapping**: `shipping.logistic_type` from ML item API → `MarketplaceListing.FulfillmentType`: "fulfillment" (ML Full), "cross_docking", "drop_off", "xd_drop_off"; `mode="me2"` → "self"
@@ -2102,4 +2103,45 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Worker uses IgnoreQueryFilters() for processing since it has no tenant context
   - Export service cleanup: expired exports get status set to "Expired" and file deleted
   - Duplicate export prevention: if a Pending/Processing export exists, return it instead of creating a new one
+---
+
+## 2026-03-29 - US-074b
+- Implemented Account Deletion (LGPD Erasure) with 30-day grace period
+- **Backend:**
+  - Created `AccountDeletionRequest` entity with Status (Pending/Cancelled/Completed), ScheduledDeletionAt
+  - EF Core configuration + migration (AccountDeletionRequests table)
+  - Updated model snapshot
+  - Added `RequestAccountDeletionAsync`, `CancelAccountDeletionAsync`, `GetPendingDeletionAsync`, `ProcessExpiredDeletionsAsync` to IUserService/UserService
+  - Password verification + typed phrase "EXCLUIR MINHA CONTA" confirmation
+  - Sole owner check: blocks deletion if user is only owner of a tenant
+  - Account deactivated immediately, anonymized after 30 days
+  - `AccountDeletionWorker` background service (hourly check) for hard delete
+  - Added endpoints: POST /api/profile/delete-account, POST /api/profile/cancel-deletion, GET /api/profile/deletion-status
+- **Frontend:**
+  - Added `AccountDeletion` interface and service methods to ProfileService
+  - Multi-step modal: Step 1 = warning/consequences, Step 2 = password + typed phrase confirmation
+  - Pending deletion banner with scheduled date and cancel button
+  - Danger-styled section with LGPD explanation
+  - SCSS styles for deletion section, warning banner, and modal steps
+- **Files changed:**
+  - src/PeruShopHub.Core/Entities/AccountDeletionRequest.cs (new)
+  - src/PeruShopHub.Infrastructure/Persistence/Configurations/AccountDeletionRequestConfiguration.cs (new)
+  - src/PeruShopHub.Infrastructure/Migrations/20260329160000_AddAccountDeletionRequest.cs (new)
+  - src/PeruShopHub.Infrastructure/Migrations/PeruShopHubDbContextModelSnapshot.cs (updated)
+  - src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs (updated)
+  - src/PeruShopHub.Application/DTOs/Profile/ProfileDtos.cs (updated)
+  - src/PeruShopHub.Application/Services/IUserService.cs (updated)
+  - src/PeruShopHub.Application/Services/UserService.cs (updated)
+  - src/PeruShopHub.API/Controllers/ProfileController.cs (updated)
+  - src/PeruShopHub.Worker/Workers/AccountDeletionWorker.cs (new)
+  - src/PeruShopHub.Worker/Program.cs (updated)
+  - src/PeruShopHub.Web/src/app/services/profile.service.ts (updated)
+  - src/PeruShopHub.Web/src/app/pages/profile/profile.component.ts (updated)
+  - src/PeruShopHub.Web/src/app/pages/profile/profile.component.html (updated)
+  - src/PeruShopHub.Web/src/app/pages/profile/profile.component.scss (updated)
+- **Learnings for future iterations:**
+  - ConfirmDialogService variant types are 'warning' | 'danger' | 'primary' — NOT 'accent'
+  - UserService now requires ILogger<UserService> in constructor (updated DI)
+  - AccountDeletionRequest is NOT ITenantScoped (global, user-level entity) — no tenant query filter
+  - For sole-owner checks, query TenantUsers for Owner role and count other owners per tenant
 ---
