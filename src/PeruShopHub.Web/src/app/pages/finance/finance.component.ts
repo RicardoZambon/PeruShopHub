@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { forkJoin } from 'rxjs';
-import { formatBrl as formatBrlUtil } from '../../shared/utils';
+import { formatBrl as formatBrlUtil, getChartColors } from '../../shared/utils';
 import { KpiCardComponent } from '../../shared/components/kpi-card/kpi-card.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
@@ -81,7 +81,7 @@ export class FinanceComponent implements OnInit {
       {
         label: 'Receita Bruta',
         data: [],
-        backgroundColor: '#1A237E',
+        backgroundColor: getChartColors().primary,
         borderRadius: 3,
         barPercentage: 0.7,
         categoryPercentage: 0.8,
@@ -89,7 +89,7 @@ export class FinanceComponent implements OnInit {
       {
         label: 'Lucro Líquido',
         data: [],
-        backgroundColor: '#2E7D32',
+        backgroundColor: getChartColors().success,
         borderRadius: 3,
         barPercentage: 0.7,
         categoryPercentage: 0.8,
@@ -141,7 +141,7 @@ export class FinanceComponent implements OnInit {
         },
       },
       y: {
-        grid: { color: 'rgba(0, 0, 0, 0.06)' },
+        grid: { color: getChartColors().gridLine },
         ticks: {
           font: { family: 'Roboto Mono', size: 11 },
           callback: (value) => `R$ ${Number(value).toLocaleString('pt-BR')}`,
@@ -157,8 +157,8 @@ export class FinanceComponent implements OnInit {
       {
         label: 'Margem %',
         data: [],
-        borderColor: '#1A237E',
-        backgroundColor: 'rgba(26, 35, 126, 0.08)',
+        borderColor: getChartColors().primary,
+        backgroundColor: getChartColors().primaryAlpha,
         fill: true,
         tension: 0.3,
         pointRadius: 2,
@@ -168,7 +168,7 @@ export class FinanceComponent implements OnInit {
       {
         label: 'Meta (15%)',
         data: [],
-        borderColor: '#EF5350',
+        borderColor: getChartColors().danger,
         borderDash: [8, 4],
         borderWidth: 1.5,
         pointRadius: 0,
@@ -220,7 +220,7 @@ export class FinanceComponent implements OnInit {
       y: {
         min: 0,
         max: 40,
-        grid: { color: 'rgba(0, 0, 0, 0.06)' },
+        grid: { color: getChartColors().gridLine },
         ticks: {
           font: { family: 'Roboto Mono', size: 11 },
           callback: (value) => `${value}%`,
@@ -330,7 +330,7 @@ export class FinanceComponent implements OnInit {
       },
       y: {
         position: 'left',
-        grid: { color: 'rgba(0, 0, 0, 0.06)' },
+        grid: { color: getChartColors().gridLine },
         ticks: {
           font: { family: 'Roboto Mono', size: 11 },
           callback: (value) => `R$ ${Number(value).toLocaleString('pt-BR')}`,
@@ -564,7 +564,7 @@ export class FinanceComponent implements OnInit {
         {
           label: 'Receita Bruta',
           data: data.map(d => d.value),
-          backgroundColor: '#1A237E',
+          backgroundColor: getChartColors().primary,
           borderRadius: 3,
           barPercentage: 0.7,
           categoryPercentage: 0.8,
@@ -572,7 +572,7 @@ export class FinanceComponent implements OnInit {
         {
           label: 'Lucro Líquido',
           data: data.map(d => d.secondaryValue ?? 0),
-          backgroundColor: '#2E7D32',
+          backgroundColor: getChartColors().success,
           borderRadius: 3,
           barPercentage: 0.7,
           categoryPercentage: 0.8,
@@ -588,8 +588,8 @@ export class FinanceComponent implements OnInit {
         {
           label: 'Margem %',
           data: data.map(d => d.margin),
-          borderColor: '#1A237E',
-          backgroundColor: 'rgba(26, 35, 126, 0.08)',
+          borderColor: getChartColors().primary,
+          backgroundColor: getChartColors().primaryAlpha,
           fill: true,
           tension: 0.3,
           pointRadius: 2,
@@ -599,7 +599,7 @@ export class FinanceComponent implements OnInit {
         {
           label: 'Meta (15%)',
           data: Array(data.length).fill(15),
-          borderColor: '#EF5350',
+          borderColor: getChartColors().danger,
           borderDash: [8, 4],
           borderWidth: 1.5,
           pointRadius: 0,
@@ -619,7 +619,7 @@ export class FinanceComponent implements OnInit {
           label: 'Receita (R$)',
           data: products.map(p => p.receita),
           backgroundColor: products.map(p =>
-            p.classificacao === 'A' ? '#2E7D32' : p.classificacao === 'B' ? '#F9A825' : '#EF5350'
+            p.classificacao === 'A' ? getChartColors().success : p.classificacao === 'B' ? getChartColors().warning : getChartColors().danger
           ),
           borderRadius: 3,
           barPercentage: 0.7,
@@ -630,11 +630,11 @@ export class FinanceComponent implements OnInit {
           type: 'line',
           label: '% Acumulado',
           data: products.map(p => p.acumulado),
-          borderColor: '#1A237E',
-          backgroundColor: 'rgba(26, 35, 126, 0.08)',
+          borderColor: getChartColors().primary,
+          backgroundColor: getChartColors().primaryAlpha,
           borderWidth: 2,
           pointRadius: 4,
-          pointBackgroundColor: '#1A237E',
+          pointBackgroundColor: getChartColors().primary,
           fill: false,
           tension: 0.3,
           yAxisID: 'y1',

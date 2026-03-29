@@ -184,7 +184,7 @@ export class ClaimsComponent implements OnInit, OnDestroy {
 
   formatAmount(amount: number | null): string {
     if (amount == null) return '-';
-    return `R$ ${amount.toFixed(2).replace('.', ',')}`;
+    return amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
   private loadClaims(): void {

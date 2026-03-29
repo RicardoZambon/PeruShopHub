@@ -15,6 +15,7 @@ import { PageSkeletonComponent } from '../../shared/components/page-skeleton/pag
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { formatBrl as formatBrlUtil } from '../../shared/utils';
 import { SupplyService, type CreateSupplyDto } from '../../services/supply.service';
+import { ToastService } from '../../services/toast.service';
 
 type SupplyCategory = 'Embalagem' | 'Etiqueta' | 'Caixa' | 'Fita' | 'Proteção' | 'Outros';
 
@@ -41,6 +42,7 @@ const CATEGORIES: SupplyCategory[] = ['Embalagem', 'Etiqueta', 'Caixa', 'Fita', 
 })
 export class SuppliesComponent implements OnInit {
   private readonly supplyService = inject(SupplyService);
+  private readonly toastService = inject(ToastService);
 
   readonly searchIcon = Search;
   readonly plusIcon = Plus;
@@ -178,10 +180,11 @@ export class SuppliesComponent implements OnInit {
         this.saving.set(false);
         this.supplies.update(list => [...list, created as Supply]);
         this.closeModal();
+        this.toastService.show('Suprimento criado com sucesso', 'success');
       },
-      error: (err) => {
+      error: () => {
         this.saving.set(false);
-        console.error('Failed to create supply:', err);
+        this.toastService.show('Erro ao criar suprimento', 'danger');
       },
     });
   }
@@ -193,8 +196,8 @@ export class SuppliesComponent implements OnInit {
         this.supplies.set(data as Supply[]);
         this.loading.set(false);
       },
-      error: (err) => {
-        console.error('Failed to load supplies:', err);
+      error: () => {
+        this.toastService.show('Erro ao carregar suprimentos', 'danger');
         this.loading.set(false);
       },
     });

@@ -321,8 +321,8 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.03em;
-      color: #fff;
-      background: #7E57C2;
+      color: var(--text-on-primary);
+      background: var(--accent);
       border-radius: var(--radius-sm, 4px);
       line-height: 1.4;
     }

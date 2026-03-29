@@ -16,6 +16,7 @@ import { SearchInputComponent } from '../../shared/components/search-input/searc
 import { RelativeDatePipe } from '../../shared/pipes/relative-date.pipe';
 import { CustomerService, type CustomerListItem } from '../../services/customer.service';
 import { formatBrl as formatBrlUtil } from '../../shared/utils';
+import { ToastService } from '../../services/toast.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -43,6 +44,7 @@ export class CustomersComponent implements OnInit {
   readonly sortDirection = signal<'asc' | 'desc'>('desc');
 
   private readonly customerService = inject(CustomerService);
+  private readonly toastService = inject(ToastService);
 
   readonly gridColumns: GridColumn[] = [
     { key: 'nome', label: 'Nome', sortable: true },
@@ -98,6 +100,7 @@ export class CustomersComponent implements OnInit {
       }
       this.hasMore.set(false);
       this.hasData.set(false);
+      this.toastService.show('Erro ao carregar clientes', 'danger');
     } finally {
       this.loading.set(false);
     }

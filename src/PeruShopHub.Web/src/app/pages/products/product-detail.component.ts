@@ -27,6 +27,7 @@ import type { PriceCalculationResult, PricingRule } from '../../services/pricing
 import { ListingService } from '../../services/listing.service';
 import type { StockSyncStatus } from '../../services/listing.service';
 import type { ProductVariant } from '../../models/product-variant.model';
+import { ToastService } from '../../services/toast.service';
 import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 
 interface ProductDetail {
@@ -420,6 +421,7 @@ export class ProductDetailComponent implements OnInit {
     private pricingService: PricingService,
     private listingService: ListingService,
     private inventoryService: InventoryService,
+    private toastService: ToastService,
   ) {}
 
   onEdit(): void {
@@ -487,8 +489,8 @@ export class ProductDetailComponent implements OnInit {
       this.loadStorageCosts();
       this.loadAnalytics();
       this.loadPricingRules();
-    } catch (err) {
-      console.error('Failed to load product', err);
+    } catch {
+      this.toastService.show('Erro ao carregar produto', 'danger');
     } finally {
       this.loading.set(false);
     }

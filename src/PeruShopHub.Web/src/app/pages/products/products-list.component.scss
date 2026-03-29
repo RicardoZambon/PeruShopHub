@@ -157,8 +157,8 @@
   align-items: center;
   justify-content: center;
   padding: 1px 5px;
-  background: #FFF3CD;
-  color: #856404;
+  background: var(--warning-light);
+  color: var(--warning);
   border-radius: var(--radius-sm);
   font-size: 10px;
   font-weight: 700;
@@ -175,8 +175,8 @@
   align-items: center;
   justify-content: center;
   padding: 1px 5px;
-  background: #7E57C2;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-on-primary);
   border-radius: var(--radius-sm);
   font-size: 10px;
   font-weight: 700;

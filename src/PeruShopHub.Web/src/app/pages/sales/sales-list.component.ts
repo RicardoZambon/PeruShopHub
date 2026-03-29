@@ -151,6 +151,7 @@ export class SalesListComponent implements OnInit, OnDestroy {
       }
       this.hasMore.set(false);
       this.hasData.set(false);
+      this.toastService.show('Erro ao carregar vendas', 'danger');
     } finally {
       this.loading.set(false);
     }

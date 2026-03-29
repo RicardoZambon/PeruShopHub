@@ -154,6 +154,7 @@ export class ProductsListComponent implements OnInit, OnDestroy {
       }
       this.hasMore.set(false);
       this.hasData.set(false);
+      this.toastService.show('Erro ao carregar produtos', 'danger');
     } finally {
       this.loading.set(false);
     }

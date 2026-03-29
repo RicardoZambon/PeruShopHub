@@ -7,6 +7,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { CustomerService } from '../../services/customer.service';
+import { ToastService } from '../../services/toast.service';
 import { formatBrl, formatDateShort, getOrderStatusVariant } from '../../shared/utils';
 
 type OrderStatus = 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado' | 'Devolvido';
@@ -49,6 +50,7 @@ export class CustomerDetailComponent implements OnInit {
   recentOrders = signal<CustomerOrder[]>([]);
 
   private readonly customerService = inject(CustomerService);
+  private readonly toastService = inject(ToastService);
 
   kpis = computed(() => {
     const c = this.customer();
@@ -100,6 +102,7 @@ export class CustomerDetailComponent implements OnInit {
     } catch {
       this.customer.set(null);
       this.recentOrders.set([]);
+      this.toastService.show('Erro ao carregar detalhes do cliente', 'danger');
     } finally {
       this.loading.set(false);
     }

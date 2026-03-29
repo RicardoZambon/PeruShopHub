@@ -2,6 +2,8 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
 
 interface TenantRow {
   id: string;
@@ -86,6 +88,8 @@ interface TenantRow {
 })
 export class AdminTenantsComponent implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly toastService = inject(ToastService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly baseUrl = `${environment.apiUrl}/admin`;
 
   tenants = signal<TenantRow[]>([]);
@@ -102,18 +106,34 @@ export class AdminTenantsComponent implements OnInit {
         this.tenants.set(data);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false)
+      error: () => {
+        this.loading.set(false);
+        this.toastService.show('Erro ao carregar lojas', 'danger');
+      }
     });
   }
 
   toggleActive(tenant: TenantRow) {
     const action = tenant.isActive ? 'deactivate' : 'activate';
-    this.http.put(`${this.baseUrl}/tenants/${tenant.id}/${action}`, {}).subscribe({
-      next: () => {
-        this.tenants.update(list =>
-          list.map(t => t.id === tenant.id ? { ...t, isActive: !t.isActive } : t)
-        );
-      }
+    const label = tenant.isActive ? 'Desativar' : 'Ativar';
+    this.confirmDialog.confirm({
+      title: `${label} loja`,
+      message: `Deseja ${label.toLowerCase()} a loja "${tenant.name}"?`,
+      confirmLabel: label,
+      variant: tenant.isActive ? 'danger' : 'primary',
+    }).then((confirmed) => {
+      if (!confirmed) return;
+      this.http.put(`${this.baseUrl}/tenants/${tenant.id}/${action}`, {}).subscribe({
+        next: () => {
+          this.tenants.update(list =>
+            list.map(t => t.id === tenant.id ? { ...t, isActive: !t.isActive } : t)
+          );
+          this.toastService.show(`Loja ${label.toLowerCase()}da com sucesso`, 'success');
+        },
+        error: () => {
+          this.toastService.show(`Erro ao ${label.toLowerCase()} loja`, 'danger');
+        }
+      });
     });
   }
 }

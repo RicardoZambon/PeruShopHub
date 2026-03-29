@@ -10,7 +10,7 @@ import { PageHeaderComponent, MarginBadgeComponent, PageSkeletonComponent, Conte
 import { DashboardService } from '../../services/dashboard.service';
 import { OnboardingService, type OnboardingProgress } from '../../services/onboarding.service';
 import type { KpiCard, ProductRanking, PendingAction, ChartDataPoint, CostBreakdownItem } from '../../models/api.models';
-import { formatBrl as formatBrlUtil } from '../../shared/utils';
+import { formatBrl as formatBrlUtil, getChartColors } from '../../shared/utils';
 
 type Period = 'hoje' | '7dias' | '30dias' | 'estemes' | 'personalizado';
 
@@ -73,8 +73,8 @@ export class DashboardComponent implements OnInit {
       {
         label: 'Receita Bruta',
         data: [],
-        borderColor: '#1A237E',
-        backgroundColor: 'rgba(26, 35, 126, 0.1)',
+        borderColor: getChartColors().primary,
+        backgroundColor: getChartColors().primaryAlpha,
         fill: true,
         tension: 0.3,
         pointRadius: 2,
@@ -84,8 +84,8 @@ export class DashboardComponent implements OnInit {
       {
         label: 'Lucro Líquido',
         data: [],
-        borderColor: '#2E7D32',
-        backgroundColor: 'rgba(46, 125, 50, 0.1)',
+        borderColor: getChartColors().success,
+        backgroundColor: getChartColors().successAlpha,
         fill: true,
         tension: 0.3,
         borderDash: [6, 3],
@@ -122,8 +122,9 @@ export class DashboardComponent implements OnInit {
       const centerX = width / 2;
       const centerY = height / 2;
 
+      const colors = getChartColors();
       ctx.font = '500 12px Inter';
-      ctx.fillStyle = '#757575';
+      ctx.fillStyle = colors.textSecondary;
       ctx.fillText('Total Custos', centerX, centerY - 12);
 
       const formatted = this.donutTotal().toLocaleString('pt-BR', {
@@ -131,7 +132,7 @@ export class DashboardComponent implements OnInit {
         currency: 'BRL',
       });
       ctx.font = '700 18px Roboto Mono';
-      ctx.fillStyle = '#212121';
+      ctx.fillStyle = colors.text;
       ctx.fillText(formatted, centerX, centerY + 12);
 
       ctx.restore();
@@ -238,9 +239,10 @@ export class DashboardComponent implements OnInit {
         },
       },
       y: {
-        grid: { color: 'rgba(0, 0, 0, 0.06)' },
+        grid: { color: getChartColors().gridLine },
         ticks: {
           font: { family: 'Roboto Mono', size: 11 },
+          color: getChartColors().textSecondary,
           callback: (value) => `R$ ${Number(value).toLocaleString('pt-BR')}`,
         },
       },
@@ -361,8 +363,8 @@ export class DashboardComponent implements OnInit {
         {
           label: 'Receita Bruta',
           data: data.map(d => d.value),
-          borderColor: '#1A237E',
-          backgroundColor: 'rgba(26, 35, 126, 0.1)',
+          borderColor: getChartColors().primary,
+          backgroundColor: getChartColors().primaryAlpha,
           fill: true,
           tension: 0.3,
           pointRadius: 2,
@@ -372,8 +374,8 @@ export class DashboardComponent implements OnInit {
         {
           label: 'Lucro Líquido',
           data: data.map(d => d.secondaryValue ?? 0),
-          borderColor: '#2E7D32',
-          backgroundColor: 'rgba(46, 125, 50, 0.1)',
+          borderColor: getChartColors().success,
+          backgroundColor: getChartColors().successAlpha,
           fill: true,
           tension: 0.3,
           borderDash: [6, 3],
