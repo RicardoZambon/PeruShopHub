@@ -18,6 +18,8 @@ import type { BadgeVariant, SelectOption, GridColumn } from '../../shared/compon
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { ProductVariantService } from '../../services/product-variant.service';
 import { ProductService } from '../../services/product.service';
+import { InventoryService } from '../../services/inventory.service';
+import type { StorageCostAccumulation } from '../../services/inventory.service';
 import type { CostHistoryItem } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
 import { PricingService } from '../../services/pricing.service';
@@ -84,6 +86,9 @@ export class ProductDetailComponent implements OnInit {
   costHistoryTotalCount = signal(0);
   variants = signal<ProductVariant[]>([]);
   stockSyncStatuses = signal<StockSyncStatus[]>([]);
+
+  // Storage cost state
+  storageCosts = signal<StorageCostAccumulation[]>([]);
 
   // Analytics state
   analyticsDays = signal(30);
@@ -175,6 +180,83 @@ export class ProductDetailComponent implements OnInit {
             beginAtZero: false,
             ticks: {
               callback: (value) => `R$ ${Number(value).toFixed(2).replace('.', ',')}`,
+            },
+          },
+        },
+      },
+    };
+  });
+
+  // Storage cost cumulative chart
+  storageCostChartConfig = computed<ChartConfiguration<'line'> | null>(() => {
+    const costs = this.storageCosts();
+    if (costs.length === 0) return null;
+
+    const sorted = [...costs].reverse(); // chronological order
+    const labels = sorted.map(c => this.formatDate(c.date));
+    const cumulativeData = sorted.map(c => c.cumulativeCost);
+    const dailyData = sorted.map(c => c.dailyCost);
+
+    return {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Custo Acumulado (R$)',
+            data: cumulativeData,
+            borderColor: '#FF6F00',
+            backgroundColor: 'rgba(255, 111, 0, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#FF6F00',
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            yAxisID: 'y',
+          },
+          {
+            label: 'Custo Diário (R$)',
+            data: dailyData,
+            borderColor: '#1A237E',
+            backgroundColor: 'rgba(26, 35, 126, 0.1)',
+            fill: false,
+            tension: 0.3,
+            pointBackgroundColor: '#1A237E',
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            yAxisID: 'y1',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: R$ ${(ctx.parsed.y ?? 0).toFixed(4).replace('.', ',')}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            position: 'left',
+            beginAtZero: true,
+            title: { display: true, text: 'Acumulado (R$)' },
+            ticks: {
+              callback: (value) => `R$ ${Number(value).toFixed(2).replace('.', ',')}`,
+            },
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            beginAtZero: true,
+            title: { display: true, text: 'Diário (R$)' },
+            grid: { drawOnChartArea: false },
+            ticks: {
+              callback: (value) => `R$ ${Number(value).toFixed(4).replace('.', ',')}`,
             },
           },
         },
@@ -337,6 +419,7 @@ export class ProductDetailComponent implements OnInit {
     private categoryService: CategoryService,
     private pricingService: PricingService,
     private listingService: ListingService,
+    private inventoryService: InventoryService,
   ) {}
 
   onEdit(): void {
@@ -400,7 +483,8 @@ export class ProductDetailComponent implements OnInit {
       // Load stock sync statuses (fire and forget, non-blocking)
       this.loadStockSyncStatuses();
 
-      // Load analytics and pricing rules
+      // Load storage costs, analytics, and pricing rules
+      this.loadStorageCosts();
       this.loadAnalytics();
       this.loadPricingRules();
     } catch (err) {
@@ -524,6 +608,13 @@ export class ProductDetailComponent implements OnInit {
     } catch {
       this.stockSyncStatuses.set([]);
     }
+  }
+
+  private loadStorageCosts(): void {
+    this.inventoryService.getStorageCosts(this.productId).subscribe({
+      next: (costs) => this.storageCosts.set(costs),
+      error: () => this.storageCosts.set([]),
+    });
   }
 
   // Pricing methods

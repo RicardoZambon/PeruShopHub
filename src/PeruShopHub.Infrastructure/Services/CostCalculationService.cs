@@ -105,13 +105,42 @@ public class CostCalculationService : ICostCalculationService
         });
 
         // ── storage_daily ──────────────────────────────────
+        // For Full (fulfillment) products, use accumulated storage costs from StorageCostAccumulation.
+        // For others, fall back to the flat daily estimate.
         decimal totalStorageCost = 0m;
+        string storageDescription = $"Custo de armazenagem ({_averageDaysInStorage} dias)";
+
+        // Collect unique product IDs to check Full status
+        var productIds = variants.Select(v => v.Product.Id).Distinct().ToList();
+        var fullProductIds = await _db.MarketplaceListings
+            .Where(l => l.FulfillmentType == "fulfillment" && l.ProductId != null && productIds.Contains(l.ProductId.Value))
+            .Select(l => l.ProductId!.Value)
+            .Distinct()
+            .ToListAsync(ct);
+
         foreach (var item in order.Items)
         {
             if (variantBySku.TryGetValue(item.Sku, out var storageVariant))
             {
-                var dailyCost = storageVariant.Product.StorageCostDaily ?? 0m;
-                totalStorageCost += dailyCost * _averageDaysInStorage * item.Quantity;
+                if (fullProductIds.Contains(storageVariant.Product.Id))
+                {
+                    // Use actual accumulated storage cost for Full products
+                    var latestAccum = await _db.StorageCostAccumulations
+                        .Where(s => s.ProductId == storageVariant.Product.Id)
+                        .OrderByDescending(s => s.Date)
+                        .FirstOrDefaultAsync(ct);
+
+                    if (latestAccum != null)
+                    {
+                        totalStorageCost += latestAccum.CumulativeCost * item.Quantity;
+                        storageDescription = $"Custo de armazenagem Full ({latestAccum.DaysStored} dias acumulados)";
+                    }
+                }
+                else
+                {
+                    var dailyCost = storageVariant.Product.StorageCostDaily ?? 0m;
+                    totalStorageCost += dailyCost * _averageDaysInStorage * item.Quantity;
+                }
             }
         }
 
@@ -120,7 +149,7 @@ public class CostCalculationService : ICostCalculationService
             Id = Guid.NewGuid(),
             OrderId = order.Id,
             Category = "storage_daily",
-            Description = $"Custo de armazenagem ({_averageDaysInStorage} dias)",
+            Description = storageDescription,
             Value = totalStorageCost,
             Source = "Calculated"
         });

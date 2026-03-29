@@ -122,6 +122,20 @@
       </div>
     </div>
 
+    <!-- Storage Cost section (Full products) -->
+    @if (storageCostChartConfig()) {
+      <div class="section-block">
+        <h2 class="section-block__title">Custo de Armazenagem (Full)</h2>
+        <div class="cost-chart-container">
+          <canvas baseChart
+            [type]="storageCostChartConfig()!.type"
+            [data]="storageCostChartConfig()!.data"
+            [options]="storageCostChartConfig()!.options">
+          </canvas>
+        </div>
+      </div>
+    }
+
     <!-- Analytics section -->
     <div class="section-block">
       <div class="section-block__header">

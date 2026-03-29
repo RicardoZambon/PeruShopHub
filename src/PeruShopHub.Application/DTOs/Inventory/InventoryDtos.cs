@@ -117,3 +117,14 @@ public record FulfillmentStockOverviewDto(
     int TotalProducts,
     int TotalAvailable,
     int TotalNotAvailable);
+
+// Storage Cost Accumulation DTOs
+public record StorageCostAccumulationDto(
+    Guid Id,
+    Guid ProductId,
+    DateTime Date,
+    decimal DailyCost,
+    decimal CumulativeCost,
+    int DaysStored,
+    string SizeCategory,
+    decimal PenaltyMultiplier);

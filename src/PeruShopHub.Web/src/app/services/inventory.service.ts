@@ -191,6 +191,17 @@ export interface FulfillmentStockOverview {
   totalNotAvailable: number;
 }
 
+export interface StorageCostAccumulation {
+  id: string;
+  productId: string;
+  date: string;
+  dailyCost: number;
+  cumulativeCost: number;
+  daysStored: number;
+  sizeCategory: string;
+  penaltyMultiplier: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class InventoryService {
   private readonly http = inject(HttpClient);
@@ -239,6 +250,10 @@ export class InventoryService {
 
   getFulfillmentStock(): Observable<FulfillmentStockOverview> {
     return this.http.get<FulfillmentStockOverview>(`${this.baseUrl}/fulfillment-stock`);
+  }
+
+  getStorageCosts(productId: string): Observable<StorageCostAccumulation[]> {
+    return this.http.get<StorageCostAccumulation[]>(`${this.baseUrl}/${productId}/storage-costs`);
   }
 
   exportMovements(params: Omit<MovementQueryParams, 'page' | 'pageSize'>): Observable<Blob> {

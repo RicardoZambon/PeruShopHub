@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PeruShopHub.Application.Common;
 using PeruShopHub.Application.DTOs.Inventory;
 using PeruShopHub.Application.Services;
 using PeruShopHub.Core.Interfaces;
+using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
 
@@ -141,6 +143,34 @@ public class InventoryController : ControllerBase
         var reconciliationService = _serviceProvider.GetRequiredService<IStockReconciliationService>();
         var result = await reconciliationService.GetReportsAsync(dateFrom, dateTo, page, pageSize, ct);
         return Ok(result);
+    }
+
+    /// <summary>Get storage cost accumulation history for a product.</summary>
+    [HttpGet("{productId:guid}/storage-costs")]
+    public async Task<ActionResult<List<StorageCostAccumulationDto>>> GetStorageCosts(
+        Guid productId,
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        CancellationToken ct = default)
+    {
+        var db = _serviceProvider.GetRequiredService<PeruShopHubDbContext>();
+        var query = db.StorageCostAccumulations
+            .Where(s => s.ProductId == productId)
+            .AsQueryable();
+
+        if (dateFrom.HasValue)
+            query = query.Where(s => s.Date >= dateFrom.Value);
+        if (dateTo.HasValue)
+            query = query.Where(s => s.Date <= dateTo.Value);
+
+        var items = await query
+            .OrderByDescending(s => s.Date)
+            .Select(s => new StorageCostAccumulationDto(
+                s.Id, s.ProductId, s.Date, s.DailyCost,
+                s.CumulativeCost, s.DaysStored, s.SizeCategory, s.PenaltyMultiplier))
+            .ToListAsync(ct);
+
+        return Ok(items);
     }
 
     /// <summary>Get a single reconciliation report with all item details.</summary>

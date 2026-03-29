@@ -47,6 +47,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<MarketplaceListing> MarketplaceListings => Set<MarketplaceListing>();
     public DbSet<StockReconciliationReport> StockReconciliationReports => Set<StockReconciliationReport>();
     public DbSet<StockReconciliationReportItem> StockReconciliationReportItems => Set<StockReconciliationReportItem>();
+    public DbSet<StorageCostAccumulation> StorageCostAccumulations => Set<StorageCostAccumulation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
