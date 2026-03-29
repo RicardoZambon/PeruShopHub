@@ -15,5 +15,6 @@ public class SystemUserConfiguration : IEntityTypeConfiguration<SystemUser>
         builder.Property(u => u.Name).HasMaxLength(300).IsRequired();
         builder.Property(u => u.PasswordHash).HasMaxLength(200).IsRequired();
         builder.Property(u => u.RefreshToken).HasMaxLength(200);
+        builder.Property(u => u.AvatarUrl).HasMaxLength(500);
     }
 }

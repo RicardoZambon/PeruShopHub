@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using PeruShopHub.Application.DTOs.Profile;
 using PeruShopHub.Application.DTOs.Settings;
 using PeruShopHub.Application.Exceptions;
 using PeruShopHub.Core.Entities;
@@ -19,6 +20,91 @@ public class UserService : IUserService
     public UserService(PeruShopHubDbContext db)
     {
         _db = db;
+    }
+
+    public async Task<ProfileDto> GetProfileAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await _db.SystemUsers.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, ct)
+            ?? throw new NotFoundException("Usuário", userId);
+
+        return MapToProfileDto(user);
+    }
+
+    public async Task<ProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken ct = default)
+    {
+        var user = await _db.SystemUsers.FindAsync(new object[] { userId }, ct)
+            ?? throw new NotFoundException("Usuário", userId);
+
+        var errors = new Dictionary<string, List<string>>();
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            AddError(errors, "Name", "Nome é obrigatório.");
+
+        if (errors.Count > 0)
+            throw new AppValidationException(errors);
+
+        user.Name = request.Name.Trim();
+        await _db.SaveChangesAsync(ct);
+
+        return MapToProfileDto(user);
+    }
+
+    public async Task<ProfileDto> UpdateProfileEmailAsync(Guid userId, UpdateProfileEmailRequest request, CancellationToken ct = default)
+    {
+        var user = await _db.SystemUsers.FindAsync(new object[] { userId }, ct)
+            ?? throw new NotFoundException("Usuário", userId);
+
+        var errors = new Dictionary<string, List<string>>();
+
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+            AddError(errors, "CurrentPassword", "Senha atual é obrigatória para alterar o e-mail.");
+        else if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            AddError(errors, "CurrentPassword", "Senha atual incorreta.");
+
+        if (string.IsNullOrWhiteSpace(request.NewEmail))
+            AddError(errors, "NewEmail", "E-mail é obrigatório.");
+        else if (!IsValidEmail(request.NewEmail))
+            AddError(errors, "NewEmail", "E-mail inválido.");
+        else
+        {
+            var email = request.NewEmail.Trim().ToLowerInvariant();
+            if (await _db.SystemUsers.AnyAsync(u => u.Email == email && u.Id != userId, ct))
+                AddError(errors, "NewEmail", "E-mail já está em uso.");
+        }
+
+        if (errors.Count > 0)
+            throw new AppValidationException(errors);
+
+        user.Email = request.NewEmail.Trim().ToLowerInvariant();
+        await _db.SaveChangesAsync(ct);
+
+        return MapToProfileDto(user);
+    }
+
+    public async Task<ProfileDto> UpdateProfileAvatarAsync(Guid userId, string avatarUrl, CancellationToken ct = default)
+    {
+        var user = await _db.SystemUsers.FindAsync(new object[] { userId }, ct)
+            ?? throw new NotFoundException("Usuário", userId);
+
+        user.AvatarUrl = avatarUrl;
+        await _db.SaveChangesAsync(ct);
+
+        return MapToProfileDto(user);
+    }
+
+    public async Task RemoveProfileAvatarAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await _db.SystemUsers.FindAsync(new object[] { userId }, ct)
+            ?? throw new NotFoundException("Usuário", userId);
+
+        user.AvatarUrl = null;
+        await _db.SaveChangesAsync(ct);
+    }
+
+    private static ProfileDto MapToProfileDto(SystemUser user)
+    {
+        return new ProfileDto(user.Id, user.Name, user.Email, user.AvatarUrl, user.LastLogin, user.CreatedAt);
     }
 
     public async Task<IReadOnlyList<UserDetailDto>> GetTenantMembersAsync(Guid tenantId, CancellationToken ct = default)

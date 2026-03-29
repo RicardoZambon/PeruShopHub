@@ -1699,3 +1699,40 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Both API and Worker need `INotificationEmailService` registration since both dispatchers use it
   - SettingsController uses `User.FindFirstValue(ClaimTypes.NameIdentifier)` for current user ID
 ---
+
+## 2026-03-29 - US-063
+- Implemented User Profile Self-Service feature with full backend and frontend
+- **Backend changes:**
+  - Added `AvatarUrl` to `SystemUser` entity + EF configuration
+  - Created `ProfileDtos.cs` (ProfileDto, UpdateProfileRequest, UpdateProfileEmailRequest)
+  - Added profile methods to `IUserService`/`UserService` (get, update name, update email, avatar upload/remove)
+  - Created `ProfileController` with GET/PUT /api/profile, PUT /api/profile/email, PUT /api/profile/password, POST/DELETE /api/profile/avatar
+  - Created migration `AddAvatarUrlToSystemUser` + updated model snapshot
+- **Frontend changes:**
+  - Created `profile.service.ts` with all profile API methods
+  - Created `/perfil` page with two tabs: Perfil (profile info, email change, password change, avatar upload) and Equipe (team list, invite modal, remove member)
+  - Added route in `app.routes.ts`
+  - Added "Meu Perfil" link in header dropdown with User icon
+- **Files changed:**
+  - `src/PeruShopHub.Core/Entities/SystemUser.cs`
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/SystemUserConfiguration.cs`
+  - `src/PeruShopHub.Infrastructure/Migrations/20260329050000_AddAvatarUrlToSystemUser.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Migrations/PeruShopHubDbContextModelSnapshot.cs`
+  - `src/PeruShopHub.Application/DTOs/Profile/ProfileDtos.cs` (new)
+  - `src/PeruShopHub.Application/Services/IUserService.cs`
+  - `src/PeruShopHub.Application/Services/UserService.cs`
+  - `src/PeruShopHub.API/Controllers/ProfileController.cs` (new)
+  - `src/PeruShopHub.Web/src/app/services/profile.service.ts` (new)
+  - `src/PeruShopHub.Web/src/app/pages/profile/profile.component.ts` (new)
+  - `src/PeruShopHub.Web/src/app/pages/profile/profile.component.html` (new)
+  - `src/PeruShopHub.Web/src/app/pages/profile/profile.component.scss` (new)
+  - `src/PeruShopHub.Web/src/app/app.routes.ts`
+  - `src/PeruShopHub.Web/src/app/shared/components/header/header.component.ts`
+  - `src/PeruShopHub.Web/src/app/shared/components/header/header.component.html`
+- **Learnings for future iterations:**
+  - BadgeComponent uses `[label]` input (required), not content projection — use `<app-badge [label]="text" />`
+  - BadgeVariant available values: 'success' | 'warning' | 'danger' | 'primary' | 'neutral' | 'accent' — no 'default' or 'info'
+  - Team management endpoints already exist on TenantController — reuse TenantService on frontend for member CRUD
+  - Email change should require password confirmation for security; separated from name update
+  - IFileStorageService is already wired in DI — ProfileController can inject and use it directly
+---

@@ -53,6 +53,10 @@
             }
           </div>
           <div class="header__dropdown-divider"></div>
+          <a routerLink="/perfil" class="header__dropdown-item" (click)="closeUserMenu()">
+            <lucide-icon [img]="userIcon" [size]="16" />
+            Meu Perfil
+          </a>
           <a routerLink="/configuracoes" class="header__dropdown-item" (click)="closeUserMenu()">
             <lucide-icon [img]="settingsIcon" [size]="16" />
             Configurações

@@ -1,0 +1,249 @@
+<app-page-header title="Meu Perfil" subtitle="Gerencie suas informações pessoais e equipe" />
+
+<div class="profile-tabs">
+  <button
+    class="profile-tabs__tab"
+    [class.profile-tabs__tab--active]="activeTab() === 'perfil'"
+    (click)="switchTab('perfil')"
+  >
+    <lucide-icon [img]="userIcon" [size]="16" />
+    Perfil
+  </button>
+  <button
+    class="profile-tabs__tab"
+    [class.profile-tabs__tab--active]="activeTab() === 'equipe'"
+    (click)="switchTab('equipe')"
+  >
+    <lucide-icon [img]="usersIcon" [size]="16" />
+    Equipe
+  </button>
+</div>
+
+<!-- Profile Tab -->
+@if (activeTab() === 'perfil') {
+  @if (loading()) {
+    <div class="profile-skeleton">
+      <div class="profile-skeleton__avatar"></div>
+      <div class="profile-skeleton__fields">
+        <div class="profile-skeleton__line profile-skeleton__line--wide"></div>
+        <div class="profile-skeleton__line profile-skeleton__line--medium"></div>
+        <div class="profile-skeleton__line profile-skeleton__line--wide"></div>
+      </div>
+    </div>
+  } @else {
+    <!-- Avatar Section -->
+    <section class="profile-section">
+      <h3 class="profile-section__title">Foto de perfil</h3>
+      <div class="profile-avatar">
+        <div class="profile-avatar__image">
+          @if (profile()?.avatarUrl) {
+            <img [src]="profile()!.avatarUrl" alt="Avatar" />
+          } @else {
+            <span class="profile-avatar__initials">{{ getInitials() }}</span>
+          }
+        </div>
+        <div class="profile-avatar__actions">
+          <label class="profile-avatar__upload-btn">
+            <lucide-icon [img]="cameraIcon" [size]="16" />
+            {{ uploadingAvatar() ? 'Enviando...' : 'Alterar foto' }}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="onAvatarFileSelected($event)"
+              hidden
+              [disabled]="uploadingAvatar()"
+            />
+          </label>
+          @if (profile()?.avatarUrl) {
+            <app-button variant="ghost" (clicked)="removeAvatar()" [disabled]="uploadingAvatar()">
+              <lucide-icon [img]="trashIcon" [size]="14" />
+              Remover
+            </app-button>
+          }
+          <span class="profile-avatar__hint">JPG, PNG ou WebP. Máx. 2MB.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Name Section -->
+    <section class="profile-section">
+      <h3 class="profile-section__title">Informações pessoais</h3>
+      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="form-layout" [class.form-layout--saving]="saving()">
+        <app-form-field
+          label="Nome"
+          [error]="profileForm.get('name')?.touched && profileForm.get('name')?.hasError('required') ? 'Nome é obrigatório' : ''"
+        >
+          <input type="text" formControlName="name" placeholder="Seu nome completo" />
+        </app-form-field>
+
+        <div class="profile-info-row">
+          <span class="profile-info-row__label">E-mail</span>
+          <span class="profile-info-row__value">{{ profile()?.email }}</span>
+        </div>
+
+        <div class="profile-info-row">
+          <span class="profile-info-row__label">Membro desde</span>
+          <span class="profile-info-row__value">{{ profile()?.createdAt | date:'dd/MM/yyyy' }}</span>
+        </div>
+
+        @if (profile()?.lastLogin) {
+          <div class="profile-info-row">
+            <span class="profile-info-row__label">Último login</span>
+            <span class="profile-info-row__value">{{ profile()?.lastLogin | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+        }
+
+        <app-form-actions>
+          <app-button type="submit" variant="accent" [disabled]="saving()">
+            {{ saving() ? 'Salvando...' : 'Salvar' }}
+          </app-button>
+        </app-form-actions>
+      </form>
+    </section>
+
+    <!-- Email Change Section -->
+    <section class="profile-section">
+      <h3 class="profile-section__title">Alterar e-mail</h3>
+      <p class="profile-section__desc">Para alterar seu e-mail, confirme sua senha atual.</p>
+      <form [formGroup]="emailForm" (ngSubmit)="saveEmail()" class="form-layout" [class.form-layout--saving]="savingEmail()">
+        <app-form-field
+          label="Novo e-mail"
+          [error]="emailForm.get('newEmail')?.touched && emailForm.get('newEmail')?.hasError('required') ? 'E-mail é obrigatório' : emailForm.get('newEmail')?.touched && emailForm.get('newEmail')?.hasError('email') ? 'E-mail inválido' : ''"
+        >
+          <input type="email" formControlName="newEmail" placeholder="novo@email.com" />
+        </app-form-field>
+        <app-form-field
+          label="Senha atual"
+          [error]="emailForm.get('currentPassword')?.touched && emailForm.get('currentPassword')?.hasError('required') ? 'Senha é obrigatória' : ''"
+        >
+          <input type="password" formControlName="currentPassword" placeholder="Digite sua senha atual" />
+        </app-form-field>
+        <app-form-actions>
+          <app-button type="submit" variant="accent" [disabled]="savingEmail()">
+            {{ savingEmail() ? 'Salvando...' : 'Alterar e-mail' }}
+          </app-button>
+        </app-form-actions>
+      </form>
+    </section>
+
+    <!-- Password Change Section -->
+    <section class="profile-section">
+      <h3 class="profile-section__title">
+        <lucide-icon [img]="lockIcon" [size]="18" />
+        Alterar senha
+      </h3>
+      <form [formGroup]="passwordForm" (ngSubmit)="savePassword()" class="form-layout" [class.form-layout--saving]="savingPassword()">
+        <app-form-field
+          label="Senha atual"
+          [error]="passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.hasError('required') ? 'Senha atual é obrigatória' : ''"
+        >
+          <input type="password" formControlName="currentPassword" placeholder="Senha atual" />
+        </app-form-field>
+        <app-form-field
+          label="Nova senha"
+          [error]="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('required') ? 'Nova senha é obrigatória' : passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('minlength') ? 'Mínimo 8 caracteres' : ''"
+        >
+          <input type="password" formControlName="newPassword" placeholder="Mínimo 8 caracteres" />
+        </app-form-field>
+        <app-form-field
+          label="Confirmar nova senha"
+          [error]="passwordForm.get('confirmPassword')?.touched && passwordForm.get('confirmPassword')?.hasError('required') ? 'Confirmação é obrigatória' : ''"
+        >
+          <input type="password" formControlName="confirmPassword" placeholder="Repita a nova senha" />
+        </app-form-field>
+        <app-form-actions>
+          <app-button type="submit" variant="accent" [disabled]="savingPassword()">
+            {{ savingPassword() ? 'Salvando...' : 'Alterar senha' }}
+          </app-button>
+        </app-form-actions>
+      </form>
+    </section>
+  }
+}
+
+<!-- Team Tab -->
+@if (activeTab() === 'equipe') {
+  <section class="profile-section">
+    <div class="profile-section__header">
+      <h3 class="profile-section__title">Membros da equipe</h3>
+      @if (isOwnerOrAdmin()) {
+        <app-button variant="accent" (clicked)="openInviteModal()">
+          Convidar membro
+        </app-button>
+      }
+    </div>
+
+    @if (loadingMembers()) {
+      <div class="profile-skeleton">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="profile-skeleton__row"></div>
+        }
+      </div>
+    } @else if (members().length === 0) {
+      <p class="profile-section__empty">Nenhum membro encontrado.</p>
+    } @else {
+      <div class="team-list">
+        @for (member of members(); track member.id) {
+          <div class="team-member">
+            <div class="team-member__info">
+              <span class="team-member__name">{{ member.name }}</span>
+              <span class="team-member__email">{{ member.email }}</span>
+            </div>
+            <div class="team-member__meta">
+              <app-badge [variant]="getRoleBadge(member.role)" [label]="getRoleLabel(member.role)" />
+              @if (!member.isActive) {
+                <app-badge variant="danger" label="Inativo" />
+              }
+            </div>
+            @if (isOwnerOrAdmin() && member.role !== 'Owner') {
+              <div class="team-member__actions">
+                <app-button variant="ghost" size="sm" (clicked)="removeMember(member)">
+                  <lucide-icon [img]="trashIcon" [size]="14" />
+                </app-button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </section>
+}
+
+<!-- Invite Modal -->
+@if (showInviteModal()) {
+  <app-dialog title="Convidar membro" (closed)="closeInviteModal()">
+    <form [formGroup]="inviteForm" (ngSubmit)="submitInvite()" class="form-layout" [class.form-layout--saving]="inviting()">
+      <app-form-field
+        label="Nome"
+        [error]="inviteForm.get('name')?.touched && inviteForm.get('name')?.hasError('required') ? 'Nome é obrigatório' : ''"
+      >
+        <input type="text" formControlName="name" placeholder="Nome do membro" />
+      </app-form-field>
+      <app-form-field
+        label="E-mail"
+        [error]="inviteForm.get('email')?.touched && inviteForm.get('email')?.hasError('required') ? 'E-mail é obrigatório' : inviteForm.get('email')?.touched && inviteForm.get('email')?.hasError('email') ? 'E-mail inválido' : ''"
+      >
+        <input type="email" formControlName="email" placeholder="email@exemplo.com" />
+      </app-form-field>
+      <app-form-field
+        label="Senha inicial"
+        [error]="inviteForm.get('password')?.touched && inviteForm.get('password')?.hasError('required') ? 'Senha é obrigatória' : inviteForm.get('password')?.touched && inviteForm.get('password')?.hasError('minlength') ? 'Mínimo 8 caracteres' : ''"
+      >
+        <input type="password" formControlName="password" placeholder="Mínimo 8 caracteres" />
+      </app-form-field>
+      <app-form-field label="Perfil">
+        <select formControlName="role">
+          <option value="Admin">Administrador</option>
+          <option value="Manager">Gerente</option>
+          <option value="Viewer">Visualizador</option>
+        </select>
+      </app-form-field>
+      <app-form-actions>
+        <app-button variant="ghost" (clicked)="closeInviteModal()">Cancelar</app-button>
+        <app-button type="submit" variant="accent" [disabled]="inviting()">
+          {{ inviting() ? 'Convidando...' : 'Convidar' }}
+        </app-button>
+      </app-form-actions>
+    </form>
+  </app-dialog>
+}

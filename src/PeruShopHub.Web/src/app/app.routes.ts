@@ -136,6 +136,11 @@ export const routes: Routes = [
           import('./pages/inventory/inventory.component').then(m => m.InventoryComponent),
       },
       {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./pages/profile/profile.component').then(m => m.ProfileComponent),
+      },
+      {
         path: 'configuracoes',
         loadComponent: () =>
           import('./pages/settings/settings.component').then(m => m.SettingsComponent),
