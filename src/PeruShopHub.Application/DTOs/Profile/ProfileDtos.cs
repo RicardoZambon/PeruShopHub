@@ -11,3 +11,10 @@ public record ProfileDto(
 public record UpdateProfileRequest(string Name);
 
 public record UpdateProfileEmailRequest(string NewEmail, string CurrentPassword);
+
+public record UserDataExportDto(
+    Guid Id,
+    string Status,
+    DateTime CreatedAt,
+    DateTime? CompletedAt,
+    DateTime? ExpiresAt);

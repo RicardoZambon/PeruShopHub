@@ -75,6 +75,17 @@
   }
 }
 
+.profile-export-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  &__hint {
+    font-size: var(--body-small-size);
+    color: var(--neutral-500);
+  }
+}
+
 // Avatar
 .profile-avatar {
   display: flex;

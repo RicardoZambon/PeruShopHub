@@ -12,6 +12,14 @@ export interface Profile {
   createdAt: string;
 }
 
+export interface UserDataExport {
+  id: string;
+  status: string;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
   private readonly http = inject(HttpClient);
@@ -41,5 +49,19 @@ export class ProfileService {
 
   removeAvatar(): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/avatar`);
+  }
+
+  requestDataExport(): Observable<UserDataExport> {
+    return this.http.post<UserDataExport>(`${this.baseUrl}/export-data`, {});
+  }
+
+  getExportStatus(id: string): Observable<UserDataExport> {
+    return this.http.get<UserDataExport>(`${this.baseUrl}/export-data/${id}`);
+  }
+
+  downloadExport(id: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/export-data/${id}/download`, {
+      responseType: 'blob',
+    });
   }
 }

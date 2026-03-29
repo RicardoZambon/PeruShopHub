@@ -88,6 +88,8 @@ builder.Services.AddHostedService<QuestionSyncWorker>();
 builder.Services.AddScoped<IClaimService, ClaimService>();
 builder.Services.AddHostedService<ClaimSyncWorker>();
 builder.Services.AddHostedService<ResponseTimeAlertWorker>();
+builder.Services.AddScoped<IUserDataExportService, UserDataExportService>();
+builder.Services.AddHostedService<UserDataExportWorker>();
 
 var host = builder.Build();
 host.Run();

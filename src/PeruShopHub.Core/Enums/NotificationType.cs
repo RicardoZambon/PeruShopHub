@@ -8,5 +8,6 @@ public enum NotificationType
     MLConnectionError,
     SyncError,
     UnansweredQuestion,
-    UnansweredMessage
+    UnansweredMessage,
+    DataExportReady
 }

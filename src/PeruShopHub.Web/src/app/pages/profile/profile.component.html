@@ -158,6 +158,38 @@
         </app-form-actions>
       </form>
     </section>
+
+    <!-- Data Export Section (LGPD) -->
+    <section class="profile-section">
+      <h3 class="profile-section__title">
+        <lucide-icon [img]="downloadIcon" [size]="18" />
+        Exportar meus dados
+      </h3>
+      <p class="profile-section__desc">
+        Conforme a LGPD, você pode exportar todos os seus dados pessoais em formato JSON/ZIP.
+        O arquivo ficará disponível para download por 24 horas.
+      </p>
+      <div class="profile-export-actions">
+        @if (dataExport()?.status === 'Completed') {
+          <app-button variant="accent" (clicked)="downloadExport()">
+            <lucide-icon [img]="downloadIcon" [size]="14" />
+            Baixar dados
+          </app-button>
+          <span class="profile-export-actions__hint">
+            Expira em {{ dataExport()!.expiresAt | date:'dd/MM/yyyy HH:mm' }}
+          </span>
+        } @else {
+          <app-button variant="accent" (clicked)="requestDataExport()" [disabled]="exportingData()">
+            {{ exportingData() ? 'Solicitando...' : 'Exportar meus dados' }}
+          </app-button>
+          @if (dataExport()?.status === 'Pending' || dataExport()?.status === 'Processing') {
+            <span class="profile-export-actions__hint">
+              Exportação em andamento. Você será notificado quando estiver pronta.
+            </span>
+          }
+        }
+      </div>
+    </section>
   }
 }
 

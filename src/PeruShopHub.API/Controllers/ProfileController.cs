@@ -15,14 +15,17 @@ public class ProfileController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly IFileStorageService _fileStorage;
+    private readonly IUserDataExportService _exportService;
 
-    public ProfileController(IUserService userService, IFileStorageService fileStorage)
+    public ProfileController(IUserService userService, IFileStorageService fileStorage, IUserDataExportService exportService)
     {
         _userService = userService;
         _fileStorage = fileStorage;
+        _exportService = exportService;
     }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetTenantId() => Guid.Parse(User.FindFirstValue("tenant_id")!);
 
     [HttpGet]
     public async Task<ActionResult<ProfileDto>> Get(CancellationToken ct)
@@ -90,5 +93,28 @@ public class ProfileController : ControllerBase
 
         await _userService.RemoveProfileAvatarAsync(userId, ct);
         return NoContent();
+    }
+
+    [HttpPost("export-data")]
+    public async Task<ActionResult<UserDataExportDto>> RequestDataExport(CancellationToken ct)
+    {
+        var result = await _exportService.RequestExportAsync(GetUserId(), GetTenantId(), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("export-data/{id:guid}")]
+    public async Task<ActionResult<UserDataExportDto>> GetExportStatus(Guid id, CancellationToken ct)
+    {
+        var result = await _exportService.GetExportStatusAsync(id, GetUserId(), ct);
+        if (result is null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("export-data/{id:guid}/download")]
+    public async Task<IActionResult> DownloadExport(Guid id, CancellationToken ct)
+    {
+        var result = await _exportService.DownloadExportAsync(id, GetUserId(), ct);
+        if (result is null) return NotFound(new { message = "Exportação não encontrada ou expirada." });
+        return File(result.Value.Data, "application/zip", result.Value.FileName);
     }
 }
