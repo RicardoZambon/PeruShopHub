@@ -1546,3 +1546,22 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - INotificationDispatcher.DispatchAsync takes a Notification entity, not individual params
   - StockReconciliationService was already written but had two build errors (missing using + wrong PagedResult constructor) — always build before committing
 ---
+
+## 2026-03-29 - US-056
+- Implemented ML Fulfillment Stock Query feature
+- Backend: Added `FulfillmentStockOverviewDto`, `ProductFulfillmentStockDto`, `FulfillmentStockItemDto` DTOs
+- Backend: Added `GetFulfillmentStockOverviewAsync` to `IInventoryService` / `InventoryService` — queries all ML listings with `FulfillmentType == "fulfillment"`, fetches stock from ML adapter with Redis caching (15 min TTL), groups by product
+- Backend: Added `GET /api/inventory/fulfillment-stock` endpoint to `InventoryController`
+- Backend: Added `ICacheService`, `IServiceProvider`, `ILogger` dependencies to `InventoryService` constructor
+- Frontend: Added `FulfillmentStockItem`, `ProductFulfillmentStock`, `FulfillmentStockOverview` interfaces to `inventory.service.ts`
+- Frontend: Added `getFulfillmentStock()` method to `InventoryService`
+- Frontend: Enabled 'estoque-full' tab (removed `disabled: true`)
+- Frontend: Built tab UI with KPI cards (Produtos Full, Disponível, Indisponível), per-product cards with stock table, skeleton loading, empty state, and refresh button
+- Frontend: Added SCSS styles for `.full-stock__*` classes
+- Fixed `InventoryServiceTests` constructor to include new dependencies
+- Files changed: InventoryController.cs, InventoryDtos.cs, IInventoryService.cs, InventoryService.cs, inventory.component.html/ts/scss, inventory.service.ts, InventoryServiceTests.cs
+- **Learnings for future iterations:**
+  - When adding constructor params to services, check unit test instantiation (e.g., `InventoryServiceTests.CreateService()`)
+  - Fulfillment stock uses the existing `IMarketplaceAdapter.GetFulfillmentStockAsync()` + `ICacheService` for 15-min TTL caching
+  - `MarketplaceListing.FulfillmentType == "fulfillment"` identifies ML Full products
+---
