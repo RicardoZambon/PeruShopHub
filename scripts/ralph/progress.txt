@@ -2161,3 +2161,36 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - The `BuildCostMap` helper aggregates OrderCost by category — reusable for any cost-breakdown export
   - Finance component already has `downloadBlob` helper for binary file downloads — reuse for any new export format
 ---
+
+## 2026-03-29 - US-REV-4
+- Phase 4 Review — Post-Sale & Messaging gate review completed
+- **Build verification:**
+  - .NET build (API + Worker): 0 errors, 3 warnings (CS1998 async, MSB3277 EF version)
+  - Angular build: 0 errors, 2 warnings (unused RouterLink import, deprecated Sass function)
+- **Test verification:**
+  - .NET unit tests: 218 passed, 0 failed
+  - Angular tests (Vitest): 57 passed, 0 failed
+- **Phase 4 stories reviewed (US-066 through US-075):**
+  - US-066 (Questions API Integration): ✅ All acceptance criteria met — entity, migration, controller (GET+POST), ML adapter methods, QuestionSyncWorker (5min), webhook handler
+  - US-067 (Questions Page Frontend): ✅ All acceptance criteria met — /perguntas route, 3 tabs, inline answer, search/filter, sidebar badge, SignalR
+  - US-068 (Response Templates): ✅ All acceptance criteria met — entity, migration, CRUD controller, 5 seed templates, frontend management page + dropdown on answer textarea
+  - US-069 (Post-Sale Messages): ✅ Core functionality met — entity, migration, GET/POST endpoints, webhook handler, chat UI with 350-char counter, sidebar unread indicator. **Minor gap:** SyncMessagesForOrderAsync is a placeholder — ML adapter lacks dedicated message pack API methods. Messages rely on webhook events only, no proactive polling
+  - US-070 (Claims and Returns): ✅ All acceptance criteria met — MarketplaceClaim entity, migration, GET/POST endpoints, webhook handler, ClaimSyncWorker (10min), /reclamacoes page with filters/badges/detail/timeline
+  - US-071 (Response Time Alerts): ✅ All acceptance criteria met — ResponseTimeAlertWorker (30min), configurable thresholds (default 4h questions, 12h messages), email notifications, GET/PUT settings endpoint, frontend config
+  - US-072 (LGPD Privacy/Terms): ✅ All acceptance criteria met — /termos-de-uso and /politica-de-privacidade pages (public, no auth), registration checkbox, TermsAcceptedAt/PrivacyAcceptedAt on SystemUser, footer links
+  - US-073 (Cookie Consent): ✅ All acceptance criteria met — banner component, 3 options (aceitar todos/essenciais/configurar), localStorage + cookie persistence, hidden after consent
+  - US-074a (Data Export LGPD): ✅ All acceptance criteria met — POST /api/profile/export-data, async processing, UserDataExport entity, 24h expiry, ZIP output, frontend button
+  - US-074b (Account Deletion LGPD): ✅ All acceptance criteria met — POST /api/profile/delete-account, owner vs member logic, password+phrase confirmation, 30-day grace, AccountDeletionWorker
+  - US-075 (Accounting Export): ✅ All acceptance criteria met — GET /api/reports/accounting-export with Bling/Tiny CSV formats, proper field mapping, descriptive filename, frontend dropdown
+- **Database migrations:** All 8 Phase 4 migrations present and ordered correctly
+- **API endpoints:** All required endpoints exist with proper authorization and validation
+- **Frontend wiring:** All services, components, routes, and sidebar badges verified
+- **Gaps found:**
+  - US-069: ML adapter message pack API methods not implemented (SyncMessagesForOrderAsync is placeholder). Messages work via webhooks only. Not blocking — can be addressed in Phase 5 or as separate enhancement
+- Files reviewed: controllers, services, entities, migrations, Angular components/services/routes across all Phase 4 stories
+- No files changed (review-only story)
+- **Learnings for future iterations:**
+  - Phase 4 is comprehensive — 10 stories covering post-sale, LGPD, and integrations all properly implemented
+  - MarketplaceMessageService.SyncMessagesForOrderAsync needs ML adapter wiring when message pack API methods are added
+  - All workers follow consistent pattern: configurable interval, iterate tenants, use adapter for ML API calls
+---
