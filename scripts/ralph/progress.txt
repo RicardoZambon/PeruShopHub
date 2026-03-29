@@ -2247,3 +2247,25 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - NotificationPreference types: `LowStock`, `NewSale` (PascalCase enum names)
   - ProfileController.ChangePassword returns `NoContent()` not `Ok()`
 ---
+
+## 2026-03-29 - US-078
+- Implemented NBomber 5.x load test project with 3 scenarios:
+  - `webhook_processing`: 100 req/s POST to `/api/webhooks/mercadolivre`
+  - `order_detail_fetch`: 50 req/s GET to `/api/orders/{id}`
+  - `product_create`: 20 req/s POST to `/api/products`
+- Auto-registers test user for auth, seeds products for GET tests
+- Configurable base URL via `--base-url` arg or `BASE_URL` env var
+- Reports in TXT + HTML to `load-test-results/` (gitignored)
+- Added README with performance targets and CI integration guide
+- Files changed:
+  - `tests/PeruShopHub.LoadTests/PeruShopHub.LoadTests.csproj` (new)
+  - `tests/PeruShopHub.LoadTests/Program.cs` (new)
+  - `tests/PeruShopHub.LoadTests/README.md` (new)
+  - `PeruShopHub.sln` (added project)
+  - `.gitignore` (added load-test-results/)
+- **Learnings for future iterations:**
+  - NBomber.Http 5.x `Http.Send()` takes `HttpClient` as first arg, NOT `IScenarioContext`
+  - NBomber 5.x ReportFormat is under `NBomber.Contracts.Stats.ReportFormat`, not `NBomber.Contracts.ReportFormat`
+  - `context.InvocationNumber` is `long`, cast to `int` for array indexing
+  - Load test project is an Exe (OutputType), not a class library or test project
+---
