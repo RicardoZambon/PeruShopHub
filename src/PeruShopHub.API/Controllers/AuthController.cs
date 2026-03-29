@@ -126,7 +126,7 @@ public class AuthController : ControllerBase
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
             Email = request.Email.Trim().ToLowerInvariant(),
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12),
             IsSuperAdmin = false,
             IsActive = true,
             CreatedAt = now,
@@ -324,7 +324,7 @@ public class AuthController : ControllerBase
             var token = Convert.ToBase64String(tokenBytes);
 
             // Store hashed token with 1h expiry
-            var tokenHash = BCrypt.Net.BCrypt.HashPassword(token);
+            var tokenHash = BCrypt.Net.BCrypt.HashPassword(token, workFactor: 12);
             _db.PasswordResetTokens.Add(new PasswordResetToken
             {
                 Id = Guid.NewGuid(),
@@ -378,7 +378,7 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Token inválido ou expirado." });
 
         // Update password
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
         user.RefreshToken = null;
         user.RefreshTokenExpiresAt = null;
 

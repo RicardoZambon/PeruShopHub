@@ -180,7 +180,7 @@ public class UserService : IUserService
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
             Email = email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12),
             IsSuperAdmin = false,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
@@ -269,7 +269,7 @@ public class UserService : IUserService
         if (errors.Count > 0)
             throw new AppValidationException(errors);
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
         user.RefreshToken = null;
         user.RefreshTokenExpiresAt = null;
         await _db.SaveChangesAsync(ct);
@@ -295,7 +295,7 @@ public class UserService : IUserService
         if (errors.Count > 0)
             throw new AppValidationException(errors);
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
         user.RefreshToken = null;
         user.RefreshTokenExpiresAt = null;
         await _db.SaveChangesAsync(ct);
