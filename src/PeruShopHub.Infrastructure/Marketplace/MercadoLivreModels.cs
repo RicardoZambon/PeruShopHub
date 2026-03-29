@@ -444,6 +444,62 @@ public class MlAttributeCombination
     public string? ValueName { get; set; }
 }
 
+// ── ML Questions response ────────────────────────────────
+
+public class MlQuestionSearchResponse
+{
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
+
+    [JsonPropertyName("limit")]
+    public int Limit { get; set; }
+
+    [JsonPropertyName("questions")]
+    public List<MlQuestionResponse> Questions { get; set; } = [];
+}
+
+public class MlQuestionResponse
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("item_id")]
+    public string ItemId { get; set; } = string.Empty;
+
+    [JsonPropertyName("text")]
+    public string Text { get; set; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("date_created")]
+    public DateTimeOffset DateCreated { get; set; }
+
+    [JsonPropertyName("answer")]
+    public MlQuestionAnswer? Answer { get; set; }
+
+    [JsonPropertyName("from")]
+    public MlQuestionFrom? From { get; set; }
+}
+
+public class MlQuestionAnswer
+{
+    [JsonPropertyName("text")]
+    public string Text { get; set; } = string.Empty;
+
+    [JsonPropertyName("date_created")]
+    public DateTimeOffset DateCreated { get; set; }
+}
+
+public class MlQuestionFrom
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("nickname")]
+    public string? Nickname { get; set; }
+}
+
 // ── ML Fulfillment Stock response ────────────────────────
 
 public class MlFulfillmentStockResponse

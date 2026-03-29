@@ -83,6 +83,8 @@ builder.Services.AddHostedService<BillingReconciliationWorker>();
 builder.Services.AddScoped<IStockReconciliationService, StockReconciliationService>();
 builder.Services.AddHostedService<StockReconciliationWorker>();
 builder.Services.AddHostedService<StorageCostWorker>();
+builder.Services.AddScoped<IMarketplaceQuestionService, MarketplaceQuestionService>();
+builder.Services.AddHostedService<QuestionSyncWorker>();
 
 var host = builder.Build();
 host.Run();

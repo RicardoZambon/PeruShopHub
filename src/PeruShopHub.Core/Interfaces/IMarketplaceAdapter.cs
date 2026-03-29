@@ -37,6 +37,15 @@ public interface IMarketplaceAdapter
 
     /// <summary>Fetch fulfillment (Full) stock levels for an inventory/item.</summary>
     Task<MarketplaceFulfillmentStock> GetFulfillmentStockAsync(string inventoryId, CancellationToken ct = default);
+
+    /// <summary>Search received questions (unanswered + recent).</summary>
+    Task<MarketplaceQuestionSearchResult> SearchQuestionsAsync(string status, int offset, int limit, CancellationToken ct = default);
+
+    /// <summary>Get a single question by ID.</summary>
+    Task<MarketplaceQuestionDetail> GetQuestionAsync(string questionId, CancellationToken ct = default);
+
+    /// <summary>Post an answer to a question.</summary>
+    Task PostAnswerAsync(string questionId, string answerText, CancellationToken ct = default);
 }
 
 // ── DTOs returned by IMarketplaceAdapter ────────────────────
@@ -161,6 +170,22 @@ public record MarketplacePaymentDetails(
     DateTimeOffset DateCreated,
     DateTimeOffset? DateApproved,
     long? OrderId);
+
+// ── Questions ────────────────────────────────────────────
+
+public record MarketplaceQuestionSearchResult(
+    IReadOnlyList<MarketplaceQuestionDetail> Questions,
+    int Total);
+
+public record MarketplaceQuestionDetail(
+    string ExternalId,
+    string ItemId,
+    string BuyerNickname,
+    string QuestionText,
+    string? AnswerText,
+    string Status,
+    DateTimeOffset QuestionDate,
+    DateTimeOffset? AnswerDate);
 
 // ── Fulfillment stock ────────────────────────────────────
 

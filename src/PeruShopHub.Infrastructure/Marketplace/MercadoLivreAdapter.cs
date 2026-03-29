@@ -382,6 +382,48 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
             stock.Status);
     }
 
+    // ── Questions ──────────────────────────────────────────────
+
+    public async Task<MarketplaceQuestionSearchResult> SearchQuestionsAsync(
+        string status, int offset, int limit, CancellationToken ct = default)
+    {
+        var url = $"/my/received_questions/search?status={Uri.EscapeDataString(status)}&offset={offset}&limit={limit}&sort_fields=date_created&sort_types=DESC";
+        var result = await SendAsync<MlQuestionSearchResponse>(HttpMethod.Get, url, null, ct);
+
+        var questions = result.Questions.Select(q => new MarketplaceQuestionDetail(
+            q.Id.ToString(),
+            q.ItemId,
+            q.From?.Nickname ?? "Anônimo",
+            q.Text,
+            q.Answer?.Text,
+            q.Status,
+            q.DateCreated,
+            q.Answer?.DateCreated)).ToList();
+
+        return new MarketplaceQuestionSearchResult(questions, result.Total);
+    }
+
+    public async Task<MarketplaceQuestionDetail> GetQuestionAsync(string questionId, CancellationToken ct = default)
+    {
+        var q = await SendAsync<MlQuestionResponse>(HttpMethod.Get, $"/questions/{questionId}", null, ct);
+
+        return new MarketplaceQuestionDetail(
+            q.Id.ToString(),
+            q.ItemId,
+            q.From?.Nickname ?? "Anônimo",
+            q.Text,
+            q.Answer?.Text,
+            q.Status,
+            q.DateCreated,
+            q.Answer?.DateCreated);
+    }
+
+    public async Task PostAnswerAsync(string questionId, string answerText, CancellationToken ct = default)
+    {
+        var content = JsonContent.Create(new { question_id = long.Parse(questionId), text = answerText }, options: JsonOptions);
+        await SendAsync(HttpMethod.Post, "/answers", content, ct);
+    }
+
     // ── HTTP helpers ─────────────────────────────────────────
 
     private async Task<T> SendAsync<T>(HttpMethod method, string endpoint, HttpContent? content, CancellationToken ct)

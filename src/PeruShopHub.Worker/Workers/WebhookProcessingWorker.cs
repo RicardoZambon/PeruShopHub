@@ -21,7 +21,7 @@ public class WebhookProcessingWorker : BackgroundService
     private readonly TimeSpan _pollInterval;
 
     private const int MaxRetries = 3;
-    private static readonly string[] Topics = ["orders_v2", "items", "shipments", "payments"];
+    private static readonly string[] Topics = ["orders_v2", "items", "shipments", "payments", "questions"];
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -135,6 +135,9 @@ public class WebhookProcessingWorker : BackgroundService
                 break;
             case "payments":
                 await ProcessPaymentWebhookAsync(sp, webhook, ct);
+                break;
+            case "questions":
+                await ProcessQuestionWebhookAsync(sp, webhook, ct);
                 break;
             default:
                 _logger.LogDebug("Unhandled webhook topic: {Topic}", topic);
@@ -832,6 +835,34 @@ public class WebhookProcessingWorker : BackgroundService
         _logger.LogInformation(
             "Payment updated: PaymentId={PaymentId}, OrderId={OrderId}, Status={Status}, Amount={Amount}",
             paymentId, order.ExternalOrderId, payment.Status, payment.TransactionAmount);
+    }
+
+    // ── Questions webhook ──────────────────────────────────────
+
+    private async Task ProcessQuestionWebhookAsync(IServiceProvider sp, MercadoLivreWebhookDto webhook, CancellationToken ct)
+    {
+        var questionId = ExtractIdFromResource(webhook.Resource);
+        if (questionId is null)
+        {
+            _logger.LogWarning("Could not extract question ID from resource: {Resource}", webhook.Resource);
+            return;
+        }
+
+        var db = sp.GetRequiredService<PeruShopHubDbContext>();
+
+        var connection = await FindConnectionAsync(db, webhook.UserId, ct);
+        if (connection is null)
+        {
+            _logger.LogWarning("No active ML connection for UserId {UserId}. Skipping question {QuestionId}", webhook.UserId, questionId);
+            return;
+        }
+
+        _logger.LogInformation("Processing question webhook: QuestionId={QuestionId}, TenantId={TenantId}", questionId, connection.TenantId);
+
+        var questionService = sp.GetRequiredService<IMarketplaceQuestionService>();
+        await questionService.SyncSingleQuestionAsync(questionId, connection.TenantId, ct);
+
+        _logger.LogInformation("Question webhook processed: QuestionId={QuestionId}", questionId);
     }
 
     // ── Shared helpers ────────────────────────────────────────

@@ -51,6 +51,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<OnboardingProgress> OnboardingProgresses => Set<OnboardingProgress>();
+    public DbSet<MarketplaceQuestion> MarketplaceQuestions => Set<MarketplaceQuestion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
