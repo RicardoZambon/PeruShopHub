@@ -761,6 +761,165 @@
       }
     </div>
   </ng-template>
+
+  <ng-template appTabPanel="simulador-full">
+    <div class="estoque__content">
+      <div class="full-stock__header">
+        <div class="full-stock__header-info">
+          <h3 class="recon__title">Simulador Full vs Envio Próprio</h3>
+          <p class="recon__subtitle">Compare os custos de Fulfillment (Full) do Mercado Livre com envio próprio para cada produto.</p>
+        </div>
+      </div>
+
+      <div class="sim-full__form">
+        <div class="sim-full__form-row">
+          <div class="sim-full__field">
+            <label class="sim-full__label">Produto</label>
+            @if (simProductsLoading()) {
+              <app-skeleton type="text" width="100%" height="40px" />
+            } @else {
+              <app-select-dropdown
+                placeholder="Selecione um produto..."
+                [options]="simProductOptions()"
+                [value]="simSelectedProductId() || ''"
+                (valueChange)="onSimProductChange($event)"
+              />
+            }
+          </div>
+          <div class="sim-full__field sim-full__field--small">
+            <label class="sim-full__label">Custo mão de obra / envio (R$)</label>
+            <input
+              type="number"
+              class="form-field__input"
+              placeholder="5.00"
+              step="0.01"
+              min="0"
+              [value]="simLaborCost()"
+              (input)="onSimLaborCostChange($event)"
+            />
+          </div>
+          <div class="sim-full__field sim-full__field--action">
+            <button
+              class="recon__btn recon__btn--primary"
+              [disabled]="!simSelectedProductId() || simLoading()"
+              (click)="runFulfillmentCompare()">
+              @if (simLoading()) {
+                Simulando...
+              } @else {
+                Simular
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+
+      @if (simError()) {
+        <div class="sim-full__error">{{ simError() }}</div>
+      }
+
+      @if (simLoading() && !simResult()) {
+        <div class="sim-full__skeleton">
+          <div class="sim-full__cards">
+            @for (i of [1, 2]; track i) {
+              <div class="sim-full__card">
+                <app-skeleton type="text" width="60%" height="20px" />
+                <app-skeleton type="text" width="40%" height="32px" />
+                <app-skeleton type="text" width="100%" height="14px" />
+                <app-skeleton type="text" width="100%" height="14px" />
+                <app-skeleton type="text" width="100%" height="14px" />
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (simResult(); as result) {
+        <div class="sim-full__result">
+          <div class="sim-full__product-info">
+            <span class="sim-full__product-name">{{ result.productName }}</span>
+            <span class="sim-full__product-sku">{{ result.productSku }}</span>
+          </div>
+
+          <div class="sim-full__cards">
+            <!-- Full card -->
+            <div class="sim-full__card" [class.sim-full__card--recommended]="result.recommendation === 'full'">
+              @if (result.recommendation === 'full') {
+                <span class="sim-full__recommended-badge">Recomendado</span>
+              }
+              <h4 class="sim-full__card-title">Fulfillment (Full)</h4>
+              <span class="sim-full__card-total inv__mono">{{ formatBrl(result.fullCost) }}</span>
+              <div class="sim-full__breakdown">
+                <div class="sim-full__breakdown-row">
+                  <span>Custo armazenagem diário</span>
+                  <span class="inv__mono">{{ formatBrl(result.fullBreakdown.dailyStorageCost) }}/dia</span>
+                </div>
+                <div class="sim-full__breakdown-row">
+                  <span>Média dias em estoque</span>
+                  <span class="inv__mono">{{ result.fullBreakdown.avgDaysInStock | number:'1.1-1' }} dias</span>
+                </div>
+                <div class="sim-full__breakdown-row">
+                  <span>Custo armazenagem total</span>
+                  <span class="inv__mono">{{ formatBrl(result.fullBreakdown.storageCostTotal) }}</span>
+                </div>
+                <div class="sim-full__breakdown-row">
+                  <span>Taxa fulfillment / venda</span>
+                  <span class="inv__mono">{{ formatBrl(result.fullBreakdown.fulfillmentFeePerSale) }}</span>
+                </div>
+                <div class="sim-full__breakdown-row sim-full__breakdown-row--total">
+                  <span>Total por venda</span>
+                  <span class="inv__mono">{{ formatBrl(result.fullBreakdown.total) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Own shipping card -->
+            <div class="sim-full__card" [class.sim-full__card--recommended]="result.recommendation === 'own_shipping'">
+              @if (result.recommendation === 'own_shipping') {
+                <span class="sim-full__recommended-badge">Recomendado</span>
+              }
+              <h4 class="sim-full__card-title">Envio Próprio</h4>
+              <span class="sim-full__card-total inv__mono">{{ formatBrl(result.ownShippingCost) }}</span>
+              <div class="sim-full__breakdown">
+                <div class="sim-full__breakdown-row">
+                  <span>Frete médio</span>
+                  <span class="inv__mono">{{ formatBrl(result.ownBreakdown.avgShippingCost) }}</span>
+                </div>
+                <div class="sim-full__breakdown-row">
+                  <span>Embalagem</span>
+                  <span class="inv__mono">{{ formatBrl(result.ownBreakdown.packagingCost) }}</span>
+                </div>
+                <div class="sim-full__breakdown-row">
+                  <span>Mão de obra / envio</span>
+                  <span class="inv__mono">{{ formatBrl(result.ownBreakdown.laborCostPerShipment) }}</span>
+                </div>
+                <div class="sim-full__breakdown-row sim-full__breakdown-row--total">
+                  <span>Total por venda</span>
+                  <span class="inv__mono">{{ formatBrl(result.ownBreakdown.total) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Savings banner -->
+          <div class="sim-full__savings">
+            <span class="sim-full__savings-icon">
+              @if (result.savingsAmount > 0) {
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" stroke="currentColor" stroke-width="1.5"/><path d="m7 10 2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              }
+            </span>
+            @if (result.savingsAmount > 0) {
+              <span>
+                Usando <strong>{{ result.recommendation === 'full' ? 'Fulfillment (Full)' : 'Envio Próprio' }}</strong>,
+                você economiza <strong class="sim-full__savings-amount">{{ formatBrl(result.savingsAmount) }}</strong> por venda.
+              </span>
+            } @else {
+              <span>Os custos são equivalentes para ambas as opções.</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </ng-template>
 </app-tab-panels>
 
 <!-- Entry Modal -->

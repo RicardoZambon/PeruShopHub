@@ -1248,3 +1248,172 @@
     }
   }
 }
+
+// ── Simulador Full ──────────────────────────────────────
+.sim-full {
+  &__form {
+    margin-bottom: var(--space-4);
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+  }
+
+  &__form-row {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  &__field {
+    flex: 1;
+    min-width: 200px;
+
+    &--small {
+      flex: 0 0 200px;
+      min-width: 160px;
+    }
+
+    &--action {
+      flex: 0 0 auto;
+      min-width: auto;
+    }
+  }
+
+  &__label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-1);
+  }
+
+  &__error {
+    padding: var(--space-3);
+    background: var(--danger-bg, #fef2f2);
+    color: var(--danger);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    margin-bottom: var(--space-4);
+  }
+
+  &__skeleton {
+    margin-top: var(--space-4);
+  }
+
+  &__result {
+    margin-top: var(--space-4);
+  }
+
+  &__product-info {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  &__product-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  &__product-sku {
+    font-size: 0.8125rem;
+    font-family: 'Roboto Mono', monospace;
+    color: var(--text-secondary);
+  }
+
+  &__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  &__card {
+    position: relative;
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 2px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    transition: border-color 0.2s;
+
+    &--recommended {
+      border-color: var(--success);
+      background: var(--success-bg, #f0fdf4);
+    }
+  }
+
+  &__recommended-badge {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--success);
+    border-radius: var(--radius-sm);
+  }
+
+  &__card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-2);
+  }
+
+  &__card-total {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-3);
+  }
+
+  &__breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  &__breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    padding: var(--space-1) 0;
+
+    &--total {
+      border-top: 1px solid var(--neutral-200);
+      padding-top: var(--space-2);
+      margin-top: var(--space-1);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
+
+  &__savings {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: var(--success-bg, #f0fdf4);
+    border: 1px solid var(--success);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+  }
+
+  &__savings-icon {
+    color: var(--success);
+    flex-shrink: 0;
+  }
+
+  &__savings-amount {
+    color: var(--success);
+  }
+}

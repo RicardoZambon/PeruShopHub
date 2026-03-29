@@ -27,10 +27,12 @@ import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocat
 import { ProductService } from '../../services/product.service';
 import type { Product } from '../../services/product.service';
 import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
+import { PricingService } from '../../services/pricing.service';
+import type { FulfillmentCompareResult } from '../../services/pricing.service';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
-type InventoryTab = 'visao-geral' | 'movimentacoes' | 'reconciliacao' | 'reconciliacao-ml' | 'estoque-full';
+type InventoryTab = 'visao-geral' | 'movimentacoes' | 'reconciliacao' | 'reconciliacao-ml' | 'estoque-full' | 'simulador-full';
 type MovementType = 'Entrada' | 'Saída' | 'Ajuste' | 'Reconciliacao';
 
 interface ProductOption {
@@ -49,6 +51,7 @@ export class InventoryComponent implements OnInit {
   private readonly inventoryService = inject(InventoryService);
   private readonly productService = inject(ProductService);
   private readonly confirmDialogService = inject(ConfirmDialogService);
+  private readonly pricingService = inject(PricingService);
   private readonly router = inject(Router);
 
   @ViewChild('movGrid') movGridRef!: DataGridComponent;
@@ -145,6 +148,7 @@ export class InventoryComponent implements OnInit {
     { key: 'reconciliacao', label: 'Reconciliação' },
     { key: 'reconciliacao-ml', label: 'Reconciliação ML' },
     { key: 'estoque-full', label: 'Estoque Full' },
+    { key: 'simulador-full', label: 'Simulador Full' },
   ];
 
   movementTypeOptions: SelectOption[] = [
@@ -274,6 +278,8 @@ export class InventoryComponent implements OnInit {
       this.loadMlReports(true);
     } else if (tab === 'estoque-full') {
       this.loadFulfillmentStock();
+    } else if (tab === 'simulador-full') {
+      this.loadSimuladorProducts();
     }
   }
 
@@ -901,6 +907,66 @@ export class InventoryComponent implements OnInit {
       case 'active': return 'success';
       case 'error': return 'danger';
       default: return 'primary';
+    }
+  }
+
+  // ── Simulador Full (Full vs Own Shipping) ──────────────
+  simProducts = signal<Product[]>([]);
+  simProductsLoading = signal(false);
+  simSelectedProductId = signal<string | null>(null);
+  simLaborCost = signal<number | null>(null);
+  simLoading = signal(false);
+  simResult = signal<FulfillmentCompareResult | null>(null);
+  simError = signal('');
+
+  simProductOptions = computed<SelectOption[]>(() =>
+    this.simProducts().map(p => ({ value: p.id, label: `${p.name} (${p.sku})` }))
+  );
+
+  async loadSimuladorProducts(): Promise<void> {
+    if (this.simProducts().length > 0) return;
+    this.simProductsLoading.set(true);
+    try {
+      const result = await this.productService.list({ page: 1, pageSize: 500, status: 'active' });
+      this.simProducts.set(result.items);
+    } catch {
+      this.simProducts.set([]);
+    } finally {
+      this.simProductsLoading.set(false);
+    }
+  }
+
+  onSimProductChange(value: string): void {
+    this.simSelectedProductId.set(value);
+    this.simResult.set(null);
+    this.simError.set('');
+  }
+
+  onSimLaborCostChange(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.simLaborCost.set(val ? parseFloat(val) : null);
+  }
+
+  async runFulfillmentCompare(): Promise<void> {
+    const productId = this.simSelectedProductId();
+    if (!productId) return;
+
+    this.simLoading.set(true);
+    this.simError.set('');
+    this.simResult.set(null);
+    try {
+      const result = await this.pricingService.fulfillmentCompare({
+        productId,
+        laborCostPerShipment: this.simLaborCost(),
+      });
+      this.simResult.set(result);
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.error?.errors
+        ? Object.values(err.error.errors || {}).flat().join(', ')
+        : 'Erro ao simular comparação';
+      this.simError.set(msg as string);
+    } finally {
+      this.simLoading.set(false);
     }
   }
 }

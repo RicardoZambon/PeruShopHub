@@ -11,10 +11,21 @@ namespace PeruShopHub.API.Controllers;
 public class PricingController : ControllerBase
 {
     private readonly IPricingService _pricingService;
+    private readonly IFulfillmentCompareService _fulfillmentCompareService;
 
-    public PricingController(IPricingService pricingService)
+    public PricingController(IPricingService pricingService, IFulfillmentCompareService fulfillmentCompareService)
     {
         _pricingService = pricingService;
+        _fulfillmentCompareService = fulfillmentCompareService;
+    }
+
+    [HttpPost("fulfillment-compare")]
+    public async Task<ActionResult<FulfillmentCompareResult>> FulfillmentCompare(
+        [FromBody] FulfillmentCompareRequest request,
+        CancellationToken ct = default)
+    {
+        var result = await _fulfillmentCompareService.CompareAsync(request, ct);
+        return Ok(result);
     }
 
     [HttpPost("simulate")]

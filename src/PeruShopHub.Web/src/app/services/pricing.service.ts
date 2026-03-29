@@ -104,6 +104,44 @@ export interface SimulationResult {
   profitDiff: number;
 }
 
+export interface FulfillmentCompareRequest {
+  productId: string;
+  laborCostPerShipment?: number | null;
+}
+
+export interface FulfillmentCostBreakdown {
+  dailyStorageCost: number;
+  avgDaysInStock: number;
+  storageCostTotal: number;
+  fulfillmentFeePerSale: number;
+  total: number;
+}
+
+export interface OwnShippingCostBreakdown {
+  avgShippingCost: number;
+  packagingCost: number;
+  laborCostPerShipment: number;
+  total: number;
+}
+
+export interface FulfillmentCompareResult {
+  productId: string;
+  productName: string;
+  productSku: string;
+  fullCost: number;
+  ownShippingCost: number;
+  recommendation: string;
+  savingsAmount: number;
+  fullBreakdown: FulfillmentCostBreakdown;
+  ownBreakdown: OwnShippingCostBreakdown;
+  avgDaysInStock: number;
+  dailyStorageCost: number;
+  fulfillmentFeePerSale: number;
+  avgShippingCost: number;
+  packagingCost: number;
+  laborCostPerShipment: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PricingService {
   private readonly http = inject(HttpClient);
@@ -150,6 +188,12 @@ export class PricingService {
   async batchSimulate(items: SimulateRequest[]): Promise<SimulationResult[]> {
     return firstValueFrom(
       this.http.post<SimulationResult[]>(`${this.baseUrl}/simulate/batch`, { items }),
+    );
+  }
+
+  async fulfillmentCompare(request: FulfillmentCompareRequest): Promise<FulfillmentCompareResult> {
+    return firstValueFrom(
+      this.http.post<FulfillmentCompareResult>(`${this.baseUrl}/fulfillment-compare`, request),
     );
   }
 }
