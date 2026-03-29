@@ -31,6 +31,16 @@ export interface ListingListParams {
   pageSize?: number;
 }
 
+export interface StockSyncStatus {
+  variantId: string;
+  sku: string;
+  status: string; // Synced, Pending, Error
+  allocatedQuantity: number | null;
+  mlQuantity: number | null;
+  lastSyncAt: string | null;
+  errorMessage: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ListingService {
   private readonly http = inject(HttpClient);
@@ -40,6 +50,12 @@ export class ListingService {
     const httpParams = buildHttpParams(params);
     return firstValueFrom(
       this.http.get<PagedResult<ListingGridItem>>(`${this.baseUrl}/listings`, { params: httpParams })
+    );
+  }
+
+  async getStockSyncStatus(productId: string): Promise<StockSyncStatus[]> {
+    return firstValueFrom(
+      this.http.get<StockSyncStatus[]>(`${this.baseUrl}/stock-sync/product/${productId}`)
     );
   }
 }

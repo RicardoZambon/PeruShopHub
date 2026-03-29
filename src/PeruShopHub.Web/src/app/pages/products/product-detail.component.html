@@ -463,6 +463,7 @@
                 <th>SKU</th>
                 @if (hasMlMapping()) {
                   <th>ID ML</th>
+                  <th>Sync ML</th>
                 }
                 <th>Status</th>
               </tr>
@@ -484,6 +485,14 @@
                   <td class="mono">{{ variant.sku }}</td>
                   @if (hasMlMapping()) {
                     <td class="mono">{{ variant.externalId ?? '—' }}</td>
+                    <td>
+                      @if (getVariantSyncStatus(variant.id); as sync) {
+                        <app-badge [label]="getSyncBadgeLabel(sync.status)" [variant]="getSyncBadgeVariant(sync.status)"
+                          [title]="sync.errorMessage ?? (sync.lastSyncAt ? 'Última sync: ' + formatDate(sync.lastSyncAt) : '')"></app-badge>
+                      } @else {
+                        <span class="text-muted">—</span>
+                      }
+                    </td>
                   }
                   <td>
                     <app-badge [label]="variant.isActive ? 'Ativo' : 'Inativo'" [variant]="variant.isActive ? 'success' : 'neutral'"></app-badge>
@@ -530,6 +539,14 @@
                     <span class="variant-card-mobile__label">ID ML</span>
                     <span class="variant-card-mobile__value mono">{{ variant.externalId }}</span>
                   </div>
+                  @if (getVariantSyncStatus(variant.id); as sync) {
+                    <div class="variant-card-mobile__field">
+                      <span class="variant-card-mobile__label">Sync ML</span>
+                      <span class="variant-card-mobile__value">
+                        <app-badge [label]="getSyncBadgeLabel(sync.status)" [variant]="getSyncBadgeVariant(sync.status)"></app-badge>
+                      </span>
+                    </div>
+                  }
                 }
               </div>
             </div>

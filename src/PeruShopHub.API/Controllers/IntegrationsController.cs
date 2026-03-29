@@ -17,6 +17,7 @@ public class IntegrationsController : ControllerBase
     private readonly IIntegrationService _integrationService;
     private readonly IMlListingImportService _importService;
     private readonly IOrderSyncService _orderSyncService;
+    private readonly IStockSyncService _stockSyncService;
     private readonly IMarketplaceListingService _listingService;
     private readonly ITenantContext _tenantContext;
     private readonly PeruShopHubDbContext _db;
@@ -25,6 +26,7 @@ public class IntegrationsController : ControllerBase
         IIntegrationService integrationService,
         IMlListingImportService importService,
         IOrderSyncService orderSyncService,
+        IStockSyncService stockSyncService,
         IMarketplaceListingService listingService,
         ITenantContext tenantContext,
         PeruShopHubDbContext db)
@@ -32,6 +34,7 @@ public class IntegrationsController : ControllerBase
         _integrationService = integrationService;
         _importService = importService;
         _orderSyncService = orderSyncService;
+        _stockSyncService = stockSyncService;
         _listingService = listingService;
         _tenantContext = tenantContext;
         _db = db;
@@ -158,5 +161,14 @@ public class IntegrationsController : ControllerBase
     {
         var result = await _listingService.GetUnlinkedListingsAsync("mercadolivre", search, page, pageSize, ct);
         return Ok(result);
+    }
+
+    [HttpGet("mercadolivre/stock-sync/product/{productId}")]
+    [Authorize(Roles = "Owner,Admin,Manager")]
+    public async Task<ActionResult<IReadOnlyList<StockSyncItemStatus>>> GetProductStockSyncStatus(
+        Guid productId, CancellationToken ct = default)
+    {
+        var statuses = await _stockSyncService.GetProductSyncStatusesAsync(productId, ct);
+        return Ok(statuses);
     }
 }

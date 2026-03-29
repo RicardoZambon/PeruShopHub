@@ -41,7 +41,7 @@ public class InventoryServiceTests : IDisposable
         _connection.Dispose();
     }
 
-    private InventoryService CreateService() => new(_db, new Mock<IAuditService>().Object);
+    private InventoryService CreateService() => new(_db, new Mock<IAuditService>().Object, new Mock<IStockSyncService>().Object);
 
     private (Product product, ProductVariant variant) SeedProductWithVariant(
         string name = "Test Product", string sku = "PROD-001",

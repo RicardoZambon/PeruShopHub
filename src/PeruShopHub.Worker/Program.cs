@@ -64,6 +64,7 @@ builder.Services.AddScoped<IMlPhotoSyncService, MlPhotoSyncService>();
 builder.Services.AddScoped<IMlListingImportService, MlListingImportService>();
 builder.Services.AddScoped<IProductSyncService, ProductSyncService>();
 builder.Services.AddScoped<IOrderSyncService, OrderSyncService>();
+builder.Services.AddScoped<IStockSyncService, StockSyncService>();
 builder.Services.AddSingleton<IMlOrderMapper, MlOrderMapper>();
 
 builder.Services.AddHostedService<MlListingImportWorker>();
@@ -76,6 +77,7 @@ builder.Services.AddHostedService<AlertWorker>();
 builder.Services.AddHostedService<TokenRenewalWorker>();
 builder.Services.AddHostedService<ProductSyncWorker>();
 builder.Services.AddHostedService<WebhookProcessingWorker>();
+builder.Services.AddHostedService<StockSyncWorker>();
 builder.Services.AddHostedService<BillingReconciliationWorker>();
 
 var host = builder.Build();

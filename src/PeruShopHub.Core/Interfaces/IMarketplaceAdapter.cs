@@ -15,6 +15,7 @@ public interface IMarketplaceAdapter
     Task<TokenResult> RefreshTokenAsync(string refreshToken, CancellationToken ct = default);
     Task<MarketplaceProduct> GetProductAsync(string externalId, CancellationToken ct = default);
     Task UpdateStockAsync(string externalId, int quantity, CancellationToken ct = default);
+    Task UpdateVariationStockAsync(string itemExternalId, string variationExternalId, int quantity, CancellationToken ct = default);
     Task<IReadOnlyList<MarketplaceOrder>> GetOrdersAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct = default);
     Task<MarketplaceOrderDetails> GetOrderDetailsAsync(string orderId, CancellationToken ct = default);
     Task<IReadOnlyList<MarketplaceFee>> GetOrderFeesAsync(string orderId, CancellationToken ct = default);

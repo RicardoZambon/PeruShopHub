@@ -11,11 +11,13 @@ public class InventoryService : IInventoryService
 {
     private readonly PeruShopHubDbContext _db;
     private readonly IAuditService _auditService;
+    private readonly IStockSyncService _stockSyncService;
 
-    public InventoryService(PeruShopHubDbContext db, IAuditService auditService)
+    public InventoryService(PeruShopHubDbContext db, IAuditService auditService, IStockSyncService stockSyncService)
     {
         _db = db;
         _auditService = auditService;
+        _stockSyncService = stockSyncService;
     }
 
     public async Task<PagedResult<InventoryItemDto>> GetOverviewAsync(
@@ -238,6 +240,9 @@ public class InventoryService : IInventoryService
             new { Stock = variant.Stock - dto.Quantity },
             new { Stock = variant.Stock, Quantity = dto.Quantity, Reason = dto.Reason }, ct);
 
+        // Enqueue ML stock sync if variant is linked to a listing
+        await _stockSyncService.EnqueueVariantSyncAsync(variant.TenantId, variant.Id, ct);
+
         return new StockMovementDto(
             movement.Id,
             variant.Sku,
@@ -334,6 +339,10 @@ public class InventoryService : IInventoryService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        // Enqueue ML stock sync when ML allocation changes
+        if (dto.MarketplaceId == "mercadolivre")
+            await _stockSyncService.EnqueueVariantSyncAsync(variant.TenantId, variant.Id, ct);
 
         return new StockAllocationDto(
             allocation.Id,
@@ -447,6 +456,13 @@ public class InventoryService : IInventoryService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        // Enqueue ML stock sync for all variants with discrepancies
+        foreach (var resultItem in resultItems.Where(r => r.HasDiscrepancy))
+        {
+            var variant = variants.First(v => v.Id == resultItem.VariantId);
+            await _stockSyncService.EnqueueVariantSyncAsync(variant.TenantId, variant.Id, ct);
+        }
 
         return new ReconciliationResultDto(
             batchId,

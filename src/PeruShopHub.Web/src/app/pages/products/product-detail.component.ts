@@ -22,6 +22,8 @@ import type { CostHistoryItem } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
 import { PricingService } from '../../services/pricing.service';
 import type { PriceCalculationResult, PricingRule } from '../../services/pricing.service';
+import { ListingService } from '../../services/listing.service';
+import type { StockSyncStatus } from '../../services/listing.service';
 import type { ProductVariant } from '../../models/product-variant.model';
 import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 
@@ -81,6 +83,7 @@ export class ProductDetailComponent implements OnInit {
   costHistory = signal<CostHistoryItem[]>([]);
   costHistoryTotalCount = signal(0);
   variants = signal<ProductVariant[]>([]);
+  stockSyncStatuses = signal<StockSyncStatus[]>([]);
 
   // Analytics state
   analyticsDays = signal(30);
@@ -333,6 +336,7 @@ export class ProductDetailComponent implements OnInit {
     private productService: ProductService,
     private categoryService: CategoryService,
     private pricingService: PricingService,
+    private listingService: ListingService,
   ) {}
 
   onEdit(): void {
@@ -392,6 +396,9 @@ export class ProductDetailComponent implements OnInit {
 
       // Load variants
       this.variantService.getByProductId(this.productId).then(v => this.variants.set(v));
+
+      // Load stock sync statuses (fire and forget, non-blocking)
+      this.loadStockSyncStatuses();
 
       // Load analytics and pricing rules
       this.loadAnalytics();
@@ -486,6 +493,37 @@ export class ProductDetailComponent implements OnInit {
     if (variant.stock === 0) return 'variant-row--danger';
     if (variant.stock > 0 && variant.stock <= 5) return 'variant-row--warning';
     return '';
+  }
+
+  getVariantSyncStatus(variantId: string): StockSyncStatus | null {
+    return this.stockSyncStatuses().find(s => s.variantId === variantId) ?? null;
+  }
+
+  getSyncBadgeVariant(status: string): BadgeVariant {
+    switch (status) {
+      case 'Synced': return 'success';
+      case 'Pending': return 'warning';
+      case 'Error': return 'danger';
+      default: return 'neutral';
+    }
+  }
+
+  getSyncBadgeLabel(status: string): string {
+    switch (status) {
+      case 'Synced': return 'Sincronizado';
+      case 'Pending': return 'Pendente';
+      case 'Error': return 'Erro';
+      default: return status;
+    }
+  }
+
+  private async loadStockSyncStatuses(): Promise<void> {
+    try {
+      const statuses = await this.listingService.getStockSyncStatus(this.productId);
+      this.stockSyncStatuses.set(statuses);
+    } catch {
+      this.stockSyncStatuses.set([]);
+    }
   }
 
   // Pricing methods

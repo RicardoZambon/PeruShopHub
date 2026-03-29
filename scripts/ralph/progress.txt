@@ -1467,3 +1467,32 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - `ProductListDto` enrichment pattern: query main data, then batch-lookup supplementary fields and merge with `with { }` syntax
   - `MarketplaceListing.FulfillmentType` is the source of truth for Full vs own shipping indicator on products
 ---
+
+## 2026-03-29 - US-053
+- Implemented auto stock sync to Mercado Livre after internal stock changes
+- Created `StockSyncService` (Application layer): enqueue/status/execute pattern with Redis cache queue, 3-attempt retry with backoff
+- Created `StockSyncWorker` (Worker): polls for pending syncs across all tenants with active ML connections
+- Added `UpdateVariationStockAsync` to `IMarketplaceAdapter` and `MercadoLivreAdapter` for variation-level PUT /items/{id}/variations/{variationId}
+- Modified `InventoryService` to enqueue ML sync after: stock adjustments, reconciliation discrepancies, allocation changes
+- Added GET /api/integrations/mercadolivre/stock-sync/product/{productId} endpoint for sync status
+- Frontend: Added "Sync ML" column to product detail variant table (desktop + mobile) showing Synced/Pending/Error badge
+- Updated unit test to provide mock `IStockSyncService` to `InventoryService`
+- Files changed:
+  - `src/PeruShopHub.Core/Interfaces/IMarketplaceAdapter.cs` (added UpdateVariationStockAsync)
+  - `src/PeruShopHub.Infrastructure/Marketplace/MercadoLivreAdapter.cs` (implemented variation stock update)
+  - `src/PeruShopHub.Application/Services/StockSyncService.cs` (new)
+  - `src/PeruShopHub.Application/Services/InventoryService.cs` (enqueue sync after changes)
+  - `src/PeruShopHub.Application/DependencyInjection.cs` (register StockSyncService)
+  - `src/PeruShopHub.Worker/Workers/StockSyncWorker.cs` (new)
+  - `src/PeruShopHub.Worker/Program.cs` (register worker + service)
+  - `src/PeruShopHub.API/Controllers/IntegrationsController.cs` (stock sync status endpoint)
+  - `src/PeruShopHub.Web/src/app/services/listing.service.ts` (StockSyncStatus model + API)
+  - `src/PeruShopHub.Web/src/app/pages/products/product-detail.component.ts` (sync status display)
+  - `src/PeruShopHub.Web/src/app/pages/products/product-detail.component.html` (sync badges)
+  - `tests/PeruShopHub.UnitTests/Services/InventoryServiceTests.cs` (updated constructor)
+- **Learnings for future iterations:**
+  - `IMarketplaceAdapter.UpdateStockAsync` is item-level only; for variations need a separate `UpdateVariationStockAsync` method
+  - `InventoryService` constructor signature change requires updating unit test mock — always check test files when adding service dependencies
+  - Stock sync uses Redis cache keys (not Redis LIST) for per-variant queue items — simpler than LPUSH/RPOP since items are keyed by variantId (natural dedup)
+  - Uses allocated quantity (minus reserved) from StockAllocation, not total variant stock, when pushing to ML
+---

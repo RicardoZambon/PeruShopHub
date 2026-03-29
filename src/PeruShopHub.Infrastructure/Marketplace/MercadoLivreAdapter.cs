@@ -124,6 +124,12 @@ public class MercadoLivreAdapter : IMarketplaceAdapter
         await SendAsync(HttpMethod.Put, $"/items/{externalId}", content, ct);
     }
 
+    public async Task UpdateVariationStockAsync(string itemExternalId, string variationExternalId, int quantity, CancellationToken ct = default)
+    {
+        var content = JsonContent.Create(new { available_quantity = quantity }, options: JsonOptions);
+        await SendAsync(HttpMethod.Put, $"/items/{itemExternalId}/variations/{variationExternalId}", content, ct);
+    }
+
     // ── Orders ───────────────────────────────────────────────
 
     public async Task<IReadOnlyList<MarketplaceOrder>> GetOrdersAsync(
