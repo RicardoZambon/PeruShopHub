@@ -1291,7 +1291,7 @@
         "Angular build passes"
       ],
       "priority": 69,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Depends on US-059."
     },
     {

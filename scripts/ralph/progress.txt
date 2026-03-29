@@ -1677,3 +1677,25 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - FrontendUrl config key used for reset email links — falls back to Request scheme/host
   - Login page already had a placeholder "Esqueceu a senha?" link with href="javascript:void(0)" — just needed routerLink
 ---
+
+## 2026-03-29 - US-062
+- Implemented email notification preferences system (Sales, Stock, Margin Alerts)
+- New `NotificationPreference` entity with enum `NotificationType` (NewSale, LowStock, MarginAlert, MLConnectionError, SyncError)
+- EF Core configuration with unique index on (TenantId, UserId, Type), migration `AddNotificationPreferences`
+- `INotificationEmailService` + `NotificationEmailService`: checks preferences per tenant user, sends emails if enabled (defaults to enabled when no preferences exist)
+- `NotificationEmailTemplates`: maps string-based notification types to enum, builds branded email with unsubscribe link
+- Both `SignalRNotificationDispatcher` and `DbOnlyNotificationDispatcher` now call `SendIfEnabledAsync` after persisting notification
+- `GET/PUT /api/settings/notification-preferences` endpoints on SettingsController
+- Angular: "Notificações" tab in settings with toggle matrix (type × email/inApp channels)
+- Files changed:
+  - Core: `NotificationPreference.cs`, `NotificationType.cs`, `INotificationEmailService.cs`
+  - Infrastructure: `NotificationEmailService.cs`, `NotificationEmailTemplates.cs`, `NotificationPreferenceConfiguration.cs`, `SignalRNotificationDispatcher.cs`, `DbOnlyNotificationDispatcher.cs`, `PeruShopHubDbContext.cs`, migration files
+  - API: `SettingsController.cs`, `Program.cs`
+  - Worker: `Program.cs`
+  - Web: `settings.component.ts/html/scss`, `settings.service.ts`
+- **Learnings for future iterations:**
+  - ToggleSwitchComponent uses `(checkedChange)` output event, not `(toggle)`
+  - Notification type strings in Worker (e.g., "new_sale", "stock_alert") need mapping to the `NotificationType` enum for preference lookup
+  - Both API and Worker need `INotificationEmailService` registration since both dispatchers use it
+  - SettingsController uses `User.FindFirstValue(ClaimTypes.NameIdentifier)` for current user ID
+---
