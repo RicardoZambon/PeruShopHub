@@ -79,6 +79,8 @@ builder.Services.AddHostedService<ProductSyncWorker>();
 builder.Services.AddHostedService<WebhookProcessingWorker>();
 builder.Services.AddHostedService<StockSyncWorker>();
 builder.Services.AddHostedService<BillingReconciliationWorker>();
+builder.Services.AddScoped<IStockReconciliationService, StockReconciliationService>();
+builder.Services.AddHostedService<StockReconciliationWorker>();
 
 var host = builder.Build();
 host.Run();

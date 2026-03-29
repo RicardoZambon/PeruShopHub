@@ -23,14 +23,14 @@ import {
 import { BrlCurrencyPipe } from '../../shared/pipes';
 import { formatBrl as formatBrlUtil, formatDateShort } from '../../shared/utils';
 import { InventoryService } from '../../services/inventory.service';
-import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocations, VariantAllocations, ReconciliationResult, ReconciliationResultItem } from '../../services/inventory.service';
+import type { InventoryItem, StockMovement, InventoryQueryParams, ProductAllocations, VariantAllocations, ReconciliationResult, ReconciliationResultItem, ReconciliationReport, ReconciliationReportDetail, ReconciliationReportItem } from '../../services/inventory.service';
 import { ProductService } from '../../services/product.service';
 import type { Product } from '../../services/product.service';
 import { ConfirmDialogService } from '../../shared/components/confirm-dialog/confirm-dialog.service';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
-type InventoryTab = 'visao-geral' | 'movimentacoes' | 'reconciliacao' | 'estoque-full';
+type InventoryTab = 'visao-geral' | 'movimentacoes' | 'reconciliacao' | 'reconciliacao-ml' | 'estoque-full';
 type MovementType = 'Entrada' | 'Saída' | 'Ajuste' | 'Reconciliacao';
 
 interface ProductOption {
@@ -143,6 +143,7 @@ export class InventoryComponent implements OnInit {
     { key: 'visao-geral', label: 'Visão Geral' },
     { key: 'movimentacoes', label: 'Movimentações' },
     { key: 'reconciliacao', label: 'Reconciliação' },
+    { key: 'reconciliacao-ml', label: 'Reconciliação ML' },
     { key: 'estoque-full', label: 'Estoque Full', disabled: true },
   ];
 
@@ -269,6 +270,8 @@ export class InventoryComponent implements OnInit {
       this.loadMovementsGrid(true);
     } else if (tab === 'reconciliacao') {
       this.loadReconciliationProducts();
+    } else if (tab === 'reconciliacao-ml') {
+      this.loadMlReports(true);
     }
   }
 
@@ -716,5 +719,137 @@ export class InventoryComponent implements OnInit {
     } finally {
       this.allocationSaving.set(null);
     }
+  }
+
+  // ── ML Reconciliation Reports ──────────────────────────────
+  mlReports = signal<ReconciliationReport[]>([]);
+  mlReportsLoading = signal(false);
+  mlReportsTotalCount = signal(0);
+  mlReportsPage = signal(1);
+  mlReportsHasMore = signal(true);
+  mlReportDateFrom = signal('');
+  mlReportDateTo = signal('');
+
+  mlSelectedReport = signal<ReconciliationReportDetail | null>(null);
+  mlReportDetailLoading = signal(false);
+
+  mlReportGridColumns: GridColumn[] = [
+    { key: 'startedAt', label: 'Data' },
+    { key: 'status', label: 'Status' },
+    { key: 'itemsChecked', label: 'Verificados', align: 'right' },
+    { key: 'matches', label: 'OK', align: 'right' },
+    { key: 'autoCorrected', label: 'Auto-corrigidos', align: 'right' },
+    { key: 'manualReviewRequired', label: 'Revisão Manual', align: 'right' },
+    { key: 'actions', label: '', align: 'center' },
+  ];
+
+  mlReportItemColumns: GridColumn[] = [
+    { key: 'sku', label: 'SKU' },
+    { key: 'productName', label: 'Produto' },
+    { key: 'localQuantity', label: 'Local', align: 'right' },
+    { key: 'marketplaceQuantity', label: 'ML', align: 'right' },
+    { key: 'difference', label: 'Diferença', align: 'right' },
+    { key: 'resolution', label: 'Resolução' },
+  ];
+
+  async loadMlReports(reset = false): Promise<void> {
+    if (reset) {
+      this.mlReportsPage.set(1);
+      this.mlReports.set([]);
+      this.mlReportsHasMore.set(true);
+      this.mlSelectedReport.set(null);
+    }
+
+    this.mlReportsLoading.set(true);
+    try {
+      const result = await firstValueFrom(this.inventoryService.getReconciliationReports({
+        dateFrom: this.mlReportDateFrom() || undefined,
+        dateTo: this.mlReportDateTo() || undefined,
+        page: this.mlReportsPage(),
+        pageSize: 20,
+      }));
+
+      if (reset) {
+        this.mlReports.set(result.items);
+      } else {
+        this.mlReports.update(prev => [...prev, ...result.items]);
+      }
+
+      this.mlReportsTotalCount.set(result.totalCount);
+      this.mlReportsHasMore.set(this.mlReports().length < result.totalCount);
+    } catch {
+      if (reset) this.mlReports.set([]);
+      this.mlReportsHasMore.set(false);
+    } finally {
+      this.mlReportsLoading.set(false);
+    }
+  }
+
+  onMlReportsLoadMore(): void {
+    this.mlReportsPage.update(p => p + 1);
+    this.loadMlReports(false);
+  }
+
+  onMlReportDateFromChange(event: Event): void {
+    this.mlReportDateFrom.set((event.target as HTMLInputElement).value);
+    this.loadMlReports(true);
+  }
+
+  onMlReportDateToChange(event: Event): void {
+    this.mlReportDateTo.set((event.target as HTMLInputElement).value);
+    this.loadMlReports(true);
+  }
+
+  async viewMlReportDetail(report: ReconciliationReport): Promise<void> {
+    this.mlReportDetailLoading.set(true);
+    this.mlSelectedReport.set(null);
+    try {
+      const detail = await firstValueFrom(this.inventoryService.getReconciliationReportDetail(report.id));
+      this.mlSelectedReport.set(detail);
+    } catch {
+      this.mlSelectedReport.set(null);
+    } finally {
+      this.mlReportDetailLoading.set(false);
+    }
+  }
+
+  closeMlReportDetail(): void {
+    this.mlSelectedReport.set(null);
+  }
+
+  getMlStatusVariant(status: string): BadgeVariant {
+    switch (status) {
+      case 'Completed': return 'success';
+      case 'Running': return 'warning' as BadgeVariant;
+      case 'Failed': return 'danger';
+      default: return 'primary';
+    }
+  }
+
+  getMlStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      'Completed': 'Concluído',
+      'Running': 'Em andamento',
+      'Failed': 'Falhou',
+    };
+    return labels[status] ?? status;
+  }
+
+  getMlResolutionVariant(resolution: string): BadgeVariant {
+    switch (resolution) {
+      case 'Match': return 'success';
+      case 'AutoCorrected': return 'warning' as BadgeVariant;
+      case 'ManualReview': return 'danger';
+      default: return 'primary';
+    }
+  }
+
+  getMlResolutionLabel(resolution: string): string {
+    const labels: Record<string, string> = {
+      'Match': 'OK',
+      'AutoCorrected': 'Auto-corrigido',
+      'ManualReview': 'Revisão Manual',
+    };
+    return labels[resolution] ?? resolution;
   }
 }

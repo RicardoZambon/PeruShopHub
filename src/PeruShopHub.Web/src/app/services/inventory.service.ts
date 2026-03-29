@@ -124,6 +124,45 @@ export interface ReconciliationResult {
   items: ReconciliationResultItem[];
 }
 
+// ML Stock Reconciliation Report interfaces
+export interface ReconciliationReport {
+  id: string;
+  marketplaceId: string;
+  itemsChecked: number;
+  matches: number;
+  discrepancies: number;
+  autoCorrected: number;
+  manualReviewRequired: number;
+  status: string;
+  errorMessage?: string | null;
+  startedAt: string;
+  completedAt?: string | null;
+}
+
+export interface ReconciliationReportItem {
+  id: string;
+  productVariantId: string;
+  sku: string;
+  productName: string;
+  externalId: string;
+  localQuantity: number;
+  marketplaceQuantity: number;
+  difference: number;
+  resolution: string;
+  notes?: string | null;
+}
+
+export interface ReconciliationReportDetail extends ReconciliationReport {
+  items: ReconciliationReportItem[];
+}
+
+export interface ReconciliationReportQueryParams {
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class InventoryService {
   private readonly http = inject(HttpClient);
@@ -158,6 +197,16 @@ export class InventoryService {
 
   reconcile(dto: ReconciliationRequest): Observable<ReconciliationResult> {
     return this.http.post<ReconciliationResult>(`${this.baseUrl}/reconciliation`, dto);
+  }
+
+  getReconciliationReports(params: ReconciliationReportQueryParams = {}): Observable<PagedResult<ReconciliationReport>> {
+    return this.http.get<PagedResult<ReconciliationReport>>(`${this.baseUrl}/reconciliation-reports`, {
+      params: buildHttpParams(params),
+    });
+  }
+
+  getReconciliationReportDetail(reportId: string): Observable<ReconciliationReportDetail> {
+    return this.http.get<ReconciliationReportDetail>(`${this.baseUrl}/reconciliation-reports/${reportId}`);
   }
 
   exportMovements(params: Omit<MovementQueryParams, 'page' | 'pageSize'>): Observable<Blob> {

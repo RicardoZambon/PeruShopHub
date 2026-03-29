@@ -460,6 +460,191 @@
       }
     </div>
   </ng-template>
+
+  <ng-template appTabPanel="reconciliacao-ml">
+    <div class="estoque__content">
+      @if (mlSelectedReport(); as detail) {
+        <!-- Report Detail View -->
+        <div class="ml-recon__detail">
+          <div class="ml-recon__detail-header">
+            <button class="ml-recon__back-btn" (click)="closeMlReportDetail()">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Voltar
+            </button>
+            <div class="ml-recon__detail-title">
+              <h3>Relatório de Reconciliação</h3>
+              <span class="ml-recon__detail-date">{{ formatMovDate(detail.startedAt) }}</span>
+              <app-badge [label]="getMlStatusLabel(detail.status)" [variant]="getMlStatusVariant(detail.status)" />
+            </div>
+          </div>
+
+          <div class="ml-recon__detail-summary">
+            <div class="ml-recon__stat-card">
+              <span class="ml-recon__stat-label">Verificados</span>
+              <span class="ml-recon__stat-value">{{ detail.itemsChecked }}</span>
+            </div>
+            <div class="ml-recon__stat-card ml-recon__stat-card--success">
+              <span class="ml-recon__stat-label">OK</span>
+              <span class="ml-recon__stat-value">{{ detail.matches }}</span>
+            </div>
+            <div class="ml-recon__stat-card ml-recon__stat-card--warning">
+              <span class="ml-recon__stat-label">Auto-corrigidos</span>
+              <span class="ml-recon__stat-value">{{ detail.autoCorrected }}</span>
+            </div>
+            <div class="ml-recon__stat-card ml-recon__stat-card--danger">
+              <span class="ml-recon__stat-label">Revisão Manual</span>
+              <span class="ml-recon__stat-value">{{ detail.manualReviewRequired }}</span>
+            </div>
+          </div>
+
+          @if (detail.errorMessage) {
+            <div class="ml-recon__error-msg">{{ detail.errorMessage }}</div>
+          }
+
+          <div class="recon__table-wrap">
+            <table class="recon__table">
+              <thead>
+                <tr>
+                  <th class="recon__th">SKU</th>
+                  <th class="recon__th">Produto</th>
+                  <th class="recon__th recon__th--right">Local</th>
+                  <th class="recon__th recon__th--right">ML</th>
+                  <th class="recon__th recon__th--right">Diferença</th>
+                  <th class="recon__th">Resolução</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of detail.items; track item.id) {
+                  <tr class="recon__row"
+                    [class.recon__row--under]="item.difference < 0"
+                    [class.recon__row--over]="item.difference > 0">
+                    <td class="recon__td recon__td--mono">{{ item.sku }}</td>
+                    <td class="recon__td">{{ item.productName }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right">{{ item.localQuantity }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right">{{ item.marketplaceQuantity }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right recon__td--diff"
+                      [class.recon__td--negative]="item.difference < 0"
+                      [class.recon__td--positive]="item.difference > 0">
+                      @if (item.difference !== 0) {
+                        {{ item.difference > 0 ? '+' : '' }}{{ item.difference }}
+                      } @else {
+                        0
+                      }
+                    </td>
+                    <td class="recon__td">
+                      <app-badge [label]="getMlResolutionLabel(item.resolution)" [variant]="getMlResolutionVariant(item.resolution)" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (detail.items.length === 0) {
+            <div class="recon__empty">
+              <p>Nenhum item verificado neste relatório.</p>
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Reports List View -->
+        <div class="ml-recon__header">
+          <div class="ml-recon__header-info">
+            <h3 class="recon__title">Reconciliação ML — Histórico</h3>
+            <p class="recon__subtitle">Comparação periódica automática entre estoque local e Mercado Livre. Executado a cada 6 horas.</p>
+          </div>
+        </div>
+
+        <!-- Date Filters -->
+        <div class="mov-filters">
+          <div class="mov-filters__group">
+            <label class="mov-filters__label">Período</label>
+            <div class="mov-filters__dates">
+              <input type="date" class="mov-filters__date-input" [value]="mlReportDateFrom()" (change)="onMlReportDateFromChange($event)" />
+              <span class="mov-filters__separator">até</span>
+              <input type="date" class="mov-filters__date-input" [value]="mlReportDateTo()" (change)="onMlReportDateToChange($event)" />
+            </div>
+          </div>
+        </div>
+
+        @if (mlReportsLoading() && mlReports().length === 0) {
+          <div class="recon__loading">
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <div class="recon__skeleton-row">
+                <app-skeleton type="text" width="18%" height="20px" />
+                <app-skeleton type="text" width="10%" height="20px" />
+                <app-skeleton type="text" width="8%" height="20px" />
+                <app-skeleton type="text" width="8%" height="20px" />
+                <app-skeleton type="text" width="10%" height="20px" />
+                <app-skeleton type="text" width="10%" height="20px" />
+                <app-skeleton type="text" width="8%" height="32px" />
+              </div>
+            }
+          </div>
+        } @else if (mlReports().length === 0) {
+          <div class="recon__empty">
+            <p>Nenhum relatório de reconciliação ML encontrado.</p>
+            <p class="recon__empty-hint">Os relatórios são gerados automaticamente a cada 6 horas quando há conexão ativa com o Mercado Livre.</p>
+          </div>
+        } @else {
+          <div class="recon__table-wrap">
+            <table class="recon__table">
+              <thead>
+                <tr>
+                  <th class="recon__th">Data</th>
+                  <th class="recon__th">Status</th>
+                  <th class="recon__th recon__th--right">Verificados</th>
+                  <th class="recon__th recon__th--right">OK</th>
+                  <th class="recon__th recon__th--right">Auto-corrigidos</th>
+                  <th class="recon__th recon__th--right">Revisão Manual</th>
+                  <th class="recon__th recon__th--center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (report of mlReports(); track report.id) {
+                  <tr class="recon__row recon__row--clickable" (click)="viewMlReportDetail(report)">
+                    <td class="recon__td recon__td--mono">{{ formatMovDate(report.startedAt) }}</td>
+                    <td class="recon__td">
+                      <app-badge [label]="getMlStatusLabel(report.status)" [variant]="getMlStatusVariant(report.status)" />
+                    </td>
+                    <td class="recon__td recon__td--mono recon__td--right">{{ report.itemsChecked }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right">{{ report.matches }}</td>
+                    <td class="recon__td recon__td--mono recon__td--right">
+                      @if (report.autoCorrected > 0) {
+                        <span class="ml-recon__count--warning">{{ report.autoCorrected }}</span>
+                      } @else {
+                        {{ report.autoCorrected }}
+                      }
+                    </td>
+                    <td class="recon__td recon__td--mono recon__td--right">
+                      @if (report.manualReviewRequired > 0) {
+                        <span class="ml-recon__count--danger">{{ report.manualReviewRequired }}</span>
+                      } @else {
+                        {{ report.manualReviewRequired }}
+                      }
+                    </td>
+                    <td class="recon__td recon__td--center">
+                      <button class="inv__alloc-btn" title="Ver detalhes" (click)="viewMlReportDetail(report); $event.stopPropagation()">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3C4.5 3 1.7 5.5 1 8c.7 2.5 3.5 5 7 5s6.3-2.5 7-5c-.7-2.5-3.5-5-7-5Z" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (mlReportsHasMore()) {
+            <div class="ml-recon__load-more">
+              <button class="recon__btn recon__btn--secondary" [disabled]="mlReportsLoading()" (click)="onMlReportsLoadMore()">
+                {{ mlReportsLoading() ? 'Carregando...' : 'Carregar mais' }}
+              </button>
+            </div>
+          }
+        }
+      }
+    </div>
+  </ng-template>
 </app-tab-panels>
 
 <!-- Entry Modal -->

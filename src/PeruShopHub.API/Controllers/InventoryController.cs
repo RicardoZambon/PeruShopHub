@@ -120,4 +120,28 @@ public class InventoryController : ControllerBase
         var stock = await adapter.GetFulfillmentStockAsync(inventoryId, ct);
         return Ok(stock);
     }
+
+    /// <summary>List ML stock reconciliation reports with date filter and pagination.</summary>
+    [HttpGet("reconciliation-reports")]
+    public async Task<ActionResult<PagedResult<ReconciliationReportDto>>> GetReconciliationReports(
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var reconciliationService = _serviceProvider.GetRequiredService<IStockReconciliationService>();
+        var result = await reconciliationService.GetReportsAsync(dateFrom, dateTo, page, pageSize, ct);
+        return Ok(result);
+    }
+
+    /// <summary>Get a single reconciliation report with all item details.</summary>
+    [HttpGet("reconciliation-reports/{reportId:guid}")]
+    public async Task<ActionResult<ReconciliationReportDetailDto>> GetReconciliationReportDetail(
+        Guid reportId, CancellationToken ct = default)
+    {
+        var reconciliationService = _serviceProvider.GetRequiredService<IStockReconciliationService>();
+        var result = await reconciliationService.GetReportDetailAsync(reportId, ct);
+        return Ok(result);
+    }
 }

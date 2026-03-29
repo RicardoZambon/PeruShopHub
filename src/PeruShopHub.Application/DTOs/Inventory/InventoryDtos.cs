@@ -52,3 +52,43 @@ public record ReconciliationResultDto(
     int TotalDifference,
     DateTime ReconciliatedAt,
     List<ReconciliationResultItemDto> Items);
+
+// ML Stock Reconciliation Report DTOs
+public record ReconciliationReportDto(
+    Guid Id,
+    string MarketplaceId,
+    int ItemsChecked,
+    int Matches,
+    int Discrepancies,
+    int AutoCorrected,
+    int ManualReviewRequired,
+    string Status,
+    string? ErrorMessage,
+    DateTime StartedAt,
+    DateTime? CompletedAt);
+
+public record ReconciliationReportDetailDto(
+    Guid Id,
+    string MarketplaceId,
+    int ItemsChecked,
+    int Matches,
+    int Discrepancies,
+    int AutoCorrected,
+    int ManualReviewRequired,
+    string Status,
+    string? ErrorMessage,
+    DateTime StartedAt,
+    DateTime? CompletedAt,
+    List<ReconciliationReportItemDto> Items);
+
+public record ReconciliationReportItemDto(
+    Guid Id,
+    Guid ProductVariantId,
+    string Sku,
+    string ProductName,
+    string ExternalId,
+    int LocalQuantity,
+    int MarketplaceQuantity,
+    int Difference,
+    string Resolution,
+    string? Notes);
