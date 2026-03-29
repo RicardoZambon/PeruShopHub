@@ -3,6 +3,7 @@ Started: Fri Mar 28 2026
 ---
 
 ## Codebase Patterns
+- **NBomber 5.x API**: `Http.Send(httpClient, request)` — first arg is `HttpClient`, not `IScenarioContext`. ReportFormat at `NBomber.Contracts.Stats.ReportFormat`. Load test project is `OutputType=Exe`
 - **ConfirmDialogService variants**: 'warning' | 'danger' | 'primary' — NOT 'accent'
 - **SCSS mixins path from pages**: `@use '../../../styles/mixins' as m;` (3 levels up from `src/app/pages/*/`)
 - **Modern Sass**: Use `@use 'sass:math'` + `math.random()` instead of global `random()`. Use `@if/@else` blocks instead of `if()` function
@@ -55,6 +56,8 @@ Started: Fri Mar 28 2026
 - **jsdom missing APIs**: Mock `IntersectionObserver` with `vi.stubGlobal()` — jsdom doesn't provide it
 - **HttpTestingController URL matching**: In jsdom, relative URLs like `/api/auth/login` resolve to `http://localhost:5000/api/auth/login`. Use `req => req.url.endsWith('/auth/login')` predicate instead of string match
 - **Angular test script**: `npm test` runs `vitest run` (not `ng test`). CI uses `npx vitest run`
+- **Testing components with chart.js/canvas deps**: Use `TestBed.runInInjectionContext(() => new Component())` to test class logic without rendering template — avoids jsdom canvas issues
+- **Angular computed() + reactive forms gotcha**: `computed()` reading form control values (not signals) caches result on first read. Test by setting form values before first `margemEstimada()` read, or create fresh component instances
 - **Rate limiting middleware**: `TenantRateLimitMiddleware` uses `IDistributedCache` (Redis) for per-tenant counters. Placed after TenantMiddleware in pipeline. Config in `RateLimiting:RequestsPerMinute`
 - **Serilog logging**: Structured JSON logging via Serilog. Config in `Serilog:` section of appsettings.json. `CorrelationIdMiddleware` first in pipeline, `RequestLoggingMiddleware` after auth. Use `LogContext.PushProperty()` to enrich logs
 - **Sentry error tracking**: `Sentry.AspNetCore` 6.x via `builder.WebHost.UseSentry()`. DSN from `SENTRY_DSN` env var. Disabled when DSN not set. `SentrySdk.CaptureException()` in GlobalExceptionFilter for manual capture with scope enrichment
@@ -2268,4 +2271,23 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - NBomber 5.x ReportFormat is under `NBomber.Contracts.Stats.ReportFormat`, not `NBomber.Contracts.ReportFormat`
   - `context.InvocationNumber` is `long`, cast to `int` for array indexing
   - Load test project is an Exe (OutputType), not a class library or test project
+---
+
+## 2026-03-29 - US-079
+- Implemented Angular test coverage for critical components (102 new test cases, 160 total)
+- New test files:
+  - `src/PeruShopHub.Web/src/app/shared/components/dialog/dialog.component.spec.ts` — 10 tests: open/close, escape, backdrop click, accessibility
+  - `src/PeruShopHub.Web/src/app/shared/components/confirm-dialog/confirm-dialog.component.spec.ts` — 8 tests: service confirm/accept/cancel/done lifecycle, processing state
+  - `src/PeruShopHub.Web/src/app/services/toast.service.spec.ts` — 10 tests: show/dismiss, auto-dismiss, max visible limit, types
+  - `src/PeruShopHub.Web/src/app/pages/login/login.component.spec.ts` — 18 tests: validation, login flow, redirect, error handling, loading state
+  - `src/PeruShopHub.Web/src/app/guards/auth.guard.spec.ts` — 2 tests: allow/deny based on auth state
+  - `src/PeruShopHub.Web/src/app/interceptors/auth.interceptor.spec.ts` — 7 tests: auth header, skip endpoints, token refresh, no-token
+  - `src/PeruShopHub.Web/src/app/pages/products/product-form.component.spec.ts` — 18 tests: form validation, margin calculation, save/error, tab switching
+  - `src/PeruShopHub.Web/src/app/pages/dashboard/dashboard.component.spec.ts` — 25 tests: KPI mapping, period change, donut chart, product ranking, error handling
+  - `src/PeruShopHub.Web/src/app/pages/questions/questions.component.spec.ts` — 23 tests: tabs, filter, reply, templates, SignalR, status helpers
+- **Learnings for future iterations:**
+  - `computed()` with non-signal reactive form values caches result on first read — avoid `fixture.detectChanges()` before testing margin calculations, or create fresh instances per test
+  - Dashboard tests need to avoid rendering template due to chart.js canvas issues in jsdom — use `TestBed.runInInjectionContext(() => new Component())` pattern
+  - Auth interceptor tests need `TestBed.resetTestingModule()` + `ensureTestBedInit()` in beforeEach to avoid "module already instantiated" errors between test files
+  - Import path from `confirm-dialog/` to test-setup is `../../../../test-setup` (4 levels), not 5
 ---
