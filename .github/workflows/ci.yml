@@ -25,8 +25,26 @@ jobs:
       - name: Build
         run: dotnet build PeruShopHub.sln --no-restore --configuration Release
 
-      - name: Unit Tests
-        run: dotnet test tests/PeruShopHub.UnitTests --no-build --configuration Release --verbosity normal
+      - name: Unit Tests with Coverage
+        run: >
+          dotnet test tests/PeruShopHub.UnitTests
+          --no-build --configuration Release --verbosity normal
+          --collect:"XPlat Code Coverage"
+          --results-directory ./coverage
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+
+      - name: Check Coverage Thresholds
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool 2>/dev/null || true
+          reportgenerator -reports:./coverage/**/coverage.cobertura.xml -targetdir:./coverage/report -reporttypes:TextSummary
+          cat ./coverage/report/Summary.txt
+          # Extract line coverage percentage and fail if below 50%
+          LINE_COV=$(grep 'Line coverage' ./coverage/report/Summary.txt | grep -oP '[\d.]+' | head -1)
+          echo "Line coverage: ${LINE_COV}%"
+          if [ "$(echo "$LINE_COV < 50" | bc -l)" -eq 1 ]; then
+            echo "::error::Line coverage ${LINE_COV}% is below the 50% threshold"
+            exit 1
+          fi
 
       - name: Integration Tests
         run: dotnet test tests/PeruShopHub.IntegrationTests --no-build --configuration Release --verbosity normal
