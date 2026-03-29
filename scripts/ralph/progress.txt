@@ -2366,3 +2366,34 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Nginx log format should include `rt=$request_time` for request latency analysis
   - PostgreSQL slow query config must be mounted as a separate file and loaded via `command: postgres -c config_file=...` since the default alpine image doesn't include a customizable postgresql.conf
 ---
+
+## 2026-03-29 - US-084
+- OWASP Top 10 security review and hardening
+- **SQL Injection**: All queries parameterized via EF Core — no issues found
+- **XSS**: Angular sanitizes templates, backend returns JSON only — no issues found
+- **CSRF**: JWT-based auth (not cookies) — inherently protected
+- **JWT Secret**: Added startup validation — must be ≥256 bits (32 bytes), fails fast if missing/short
+- **HTTPS/HSTS**: Added `UseHsts()` (non-dev) + `UseHttpsRedirection()` to pipeline
+- **CORS**: Made configurable via `Cors:AllowedOrigins` in appsettings (was hardcoded localhost)
+- **Auth Rate Limiting**: Created `AuthRateLimitMiddleware` — IP-based, 5 attempts/min for login/register/forgot-password/reset-password
+- **BCrypt**: Set explicit `workFactor: 12` on all `HashPassword` calls (was using default 11)
+- **Security Headers**: Created `SecurityHeadersMiddleware` (X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy) + Nginx headers + `server_tokens off`
+- **Dependencies**: 0 vulnerable packages (.NET + npm)
+- **Documentation**: Full audit report at `Docs/Security-Audit.md`
+- Files changed:
+  - NEW: `src/PeruShopHub.API/Middleware/AuthRateLimitMiddleware.cs`
+  - NEW: `src/PeruShopHub.API/Middleware/SecurityHeadersMiddleware.cs`
+  - NEW: `Docs/Security-Audit.md`
+  - MODIFIED: `src/PeruShopHub.API/Program.cs` (JWT validation, HSTS, CORS config, middleware order)
+  - MODIFIED: `src/PeruShopHub.API/appsettings.json` (auth rate limit + CORS config)
+  - MODIFIED: `src/PeruShopHub.API/Controllers/AuthController.cs` (BCrypt workFactor: 12)
+  - MODIFIED: `src/PeruShopHub.Application/Services/UserService.cs` (BCrypt workFactor: 12)
+  - MODIFIED: `docker/nginx.conf` (security headers, server_tokens off)
+- **Learnings for future iterations:**
+  - Auth rate limiting is separate from tenant rate limiting — tenant rate limiting skips auth endpoints by design (they're unauthenticated)
+  - `AuthRateLimitMiddleware` must be placed BEFORE `UseAuthentication()` in the pipeline to protect anonymous endpoints
+  - `SecurityHeadersMiddleware` should be first in pipeline (before CORS) for maximum coverage
+  - BCrypt.Net-Next default workFactor is 11 — always specify 12 explicitly
+  - JWT secret validation at startup prevents silent failures in production
+  - Nginx `server_tokens off` hides version from response headers
+---

@@ -1790,7 +1790,7 @@
         "Findings documented with severity and remediation"
       ],
       "priority": 95,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 5. After US-080."
     },
     {
