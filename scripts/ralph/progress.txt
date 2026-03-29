@@ -1565,3 +1565,19 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Fulfillment stock uses the existing `IMarketplaceAdapter.GetFulfillmentStockAsync()` + `ICacheService` for 15-min TTL caching
   - `MarketplaceListing.FulfillmentType == "fulfillment"` identifies ML Full products
 ---
+
+## 2026-03-29 - US-057
+- Implemented StorageCostAccumulation entity with EF Core configuration (NUMERIC(18,4) precision, unique index on ProductId+Date)
+- Created StorageCostWorker that runs daily at midnight, calculates storage costs for Full (fulfillment) products per tenant
+- Size classification: Pequeno (≤5k cm³, R$0.007), Medio (≤20k, R$0.015), Grande (≤60k, R$0.035), Especial (≤120k, R$0.050), Extra (>120k, R$0.107)
+- Penalty multipliers: 1x (≤90d), 2x (91-180d), 3x (181-365d), 4x (>365d)
+- Added GET /api/inventory/{productId}/storage-costs endpoint with optional dateFrom/dateTo filters
+- Enhanced CostCalculationService to use actual accumulated storage costs for Full products instead of flat daily estimate
+- Added cumulative storage cost chart (dual-axis line chart) on product detail page — shows cumulative and daily costs
+- Files changed: StorageCostAccumulation.cs (entity), StorageCostAccumulationConfiguration.cs, migration, PeruShopHubDbContext.cs, StorageCostWorker.cs, Worker/Program.cs, InventoryController.cs, InventoryDtos.cs, CostCalculationService.cs, inventory.service.ts, product-detail.component.ts/html
+- **Learnings for future iterations:**
+  - StorageCostWorker uses IgnoreQueryFilters() for cross-tenant processing (same pattern as StockReconciliationWorker)
+  - Worker waits until next midnight using `DateTime.UtcNow.Date.AddDays(1) - DateTime.UtcNow` delay pattern
+  - Full product detection: join MarketplaceListings where FulfillmentType == "fulfillment" and ProductId != null
+  - ng2-charts dual-axis pattern: two datasets with yAxisID 'y' and 'y1', second axis has grid.drawOnChartArea: false
+---
