@@ -73,6 +73,8 @@ Started: Fri Mar 28 2026
 - **Worker DI for webhook processing**: Worker needs `IConnectionMultiplexer` (Redis RPOP), `IWebhookQueueService`, `ICostCalculationService`, and `INotificationDispatcher` (use `DbOnlyNotificationDispatcher` — no SignalR in Worker)
 - **Webhook queue pattern**: LPUSH to enqueue (WebhooksController), RPOP to dequeue (WebhookProcessingWorker) — FIFO ordering. Dead letter: `ml:webhooks:dead`
 - **ML Questions API**: Search via `GET /my/received_questions/search?status=X`, single question via `GET /questions/{id}`, answer via `POST /answers` with `{question_id, text}`
+- **Entity naming**: Avoid names that collide with common .NET types (e.g., `Claim` → `System.Security.Claims.Claim`). Prefix marketplace entities with `Marketplace` (e.g., `MarketplaceClaim`)
+- **ML Claims API**: Search via `GET /post-purchase/v1/claims/search`, single claim via `GET /post-purchase/v1/claims/{id}`. Response uses `data` array + `paging` object (not same pattern as questions)
 
 ---
 
@@ -1962,4 +1964,21 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Webhook worker Topics array and switch/case are the two places to update for new webhook topics
   - SidebarBadgeService pattern: add signal + refresh method + subscribe to SignalR entity events
   - Sale detail uses two-column layout — add new sections before the `</div>` of `.col-left`
+---
+
+## 2026-03-29 - US-070
+- Implemented Claims and Returns Management: full-stack feature for tracking ML claims/returns
+- Backend: MarketplaceClaim entity, ClaimConfiguration, migration (claims table), ClaimService, ClaimsController (GET /api/claims, GET /api/claims/{id}, POST /api/claims/{id}/respond, GET /api/claims/summary)
+- ML Integration: SearchClaimsAsync and GetClaimAsync on IMarketplaceAdapter, ML response DTOs (MlClaimSearchResponse, MlClaimResponse, etc.), adapter implementation calling /post-purchase/v1/claims endpoints
+- Webhook: Added "claims" topic to WebhookProcessingWorker Topics array + ProcessClaimWebhookAsync handler
+- Sync Worker: ClaimSyncWorker (periodic sync every 10 min for all active ML connections)
+- Frontend: /reclamacoes page with list+detail panel, search, tab filters (opened/closed/all), status badges, timeline, response form
+- Sidebar: Added "Reclamações" nav item with AlertTriangle icon and open claims badge count
+- Sidebar Badge: ClaimService.getSummary() integration for open claims count + SignalR refresh on 'claim' entity changes
+- Dashboard: Added open claims count to pending actions
+- Files changed: 25 files (13 new, 12 modified)
+- **Learnings for future iterations:**
+  - Naming conflict: `Claim` entity collides with `System.Security.Claims.Claim` in API controllers. Renamed to `MarketplaceClaim` to avoid ambiguity. For future entities, avoid names that clash with common .NET namespace types
+  - Be careful with `replace_all` — replacing `new Claim` with `new MarketplaceClaim` also caught `ClaimSummaryDto` → `MarketplaceClaimSummaryDto`. Prefer targeted replacements
+  - ML claims API: `GET /post-purchase/v1/claims/search` for search, `GET /post-purchase/v1/claims/{id}` for details. Response uses `data` array with `paging` object (different from questions which use `questions` array with `total`)
 ---
