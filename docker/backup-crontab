@@ -1,0 +1,11 @@
+# PeruShopHub Backup Schedule
+# m  h  dom mon dow  command
+
+# Daily backup at 3:00 AM UTC
+0  3  *  *  *  /usr/local/bin/backup/backup.sh >> /var/log/backup.log 2>&1
+
+# Weekly restore verification at 4:00 AM UTC on Sundays
+0  4  *  *  0  /usr/local/bin/backup/verify-restore.sh >> /var/log/backup.log 2>&1
+
+# Hourly backup age monitoring
+0  *  *  *  *  /usr/local/bin/backup/monitor.sh >> /var/log/backup.log 2>&1

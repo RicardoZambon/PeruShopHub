@@ -71,10 +71,36 @@ services:
     networks:
       - perushophub-net
 
+  backup:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backup
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: perushophub
+      PGUSER: perushophub
+      PGPASSWORD: perushophub_secret
+      BACKUP_DIR: /backups
+      # OFFSITE_BUCKET: s3://perushophub-backups
+      # OFFSITE_ENDPOINT: https://s3.us-west-001.backblazeb2.com
+      # AWS_ACCESS_KEY_ID: ""
+      # AWS_SECRET_ACCESS_KEY: ""
+      # ALERT_WEBHOOK: https://hooks.slack.com/services/...
+    volumes:
+      - backup_data:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - perushophub-net
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
   uploads:
+  backup_data:
 
 networks:
   perushophub-net:

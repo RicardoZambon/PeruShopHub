@@ -1,0 +1,25 @@
+FROM postgres:16-alpine
+
+# Install dependencies for offsite sync and cron
+RUN apk add --no-cache \
+    bash \
+    curl \
+    aws-cli \
+    gzip
+
+# Copy backup scripts
+COPY scripts/backup/ /usr/local/bin/backup/
+RUN chmod +x /usr/local/bin/backup/*.sh
+
+# Cron schedule:
+#   3:00 AM daily — full backup with retention
+#   4:00 AM Sunday — restore verification
+#   Every hour — backup monitoring (25h threshold)
+COPY docker/backup-crontab /etc/crontabs/root
+
+# Create backup volume mount point
+RUN mkdir -p /backups
+
+VOLUME ["/backups"]
+
+CMD ["crond", "-f", "-l", "2"]
