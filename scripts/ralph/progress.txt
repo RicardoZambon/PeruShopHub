@@ -3,6 +3,8 @@ Started: Fri Mar 28 2026
 ---
 
 ## Codebase Patterns
+- **SCSS mixins path from pages**: `@use '../../../styles/mixins' as m;` (3 levels up from `src/app/pages/*/`)
+- **Modern Sass**: Use `@use 'sass:math'` + `math.random()` instead of global `random()`. Use `@if/@else` blocks instead of `if()` function
 - **ML logistic_type mapping**: `shipping.logistic_type` from ML item API → `MarketplaceListing.FulfillmentType`: "fulfillment" (ML Full), "cross_docking", "drop_off", "xd_drop_off"; `mode="me2"` → "self"
 - **Cost estimation fallback pattern**: After MergeApiFeeCostsAsync, check if a cost category is still zero, then estimate from product dimensions/attributes as a "Calculated" source fallback
 - **ButtonComponent variants**: 'accent' | 'ghost' | 'outline' | 'danger' | 'icon' — no 'primary' variant. Use 'accent' for primary actions
@@ -1761,4 +1763,24 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
 - **Learnings for future iterations:**
   - PostgreSQL jsonb column type works well with `List<string>` in EF Core — no custom converter needed
   - Unique index on TenantId ensures one onboarding record per tenant — auto-create pattern simplifies API (no explicit create endpoint needed)
+---
+
+## 2026-03-29 - US-064b
+- Created onboarding wizard frontend page at `/onboarding` with step-by-step wizard UI
+- Created `OnboardingService` in `services/onboarding.service.ts` calling backend API (`GET /progress`, `POST /complete-step`)
+- 5 wizard steps: profile, connect_ml, import_products, set_costs, view_profitability — each with description, action button, skip/complete
+- Progress bar showing completed count and percentage
+- Confetti animation on all-steps-completed using pure CSS (30 particles, 10 colors)
+- Celebration message with "Ir para o Dashboard" button when all steps done
+- "Fazer depois" dismiss button stores preference in localStorage (`psh_onboarding_dismissed`)
+- Login flow checks onboarding progress; redirects to `/onboarding` if not completed and not dismissed
+- Register always redirects to `/onboarding` (new user = first login)
+- Header dropdown menu includes "Configuração Inicial" link (accessible anytime)
+- Skeleton loading state mirrors real layout
+- Files changed: `onboarding.component.ts/html/scss` (new), `onboarding.service.ts` (new), `app.routes.ts`, `login.component.ts`, `register.component.ts`, `header.component.ts/html`
+- **Learnings for future iterations:**
+  - SCSS `@use` path from `src/app/pages/*/` to `src/styles/` is `../../../styles/` (3 levels), not 4
+  - Sass `if()` function is deprecated — use `@if/@else` blocks instead
+  - Sass `random()` needs `@use 'sass:math'` + `math.random()` in modern Sass
+  - Lucide icons like `Rocket`, `PartyPopper`, `Link` are available in `lucide-angular`
 ---

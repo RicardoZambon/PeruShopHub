@@ -1344,7 +1344,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 72,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Depends on US-064a."
     },
     {
