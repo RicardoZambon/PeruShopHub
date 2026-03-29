@@ -50,6 +50,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<StorageCostAccumulation> StorageCostAccumulations => Set<StorageCostAccumulation>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<OnboardingProgress> OnboardingProgresses => Set<OnboardingProgress>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

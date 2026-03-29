@@ -1326,7 +1326,7 @@
         ".NET build passes"
       ],
       "priority": 71,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Independent."
     },
     {

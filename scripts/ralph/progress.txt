@@ -1736,3 +1736,29 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Email change should require password confirmation for security; separated from name update
   - IFileStorageService is already wired in DI — ProfileController can inject and use it directly
 ---
+
+## 2026-03-29 - US-064a
+- Implemented Onboarding Wizard Backend with progress tracking per tenant
+- **Backend changes:**
+  - Created `OnboardingProgress` entity in Core (TenantId, StepsCompleted as JSON, IsCompleted, CompletedAt)
+  - Created `OnboardingProgressConfiguration` with jsonb column type and unique TenantId index
+  - Created migration `AddOnboardingProgress`
+  - Created `OnboardingDtos.cs` (OnboardingProgressDto, OnboardingStepDto, CompleteStepRequest)
+  - Created `IOnboardingService`/`OnboardingService` with auto-create on first GET, step validation, auto-complete detection
+  - Created `OnboardingController` with `GET /api/onboarding/progress` and `POST /api/onboarding/complete-step`
+  - Registered `IOnboardingService` in DI
+- **Steps defined:** profile, connect_ml, import_products, set_costs, view_profitability
+- **Files changed:**
+  - `src/PeruShopHub.Core/Entities/OnboardingProgress.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs`
+  - `src/PeruShopHub.Infrastructure/Persistence/Configurations/OnboardingProgressConfiguration.cs` (new)
+  - `src/PeruShopHub.Infrastructure/Migrations/20260329044656_AddOnboardingProgress.cs` (new)
+  - `src/PeruShopHub.Application/DTOs/Onboarding/OnboardingDtos.cs` (new)
+  - `src/PeruShopHub.Application/Services/IOnboardingService.cs` (new)
+  - `src/PeruShopHub.Application/Services/OnboardingService.cs` (new)
+  - `src/PeruShopHub.Application/DependencyInjection.cs`
+  - `src/PeruShopHub.API/Controllers/OnboardingController.cs` (new)
+- **Learnings for future iterations:**
+  - PostgreSQL jsonb column type works well with `List<string>` in EF Core — no custom converter needed
+  - Unique index on TenantId ensures one onboarding record per tenant — auto-create pattern simplifies API (no explicit create endpoint needed)
+---

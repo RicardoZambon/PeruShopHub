@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IStockSyncService, StockSyncService>();
         services.AddSingleton<IMlOrderMapper, MlOrderMapper>();
         services.AddScoped<IStockReconciliationService, StockReconciliationService>();
+        services.AddScoped<IOnboardingService, OnboardingService>();
 
         return services;
     }
