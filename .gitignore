@@ -419,3 +419,6 @@ FodyWeavers.xsd
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Load test results
+load-test-results/

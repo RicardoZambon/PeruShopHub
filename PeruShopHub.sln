@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeruShopHub.UnitTests", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeruShopHub.IntegrationTests", "tests\PeruShopHub.IntegrationTests\PeruShopHub.IntegrationTests.csproj", "{A3F106F7-4FDB-4524-9447-B893245DF904}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeruShopHub.LoadTests", "tests\PeruShopHub.LoadTests\PeruShopHub.LoadTests.csproj", "{E64F76D0-63FC-43F4-B866-20CDEA7307A6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,6 +117,18 @@ Global
 		{A3F106F7-4FDB-4524-9447-B893245DF904}.Release|x64.Build.0 = Release|Any CPU
 		{A3F106F7-4FDB-4524-9447-B893245DF904}.Release|x86.ActiveCfg = Release|Any CPU
 		{A3F106F7-4FDB-4524-9447-B893245DF904}.Release|x86.Build.0 = Release|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Debug|x64.Build.0 = Debug|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Debug|x86.Build.0 = Debug|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Release|x64.ActiveCfg = Release|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Release|x64.Build.0 = Release|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Release|x86.ActiveCfg = Release|Any CPU
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -127,5 +141,6 @@ Global
 		{B350B623-4BA6-4985-B48F-930BD9D7F077} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{0BD91CF4-13B1-43A7-BD70-343B2B30AF54} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{A3F106F7-4FDB-4524-9447-B893245DF904} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{E64F76D0-63FC-43F4-B866-20CDEA7307A6} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
