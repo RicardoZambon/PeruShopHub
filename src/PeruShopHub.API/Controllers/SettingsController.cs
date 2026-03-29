@@ -1,9 +1,11 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PeruShopHub.Application.DTOs.Settings;
 using PeruShopHub.Application.Services;
 using PeruShopHub.Core.Entities;
+using PeruShopHub.Core.Enums;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
@@ -500,6 +502,97 @@ public class SettingsController : ControllerBase
 
         return NoContent();
     }
+
+    // --- Notification Preferences ---
+
+    [HttpGet("notification-preferences")]
+    public async Task<ActionResult<IReadOnlyList<NotificationPreferenceDto>>> GetNotificationPreferences()
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var prefs = await _db.NotificationPreferences
+            .AsNoTracking()
+            .Where(np => np.UserId == userId)
+            .OrderBy(np => np.Type)
+            .Select(np => new NotificationPreferenceDto(np.Id, np.Type.ToString(), np.EmailEnabled, np.InAppEnabled))
+            .ToListAsync();
+
+        // If user has no preferences yet, return defaults (all enabled)
+        if (prefs.Count == 0)
+        {
+            prefs = Enum.GetValues<NotificationType>()
+                .OrderBy(t => t)
+                .Select(t => new NotificationPreferenceDto(Guid.Empty, t.ToString(), true, true))
+                .ToList();
+        }
+
+        return Ok(prefs);
+    }
+
+    [HttpPut("notification-preferences")]
+    public async Task<ActionResult<IReadOnlyList<NotificationPreferenceDto>>> UpdateNotificationPreferences(
+        [FromBody] IReadOnlyList<UpdateNotificationPreferenceDto> dtos)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var tenantUser = await _db.TenantUsers.AsNoTracking()
+            .FirstOrDefaultAsync(tu => tu.UserId == userId);
+        if (tenantUser is null)
+            return BadRequest(new { errors = new Dictionary<string, string[]> { ["User"] = new[] { "Usuário não pertence a nenhum tenant" } } });
+
+        var errors = new Dictionary<string, string[]>();
+        var validTypes = Enum.GetNames<NotificationType>();
+
+        foreach (var dto in dtos)
+        {
+            if (!validTypes.Contains(dto.Type))
+                errors[dto.Type] = new[] { $"Tipo de notificação inválido: {dto.Type}" };
+        }
+
+        if (errors.Count > 0)
+            return BadRequest(new { errors });
+
+        var existing = await _db.NotificationPreferences
+            .Where(np => np.UserId == userId)
+            .ToListAsync();
+
+        var result = new List<NotificationPreferenceDto>();
+
+        foreach (var dto in dtos)
+        {
+            var type = Enum.Parse<NotificationType>(dto.Type);
+            var pref = existing.FirstOrDefault(p => p.Type == type);
+
+            if (pref is null)
+            {
+                pref = new NotificationPreference
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantUser.TenantId,
+                    UserId = userId,
+                    Type = type,
+                    EmailEnabled = dto.EmailEnabled,
+                    InAppEnabled = dto.InAppEnabled,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _db.NotificationPreferences.Add(pref);
+            }
+            else
+            {
+                pref.EmailEnabled = dto.EmailEnabled;
+                pref.InAppEnabled = dto.InAppEnabled;
+                pref.UpdatedAt = DateTime.UtcNow;
+            }
+
+            result.Add(new NotificationPreferenceDto(pref.Id, pref.Type.ToString(), pref.EmailEnabled, pref.InAppEnabled));
+        }
+
+        await _db.SaveChangesAsync();
+
+        await _auditService.LogAsync("Preferências de notificação atualizadas", "NotificationPreference", userId,
+            null, new { count = dtos.Count });
+
+        return Ok(result);
+    }
 }
 
 public record AlertRuleDto(Guid Id, string Type, decimal Threshold, bool IsActive, Guid? ProductId, string? ProductName, DateTime CreatedAt);
@@ -515,3 +608,5 @@ public record UpdatePaymentFeeRuleDto(int InstallmentMin, int InstallmentMax, de
 public record ReportScheduleDto(Guid Id, string Frequency, string Recipients, bool IsActive, DateTime? LastSentAt, DateTime CreatedAt);
 public record CreateReportScheduleDto(string Frequency, string Recipients, bool IsActive);
 public record UpdateReportScheduleDto(string Frequency, string Recipients, bool IsActive);
+public record NotificationPreferenceDto(Guid Id, string Type, bool EmailEnabled, bool InAppEnabled);
+public record UpdateNotificationPreferenceDto(string Type, bool EmailEnabled, bool InAppEnabled);

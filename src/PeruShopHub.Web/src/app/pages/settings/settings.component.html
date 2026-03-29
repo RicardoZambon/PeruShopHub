@@ -596,6 +596,58 @@
       }
     }
 
+    <!-- Notificações Tab -->
+    @if (activeTab() === 'notificacoes') {
+      <div class="settings__section">
+        <h2 class="settings__section-title">Preferências de Notificação</h2>
+        <p class="settings__section-description">Escolha quais notificações deseja receber por email e no aplicativo.</p>
+
+        @if (loadingNotificationPrefs()) {
+          <div class="notification-prefs__loading">Carregando preferências...</div>
+        } @else {
+          <div class="notification-prefs">
+            <table class="notification-prefs__table">
+              <thead>
+                <tr>
+                  <th class="notification-prefs__th">Tipo de Notificação</th>
+                  <th class="notification-prefs__th notification-prefs__th--center">Email</th>
+                  <th class="notification-prefs__th notification-prefs__th--center">No App</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (pref of notificationPreferences(); track pref.type) {
+                  <tr class="notification-prefs__row">
+                    <td class="notification-prefs__td">{{ notificationTypeLabels[pref.type] || pref.type }}</td>
+                    <td class="notification-prefs__td notification-prefs__td--center">
+                      <app-toggle-switch
+                        [checked]="pref.emailEnabled"
+                        (checkedChange)="toggleNotificationPref(pref.type, 'email')">
+                      </app-toggle-switch>
+                    </td>
+                    <td class="notification-prefs__td notification-prefs__td--center">
+                      <app-toggle-switch
+                        [checked]="pref.inAppEnabled"
+                        (checkedChange)="toggleNotificationPref(pref.type, 'inApp')">
+                      </app-toggle-switch>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+
+            <div class="settings__form-actions">
+              <app-button
+                variant="accent"
+                [disabled]="savingNotificationPrefs()"
+                (click)="saveNotificationPreferences()">
+                {{ savingNotificationPrefs() ? 'Salvando...' : 'Salvar Preferências' }}
+              </app-button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
     <!-- Relatórios Tab -->
     @if (activeTab() === 'relatorios') {
       <div class="settings__section">

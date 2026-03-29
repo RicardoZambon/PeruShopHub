@@ -120,6 +120,7 @@ builder.Services.AddSignalR()
     });
 builder.Services.AddSingleton<INotificationHubContext, NotificationHubContextAdapter>();
 builder.Services.AddScoped<INotificationDispatcher, SignalRNotificationDispatcher>();
+builder.Services.AddScoped<INotificationEmailService, NotificationEmailService>();
 builder.Services.AddEmailService(builder.Configuration);
 
 // ── File Storage ──────────────────────────────────────────

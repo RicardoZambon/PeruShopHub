@@ -52,6 +52,7 @@ builder.Services.AddSingleton<IWebhookQueueService, RedisWebhookQueueService>();
 
 // Notification dispatcher (DB-only, no SignalR in Worker)
 builder.Services.AddScoped<INotificationDispatcher, DbOnlyNotificationDispatcher>();
+builder.Services.AddScoped<INotificationEmailService, NotificationEmailService>();
 
 // Cost calculation service (needed for webhook order processing)
 builder.Services.AddScoped<ICostCalculationService, CostCalculationService>();

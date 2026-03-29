@@ -49,6 +49,7 @@ public class PeruShopHubDbContext : DbContext
     public DbSet<StockReconciliationReportItem> StockReconciliationReportItems => Set<StockReconciliationReportItem>();
     public DbSet<StorageCostAccumulation> StorageCostAccumulations => Set<StorageCostAccumulation>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

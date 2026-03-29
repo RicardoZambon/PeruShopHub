@@ -12,11 +12,16 @@ namespace PeruShopHub.Infrastructure.Notifications;
 public class DbOnlyNotificationDispatcher : INotificationDispatcher
 {
     private readonly PeruShopHubDbContext _db;
+    private readonly INotificationEmailService _notificationEmailService;
     private readonly ILogger<DbOnlyNotificationDispatcher> _logger;
 
-    public DbOnlyNotificationDispatcher(PeruShopHubDbContext db, ILogger<DbOnlyNotificationDispatcher> logger)
+    public DbOnlyNotificationDispatcher(
+        PeruShopHubDbContext db,
+        INotificationEmailService notificationEmailService,
+        ILogger<DbOnlyNotificationDispatcher> logger)
     {
         _db = db;
+        _notificationEmailService = notificationEmailService;
         _logger = logger;
     }
 
@@ -24,6 +29,9 @@ public class DbOnlyNotificationDispatcher : INotificationDispatcher
     {
         _db.Notifications.Add(notification);
         await _db.SaveChangesAsync(ct);
+
+        await _notificationEmailService.SendIfEnabledAsync(notification, ct);
+
         _logger.LogInformation("Dispatched notification {Id}: {Title} (DB only)", notification.Id, notification.Title);
     }
 

@@ -9,12 +9,18 @@ public class SignalRNotificationDispatcher : INotificationDispatcher
 {
     private readonly PeruShopHubDbContext _db;
     private readonly INotificationHubContext _notificationHub;
+    private readonly INotificationEmailService _notificationEmailService;
     private readonly ILogger<SignalRNotificationDispatcher> _logger;
 
-    public SignalRNotificationDispatcher(PeruShopHubDbContext db, INotificationHubContext notificationHub, ILogger<SignalRNotificationDispatcher> logger)
+    public SignalRNotificationDispatcher(
+        PeruShopHubDbContext db,
+        INotificationHubContext notificationHub,
+        INotificationEmailService notificationEmailService,
+        ILogger<SignalRNotificationDispatcher> logger)
     {
         _db = db;
         _notificationHub = notificationHub;
+        _notificationEmailService = notificationEmailService;
         _logger = logger;
     }
 
@@ -29,6 +35,8 @@ public class SignalRNotificationDispatcher : INotificationDispatcher
             notification.Description, notification.Timestamp,
             IsRead = false, notification.NavigationTarget
         }, ct);
+
+        await _notificationEmailService.SendIfEnabledAsync(notification, ct);
 
         _logger.LogInformation("Dispatched notification {Id}: {Title}", notification.Id, notification.Title);
     }

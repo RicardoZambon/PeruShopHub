@@ -107,6 +107,13 @@ export interface AlertRule {
   createdAt: string;
 }
 
+export interface NotificationPreference {
+  id: string;
+  type: string;
+  emailEnabled: boolean;
+  inAppEnabled: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private http = inject(HttpClient);
@@ -239,5 +246,14 @@ export class SettingsService {
 
   getOrderSyncStatus(): Observable<OrderSyncStatus> {
     return this.http.get<OrderSyncStatus>(`${environment.apiUrl}/integrations/mercadolivre/sync-orders/status`);
+  }
+
+  // Notification Preferences
+  getNotificationPreferences(): Observable<NotificationPreference[]> {
+    return this.http.get<NotificationPreference[]>(`${this.baseUrl}/notification-preferences`);
+  }
+
+  updateNotificationPreferences(prefs: { type: string; emailEnabled: boolean; inAppEnabled: boolean }[]): Observable<NotificationPreference[]> {
+    return this.http.put<NotificationPreference[]>(`${this.baseUrl}/notification-preferences`, prefs);
   }
 }

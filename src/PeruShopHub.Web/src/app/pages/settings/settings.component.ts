@@ -14,12 +14,12 @@ import { FormActionsComponent } from '../../shared/components/form-actions/form-
 import { ToggleSwitchComponent } from '../../shared/components/toggle-switch/toggle-switch.component';
 import { ThemeService } from '../../services/theme.service';
 import type { ThemePreference } from '../../services/theme.service';
-import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule, type ReportSchedule, type AlertRule } from '../../services/settings.service';
+import { SettingsService, type UserRow, type Integration, type FixedCostsResponse, type CommissionRule, type TaxProfile, type PaymentFeeRule, type ReportSchedule, type AlertRule, type NotificationPreference } from '../../services/settings.service';
 import { TenantService, type TenantMember } from '../../services/tenant.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../shared/components';
 
-type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'relatorios' | 'aparencia' | 'log-atividades';
+type SettingsTab = 'empresa' | 'usuarios' | 'integracoes' | 'custos-fixos' | 'fiscal' | 'alertas' | 'notificacoes' | 'relatorios' | 'aparencia' | 'log-atividades';
 
 interface FixedCost {
   id: number;
@@ -57,6 +57,7 @@ export class SettingsComponent implements OnInit {
     { key: 'custos-fixos', label: 'Custos Fixos' },
     { key: 'fiscal', label: 'Fiscal' },
     { key: 'alertas', label: 'Alertas' },
+    { key: 'notificacoes', label: 'Notificações' },
     { key: 'relatorios', label: 'Relatórios' },
     { key: 'aparencia', label: 'Aparência' },
     { key: 'log-atividades', label: 'Log de Atividades' },
@@ -99,6 +100,19 @@ export class SettingsComponent implements OnInit {
   editingAlertRule = signal<AlertRule | null>(null);
   alertRuleForm!: FormGroup;
   savingAlertRule = signal(false);
+
+  // Notification Preferences
+  notificationPreferences = signal<NotificationPreference[]>([]);
+  savingNotificationPrefs = signal(false);
+  loadingNotificationPrefs = signal(false);
+
+  readonly notificationTypeLabels: Record<string, string> = {
+    'NewSale': 'Nova Venda',
+    'LowStock': 'Estoque Baixo',
+    'MarginAlert': 'Alerta de Margem',
+    'MLConnectionError': 'Erro de Conexão ML',
+    'SyncError': 'Erro de Sincronização',
+  };
 
   // Report schedules
   reportSchedules = signal<ReportSchedule[]>([]);
@@ -179,6 +193,7 @@ export class SettingsComponent implements OnInit {
     this.loadTaxProfile();
     this.loadReportSchedules();
     this.loadAlertRules();
+    this.loadNotificationPreferences();
   }
 
   selectTab(tab: SettingsTab): void {
@@ -971,6 +986,53 @@ export class SettingsComponent implements OnInit {
           this.toastService.show('Erro ao desconectar marketplace', 'danger');
         },
       });
+    });
+  }
+
+  // --- Notification Preferences ---
+
+  loadNotificationPreferences(): void {
+    this.loadingNotificationPrefs.set(true);
+    this.settingsService.getNotificationPreferences().subscribe({
+      next: (prefs) => {
+        this.notificationPreferences.set(prefs);
+        this.loadingNotificationPrefs.set(false);
+      },
+      error: () => {
+        this.loadingNotificationPrefs.set(false);
+        this.toastService.show('Erro ao carregar preferências de notificação', 'danger');
+      },
+    });
+  }
+
+  toggleNotificationPref(type: string, channel: 'email' | 'inApp'): void {
+    this.notificationPreferences.update(prefs =>
+      prefs.map(p => {
+        if (p.type !== type) return p;
+        return channel === 'email'
+          ? { ...p, emailEnabled: !p.emailEnabled }
+          : { ...p, inAppEnabled: !p.inAppEnabled };
+      })
+    );
+  }
+
+  saveNotificationPreferences(): void {
+    this.savingNotificationPrefs.set(true);
+    const prefs = this.notificationPreferences().map(p => ({
+      type: p.type,
+      emailEnabled: p.emailEnabled,
+      inAppEnabled: p.inAppEnabled,
+    }));
+    this.settingsService.updateNotificationPreferences(prefs).subscribe({
+      next: (result) => {
+        this.notificationPreferences.set(result);
+        this.savingNotificationPrefs.set(false);
+        this.toastService.show('Preferências de notificação salvas', 'success');
+      },
+      error: () => {
+        this.savingNotificationPrefs.set(false);
+        this.toastService.show('Erro ao salvar preferências', 'danger');
+      },
     });
   }
 
