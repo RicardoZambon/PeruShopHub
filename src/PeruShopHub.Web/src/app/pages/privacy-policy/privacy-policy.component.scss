@@ -1,7 +1,14 @@
+:host {
+  display: block;
+  height: 100vh;
+  overflow-y: auto;
+}
+
 .legal-page {
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   background: var(--neutral-50);
   padding: var(--space-6) var(--space-4);
 }
