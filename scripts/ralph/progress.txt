@@ -1496,3 +1496,22 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Stock sync uses Redis cache keys (not Redis LIST) for per-variant queue items — simpler than LPUSH/RPOP since items are keyed by variantId (natural dedup)
   - Uses allocated quantity (minus reserved) from StockAllocation, not total variant stock, when pushing to ML
 ---
+
+## 2026-03-29 - US-054
+- Implemented stock reconciliation in `ProcessItemWebhookAsync` when ML items webhook fires
+- When `available_quantity` changes on ML (external sale, manual edit, etc.), the webhook handler now:
+  - Compares ML quantity vs local allocated quantity (from `StockAllocation`) per variation
+  - Creates `StockMovement` with type "Ajuste" and reason "Sync ML" for the difference
+  - Updates `ProductVariant.Stock` and `StockAllocation.AllocatedQuantity`
+  - Logs a warning alert if discrepancy exceeds configurable threshold (default: 5 units, via `Workers:StockSync:DiscrepancyThreshold`)
+  - Does NOT trigger stock push back to ML (prevents infinite webhook loop)
+- Handles both variation-level and item-level stock (no variations → uses default variant)
+- Added `_config` field to `WebhookProcessingWorker` for reading threshold config
+- Files changed:
+  - `src/PeruShopHub.Worker/Workers/WebhookProcessingWorker.cs` (modified `ProcessItemWebhookAsync`, added `ReconcileStockFromMlAsync` and `ReconcileVariantStock` helper methods)
+- **Learnings for future iterations:**
+  - Items webhook already existed with metadata updates — stock reconciliation was the missing piece
+  - The infinite loop prevention pattern is critical: ML webhook → local update is one-way. `StockSyncService.EnqueueVariantSyncAsync` is only for internal→ML direction
+  - `Product.Variants` must be `.Include()`d when loading product for stock reconciliation
+  - `StockAllocation` available = `AllocatedQuantity - ReservedQuantity` (reserved = committed to orders)
+---

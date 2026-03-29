@@ -1140,7 +1140,7 @@
         ".NET build passes"
       ],
       "priority": 61,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3. Depends on US-053."
     },
     {

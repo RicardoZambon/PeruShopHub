@@ -16,6 +16,7 @@ namespace PeruShopHub.Worker.Workers;
 public class WebhookProcessingWorker : BackgroundService
 {
     private readonly IServiceProvider _services;
+    private readonly IConfiguration _config;
     private readonly ILogger<WebhookProcessingWorker> _logger;
     private readonly TimeSpan _pollInterval;
 
@@ -34,6 +35,7 @@ public class WebhookProcessingWorker : BackgroundService
         ILogger<WebhookProcessingWorker> logger)
     {
         _services = services;
+        _config = config;
         _logger = logger;
         _pollInterval = TimeSpan.FromSeconds(config.GetValue("Workers:WebhookProcessing:PollIntervalSeconds", 5));
     }
@@ -458,6 +460,8 @@ public class WebhookProcessingWorker : BackgroundService
 
         if (listing is not null)
         {
+            var previousLocalQuantity = listing.AvailableQuantity;
+
             listing.Title = itemDetails.Title;
             listing.Status = itemDetails.Status;
             listing.Price = itemDetails.Price;
@@ -470,6 +474,7 @@ public class WebhookProcessingWorker : BackgroundService
             {
                 var product = await db.Products
                     .IgnoreQueryFilters()
+                    .Include(p => p.Variants)
                     .FirstOrDefaultAsync(p => p.Id == listing.ProductId.Value, ct);
 
                 if (product is not null)
@@ -483,6 +488,9 @@ public class WebhookProcessingWorker : BackgroundService
                         _ => product.Status
                     };
                     product.UpdatedAt = DateTime.UtcNow;
+
+                    // ── Stock reconciliation: detect external stock changes ──
+                    await ReconcileStockFromMlAsync(db, connection.TenantId, listing, product, itemDetails, ct);
                 }
             }
         }
@@ -492,6 +500,136 @@ public class WebhookProcessingWorker : BackgroundService
         _logger.LogInformation(
             "Item updated: ExternalId={ItemId}, TenantId={TenantId}, Status={Status}, Price={Price}, Stock={Stock}",
             itemId, connection.TenantId, itemDetails.Status, itemDetails.Price, itemDetails.AvailableQuantity);
+    }
+
+    /// <summary>
+    /// Compares ML available_quantity with local allocated stock.
+    /// If ML changed externally, creates StockMovement adjustments and updates local stock.
+    /// Does NOT trigger stock push back to ML (prevents infinite loop).
+    /// </summary>
+    private async Task ReconcileStockFromMlAsync(
+        PeruShopHubDbContext db,
+        Guid tenantId,
+        MarketplaceListing listing,
+        Product product,
+        MarketplaceItemDetails itemDetails,
+        CancellationToken ct)
+    {
+        var discrepancyThreshold = _config.GetValue("Workers:StockSync:DiscrepancyThreshold", 5);
+        var variants = product.Variants.ToList();
+
+        if (itemDetails.Variations.Count > 0)
+        {
+            // Variation-level reconciliation
+            foreach (var mlVariation in itemDetails.Variations)
+            {
+                if (mlVariation.ExternalVariationId is null) continue;
+
+                var variant = variants.FirstOrDefault(v => v.ExternalId == mlVariation.ExternalVariationId);
+                if (variant is null) continue;
+
+                var allocation = await db.StockAllocations
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(a =>
+                        a.TenantId == tenantId
+                        && a.ProductVariantId == variant.Id
+                        && a.MarketplaceId == "mercadolivre", ct);
+
+                var localAvailable = allocation is not null
+                    ? allocation.AllocatedQuantity - allocation.ReservedQuantity
+                    : variant.Stock;
+
+                var mlQuantity = mlVariation.AvailableQuantity;
+                var difference = mlQuantity - localAvailable;
+
+                if (difference == 0) continue;
+
+                ReconcileVariantStock(db, tenantId, product, variant, allocation, localAvailable, mlQuantity, difference, discrepancyThreshold);
+            }
+        }
+        else
+        {
+            // Item-level reconciliation (no variations — use default variant)
+            var variant = variants.FirstOrDefault(v => v.IsDefault) ?? variants.FirstOrDefault();
+            if (variant is null) return;
+
+            var allocation = await db.StockAllocations
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(a =>
+                    a.TenantId == tenantId
+                    && a.ProductVariantId == variant.Id
+                    && a.MarketplaceId == "mercadolivre", ct);
+
+            var localAvailable = allocation is not null
+                ? allocation.AllocatedQuantity - allocation.ReservedQuantity
+                : variant.Stock;
+
+            var mlQuantity = itemDetails.AvailableQuantity;
+            var difference = mlQuantity - localAvailable;
+
+            if (difference == 0) return;
+
+            ReconcileVariantStock(db, tenantId, product, variant, allocation, localAvailable, mlQuantity, difference, discrepancyThreshold);
+        }
+    }
+
+    /// <summary>
+    /// Adjusts local stock for a single variant based on ML discrepancy.
+    /// Creates StockMovement and updates allocation/variant stock.
+    /// </summary>
+    private void ReconcileVariantStock(
+        PeruShopHubDbContext db,
+        Guid tenantId,
+        Product product,
+        ProductVariant variant,
+        StockAllocation? allocation,
+        int localAvailable,
+        int mlQuantity,
+        int difference,
+        int discrepancyThreshold)
+    {
+        var absDifference = Math.Abs(difference);
+
+        if (absDifference > discrepancyThreshold)
+        {
+            _logger.LogWarning(
+                "Stock discrepancy alert: variant={VariantId}, sku={Sku}, product={ProductName}, " +
+                "localAvailable={Local}, mlQuantity={Ml}, difference={Diff}, threshold={Threshold}",
+                variant.Id, variant.Sku, product.Name, localAvailable, mlQuantity, difference, discrepancyThreshold);
+        }
+
+        // Create StockMovement to record the adjustment
+        var movement = new StockMovement
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ProductId = product.Id,
+            VariantId = variant.Id,
+            Type = "Ajuste",
+            Quantity = difference,
+            Reason = "Sync ML",
+            CreatedBy = "webhook",
+            CreatedAt = DateTime.UtcNow
+        };
+        db.StockMovements.Add(movement);
+
+        // Update variant stock
+        variant.Stock += difference;
+
+        // Update allocation if it exists
+        if (allocation is not null)
+        {
+            allocation.AllocatedQuantity += difference;
+            allocation.UpdatedAt = DateTime.UtcNow;
+        }
+
+        _logger.LogInformation(
+            "Stock reconciled from ML: variant={VariantId}, sku={Sku}, " +
+            "localBefore={Local}, mlQuantity={Ml}, adjustment={Diff}",
+            variant.Id, variant.Sku, localAvailable, mlQuantity, difference);
+
+        // NOTE: We intentionally do NOT enqueue stock sync back to ML here
+        // to prevent an infinite loop (ML change → local update → push to ML → ML webhook → ...)
     }
 
     // ── Shipments webhook ─────────────────────────────────────
