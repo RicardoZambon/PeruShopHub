@@ -1630,3 +1630,20 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - `AddHttpClient<IEmailService, ResendEmailService>()` registers as scoped with typed HttpClient — API key set in client config via `DefaultRequestHeaders`
   - `EmailTemplateBuilder` is static — use `BuildLayout()` to wrap content in branded layout, `Button()`/`Heading()`/`Paragraph()`/`List()` for content blocks
 ---
+
+## 2026-03-29 - US-060
+- Implemented welcome email sent after successful registration (fire-and-forget, non-blocking)
+- Injected `IEmailService` and `ILogger<AuthController>` into AuthController
+- Built branded HTML email using `EmailTemplateBuilder` with: greeting, next steps (connect ML, import products, check report), dashboard link
+- Plain text fallback included
+- Email failure does not block registration (try-catch with LogWarning)
+- Subject: "Bem-vindo ao PeruShopHub!"
+- Files changed:
+  - `src/PeruShopHub.API/Controllers/AuthController.cs`
+  - `scripts/ralph/prd.json`
+- **Learnings for future iterations:**
+  - `EmailTemplateBuilder` is a static utility class — no DI needed, just import the namespace
+  - Use `textBody:` named parameter when calling `SendAsync` to avoid ambiguity with overloads
+  - Fire-and-forget pattern: `_ = SendWelcomeEmailAsync(...)` discards the task but the method has its own try-catch
+  - `Request.Scheme` and `Request.Host` available in controllers for building URLs
+---

@@ -12,6 +12,8 @@ using PeruShopHub.Application.DTOs.Settings;
 using PeruShopHub.Application.Exceptions;
 using PeruShopHub.Application.Services;
 using PeruShopHub.Core.Entities;
+using PeruShopHub.Core.Interfaces;
+using PeruShopHub.Infrastructure.Email;
 using PeruShopHub.Infrastructure.Persistence;
 
 namespace PeruShopHub.API.Controllers;
@@ -23,12 +25,21 @@ public class AuthController : ControllerBase
     private readonly PeruShopHubDbContext _db;
     private readonly IConfiguration _config;
     private readonly IUserService _userService;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(PeruShopHubDbContext db, IConfiguration config, IUserService userService)
+    public AuthController(
+        PeruShopHubDbContext db,
+        IConfiguration config,
+        IUserService userService,
+        IEmailService emailService,
+        ILogger<AuthController> logger)
     {
         _db = db;
         _config = config;
         _userService = userService;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     [AllowAnonymous]
@@ -140,6 +151,8 @@ public class AuthController : ControllerBase
         user.LastLogin = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+
+        _ = SendWelcomeEmailAsync(user.Email, user.Name);
 
         return Created("", new AuthResponse(
             accessToken,
@@ -280,6 +293,49 @@ public class AuthController : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await _userService.ChangePasswordAsync(userId, request, ct);
         return NoContent();
+    }
+
+    private async Task SendWelcomeEmailAsync(string email, string userName)
+    {
+        try
+        {
+            var dashboardUrl = $"{Request.Scheme}://{Request.Host}/dashboard";
+
+            var body = EmailTemplateBuilder.Paragraph($"Olá, <strong>{userName}</strong>! 👋") +
+                       EmailTemplateBuilder.Paragraph("Seja bem-vindo(a) ao <strong>PeruShopHub</strong>! Sua conta foi criada com sucesso.") +
+                       EmailTemplateBuilder.Heading("Próximos passos") +
+                       EmailTemplateBuilder.List(
+                           "Conecte sua conta do Mercado Livre em <strong>Configurações → Marketplaces</strong>",
+                           "Importe seus produtos para começar o acompanhamento",
+                           "Confira o relatório de lucratividade no Dashboard"
+                       ) +
+                       EmailTemplateBuilder.Button("Acessar o Dashboard", dashboardUrl) +
+                       EmailTemplateBuilder.Paragraph("Se tiver dúvidas, estamos aqui para ajudar. Boas vendas!");
+
+            var html = EmailTemplateBuilder.BuildLayout("Bem-vindo ao PeruShopHub!", body);
+
+            var plainText = $"""
+                Olá, {userName}!
+
+                Seja bem-vindo(a) ao PeruShopHub! Sua conta foi criada com sucesso.
+
+                Próximos passos:
+                - Conecte sua conta do Mercado Livre em Configurações → Marketplaces
+                - Importe seus produtos para começar o acompanhamento
+                - Confira o relatório de lucratividade no Dashboard
+
+                Acesse o Dashboard: {dashboardUrl}
+
+                Se tiver dúvidas, estamos aqui para ajudar. Boas vendas!
+                """;
+
+            await _emailService.SendAsync(email, "Bem-vindo ao PeruShopHub!", html, textBody: plainText);
+            _logger.LogInformation("Welcome email sent to {Email}", email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send welcome email to {Email}", email);
+        }
     }
 
     private string GenerateAccessToken(SystemUser user, TenantUser? membership)
