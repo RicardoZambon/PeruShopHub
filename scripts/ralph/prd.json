@@ -1,7 +1,7 @@
 {
   "project": "PeruShopHub",
   "branchName": "ralph/backend-wiring",
-  "description": "MVP Phases 0.5–5: CI/CD, test infrastructure, stock & fulfillment, financial engine, Mercado Livre integration, post-sale messaging, LGPD compliance, security hardening, and production deployment.",
+  "description": "MVP Phases 0.5\u20135: CI/CD, test infrastructure, stock & fulfillment, financial engine, Mercado Livre integration, post-sale messaging, LGPD compliance, security hardening, and production deployment.",
   "userStories": [
     {
       "id": "US-001",
@@ -9,8 +9,8 @@
       "description": "As a developer, I want automated build and test checks on every PR so regressions are caught before merge.",
       "acceptanceCriteria": [
         "`.github/workflows/ci.yml` created",
-        "Backend job: `dotnet restore` → `dotnet build` → `dotnet test` (all test projects)",
-        "Frontend job: `npm ci` → `ng build --configuration=production` → `ng test --watch=false --browsers=ChromeHeadless`",
+        "Backend job: `dotnet restore` \u2192 `dotnet build` \u2192 `dotnet test` (all test projects)",
+        "Frontend job: `npm ci` \u2192 `ng build --configuration=production` \u2192 `ng test --watch=false --browsers=ChromeHeadless`",
         "Both jobs run in parallel on `push` to `main` and on all PRs",
         "Pipeline fails if any step fails",
         "Badge in README shows CI status",
@@ -18,7 +18,7 @@
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Phase 0.5 — DevOps & Quality Foundation. No dependencies."
+      "notes": "Phase 0.5 \u2014 DevOps & Quality Foundation. No dependencies."
     },
     {
       "id": "US-002",
@@ -57,15 +57,15 @@
     },
     {
       "id": "US-004",
-      "title": "Unit Tests — Financial Calculations",
+      "title": "Unit Tests \u2014 Financial Calculations",
       "description": "As a developer, I want unit tests covering all financial calculation logic so cost decomposition is provably correct.",
       "acceptanceCriteria": [
-        "Tests for `CostCalculationService.CalculateOrderCostsAsync` — verifies product_cost, packaging, commission, fixed_fee, tax categories",
-        "Tests for commission resolution: specific match → category fallback → default fallback → hardcoded 13%",
-        "Tests for fixed fee brackets: ≤R$12.50 (50%), R$12.51-29 (R$6.25), R$29.01-50 (R$6.50), R$50.01-79 (R$6.75), >R$79 (R$0)",
+        "Tests for `CostCalculationService.CalculateOrderCostsAsync` \u2014 verifies product_cost, packaging, commission, fixed_fee, tax categories",
+        "Tests for commission resolution: specific match \u2192 category fallback \u2192 default fallback \u2192 hardcoded 13%",
+        "Tests for fixed fee brackets: \u2264R$12.50 (50%), R$12.51-29 (R$6.25), R$29.01-50 (R$6.50), R$50.01-79 (R$6.75), >R$79 (R$0)",
         "Tests for weighted average cost on PO receive",
         "Tests for cost distribution: `by_value` and `by_quantity`",
-        "Tests for `RecalculateOrderCostsAsync` — preserves manual/API costs",
+        "Tests for `RecalculateOrderCostsAsync` \u2014 preserves manual/API costs",
         "Tests for profit: `TotalAmount - Sum(Costs)`",
         "Edge cases: zero quantity, zero price, missing variant, missing commission rule",
         "All tests pass, minimum 15 test cases",
@@ -77,7 +77,7 @@
     },
     {
       "id": "US-005a",
-      "title": "Unit Tests — ProductService & OrderService",
+      "title": "Unit Tests \u2014 ProductService & OrderService",
       "description": "As a developer, I want unit tests for ProductService and OrderService so core business logic is verified.",
       "acceptanceCriteria": [
         "ProductService tests: create (SKU auto-gen), update, delete, category filtering, search",
@@ -92,7 +92,7 @@
     },
     {
       "id": "US-005b",
-      "title": "Unit Tests — CategoryService, PurchaseOrderService, InventoryService",
+      "title": "Unit Tests \u2014 CategoryService, PurchaseOrderService, InventoryService",
       "description": "As a developer, I want unit tests for CategoryService, PurchaseOrderService, and InventoryService so remaining core services are verified.",
       "acceptanceCriteria": [
         "CategoryService tests: hierarchy traversal, circular reference detection, slug uniqueness",
@@ -108,15 +108,15 @@
     },
     {
       "id": "US-006",
-      "title": "Integration Tests — Controllers",
+      "title": "Integration Tests \u2014 Controllers",
       "description": "As a developer, I want integration tests hitting real endpoints with a real database so API contracts are verified end-to-end.",
       "acceptanceCriteria": [
-        "Auth flow test: register → login → get token → access protected endpoint",
-        "Product CRUD test: create → read → update → delete → verify 404",
-        "Order flow test: create order → add costs → fulfill → verify stock decreased",
-        "Category test: create parent → create child → verify hierarchy",
+        "Auth flow test: register \u2192 login \u2192 get token \u2192 access protected endpoint",
+        "Product CRUD test: create \u2192 read \u2192 update \u2192 delete \u2192 verify 404",
+        "Order flow test: create order \u2192 add costs \u2192 fulfill \u2192 verify stock decreased",
+        "Category test: create parent \u2192 create child \u2192 verify hierarchy",
         "Tenant isolation test: Tenant A data invisible to Tenant B",
-        "Concurrency test: two simultaneous updates → one succeeds, one gets 409",
+        "Concurrency test: two simultaneous updates \u2192 one succeeds, one gets 409",
         "Tests use `CustomWebApplicationFactory` with TestContainers",
         "All tests pass",
         ".NET build passes"
@@ -217,19 +217,19 @@
     },
     {
       "id": "US-REV-0.5",
-      "title": "Phase 0.5 Review — DevOps & Quality Foundation",
+      "title": "Phase 0.5 Review \u2014 DevOps & Quality Foundation",
       "description": "As a developer, I want to review Phase 0.5 implementation for completeness and gaps before starting Phase 1 (Stock & Fulfillment).",
       "acceptanceCriteria": [
-        "Review all Phase 0.5 stories — verify each acceptance criterion is actually met (not just marked as passing)",
-        "Run full build: dotnet build + ng build — zero errors",
-        "Run all existing tests — zero failures",
+        "Review all Phase 0.5 stories \u2014 verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build \u2014 zero errors",
+        "Run all existing tests \u2014 zero failures",
         "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
         "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
         "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
         "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
         "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
         "Document any gaps found in progress.txt with specific story IDs and missing criteria",
-        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story \u2014 just document)",
         ".NET build passes",
         "Angular build passes"
       ],
@@ -239,7 +239,7 @@
     },
     {
       "id": "US-012",
-      "title": "Purchase Order Receive → Stock Adjustment Flow",
+      "title": "Purchase Order Receive \u2192 Stock Adjustment Flow",
       "description": "As a seller, I want receiving a PO to automatically update stock and product costs.",
       "acceptanceCriteria": [
         "`POST /api/purchase-orders/{id}/receive` triggers full receive flow",
@@ -249,7 +249,7 @@
         "ProductCostHistory record created for each cost change",
         "Additional PO costs distributed proportionally before calculation",
         "Product.PurchaseCost updated as weighted average across active variants",
-        "PO status changes to 'Recebido' — cannot be received twice",
+        "PO status changes to 'Recebido' \u2014 cannot be received twice",
         "SignalR notification sent to tenant users",
         "Frontend PO detail shows 'Receber' button (only when status is 'Rascunho')",
         ".NET build passes",
@@ -257,18 +257,18 @@
       ],
       "priority": 14,
       "passes": true,
-      "notes": "Phase 1 — Stock & Fulfillment."
+      "notes": "Phase 1 \u2014 Stock & Fulfillment."
     },
     {
       "id": "US-013a",
-      "title": "Stock Allocation by Channel — Backend",
+      "title": "Stock Allocation by Channel \u2014 Backend",
       "description": "As a developer, I want the stock allocation entity and API endpoints so each channel has defined quantities.",
       "acceptanceCriteria": [
         "New entity `StockAllocation`: ProductVariantId, MarketplaceId (string), AllocatedQuantity, ReservedQuantity",
         "Migration adds `stock_allocations` table with unique constraint on (VariantId, MarketplaceId, TenantId)",
         "`GET /api/inventory/{productId}/allocations` returns allocations per variant per channel",
         "`PUT /api/inventory/{variantId}/allocations` updates allocation for a marketplace",
-        "Validation: sum of allocations ≤ variant total stock",
+        "Validation: sum of allocations \u2264 variant total stock",
         "'Unallocated' quantity = total stock - sum(allocations)",
         "When stock changes, allocations proportionally adjusted if exceeding new total",
         ".NET build passes"
@@ -279,7 +279,7 @@
     },
     {
       "id": "US-013b",
-      "title": "Stock Allocation by Channel — Frontend",
+      "title": "Stock Allocation by Channel \u2014 Frontend",
       "description": "As a seller, I want to see and edit stock allocations per marketplace in the inventory detail view.",
       "acceptanceCriteria": [
         "Inventory detail view shows allocation table per marketplace with editable quantities",
@@ -301,11 +301,11 @@
         "New fields on Product: MinStock (int?, nullable), MaxStock (int?, nullable)",
         "Migration adds columns",
         "Product create/edit form includes min/max stock fields",
-        "StockAlertWorker (runs every 15min) checks variant stock ≤ product MinStock → creates Notification",
+        "StockAlertWorker (runs every 15min) checks variant stock \u2264 product MinStock \u2192 creates Notification",
         "Notification type: 'low_stock', includes product name, current stock, min threshold",
         "`GET /api/inventory/alerts` returns products below minimum stock",
         "Dashboard 'Pending Actions' shows low-stock alert count",
-        "Inventory overview highlights rows where stock ≤ MinStock in red",
+        "Inventory overview highlights rows where stock \u2264 MinStock in red",
         "No duplicate alert if unread alert exists for same product",
         ".NET build passes",
         "Angular build passes"
@@ -381,7 +381,7 @@
         "Migration adds StorageCostDaily column",
         "Product form: 'Custo de embalagem (R$)' and 'Custo de armazenagem diario (R$)' fields",
         "CostCalculationService includes packaging cost in order cost decomposition",
-        "Storage calculation: StorageCostDaily × averageDaysInStorage (configurable default: 30)",
+        "Storage calculation: StorageCostDaily \u00d7 averageDaysInStorage (configurable default: 30)",
         "Storage cost added as OrderCost category 'storage_daily'",
         ".NET build passes",
         "Angular build passes"
@@ -392,19 +392,19 @@
     },
     {
       "id": "US-REV-1",
-      "title": "Phase 1 Review — Stock & Fulfillment",
+      "title": "Phase 1 Review \u2014 Stock & Fulfillment",
       "description": "As a developer, I want to review Phase 1 implementation for completeness and gaps before starting Phase 2 (Financial Engine).",
       "acceptanceCriteria": [
-        "Review all Phase 1 stories — verify each acceptance criterion is actually met (not just marked as passing)",
-        "Run full build: dotnet build + ng build — zero errors",
-        "Run all existing tests — zero failures",
+        "Review all Phase 1 stories \u2014 verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build \u2014 zero errors",
+        "Run all existing tests \u2014 zero failures",
         "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
         "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
         "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
         "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
         "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
         "Document any gaps found in progress.txt with specific story IDs and missing criteria",
-        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story \u2014 just document)",
         ".NET build passes",
         "Angular build passes"
       ],
@@ -414,12 +414,12 @@
     },
     {
       "id": "US-019",
-      "title": "Commission Engine — Category, Reputation, Listing Type",
+      "title": "Commission Engine \u2014 Category, Reputation, Listing Type",
       "description": "As a seller, I want commission rates varying by ML category, listing type, and reputation.",
       "acceptanceCriteria": [
         "CommissionRule entity supports: MarketplaceId, CategoryPattern, ListingType, Rate, IsDefault",
         "Seed data: ML default commission rules for major categories",
-        "Resolution: exact match → category only → marketplace default → hardcoded 13%",
+        "Resolution: exact match \u2192 category only \u2192 marketplace default \u2192 hardcoded 13%",
         "GET/POST/PUT/DELETE /api/settings/commission-rules CRUD",
         "Frontend Settings > Comissoes page with rules table + add/edit/delete",
         "ML Billing API commission overrides calculated value (Source='API' > 'Calculated')",
@@ -429,7 +429,7 @@
       ],
       "priority": 23,
       "passes": true,
-      "notes": "Phase 2 — Financial Engine."
+      "notes": "Phase 2 \u2014 Financial Engine."
     },
     {
       "id": "US-020",
@@ -487,7 +487,7 @@
     },
     {
       "id": "US-022b",
-      "title": "Cost Composition Frontend — Order Detail Breakdown",
+      "title": "Cost Composition Frontend \u2014 Order Detail Breakdown",
       "description": "As a seller, I want to see the full cost breakdown with percentages and pie chart on order detail.",
       "acceptanceCriteria": [
         "Order Detail page: cost breakdown table showing all categories with values and percentages",
@@ -503,7 +503,7 @@
     },
     {
       "id": "US-023",
-      "title": "Materialized View — SKU Profitability",
+      "title": "Materialized View \u2014 SKU Profitability",
       "description": "As a seller, I want pre-computed profitability per SKU for instant finance dashboard loading.",
       "acceptanceCriteria": [
         "SQL materialized view `sku_profitability`: SKU, total_orders, total_units, total_revenue, total_costs (by category), total_profit, avg_margin",
@@ -587,7 +587,7 @@
         "Revenue vs Profit line chart (daily/weekly data points)",
         "Cost breakdown pie chart by category",
         "Top 5 most profitable + top 5 least profitable products",
-        "Comparison with previous period (e.g., '↑ 12% vs last month')",
+        "Comparison with previous period (e.g., '\u2191 12% vs last month')",
         "Frontend dashboard fully wired to real endpoints",
         ".NET build passes",
         "Angular build passes"
@@ -627,7 +627,7 @@
         "IAuditService.LogAsync called from services",
         "GET /api/audit-log with filters: entityType, entityId, dateFrom, dateTo, userId + pagination",
         "Frontend Settings > Log de Atividades page with filters and data grid",
-        "Entries show: timestamp, user, action, old→new values",
+        "Entries show: timestamp, user, action, old\u2192new values",
         "Owner and Admin roles only",
         ".NET build passes",
         "Angular build passes"
@@ -695,19 +695,19 @@
     },
     {
       "id": "US-REV-2",
-      "title": "Phase 2 Review — Financial Engine",
+      "title": "Phase 2 Review \u2014 Financial Engine",
       "description": "As a developer, I want to review Phase 2 implementation for completeness and gaps before starting Phase 3 (Mercado Livre Integration).",
       "acceptanceCriteria": [
-        "Review all Phase 2 stories — verify each acceptance criterion is actually met (not just marked as passing)",
-        "Run full build: dotnet build + ng build — zero errors",
-        "Run all existing tests — zero failures",
+        "Review all Phase 2 stories \u2014 verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build \u2014 zero errors",
+        "Run all existing tests \u2014 zero failures",
         "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
         "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
         "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
         "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
         "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
         "Document any gaps found in progress.txt with specific story IDs and missing criteria",
-        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story \u2014 just document)",
         ".NET build passes",
         "Angular build passes"
       ],
@@ -717,7 +717,7 @@
     },
     {
       "id": "US-033",
-      "title": "MercadoLivreAdapter — Core Implementation",
+      "title": "MercadoLivreAdapter \u2014 Core Implementation",
       "description": "As a developer, I want the MercadoLivreAdapter implementing IMarketplaceAdapter via DI keyed services.",
       "acceptanceCriteria": [
         "MercadoLivreAdapter implements IMarketplaceAdapter in Infrastructure project",
@@ -731,7 +731,7 @@
       ],
       "priority": 39,
       "passes": true,
-      "notes": "Phase 3 — Mercado Livre Integration."
+      "notes": "Phase 3 \u2014 Mercado Livre Integration."
     },
     {
       "id": "US-034",
@@ -764,8 +764,8 @@
         "Data protection keys stored in dedicated directory (configurable)",
         "MarketplaceConnection stores encrypted tokens, decrypts on read",
         "Key rotation supported (old keys can still decrypt)",
-        "Unit test: encrypt → decrypt roundtrip",
-        "Integration test: save connection → reload → token correct",
+        "Unit test: encrypt \u2192 decrypt roundtrip",
+        "Integration test: save connection \u2192 reload \u2192 token correct",
         ".NET build passes"
       ],
       "priority": 41,
@@ -793,11 +793,11 @@
     },
     {
       "id": "US-037",
-      "title": "HTTP Client — Circuit Breaker & Rate Limiter",
+      "title": "HTTP Client \u2014 Circuit Breaker & Rate Limiter",
       "description": "As a developer, I want Polly circuit breaker and rate limiting on ML API calls.",
       "acceptanceCriteria": [
         "Polly packages added (Polly v8 ResiliencePipeline API)",
-        "Policy chain: Rate Limiter → Retry → Circuit Breaker",
+        "Policy chain: Rate Limiter \u2192 Retry \u2192 Circuit Breaker",
         "Rate limiter: 300 requests/minute sliding window",
         "Retry: 3 retries, exponential backoff (1s, 2s, 4s), only 5xx/timeout",
         "Circuit breaker: opens after 5 failures, 30s open, then half-open",
@@ -817,10 +817,10 @@
         "Frontend: Settings > Integracoes > Mercado Livre",
         "Status badges: Ativo (green), Erro (red), Desconectado (gray)",
         "When connected: seller name, user ID, token expiry, last sync",
-        "'Conectar' button → OAuth flow (when disconnected)",
-        "'Reconectar' button → OAuth flow (when error)",
-        "'Desconectar' button → confirmation → revokes tokens",
-        "'Sincronizar Agora' → triggers manual sync",
+        "'Conectar' button \u2192 OAuth flow (when disconnected)",
+        "'Reconectar' button \u2192 OAuth flow (when error)",
+        "'Desconectar' button \u2192 confirmation \u2192 revokes tokens",
+        "'Sincronizar Agora' \u2192 triggers manual sync",
         "Connection health indicator: last API call status, error count",
         "Angular build passes",
         "Verify in browser using dev-browser skill"
@@ -831,15 +831,15 @@
     },
     {
       "id": "US-039a",
-      "title": "Import ML Listings — Backend Worker",
+      "title": "Import ML Listings \u2014 Backend Worker",
       "description": "As a developer, I want a background import worker that fetches all ML items and maps them to internal products.",
       "acceptanceCriteria": [
         "GET /users/{userId}/items/search with scroll pagination to fetch all seller items",
         "For each item: GET /items/{itemId} for full details",
-        "Map ML item → Product + ProductVariant(s): title, price, available_quantity, category_id, pictures, variations",
+        "Map ML item \u2192 Product + ProductVariant(s): title, price, available_quantity, category_id, pictures, variations",
         "POST /api/integrations/mercadolivre/import triggers import job (enqueued)",
         "Batches of 50 respecting rate limit",
-        "Check ExternalId → update existing or create new",
+        "Check ExternalId \u2192 update existing or create new",
         "Progress tracking: total items, processed, errors",
         ".NET build passes"
       ],
@@ -849,7 +849,7 @@
     },
     {
       "id": "US-039b",
-      "title": "Import ML Listings — Frontend",
+      "title": "Import ML Listings \u2014 Frontend",
       "description": "As a seller, I want an import button with progress indicator and results on the Products page.",
       "acceptanceCriteria": [
         "Import button on Products page",
@@ -874,7 +874,7 @@
         "GET /api/integrations/mercadolivre/unlinked-items returns unlinked ML items",
         "Products page shows link status icon per product",
         "'Vincular' action: dropdown of unlinked ML items with search",
-        "'Desvincular' action: confirmation → removes link",
+        "'Desvincular' action: confirmation \u2192 removes link",
         "Linked products show ML item ID + direct ML link",
         ".NET build passes",
         "Angular build passes"
@@ -885,14 +885,14 @@
     },
     {
       "id": "US-041",
-      "title": "Variation Sync ML → Internal",
+      "title": "Variation Sync ML \u2192 Internal",
       "description": "As a seller, I want ML product variations mapped to internal variants for per-variation tracking.",
       "acceptanceCriteria": [
         "ML item variations parsed from GET /items/{id} response",
-        "Each ML variation maps to ProductVariant: ML variation ID → ExternalId, attributes → name/SKU",
-        "ML available_quantity → variant Stock",
-        "ML picture_ids → linked to internal photos",
-        "New ML variations → create variants; existing → update",
+        "Each ML variation maps to ProductVariant: ML variation ID \u2192 ExternalId, attributes \u2192 name/SKU",
+        "ML available_quantity \u2192 variant Stock",
+        "ML picture_ids \u2192 linked to internal photos",
+        "New ML variations \u2192 create variants; existing \u2192 update",
         "Deleted ML variations marked inactive (not deleted)",
         "Frontend Product detail shows ML variation mapping in variants table",
         ".NET build passes",
@@ -904,7 +904,7 @@
     },
     {
       "id": "US-042",
-      "title": "Photo Sync ML → Internal",
+      "title": "Photo Sync ML \u2192 Internal",
       "description": "As a seller, I want ML product photos imported and stored locally.",
       "acceptanceCriteria": [
         "ML photo URLs extracted from item pictures array",
@@ -929,8 +929,8 @@
         "Uses GET /users/{userId}/items/search with orders=last_updated_desc",
         "Fetches details for items updated since last sync",
         "Updates: price, stock, title, status, variations",
-        "Detects new items → creates them",
-        "Detects paused/closed items → updates internal status",
+        "Detects new items \u2192 creates them",
+        "Detects paused/closed items \u2192 updates internal status",
         "LastSyncAt stored on MarketplaceConnection",
         "Sync results logged: checked, updated, created, errors",
         "Notification on errors",
@@ -961,13 +961,13 @@
     },
     {
       "id": "US-045",
-      "title": "Webhook Receiver — orders_v2",
+      "title": "Webhook Receiver \u2014 orders_v2",
       "description": "As a seller, I want ML order webhooks received and enqueued for processing.",
       "acceptanceCriteria": [
-        "POST /api/webhooks/mercadolivre — no authentication (ML webhooks unauthenticated)",
+        "POST /api/webhooks/mercadolivre \u2014 no authentication (ML webhooks unauthenticated)",
         "Validates structure: topic, resource, user_id, application_id",
         "IP validation: only from ML IPs (configurable list)",
-        "Response < 500ms — validate and enqueue only",
+        "Response < 500ms \u2014 validate and enqueue only",
         "Payload enqueued to Redis list ml:webhooks:{topic}",
         "Returns 200 OK immediately",
         "For orders_v2: enqueues order resource URL",
@@ -987,13 +987,13 @@
         "WebhookProcessingWorker polls Redis ml:webhooks:* lists",
         "One webhook at a time per topic (ordered processing)",
         "For orders_v2: GET /orders/{orderId} for details",
-        "Maps ML order → internal Order: buyer, items, amounts, shipping, payment",
+        "Maps ML order \u2192 internal Order: buyer, items, amounts, shipping, payment",
         "Creates or updates Order (idempotent by ExternalOrderId)",
         "OrderItems linked to internal products by ML item ID",
         "Triggers CostCalculationService",
         "Triggers stock decrement for fulfilled orders",
         "SignalR notification: 'Nova venda: Pedido #XXX - R$ YYY'",
-        "Dead letter queue: after 3 failures → ml:webhooks:dead",
+        "Dead letter queue: after 3 failures \u2192 ml:webhooks:dead",
         ".NET build passes"
       ],
       "priority": 53,
@@ -1021,10 +1021,10 @@
     },
     {
       "id": "US-048",
-      "title": "ML Order → Internal Order Mapping",
+      "title": "ML Order \u2192 Internal Order Mapping",
       "description": "As a developer, I want reliable mapping between ML order format and internal Order entity.",
       "acceptanceCriteria": [
-        "Maps all ML fields: id→ExternalOrderId, date_created→OrderDate, buyer→BuyerName+Customer, items→OrderItems, total_amount, installments, payment status, shipping ID, order status",
+        "Maps all ML fields: id\u2192ExternalOrderId, date_created\u2192OrderDate, buyer\u2192BuyerName+Customer, items\u2192OrderItems, total_amount, installments, payment status, shipping ID, order status",
         "Handles edge cases: cancelled orders, partial shipments, multiple payments",
         "Unit tests with sample ML API responses (at least 5 scenarios)",
         ".NET build passes"
@@ -1035,7 +1035,7 @@
     },
     {
       "id": "US-049",
-      "title": "Additional Webhooks — items, shipments, payments",
+      "title": "Additional Webhooks \u2014 items, shipments, payments",
       "description": "As a seller, I want the system to react to item changes, shipment updates, and payment confirmations.",
       "acceptanceCriteria": [
         "Webhook receiver handles topics: items, shipments, payments (in addition to orders_v2)",
@@ -1054,12 +1054,12 @@
     },
     {
       "id": "US-050",
-      "title": "Billing API Integration — Real Costs",
+      "title": "Billing API Integration \u2014 Real Costs",
       "description": "As a seller, I want actual ML charges from the Billing API for real profitability.",
       "acceptanceCriteria": [
         "GET /billing/integration/group/ML/order/details?order_id= called after order processed",
         "Parses: actual commission, fixed fee, shipping, payment fee, fulfillment fee",
-        "Creates/updates OrderCost with Source='API' — overrides 'Calculated' for same category",
+        "Creates/updates OrderCost with Source='API' \u2014 overrides 'Calculated' for same category",
         "Retry: check at creation, then 1h, 6h, 24h",
         "BillingReconciliationWorker: checks orders missing billing data (up to 7 days old)",
         "Frontend cost breakdown shows 'Fonte: API' or 'Fonte: Calculado' badge",
@@ -1077,7 +1077,7 @@
       "description": "As a seller, I want actual shipping costs from ML's shipping API.",
       "acceptanceCriteria": [
         "GET /shipments/{shipmentId} fetches shipping details with cost_components",
-        "Shipping cost to seller → OrderCost category 'shipping_seller', Source 'API'",
+        "Shipping cost to seller \u2192 OrderCost category 'shipping_seller', Source 'API'",
         "Handles Mercado Envios and envio proprio",
         "For free shipping (>R$79): captures seller-absorbed cost",
         "Shipping tracking URL stored on Order",
@@ -1094,7 +1094,7 @@
       "title": "Fulfillment Fee Lookup (ML Full)",
       "description": "As a seller, I want fulfillment fees from ML Full captured per order.",
       "acceptanceCriteria": [
-        "Fulfillment fee from billing API → OrderCost 'fulfillment_fee', Source 'API'",
+        "Fulfillment fee from billing API \u2192 OrderCost 'fulfillment_fee', Source 'API'",
         "If unavailable: estimate from product dimensions using ML fee table",
         "GET /inventories/{inventoryId}/stock/fulfillment for Full stock levels",
         "Frontend Order Detail: fulfillment fee with 'Full' badge",
@@ -1128,7 +1128,7 @@
     },
     {
       "id": "US-054",
-      "title": "Items Webhook — External Stock Changes",
+      "title": "Items Webhook \u2014 External Stock Changes",
       "description": "As a seller, I want the system to detect stock changes on ML from external sources.",
       "acceptanceCriteria": [
         "items webhook triggers re-fetch when available_quantity changes",
@@ -1149,9 +1149,9 @@
       "description": "As a seller, I want periodic comparison between local and ML stock.",
       "acceptanceCriteria": [
         "StockReconciliationWorker runs every 6 hours (configurable)",
-        "For each ML-linked product: GET /items/{itemId} → compare with local allocation",
+        "For each ML-linked product: GET /items/{itemId} \u2192 compare with local allocation",
         "Report: items checked, matches, discrepancies with details",
-        "Small discrepancies (≤ threshold): auto-correct, create StockMovement",
+        "Small discrepancies (\u2264 threshold): auto-correct, create StockMovement",
         "Large discrepancies (> threshold): notification for manual review",
         "GET /api/inventory/reconciliation-reports with date filter",
         "Frontend: Reconciliation history with reports list and detail",
@@ -1205,7 +1205,7 @@
       "description": "As a seller, I want to compare Full vs own shipping costs per SKU.",
       "acceptanceCriteria": [
         "POST /api/pricing/fulfillment-compare: productId",
-        "Full cost: (dailyStorageCost × avgDaysInStock) + fulfillmentFeePerSale",
+        "Full cost: (dailyStorageCost \u00d7 avgDaysInStock) + fulfillmentFeePerSale",
         "Own cost: avgShippingCost + packagingCost + laborCostPerShipment (configurable)",
         "Returns: fullCost, ownShippingCost, recommendation, savings amount",
         "Uses historical data for averages",
@@ -1259,12 +1259,12 @@
       "title": "Forgot Password Flow",
       "description": "As a user, I want to reset my password via email.",
       "acceptanceCriteria": [
-        "POST /api/auth/forgot-password: { email } → always 200 (no enumeration)",
+        "POST /api/auth/forgot-password: { email } \u2192 always 200 (no enumeration)",
         "If email exists: generate 64-char token, store hashed with 1h expiry",
         "Send reset link: {frontendUrl}/reset-password?token=&email=",
         "POST /api/auth/reset-password: { email, token, newPassword } validates and updates",
         "Token single-use (deleted after reset)",
-        "Frontend: 'Esqueci minha senha' link → email form → success message",
+        "Frontend: 'Esqueci minha senha' link \u2192 email form \u2192 success message",
         "Frontend: /reset-password page with password + confirmation",
         "Password min 8 chars",
         ".NET build passes",
@@ -1276,16 +1276,16 @@
     },
     {
       "id": "US-062",
-      "title": "Email Notifications — Sales, Stock, Margin Alerts",
+      "title": "Email Notifications \u2014 Sales, Stock, Margin Alerts",
       "description": "As a seller, I want optional email notifications for key events.",
       "acceptanceCriteria": [
         "New entity NotificationPreference: TenantId, UserId, Type (enum), EmailEnabled, InAppEnabled",
         "Types: NewSale, LowStock, MarginAlert, MLConnectionError, SyncError",
         "Migration with defaults (all enabled)",
-        "When notification created: check preferences → send email if enabled",
+        "When notification created: check preferences \u2192 send email if enabled",
         "Email templates per notification type",
         "GET/PUT /api/settings/notification-preferences",
-        "Frontend Settings > Notificacoes: toggle matrix (type × channel)",
+        "Frontend Settings > Notificacoes: toggle matrix (type \u00d7 channel)",
         "Unsubscribe link in email footer",
         ".NET build passes",
         "Angular build passes"
@@ -1315,7 +1315,7 @@
     },
     {
       "id": "US-064a",
-      "title": "Onboarding Wizard — Backend",
+      "title": "Onboarding Wizard \u2014 Backend",
       "description": "As a developer, I want onboarding progress tracked per tenant with step completion API.",
       "acceptanceCriteria": [
         "New entity OnboardingProgress: TenantId, StepsCompleted (JSON array), IsCompleted, CompletedAt",
@@ -1331,7 +1331,7 @@
     },
     {
       "id": "US-064b",
-      "title": "Onboarding Wizard — Frontend",
+      "title": "Onboarding Wizard \u2014 Frontend",
       "description": "As a new seller, I want a guided step-by-step setup wizard.",
       "acceptanceCriteria": [
         "Frontend /onboarding page with step-by-step wizard (progress bar)",
@@ -1369,19 +1369,19 @@
     },
     {
       "id": "US-REV-3",
-      "title": "Phase 3 Review — Mercado Livre Integration",
+      "title": "Phase 3 Review \u2014 Mercado Livre Integration",
       "description": "As a developer, I want to review Phase 3 implementation for completeness and gaps before starting Phase 4 (Post-Sale & Messaging).",
       "acceptanceCriteria": [
-        "Review all Phase 3 stories — verify each acceptance criterion is actually met (not just marked as passing)",
-        "Run full build: dotnet build + ng build — zero errors",
-        "Run all existing tests — zero failures",
+        "Review all Phase 3 stories \u2014 verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build \u2014 zero errors",
+        "Run all existing tests \u2014 zero failures",
         "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
         "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
         "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
         "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
         "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
         "Document any gaps found in progress.txt with specific story IDs and missing criteria",
-        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story \u2014 just document)",
         ".NET build passes",
         "Angular build passes"
       ],
@@ -1399,13 +1399,13 @@
         "New entity MarketplaceQuestion: TenantId, ExternalId, ItemId, ProductId, BuyerName, QuestionText, AnswerText, Status, QuestionDate, AnswerDate",
         "Migration adds marketplace_questions table",
         "GET /api/questions with filters: status, productId, pagination",
-        "POST /api/questions/{id}/answer → calls POST /answers on ML API",
+        "POST /api/questions/{id}/answer \u2192 calls POST /answers on ML API",
         "Rate limit respected",
         ".NET build passes"
       ],
       "priority": 75,
       "passes": true,
-      "notes": "Phase 4 — Post-Sale & Messaging."
+      "notes": "Phase 4 \u2014 Post-Sale & Messaging."
     },
     {
       "id": "US-067",
@@ -1509,7 +1509,7 @@
     },
     {
       "id": "US-072",
-      "title": "LGPD Compliance — Privacy Policy & Terms",
+      "title": "LGPD Compliance \u2014 Privacy Policy & Terms",
       "description": "As a platform operator, I want LGPD-compliant privacy policy and terms.",
       "acceptanceCriteria": [
         "/termos-de-uso page with Terms of Use (pt-BR)",
@@ -1525,7 +1525,7 @@
       ],
       "priority": 81,
       "passes": true,
-      "notes": "Phase 4. LGPD — independent of ML."
+      "notes": "Phase 4. LGPD \u2014 independent of ML."
     },
     {
       "id": "US-073",
@@ -1554,7 +1554,7 @@
         "POST /api/profile/export-data generates JSON/ZIP with all user data",
         "Includes: profile, tenant, products, orders, costs, inventory, questions, messages, notifications",
         "Excludes other users' data in same tenant",
-        "Export runs async — notification with download link (24h valid)",
+        "Export runs async \u2014 notification with download link (24h valid)",
         "Frontend Profile page: 'Exportar meus dados' button",
         ".NET build passes",
         "Angular build passes"
@@ -1598,24 +1598,24 @@
         "Angular build passes"
       ],
       "priority": 85,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 4. Depends on Phase 2 exports."
     },
     {
       "id": "US-REV-4",
-      "title": "Phase 4 Review — Post-Sale & Messaging",
+      "title": "Phase 4 Review \u2014 Post-Sale & Messaging",
       "description": "As a developer, I want to review Phase 4 implementation for completeness and gaps before starting Phase 5 (Testing, Security & Go-Live).",
       "acceptanceCriteria": [
-        "Review all Phase 4 stories — verify each acceptance criterion is actually met (not just marked as passing)",
-        "Run full build: dotnet build + ng build — zero errors",
-        "Run all existing tests — zero failures",
+        "Review all Phase 4 stories \u2014 verify each acceptance criterion is actually met (not just marked as passing)",
+        "Run full build: dotnet build + ng build \u2014 zero errors",
+        "Run all existing tests \u2014 zero failures",
         "Check for missing API endpoints: compare PRD acceptance criteria against actual controllers/routes",
         "Check for missing frontend wiring: verify all new backend endpoints have corresponding frontend service methods and UI elements",
         "Check for missing database migrations: verify all new entities/fields have migrations that apply cleanly",
         "Check for incomplete validation: verify backend validates all required fields and returns proper error responses",
         "Check for missing error handling: verify new features handle loading states, error states, and empty states in the UI",
         "Document any gaps found in progress.txt with specific story IDs and missing criteria",
-        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story — just document)",
+        "If gaps found: create a list of specific fixes needed (do NOT fix them in this story \u2014 just document)",
         ".NET build passes",
         "Angular build passes"
       ],
@@ -1625,7 +1625,7 @@
     },
     {
       "id": "US-076",
-      "title": "Test Coverage — 70%+ in Services",
+      "title": "Test Coverage \u2014 70%+ in Services",
       "description": "As a developer, I want service layer test coverage above 70%.",
       "acceptanceCriteria": [
         "Coverage measured with coverlet, reported in CI",
@@ -1640,19 +1640,19 @@
       ],
       "priority": 87,
       "passes": false,
-      "notes": "Phase 5 — Testing, Security & Go-Live."
+      "notes": "Phase 5 \u2014 Testing, Security & Go-Live."
     },
     {
       "id": "US-077",
-      "title": "Integration Tests — Complete",
+      "title": "Integration Tests \u2014 Complete",
       "description": "As a developer, I want comprehensive integration tests for all critical flows.",
       "acceptanceCriteria": [
         "All controller endpoints have at least one happy-path test",
-        "Webhook processing e2e: receive → process → verify order created",
+        "Webhook processing e2e: receive \u2192 process \u2192 verify order created",
         "OAuth flow tested with mocked ML API",
         "Multi-tenant isolation across all entities",
         "Concurrent PO receive + sale: verify stock consistency",
-        "Token renewal: expired → refresh → retry succeeds",
+        "Token renewal: expired \u2192 refresh \u2192 retry succeeds",
         "Report generation: PDF + Excel without errors",
         "TestContainers (PostgreSQL + Redis)",
         "All pass in CI",
@@ -1664,13 +1664,13 @@
     },
     {
       "id": "US-078",
-      "title": "Load Tests — Webhook Processing",
+      "title": "Load Tests \u2014 Webhook Processing",
       "description": "As a platform operator, I want load tests for 100 simultaneous webhooks.",
       "acceptanceCriteria": [
         "Load test project using NBomber or k6",
-        "100 concurrent webhooks → all 200 in < 500ms",
-        "50 concurrent order detail fetches → < 2s",
-        "20 concurrent product creates → no conflicts",
+        "100 concurrent webhooks \u2192 all 200 in < 500ms",
+        "50 concurrent order detail fetches \u2192 < 2s",
+        "20 concurrent product creates \u2192 no conflicts",
         "Results documented: p50, p95, p99, error rate, throughput",
         "Performance baseline established",
         "Runnable locally and optionally in CI",
@@ -1682,7 +1682,7 @@
     },
     {
       "id": "US-079",
-      "title": "Angular Test Coverage — Critical Components",
+      "title": "Angular Test Coverage \u2014 Critical Components",
       "description": "As a developer, I want Angular tests covering critical user flows.",
       "acceptanceCriteria": [
         "50%+ coverage on shared components (DataGrid, FormField, Dialog, Toast)",
@@ -1700,16 +1700,16 @@
     },
     {
       "id": "US-080",
-      "title": "Security Tests — Tenant Isolation & Auth",
+      "title": "Security Tests \u2014 Tenant Isolation & Auth",
       "description": "As a platform operator, I want automated security tests for tenant isolation and auth.",
       "acceptanceCriteria": [
         "Tenant A product invisible to Tenant B",
-        "Tenant A order → Tenant B GET → 404",
-        "Expired JWT → 401 on all endpoints",
-        "JWT without tenant → 403 on tenant-required endpoints",
-        "Non-admin → admin endpoints → 403",
-        "SQL injection in search params → properly escaped",
-        "XSS payload in product name → stored safely, rendered escaped",
+        "Tenant A order \u2192 Tenant B GET \u2192 404",
+        "Expired JWT \u2192 401 on all endpoints",
+        "JWT without tenant \u2192 403 on tenant-required endpoints",
+        "Non-admin \u2192 admin endpoints \u2192 403",
+        "SQL injection in search params \u2192 properly escaped",
+        "XSS payload in product name \u2192 stored safely, rendered escaped",
         "CSRF validation on state-changing endpoints",
         "All pass in CI",
         ".NET build passes"
@@ -1725,8 +1725,8 @@
       "acceptanceCriteria": [
         ".github/workflows/deploy.yml created",
         "Triggers: manual dispatch or push with tag v*",
-        "Steps: build → push GHCR → SSH to VPS → pull → docker compose up -d",
-        "Zero-downtime: pull new → stop old → start new",
+        "Steps: build \u2192 push GHCR \u2192 SSH to VPS \u2192 pull \u2192 docker compose up -d",
+        "Zero-downtime: pull new \u2192 stop old \u2192 start new",
         "Env vars via .env on VPS (not in repo)",
         "Post-deploy health check: curl /health, fail if unhealthy",
         "Rollback documented",
@@ -1748,7 +1748,7 @@
         "Weekly restore verification (automated)",
         "Alert if backup hasn't run in 25 hours",
         "Recovery procedure documented",
-        "Script tested: dump → restore → verify integrity"
+        "Script tested: dump \u2192 restore \u2192 verify integrity"
       ],
       "priority": 93,
       "passes": false,
@@ -1784,7 +1784,7 @@
         "HTTPS enforced with HSTS",
         "CORS: only frontend origin",
         "Auth rate limiting: 5 login attempts/minute",
-        "BCrypt work factor ≥ 12",
+        "BCrypt work factor \u2265 12",
         "Security headers: X-Content-Type-Options, X-Frame-Options, CSP",
         "Dependency audit: dotnet list package --vulnerable, npm audit",
         "Findings documented with severity and remediation"
@@ -1795,7 +1795,7 @@
     },
     {
       "id": "US-085",
-      "title": "UX Review — All Screens",
+      "title": "UX Review \u2014 All Screens",
       "description": "As a product owner, I want UX review of all screens for polished beta experience.",
       "acceptanceCriteria": [
         "All 16+ pages reviewed: consistency, responsive, loading states, error states, empty states",

@@ -2145,3 +2145,19 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - AccountDeletionRequest is NOT ITenantScoped (global, user-level entity) — no tenant query filter
   - For sole-owner checks, query TenantUsers for Owner role and count other owners per tenant
 ---
+
+## 2026-03-29 - US-075
+- Implemented accounting software export (Bling/Tiny CSV formats)
+- Backend: Added `ExportAccountingAsync` to `IReportService` and `ReportService` with CSV generation for Bling (detailed cost columns) and Tiny (summary columns) formats
+- Backend: Added `GET /api/reports/accounting-export?format=bling|tiny&dateFrom=&dateTo=` endpoint to `ReportsController`
+- Frontend: Added `exportAccountingCsv` method to `FinanceService`
+- Frontend: Added "Exportar para ERP" button with dropdown format selector (Bling/Tiny) and help text to finance page
+- Frontend: Added SCSS for ERP export dropdown component
+- Files changed: `IReportService.cs`, `ReportService.cs`, `ReportsController.cs`, `finance.service.ts`, `finance.component.ts`, `finance.component.html`, `finance.component.scss`
+- **Learnings for future iterations:**
+  - CSV generation in .NET: Use `StringBuilder` with BOM (`Encoding.UTF8.GetPreamble()`) for proper UTF-8 CSV with Excel compatibility
+  - Bling expects semicolon-delimited CSV with granular cost columns (commission, fixed_fee, shipping, payment_fee, product_cost, packaging, tax)
+  - Tiny uses a simpler format with aggregate totals (total taxes, total costs, net profit)
+  - The `BuildCostMap` helper aggregates OrderCost by category — reusable for any cost-breakdown export
+  - Finance component already has `downloadBlob` helper for binary file downloads — reuse for any new export format
+---
