@@ -1769,7 +1769,7 @@
         "Basic /health-ui or Grafana dashboard"
       ],
       "priority": 94,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 5. Independent."
     },
     {

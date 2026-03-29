@@ -2347,3 +2347,22 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Retention logic: promote daily→weekly on Sundays, daily→monthly on 1st; then prune oldest beyond threshold
   - Restore verification creates temp DB, restores, checks table existence + count, then drops — all in a trap-cleanup pattern
 ---
+
+## 2026-03-29 - US-083
+- Implemented production monitoring infrastructure covering all acceptance criteria
+- PostgreSQL slow query logging (>1s) via custom `docker/postgresql.conf` mounted in both compose files
+- Nginx access/error logs with daily rotation (14 days retention) via `docker/logrotate-nginx.conf`
+- System monitoring script (`scripts/monitoring/system-monitor.sh`) checking disk space (80%), Redis memory (80%), and health endpoint — runs every 5 minutes via cron in backup container
+- Added backup service to `docker-compose.prod.yml` with Redis monitoring env vars
+- Sentry alert rules documented (critical errors, slow transactions, error spikes, new issues)
+- UptimeRobot configuration documented (60s ping on /health)
+- Created comprehensive monitoring guide at `Docs/guides/Production-Monitoring.md`
+- Files changed: docker-compose.yml, docker-compose.prod.yml, docker/Dockerfile.backup, docker/backup-crontab, docker/nginx-prod.conf, docker/logrotate-nginx.conf (new), docker/postgresql.conf (new), scripts/monitoring/system-monitor.sh (new), Docs/guides/Production-Monitoring.md (new)
+- **Learnings for future iterations:**
+  - Health checks (/health, /health/ready, /health/live, /health-ui) were already fully configured in Program.cs — no code changes needed
+  - Sentry was already integrated with environment-aware sampling — only alert rules were missing (documented, not codified)
+  - The backup container (Dockerfile.backup) is the natural home for cron-based monitoring scripts since it already runs crond
+  - Alpine's `redis` package provides redis-cli for monitoring — needed `apk add redis`
+  - Nginx log format should include `rt=$request_time` for request latency analysis
+  - PostgreSQL slow query config must be mounted as a separate file and loaded via `command: postgres -c config_file=...` since the default alpine image doesn't include a customizable postgresql.conf
+---
