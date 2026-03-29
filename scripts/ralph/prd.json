@@ -1524,7 +1524,7 @@
         "Angular build passes"
       ],
       "priority": 81,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 4. LGPD — independent of ML."
     },
     {

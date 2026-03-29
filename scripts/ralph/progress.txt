@@ -2019,3 +2019,38 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - For "unanswered messages", the key is SenderType == "buyer" + IsRead == false (not just any unread message)
   - Notification deduplication: check for existing unread notification of same type before creating new one
 ---
+
+## 2026-03-29 14:10 UTC - US-072
+- Implemented LGPD compliance: Privacy Policy & Terms of Use pages
+- Added `TermsAcceptedAt` and `PrivacyAcceptedAt` fields to SystemUser entity
+- Created EF Core migration `AddLgpdFieldsToSystemUser`
+- Updated `RegisterRequest` DTO with `AcceptTerms` flag (default false)
+- Added backend validation requiring terms acceptance during registration
+- Set both acceptance timestamps on user creation when terms accepted
+- Created `/termos-de-uso` page (standalone component, public route, pt-BR)
+- Created `/politica-de-privacidade` page (standalone component, public route, pt-BR)
+- Privacy policy covers: data collected, purpose, duration, third-party sharing, user rights (LGPD Art. 7)
+- Terms cover: usage, billing, limitations, cancellation, forum
+- Added required checkbox to registration form: "Li e aceito os Termos de Uso e Política de Privacidade"
+- Added footer links (Termos de Uso + Política de Privacidade) to: layout component (all authenticated pages), login page, register page
+- Both pages share consistent legal page styling (SCSS)
+- Files changed:
+  - `src/PeruShopHub.Core/Entities/SystemUser.cs`
+  - `src/PeruShopHub.Application/DTOs/Auth/AuthDtos.cs`
+  - `src/PeruShopHub.API/Controllers/AuthController.cs`
+  - `src/PeruShopHub.Infrastructure/Migrations/20260329140000_AddLgpdFieldsToSystemUser.cs`
+  - `src/PeruShopHub.Infrastructure/Migrations/PeruShopHubDbContextModelSnapshot.cs`
+  - `src/PeruShopHub.Web/src/app/app.routes.ts`
+  - `src/PeruShopHub.Web/src/app/services/auth.service.ts`
+  - `src/PeruShopHub.Web/src/app/pages/register/register.component.ts`
+  - `src/PeruShopHub.Web/src/app/pages/login/login.component.html`
+  - `src/PeruShopHub.Web/src/app/pages/login/login.component.scss`
+  - `src/PeruShopHub.Web/src/app/pages/terms-of-use/*` (new)
+  - `src/PeruShopHub.Web/src/app/pages/privacy-policy/*` (new)
+  - `src/PeruShopHub.Web/src/app/shared/components/layout/layout.component.*`
+- **Learnings for future iterations:**
+  - Legal pages use shared SCSS pattern — could extract to a `_legal.scss` partial if more legal pages are needed
+  - Register form uses `Validators.requiredTrue` for checkbox validation (not just `Validators.required`)
+  - Public routes (no auth) go before the `path: ''` catch-all route with `authGuard` in app.routes.ts
+  - Model snapshot must be updated manually when creating hand-written migrations (add property entries alphabetically)
+---
