@@ -57,6 +57,10 @@
             <lucide-icon [img]="userIcon" [size]="16" />
             Meu Perfil
           </a>
+          <a routerLink="/onboarding" class="header__dropdown-item" (click)="closeUserMenu()">
+            <lucide-icon [img]="rocketIcon" [size]="16" />
+            Configuração Inicial
+          </a>
           <a routerLink="/configuracoes" class="header__dropdown-item" (click)="closeUserMenu()">
             <lucide-icon [img]="settingsIcon" [size]="16" />
             Configurações

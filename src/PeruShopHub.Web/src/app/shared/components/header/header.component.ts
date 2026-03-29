@@ -17,6 +17,7 @@ import {
   Settings,
   LogOut,
   User,
+  Rocket,
   type LucideIconData,
 } from 'lucide-angular';
 import { NotificationPanelComponent } from '../notification-panel/notification-panel.component';
@@ -69,6 +70,7 @@ export class HeaderComponent {
   readonly settingsIcon = Settings;
   readonly logOutIcon = LogOut;
   readonly userIcon = User;
+  readonly rocketIcon = Rocket;
 
   get themeIcon(): LucideIconData {
     const current = this.theme.currentTheme();

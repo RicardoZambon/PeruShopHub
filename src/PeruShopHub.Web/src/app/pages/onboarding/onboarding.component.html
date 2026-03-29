@@ -1,0 +1,128 @@
+@if (loading()) {
+  <div class="onboarding">
+    <div class="onboarding__card">
+      <div class="onboarding__skeleton-header"></div>
+      <div class="onboarding__skeleton-bar"></div>
+      <div class="onboarding__skeleton-steps">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="onboarding__skeleton-step"></div>
+        }
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="onboarding" [class.onboarding--confetti]="showConfetti()">
+    <!-- Confetti particles -->
+    @if (showConfetti()) {
+      <div class="confetti-container" aria-hidden="true">
+        @for (i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]; track i) {
+          <div class="confetti confetti--{{ i }}"></div>
+        }
+      </div>
+    }
+
+    <div class="onboarding__card">
+      <!-- Header -->
+      <div class="onboarding__header">
+        @if (allCompleted()) {
+          <div class="onboarding__celebration">
+            <lucide-icon [img]="partyPopperIcon" [size]="40" class="onboarding__celebration-icon" />
+            <h1>Parabéns! Sua loja está pronta!</h1>
+            <p>Você completou todas as etapas de configuração. Agora pode acompanhar a lucratividade real de cada venda.</p>
+          </div>
+        } @else {
+          <div class="onboarding__title-row">
+            <div>
+              <h1>
+                <lucide-icon [img]="rocketIcon" [size]="24" class="onboarding__title-icon" />
+                Configuração Inicial
+              </h1>
+              <p>Complete as etapas abaixo para começar a usar o PeruShopHub</p>
+            </div>
+            <button class="onboarding__dismiss" (click)="dismiss()">Fazer depois</button>
+          </div>
+        }
+      </div>
+
+      <!-- Progress bar -->
+      <div class="onboarding__progress">
+        <div class="onboarding__progress-info">
+          <span>{{ completedCount() }} de {{ totalSteps() }} etapas concluídas</span>
+          <span class="onboarding__progress-percent">{{ progressPercent() }}%</span>
+        </div>
+        <div class="onboarding__progress-track">
+          <div class="onboarding__progress-fill" [style.width.%]="progressPercent()"></div>
+        </div>
+      </div>
+
+      <!-- Steps -->
+      <div class="onboarding__steps">
+        @for (step of steps(); track step.key; let i = $index) {
+          <div
+            class="onboarding__step"
+            [class.onboarding__step--active]="i === activeStepIndex()"
+            [class.onboarding__step--completed]="step.completed"
+            (click)="selectStep(i)"
+          >
+            <div class="onboarding__step-indicator">
+              @if (step.completed) {
+                <div class="onboarding__step-check">
+                  <lucide-icon [img]="checkIcon" [size]="16" />
+                </div>
+              } @else {
+                <div class="onboarding__step-number">{{ i + 1 }}</div>
+              }
+            </div>
+
+            <div class="onboarding__step-content">
+              <div class="onboarding__step-header">
+                <lucide-icon [img]="step.icon" [size]="18" class="onboarding__step-icon" />
+                <span class="onboarding__step-label">{{ step.label }}</span>
+                @if (step.completed) {
+                  <span class="onboarding__step-badge">Concluído</span>
+                }
+              </div>
+
+              @if (i === activeStepIndex()) {
+                <p class="onboarding__step-description">{{ step.description }}</p>
+                <div class="onboarding__step-actions">
+                  @if (!step.completed) {
+                    <button class="onboarding__btn onboarding__btn--primary" (click)="navigateToStep(step.actionRoute); $event.stopPropagation()">
+                      {{ step.actionLabel }}
+                      <lucide-icon [img]="chevronRightIcon" [size]="16" />
+                    </button>
+                    @if (step.key === 'view_profitability') {
+                      <!-- Step 5: allow marking as complete directly to trigger the "aha" moment -->
+                      <button class="onboarding__btn onboarding__btn--outline" (click)="completeStep(step.key); $event.stopPropagation()">
+                        Marcar como concluído
+                      </button>
+                    } @else {
+                      <button class="onboarding__btn onboarding__btn--ghost" (click)="completeStep(step.key); $event.stopPropagation()">
+                        Pular esta etapa
+                      </button>
+                    }
+                  } @else {
+                    <button class="onboarding__btn onboarding__btn--outline" (click)="navigateToStep(step.actionRoute); $event.stopPropagation()">
+                      Revisar
+                      <lucide-icon [img]="chevronRightIcon" [size]="16" />
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Celebration footer -->
+      @if (allCompleted()) {
+        <div class="onboarding__footer">
+          <button class="onboarding__btn onboarding__btn--primary onboarding__btn--lg" (click)="goToDashboard()">
+            <lucide-icon [img]="rocketIcon" [size]="18" />
+            Ir para o Dashboard
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

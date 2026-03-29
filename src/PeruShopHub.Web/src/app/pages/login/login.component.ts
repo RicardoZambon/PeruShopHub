@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { OnboardingService } from '../../services/onboarding.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -15,6 +17,7 @@ export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
+  private readonly onboarding = inject(OnboardingService);
 
   form: FormGroup;
   loading = signal(false);
@@ -39,6 +42,19 @@ export class LoginComponent {
     return this.form.get('password')!;
   }
 
+  private async redirectAfterLogin(): Promise<void> {
+    try {
+      const progress = await firstValueFrom(this.onboarding.getProgress());
+      if (!progress.isCompleted && localStorage.getItem('psh_onboarding_dismissed') !== 'true') {
+        this.router.navigate(['/onboarding']);
+        return;
+      }
+    } catch {
+      // If onboarding check fails, just go to dashboard
+    }
+    this.router.navigate(['/dashboard']);
+  }
+
   async onSubmit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -50,7 +66,7 @@ export class LoginComponent {
 
     try {
       await this.auth.login(this.form.value.email, this.form.value.password);
-      this.router.navigate(['/dashboard']);
+      await this.redirectAfterLogin();
     } catch (err: any) {
       const msg = err?.error?.message || 'Erro ao fazer login. Tente novamente.';
       this.errorMessage.set(msg);

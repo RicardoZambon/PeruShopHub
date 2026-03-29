@@ -155,7 +155,7 @@ export class RegisterComponent {
     try {
       const { shopName, name, email, password } = this.form.getRawValue();
       await this.auth.register(shopName, name, email, password);
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/onboarding']);
     } catch (err: any) {
       const msg = err?.error?.errors
         ? Object.values(err.error.errors).flat().join('. ')

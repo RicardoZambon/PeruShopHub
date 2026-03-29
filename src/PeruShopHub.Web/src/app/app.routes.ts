@@ -39,6 +39,11 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
+        path: 'onboarding',
+        loadComponent: () =>
+          import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent),
+      },
+      {
         path: 'dashboard',
         loadComponent: () =>
           import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
