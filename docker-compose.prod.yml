@@ -11,6 +11,7 @@
 #   EMAIL_API_KEY=<optional>
 #   ML_APP_ID=<optional>
 #   ML_SECRET_KEY=<optional>
+#   ALERT_WEBHOOK=<optional, Slack/Discord webhook for monitoring alerts>
 
 services:
   db:
@@ -22,6 +23,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     networks:
       - perushophub-net
     healthcheck:
@@ -93,10 +96,41 @@ services:
       - "443:443"
     volumes:
       - ./docker/nginx-prod.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/logrotate-nginx.conf:/etc/logrotate.d/nginx:ro
+      - nginx_logs:/var/log/nginx
       - certbot_conf:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
     depends_on:
       - api
+    networks:
+      - perushophub-net
+
+  backup:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backup
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: perushophub
+      PGUSER: perushophub
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_DIR: /backups
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      HEALTH_URL: http://api:5000/health
+      DISK_THRESHOLD_PERCENT: "80"
+      REDIS_THRESHOLD_PERCENT: "80"
+      ALERT_WEBHOOK: ${ALERT_WEBHOOK:-}
+    volumes:
+      - backup_data:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - perushophub-net
 
@@ -114,6 +148,8 @@ volumes:
   redis_data:
   uploads:
   dataprotection:
+  backup_data:
+  nginx_logs:
   certbot_conf:
   certbot_www:
 

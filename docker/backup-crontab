@@ -9,3 +9,6 @@
 
 # Hourly backup age monitoring
 0  *  *  *  *  /usr/local/bin/backup/monitor.sh >> /var/log/backup.log 2>&1
+
+# System resource monitoring every 5 minutes (disk, Redis, health)
+*/5  *  *  *  *  /usr/local/bin/monitoring/system-monitor.sh >> /var/log/monitoring.log 2>&1
