@@ -1543,7 +1543,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 82,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 4. LGPD."
     },
     {

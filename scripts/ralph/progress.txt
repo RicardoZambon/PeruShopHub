@@ -2054,3 +2054,23 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Public routes (no auth) go before the `path: ''` catch-all route with `authGuard` in app.routes.ts
   - Model snapshot must be updated manually when creating hand-written migrations (add property entries alphabetically)
 ---
+
+## 2026-03-29 - US-073
+- Implemented cookie consent banner for LGPD compliance
+- Created `CookieConsentService` with localStorage + cookie persistence, versioned consent
+- Created `CookieConsentBannerComponent` with three options: "Aceitar todos", "Apenas essenciais", "Configurar"
+- Settings panel shows essential (always active) and analytics (optional, disabled by default) categories
+- Banner appears at bottom on first visit, hidden after consent
+- Added "Cookies" link in layout footer to reset consent and re-show banner
+- Component added to app root (like ToastContainer) for global visibility
+- Files created:
+  - `src/PeruShopHub.Web/src/app/services/cookie-consent.service.ts`
+  - `src/PeruShopHub.Web/src/app/shared/components/cookie-consent-banner/cookie-consent-banner.component.ts`
+  - `src/PeruShopHub.Web/src/app/shared/components/cookie-consent-banner/cookie-consent-banner.component.html`
+  - `src/PeruShopHub.Web/src/app/shared/components/cookie-consent-banner/cookie-consent-banner.component.scss`
+- Files modified: `app.ts`, `app.html`, `index.ts`, `layout.component.ts`, `layout.component.html`
+- **Learnings for future iterations:**
+  - Cookie consent banners go in app root (like toast), not in layout, so they appear on public routes too
+  - `CookieConsentService` uses versioned consent (`CONSENT_VERSION`) — bump version to force re-consent on policy change
+  - Footer "Cookies" link calls `resetConsent()` which clears localStorage and shows banner again
+---
