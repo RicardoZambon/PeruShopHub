@@ -1867,3 +1867,24 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Questions link to products via MarketplaceListing ExternalId lookup (same pattern as OrderItems)
   - Webhook resource format for questions: `/questions/{id}` — same ExtractIdFromResource helper works
 ---
+
+## 2026-03-29 - US-067
+- Implemented Questions Page (Frontend) with real API integration
+- Created `question.service.ts` — Angular service wrapping GET /api/questions and POST /api/questions/{id}/answer
+- Created `sidebar-badge.service.ts` — tracks unanswered question count, refreshes on SignalR DataChanged events
+- Rewrote `questions.component.ts` to use real API data instead of mock data:
+  - Loads questions via QuestionService on init
+  - Subscribes to SignalR DataChanged for 'question' entity → auto-refresh
+  - Real answer submission with loading/error states
+  - Client-side tab filtering (UNANSWERED/ANSWERED/all)
+  - Search filter by product ID, buyer name, or question text
+- Updated `questions.component.html`: added search bar, unanswered count badge in header, answer date display, submitting state
+- Updated `questions.component.scss`: added search bar styles, answer date style
+- Updated sidebar: badge support with red dot (collapsed) / red count pill (expanded) for unanswered questions
+- Files changed: 8 files (2 new, 6 modified)
+- **Learnings for future iterations:**
+  - ToastService uses 'danger' not 'error' — type is `ToastType = 'success' | 'warning' | 'danger' | 'info'`
+  - Backend question status values are uppercase: 'UNANSWERED', 'ANSWERED' (ML API convention)
+  - Sidebar badge pattern: add `badgeKey` to NavItem, create a service with signals, inject in sidebar, use `getBadgeCount()` method
+  - PagedResult API response shape: `{ items, totalCount, page, pageSize }` — use `pageSize: 1` trick to get just the count
+---
