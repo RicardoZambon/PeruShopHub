@@ -79,4 +79,18 @@ public class ReportsController : ControllerBase
         var fileName = $"estoque_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
         return File(bytes, ExcelContentType, fileName);
     }
+
+    [HttpGet("accounting-export")]
+    public async Task<IActionResult> AccountingExport(
+        [FromQuery] string format = "bling",
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        CancellationToken ct = default)
+    {
+        var bytes = await _reportService.ExportAccountingAsync(format, dateFrom, dateTo, ct);
+        var from = (dateFrom ?? DateTime.UtcNow.AddDays(-30)).ToString("yyyy-MM-dd");
+        var to = (dateTo ?? DateTime.UtcNow).ToString("yyyy-MM-dd");
+        var fileName = $"vendas_{format.ToLowerInvariant()}_{from}_{to}.csv";
+        return File(bytes, "text/csv", fileName);
+    }
 }

@@ -405,6 +405,28 @@ export class FinanceComponent implements OnInit {
     });
   }
 
+  erpFormat = signal<'bling' | 'tiny'>('bling');
+  showErpDropdown = signal(false);
+
+  onErpExport(): void {
+    const format = this.erpFormat();
+    const now = new Date();
+    const period = this.activePeriod();
+    const days = period === 'hoje' ? 1 : period === '7dias' ? 7 : 30;
+    const dateFrom = new Date(now.getTime() - days * 86400000).toISOString().split('T')[0];
+    const dateTo = now.toISOString().split('T')[0];
+
+    this.financeService.exportAccountingCsv(format, dateFrom, dateTo).subscribe({
+      next: (blob) => {
+        this.downloadBlob(blob, `vendas_${format}_${dateFrom}_${dateTo}.csv`);
+        this.showErpDropdown.set(false);
+      },
+      error: () => {
+        this.toastService.show('Erro ao gerar exportação ERP', 'danger');
+      },
+    });
+  }
+
   private downloadBlob(blob: Blob, fileName: string): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

@@ -467,6 +467,117 @@ public class ReportService : IReportService
         return WorkbookToBytes(workbook);
     }
 
+    // --- Accounting Export (Bling / Tiny CSV) ---
+
+    public async Task<byte[]> ExportAccountingAsync(string format, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default)
+    {
+        var start = dateFrom ?? DateTime.UtcNow.AddDays(-30);
+        var end = dateTo ?? DateTime.UtcNow;
+
+        var orders = await _db.Orders
+            .Include(o => o.Items)
+            .Include(o => o.Costs)
+            .Where(o => o.OrderDate >= start && o.OrderDate <= end)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync(ct);
+
+        return format.ToLowerInvariant() switch
+        {
+            "tiny" => GenerateTinyCsv(orders),
+            _ => GenerateBlingCsv(orders), // default to bling
+        };
+    }
+
+    private static byte[] GenerateBlingCsv(List<Core.Entities.Order> orders)
+    {
+        // Bling expected columns: Pedido;Data;Cliente;Email;Item;SKU;Qtd;Valor Unit.;Subtotal;
+        // Comissão;Taxa Fixa;Frete Vendedor;Taxa Pagamento;Custo Produto;Embalagem;Imposto;Total Custos;Lucro
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Pedido;Data;Cliente;Email;Item;SKU;Qtd;Valor Unit.;Subtotal;Comissao;Taxa Fixa;Frete Vendedor;Taxa Pagamento;Custo Produto;Embalagem;Imposto;Total Custos;Lucro");
+
+        foreach (var order in orders)
+        {
+            var costs = BuildCostMap(order.Costs);
+
+            foreach (var item in order.Items)
+            {
+                sb.Append(CsvField(order.ExternalOrderId ?? order.Id.ToString()[..8])).Append(';');
+                sb.Append(order.OrderDate.ToString("dd/MM/yyyy")).Append(';');
+                sb.Append(CsvField(order.BuyerName ?? "")).Append(';');
+                sb.Append(CsvField(order.BuyerEmail ?? "")).Append(';');
+                sb.Append(CsvField(item.Name)).Append(';');
+                sb.Append(CsvField(item.Sku)).Append(';');
+                sb.Append(item.Quantity).Append(';');
+                sb.Append(FormatDecimalCsv(item.UnitPrice)).Append(';');
+                sb.Append(FormatDecimalCsv(item.Subtotal)).Append(';');
+                sb.Append(FormatDecimalCsv(costs.GetValueOrDefault("marketplace_commission"))).Append(';');
+                sb.Append(FormatDecimalCsv(costs.GetValueOrDefault("fixed_fee"))).Append(';');
+                sb.Append(FormatDecimalCsv(costs.GetValueOrDefault("shipping_seller"))).Append(';');
+                sb.Append(FormatDecimalCsv(costs.GetValueOrDefault("payment_fee"))).Append(';');
+                sb.Append(FormatDecimalCsv(costs.GetValueOrDefault("product_cost"))).Append(';');
+                sb.Append(FormatDecimalCsv(costs.GetValueOrDefault("packaging"))).Append(';');
+                sb.Append(FormatDecimalCsv(costs.GetValueOrDefault("tax"))).Append(';');
+                sb.Append(FormatDecimalCsv(order.Costs.Sum(c => c.Value))).Append(';');
+                sb.AppendLine(FormatDecimalCsv(order.Profit));
+            }
+        }
+
+        return System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+    }
+
+    private static byte[] GenerateTinyCsv(List<Core.Entities.Order> orders)
+    {
+        // Tiny expected columns: Numero Pedido;Data Pedido;Nome Cliente;Email Cliente;
+        // Descricao Item;Codigo Item;Quantidade;Valor Unitario;Valor Total Item;
+        // Valor Total Pedido;Total Impostos;Total Custos;Lucro Liquido
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Numero Pedido;Data Pedido;Nome Cliente;Email Cliente;Descricao Item;Codigo Item;Quantidade;Valor Unitario;Valor Total Item;Valor Total Pedido;Total Impostos;Total Custos;Lucro Liquido");
+
+        foreach (var order in orders)
+        {
+            var costs = BuildCostMap(order.Costs);
+            var totalCosts = order.Costs.Sum(c => c.Value);
+
+            foreach (var item in order.Items)
+            {
+                sb.Append(CsvField(order.ExternalOrderId ?? order.Id.ToString()[..8])).Append(';');
+                sb.Append(order.OrderDate.ToString("dd/MM/yyyy HH:mm")).Append(';');
+                sb.Append(CsvField(order.BuyerName ?? "")).Append(';');
+                sb.Append(CsvField(order.BuyerEmail ?? "")).Append(';');
+                sb.Append(CsvField(item.Name)).Append(';');
+                sb.Append(CsvField(item.Sku)).Append(';');
+                sb.Append(item.Quantity).Append(';');
+                sb.Append(FormatDecimalCsv(item.UnitPrice)).Append(';');
+                sb.Append(FormatDecimalCsv(item.Subtotal)).Append(';');
+                sb.Append(FormatDecimalCsv(order.TotalAmount)).Append(';');
+                sb.Append(FormatDecimalCsv(costs.GetValueOrDefault("tax"))).Append(';');
+                sb.Append(FormatDecimalCsv(totalCosts)).Append(';');
+                sb.AppendLine(FormatDecimalCsv(order.Profit));
+            }
+        }
+
+        return System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+    }
+
+    private static Dictionary<string, decimal> BuildCostMap(ICollection<Core.Entities.OrderCost> costs)
+    {
+        return costs
+            .GroupBy(c => c.Category)
+            .ToDictionary(g => g.Key, g => g.Sum(c => c.Value));
+    }
+
+    private static string CsvField(string value)
+    {
+        if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        return value;
+    }
+
+    private static string FormatDecimalCsv(decimal value)
+    {
+        return value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     // --- Shared Excel Helpers ---
 
     private static readonly string BrlNumberFormat = "#,##0.00";

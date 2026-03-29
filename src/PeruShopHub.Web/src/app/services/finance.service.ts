@@ -95,4 +95,11 @@ export class FinanceService {
       responseType: 'blob',
     });
   }
+
+  exportAccountingCsv(format: string, dateFrom?: string, dateTo?: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/reports/accounting-export`, {
+      params: buildHttpParams({ format, dateFrom, dateTo }),
+      responseType: 'blob',
+    });
+  }
 }

@@ -3,6 +3,24 @@
   <div class="financeiro__actions">
     <app-button variant="outline" (click)="onExport('pdf')">Exportar PDF</app-button>
     <app-button variant="outline" (click)="onExport('excel')">Exportar Excel</app-button>
+    <div class="erp-export">
+      <app-button variant="outline" (click)="showErpDropdown.set(!showErpDropdown())">Exportar para ERP ▾</app-button>
+      @if (showErpDropdown()) {
+        <div class="erp-export__dropdown">
+          <div class="erp-export__header">Formato ERP</div>
+          <label class="erp-export__option">
+            <input type="radio" name="erpFormat" value="bling" [checked]="erpFormat() === 'bling'" (change)="erpFormat.set('bling')" />
+            <span>Bling</span>
+          </label>
+          <label class="erp-export__option">
+            <input type="radio" name="erpFormat" value="tiny" [checked]="erpFormat() === 'tiny'" (change)="erpFormat.set('tiny')" />
+            <span>Tiny</span>
+          </label>
+          <div class="erp-export__help">Exporta vendas em CSV compatível com o ERP selecionado. Campos: pedido, data, comprador, itens, valores, custos e impostos.</div>
+          <app-button variant="accent" (click)="onErpExport()">Exportar CSV</app-button>
+        </div>
+      }
+    </div>
   </div>
 </div>
 
