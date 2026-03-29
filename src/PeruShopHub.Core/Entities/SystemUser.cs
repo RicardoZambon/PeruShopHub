@@ -13,6 +13,8 @@ public class SystemUser
     public string? AvatarUrl { get; set; }
     public DateTime? LastLogin { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? TermsAcceptedAt { get; set; }
+    public DateTime? PrivacyAcceptedAt { get; set; }
 
     public ICollection<TenantUser> TenantMemberships { get; set; } = new List<TenantUser>();
 }

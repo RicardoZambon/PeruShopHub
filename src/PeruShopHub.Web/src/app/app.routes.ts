@@ -26,6 +26,16 @@ export const routes: Routes = [
       import('./pages/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
   },
   {
+    path: 'termos-de-uso',
+    loadComponent: () =>
+      import('./pages/terms-of-use/terms-of-use.component').then(m => m.TermsOfUseComponent),
+  },
+  {
+    path: 'politica-de-privacidade',
+    loadComponent: () =>
+      import('./pages/privacy-policy/privacy-policy.component').then(m => m.PrivacyPolicyComponent),
+  },
+  {
     path: 'oauth-callback',
     canActivate: [authGuard],
     loadComponent: () =>

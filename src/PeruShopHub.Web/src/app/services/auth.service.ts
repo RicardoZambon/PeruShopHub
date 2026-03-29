@@ -66,9 +66,9 @@ export class AuthService {
     return res.user;
   }
 
-  async register(shopName: string, name: string, email: string, password: string): Promise<AuthUser> {
+  async register(shopName: string, name: string, email: string, password: string, acceptTerms: boolean): Promise<AuthUser> {
     const res = await firstValueFrom(
-      this.http.post<AuthResponse>(`${this.baseUrl}/register`, { shopName, name, email, password })
+      this.http.post<AuthResponse>(`${this.baseUrl}/register`, { shopName, name, email, password, acceptTerms })
     );
     this.storeTokens(res);
     return res.user;

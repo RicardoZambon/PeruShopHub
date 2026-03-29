@@ -55,6 +55,16 @@ import { AuthService } from '../../services/auth.service';
             }
           </div>
 
+          <div class="form-field checkbox-field">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="acceptTerms" />
+              <span>Li e aceito os <a routerLink="/termos-de-uso" target="_blank">Termos de Uso</a> e a <a routerLink="/politica-de-privacidade" target="_blank">Política de Privacidade</a></span>
+            </label>
+            @if (form.get('acceptTerms')?.touched && form.get('acceptTerms')?.hasError('requiredTrue')) {
+              <span class="error">Você deve aceitar os Termos de Uso e Política de Privacidade</span>
+            }
+          </div>
+
           @if (serverError()) {
             <div class="server-error">{{ serverError() }}</div>
           }
@@ -67,6 +77,12 @@ import { AuthService } from '../../services/auth.service';
         <p class="auth-link">
           Já tem uma conta? <a routerLink="/login">Fazer login</a>
         </p>
+
+        <div class="legal-links">
+          <a routerLink="/termos-de-uso">Termos de Uso</a>
+          <span class="separator">•</span>
+          <a routerLink="/politica-de-privacidade">Política de Privacidade</a>
+        </div>
       </div>
     </div>
   `,
@@ -120,6 +136,28 @@ import { AuthService } from '../../services/auth.service';
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
     .auth-link { text-align: center; margin-top: var(--space-4); font-size: 0.875rem; color: var(--neutral-500); }
     .auth-link a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .checkbox-field { gap: var(--space-1); }
+    .checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      font-size: 0.8125rem;
+      color: var(--neutral-600);
+      cursor: pointer;
+    }
+    .checkbox-label input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; }
+    .checkbox-label a { color: var(--primary); text-decoration: underline; }
+    .legal-links {
+      margin-top: var(--space-4);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--neutral-200);
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--neutral-400);
+    }
+    .legal-links a { color: var(--neutral-400); text-decoration: none; }
+    .legal-links a:hover { color: var(--primary); text-decoration: underline; }
+    .legal-links .separator { margin: 0 var(--space-1); }
   `]
 })
 export class RegisterComponent {
@@ -135,6 +173,7 @@ export class RegisterComponent {
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
+    acceptTerms: [false, Validators.requiredTrue],
   });
 
   constructor() {
@@ -153,8 +192,8 @@ export class RegisterComponent {
     this.serverError.set(null);
 
     try {
-      const { shopName, name, email, password } = this.form.getRawValue();
-      await this.auth.register(shopName, name, email, password);
+      const { shopName, name, email, password, acceptTerms } = this.form.getRawValue();
+      await this.auth.register(shopName, name, email, password, acceptTerms);
       this.router.navigate(['/onboarding']);
     } catch (err: any) {
       const msg = err?.error?.errors

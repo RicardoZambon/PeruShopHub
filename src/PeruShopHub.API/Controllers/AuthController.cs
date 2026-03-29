@@ -97,6 +97,9 @@ public class AuthController : ControllerBase
         else if (request.Password.Length < 8)
             AddError(errors, "Password", "Senha deve ter no mínimo 8 caracteres.");
 
+        if (!request.AcceptTerms)
+            AddError(errors, "AcceptTerms", "Você deve aceitar os Termos de Uso e Política de Privacidade.");
+
         if (errors.Count > 0)
             throw new AppValidationException(errors);
 
@@ -117,6 +120,7 @@ public class AuthController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
+        var now = DateTime.UtcNow;
         var user = new SystemUser
         {
             Id = Guid.NewGuid(),
@@ -125,7 +129,9 @@ public class AuthController : ControllerBase
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             IsSuperAdmin = false,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = now,
+            TermsAcceptedAt = now,
+            PrivacyAcceptedAt = now
         };
 
         var membership = new TenantUser

@@ -2000,11 +2000,17 @@ namespace PeruShopHub.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<DateTime?>("PrivacyAcceptedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("RefreshToken")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("RefreshTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("TermsAcceptedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");

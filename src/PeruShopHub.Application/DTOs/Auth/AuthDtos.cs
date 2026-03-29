@@ -2,7 +2,7 @@ namespace PeruShopHub.Application.DTOs.Auth;
 
 public record LoginRequest(string Email, string Password);
 
-public record RegisterRequest(string ShopName, string Name, string Email, string Password);
+public record RegisterRequest(string ShopName, string Name, string Email, string Password, bool AcceptTerms = false);
 
 public record RefreshRequest(string RefreshToken);
 
