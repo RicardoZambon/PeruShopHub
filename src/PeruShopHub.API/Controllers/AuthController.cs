@@ -295,6 +295,127 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        // Always return 200 to prevent email enumeration
+        var user = await _db.SystemUsers
+            .FirstOrDefaultAsync(u => u.Email == request.Email.Trim().ToLowerInvariant() && u.IsActive);
+
+        if (user is not null)
+        {
+            // Remove any existing tokens for this user
+            var existingTokens = await _db.PasswordResetTokens
+                .Where(t => t.UserId == user.Id)
+                .ToListAsync();
+            _db.PasswordResetTokens.RemoveRange(existingTokens);
+
+            // Generate 64-char token
+            var tokenBytes = new byte[48];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(tokenBytes);
+            var token = Convert.ToBase64String(tokenBytes);
+
+            // Store hashed token with 1h expiry
+            var tokenHash = BCrypt.Net.BCrypt.HashPassword(token);
+            _db.PasswordResetTokens.Add(new PasswordResetToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                TokenHash = tokenHash,
+                ExpiresAt = DateTime.UtcNow.AddHours(1),
+                CreatedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+
+            var frontendUrl = _config["FrontendUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+            var resetLink = $"{frontendUrl}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+
+            _ = SendPasswordResetEmailAsync(user.Email, user.Name, resetLink);
+        }
+
+        return Ok(new { message = "Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha." });
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordWithTokenRequest request)
+    {
+        var errors = new Dictionary<string, List<string>>();
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+            AddError(errors, "Email", "E-mail é obrigatório.");
+
+        if (string.IsNullOrWhiteSpace(request.Token))
+            AddError(errors, "Token", "Token é obrigatório.");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+            AddError(errors, "NewPassword", "Nova senha é obrigatória.");
+        else if (request.NewPassword.Length < 8)
+            AddError(errors, "NewPassword", "Senha deve ter no mínimo 8 caracteres.");
+
+        if (errors.Count > 0)
+            throw new AppValidationException(errors);
+
+        var user = await _db.SystemUsers
+            .FirstOrDefaultAsync(u => u.Email == request.Email.Trim().ToLowerInvariant() && u.IsActive);
+
+        if (user is null)
+            return BadRequest(new { message = "Token inválido ou expirado." });
+
+        var resetToken = await _db.PasswordResetTokens
+            .Where(t => t.UserId == user.Id && t.ExpiresAt > DateTime.UtcNow)
+            .FirstOrDefaultAsync();
+
+        if (resetToken is null || !BCrypt.Net.BCrypt.Verify(request.Token, resetToken.TokenHash))
+            return BadRequest(new { message = "Token inválido ou expirado." });
+
+        // Update password
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.RefreshToken = null;
+        user.RefreshTokenExpiresAt = null;
+
+        // Delete token (single-use)
+        _db.PasswordResetTokens.Remove(resetToken);
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Senha redefinida com sucesso." });
+    }
+
+    private async Task SendPasswordResetEmailAsync(string email, string userName, string resetLink)
+    {
+        try
+        {
+            var body = EmailTemplateBuilder.Paragraph($"Olá, <strong>{userName}</strong>!") +
+                       EmailTemplateBuilder.Paragraph("Recebemos uma solicitação para redefinir sua senha no PeruShopHub.") +
+                       EmailTemplateBuilder.Paragraph("Clique no botão abaixo para criar uma nova senha. Este link expira em <strong>1 hora</strong>.") +
+                       EmailTemplateBuilder.Button("Redefinir Senha", resetLink) +
+                       EmailTemplateBuilder.Paragraph("Se você não solicitou esta alteração, ignore este e-mail. Sua senha permanecerá a mesma.");
+
+            var html = EmailTemplateBuilder.BuildLayout("Redefinição de Senha", body);
+
+            var plainText = $"""
+                Olá, {userName}!
+
+                Recebemos uma solicitação para redefinir sua senha no PeruShopHub.
+
+                Acesse o link abaixo para criar uma nova senha (expira em 1 hora):
+                {resetLink}
+
+                Se você não solicitou esta alteração, ignore este e-mail.
+                """;
+
+            await _emailService.SendAsync(email, "Redefinição de Senha - PeruShopHub", html, textBody: plainText);
+            _logger.LogInformation("Password reset email sent to {Email}", email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send password reset email to {Email}", email);
+        }
+    }
+
     private async Task SendWelcomeEmailAsync(string email, string userName)
     {
         try

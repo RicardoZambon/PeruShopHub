@@ -20,3 +20,7 @@ public record UserDto(
     bool IsSuperAdmin);
 
 public record TenantSummaryDto(Guid Id, string Name, string Slug, string Role);
+
+public record ForgotPasswordRequest(string Email);
+
+public record ResetPasswordWithTokenRequest(string Email, string Token, string NewPassword);

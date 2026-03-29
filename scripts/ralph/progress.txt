@@ -1647,3 +1647,33 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - Fire-and-forget pattern: `_ = SendWelcomeEmailAsync(...)` discards the task but the method has its own try-catch
   - `Request.Scheme` and `Request.Host` available in controllers for building URLs
 ---
+
+## 2026-03-29 - US-061
+- Implemented forgot-password and reset-password flow (backend + frontend)
+- Backend: PasswordResetToken entity + EF config + migration, two new endpoints on AuthController (forgot-password always returns 200 to prevent enumeration, reset-password validates hashed token with 1h expiry, single-use)
+- Frontend: ForgotPasswordComponent (email form → success message), ResetPasswordComponent (password + confirmation from URL params), routes added, login page "Esqueceu a senha?" link now wired
+- Middleware skip paths updated (TenantMiddleware + TenantRateLimitMiddleware) for both new unauthenticated endpoints
+- Auth interceptor updated to skip auth header for forgot/reset endpoints
+- Password reset email uses EmailTemplateBuilder with branded HTML + plain text fallback
+- Files changed:
+  - src/PeruShopHub.Core/Entities/PasswordResetToken.cs (new)
+  - src/PeruShopHub.Infrastructure/Persistence/Configurations/PasswordResetTokenConfiguration.cs (new)
+  - src/PeruShopHub.Infrastructure/Persistence/PeruShopHubDbContext.cs (added DbSet)
+  - src/PeruShopHub.Infrastructure/Persistence/Migrations/*AddPasswordResetTokens* (new)
+  - src/PeruShopHub.Application/DTOs/Auth/AuthDtos.cs (added ForgotPasswordRequest, ResetPasswordWithTokenRequest)
+  - src/PeruShopHub.API/Controllers/AuthController.cs (added forgot-password, reset-password endpoints + email helper)
+  - src/PeruShopHub.API/Middleware/TenantMiddleware.cs (added skip paths)
+  - src/PeruShopHub.API/Middleware/TenantRateLimitMiddleware.cs (added skip paths)
+  - src/PeruShopHub.Web/src/app/services/auth.service.ts (added forgotPassword, resetPassword methods)
+  - src/PeruShopHub.Web/src/app/interceptors/auth.interceptor.ts (skip forgot/reset endpoints)
+  - src/PeruShopHub.Web/src/app/pages/forgot-password/* (new)
+  - src/PeruShopHub.Web/src/app/pages/reset-password/* (new)
+  - src/PeruShopHub.Web/src/app/app.routes.ts (added routes)
+  - src/PeruShopHub.Web/src/app/pages/login/login.component.html (wired forgot link)
+- **Learnings for future iterations:**
+  - Token hashing with BCrypt for reset tokens — same approach as password hashing, provides secure at-rest storage
+  - Always update BOTH TenantMiddleware AND TenantRateLimitMiddleware skip paths for new unauthenticated endpoints
+  - Auth interceptor also needs updating to skip auth header for unauthenticated endpoints
+  - FrontendUrl config key used for reset email links — falls back to Request scheme/host
+  - Login page already had a placeholder "Esqueceu a senha?" link with href="javascript:void(0)" — just needed routerLink
+---

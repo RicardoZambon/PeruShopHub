@@ -112,6 +112,18 @@ export class AuthService {
     return this.refreshPromise;
   }
 
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    return await firstValueFrom(
+      this.http.post<{ message: string }>(`${this.baseUrl}/forgot-password`, { email })
+    );
+  }
+
+  async resetPassword(email: string, token: string, newPassword: string): Promise<{ message: string }> {
+    return await firstValueFrom(
+      this.http.post<{ message: string }>(`${this.baseUrl}/reset-password`, { email, token, newPassword })
+    );
+  }
+
   logout(): void {
     const token = this.accessToken;
     if (token) {

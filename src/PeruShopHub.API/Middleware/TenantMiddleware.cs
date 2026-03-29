@@ -12,6 +12,8 @@ public class TenantMiddleware
         "/api/auth/login",
         "/api/auth/register",
         "/api/auth/refresh",
+        "/api/auth/forgot-password",
+        "/api/auth/reset-password",
         "/api/webhooks/mercadolivre",
         "/health"
     };
