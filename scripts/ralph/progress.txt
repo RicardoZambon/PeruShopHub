@@ -2432,3 +2432,25 @@ These gaps exist in the current codebase and were not introduced by Phase 0.5, b
   - `toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })` is the correct way to format BRL, not manual string manipulation
   - `ConfirmDialogService.confirm()` uses `confirmLabel` (not `confirmText`) and variant `'danger' | 'warning' | 'primary'`
 ---
+
+## 2026-03-29 - US-086
+- What was implemented:
+  - Created Docs/deployment.md — VPS setup, Docker commands, CI/CD deploy, PostgreSQL/Nginx config, monitoring
+  - Created Docs/environment-variables.md — all env vars (API, Worker, Backup, GitHub Actions) with descriptions and defaults
+  - Created Docs/troubleshooting.md — common issues (502, CORS, SSL, Redis OOM, rate limits) with solutions
+  - Created Docs/backup-restore.md — backup schedule, manual backup/restore procedures, verification, offsite config
+  - Created .env.example — all required and optional production variables with generation hints
+  - Updated README.md — overview, architecture diagram, quick start, test commands, deploy guide, documentation links table
+  - docker-compose.prod.yml already existed from US-081 (no changes needed)
+- Files changed:
+  - Docs/deployment.md (new)
+  - Docs/environment-variables.md (new)
+  - Docs/troubleshooting.md (new)
+  - Docs/backup-restore.md (new)
+  - .env.example (new)
+  - README.md (updated)
+- **Learnings for future iterations:**
+  - docker-compose.prod.yml was already created in a previous story (US-081), so the acceptance criteria was already partially met
+  - All documentation is written in Brazilian Portuguese per project convention (code in English, UI/docs in pt-BR)
+  - The backup container has a rich set of env vars for monitoring thresholds and offsite backup that are worth documenting
+---

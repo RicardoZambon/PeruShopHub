@@ -1828,7 +1828,7 @@
         "README.md updated: overview, quick start, architecture diagram, doc links"
       ],
       "priority": 97,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 5. After US-081."
     }
   ]
